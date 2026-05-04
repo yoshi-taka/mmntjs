@@ -227,7 +227,7 @@ function stripRFC2822Comments(str: string): string {
       depth--;
       if (depth < 0) {depth = 0;}
     } else if (depth === 0) {
-      result += str[i];
+      result += ch;
     }
   }
   return result.replaceAll(/\s+/g, " ").trim();
@@ -293,7 +293,18 @@ function parseRFC2822(match: RegExpMatchArray): any {
     ? WEEKDAY_NAMES_MAP[match[1].replaceAll(/[,\s]/g, "").toLowerCase().substring(0, 3)]
     : undefined;
 
-  return { year, month, day, hour, minute, second, millisecond: 0, offset, _weekdayName: weekday };
+  return {
+    year,
+    month,
+    day,
+    hour,
+    minute,
+    second,
+    millisecond: 0,
+    offset,
+    _weekdayName: weekday,
+    _rfc2822: true,
+  };
 }
 
 function parseISO8601(match: RegExpMatchArray): any {

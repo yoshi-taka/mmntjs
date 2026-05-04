@@ -15,11 +15,11 @@ test('parse', function (assert) {
                 '_'
             );
 
-    function equalTest(input: any, mmm: any, i: any) {
+    function equalTest(input: any, mmm: any, monthIdx: any) {
         assert.equal(
             moment(input, mmm).month(),
-            i,
-            `${input  } sepatutnya bulan ${  i + 1}`
+            monthIdx,
+            `${input  } sepatutnya bulan ${  monthIdx + 1}`
         );
     }
 

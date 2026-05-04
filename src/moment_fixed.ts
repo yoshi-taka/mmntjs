@@ -988,7 +988,7 @@ export class Moment {
   }
 
   private _addSimple(amount: number, unit: number): void {
-    const d = this._getD();
+    const date = this._getD();
     let changedDays = false;
 
     switch (unit) {
@@ -997,19 +997,27 @@ export class Moment {
       case MONTH: {
         changedDays = true;
         const totalMonths = absRound(unit === YEAR ? amount * 12 : unit === QUARTER ? amount * 3 : amount);
-
-        const tm = this.$y * 12 + this.$M + totalMonths;
-        const y = Math.floor(tm / 12);
-        const m = ((tm % 12) + 12) % 12;
-        const maxDay = daysInMonth(y, m);
-        const d_ = this.$D > maxDay ? maxDay : this.$D;
-
-        if (this._isUTC) {
-          this._t = Date.UTC(y, m, d_, this.$H, this.$m, this.$s, this.$ms);
-        } else {
-          this._d = new Date(y, m, d_, this.$H, this.$m, this.$s, this.$ms);
-          this._t = this._d.getTime();
+        addMonths(this, totalMonths);
+        break;
+      }
+      case WEEK: {
+        const days = amount * 7;
+        this._addDays(date, days);
+        break;
+      }
+      case DATE:
+      case WEEKDAY: {
+        this._addDays(date, amount);
+        break;
+      }
+      default: {
+        const ms = amount * MS_IN_UNITS[unit];
+        if (!isNaN(ms)) {
+          this._addTime(date, ms);
         }
+        break;
+      }
+    }
         this.$y = y;
         this.$M = m;
         this.$D = d_;

@@ -14,10 +14,10 @@ test('parse', function (assert) {
                 '_'
             ),
         i;
-    function equalTest(input: any, mmm: any, i: any) {
+    function equalTest(input: any, mmm: any, monthIdx: any) {
         assert.equal(
             moment(input, mmm).month(),
-            i,
+            monthIdx,
             `${input 
                 } should be month ${ 
                 i + 1 

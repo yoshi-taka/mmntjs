@@ -635,6 +635,7 @@ function createFromString(
       config._d = date;
       config._offset = offset;
       config._isUTC = true;
+      if (parsed._rfc2822) {config._rfc2822 = true;}
       if (overflow >= 0) {
         config._isValid = false;
         config._overflow = overflow;
@@ -643,6 +644,7 @@ function createFromString(
     }
     date = createDate(y, mo, d, h, min, s, ms);
     config._d = date;
+    if (parsed._rfc2822) {config._rfc2822 = true;}
     if (overflow >= 0) {
       config._isValid = false;
       config._overflow = overflow;

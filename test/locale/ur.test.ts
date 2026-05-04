@@ -25,11 +25,11 @@ const months = [
     days = ['اتوار', 'پیر', 'منگل', 'بدھ', 'جمعرات', 'جمعہ', 'ہفتہ'];
 
 test('parse', function (assert) {
-    function equalTest(input: any, mmm: any, i: any) {
+    function equalTest(input: any, mmm: any, monthIdx: any) {
         assert.equal(
             moment(input, mmm).month(),
-            i,
-            `${input  } should be month ${  i + 1}`
+            monthIdx,
+            `${input  } should be month ${  monthIdx + 1}`
         );
     }
 

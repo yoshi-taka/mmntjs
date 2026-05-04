@@ -14,11 +14,11 @@ test('parse', function (assert) {
                 '_'
             ),
         i;
-    function equalTest(input: any, mmm: any, i: any) {
+    function equalTest(input: any, mmm: any, monthIdx: any) {
         assert.equal(
             moment(input, mmm).month(),
-            i,
-            `${input  } peaks olema kuu ${  i + 1}`
+            monthIdx,
+            `${input  } peaks olema kuu ${  monthIdx + 1}`
         );
     }
 

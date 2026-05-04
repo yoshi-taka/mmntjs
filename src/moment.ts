@@ -2028,8 +2028,14 @@ export class Moment {
   }
 
   parsingFlags(): object {
+    const overflow =
+      this._overflow !== undefined
+        ? this._overflow
+        : !this._isValid
+          ? -2
+          : -1;
     const result: Record<string, any> = {
-      overflow: this._overflow !== undefined ? this._overflow : -1,
+      overflow: !this._isValid && overflow < 0 ? -2 : overflow,
       unusedTokens: this._unusedTokens || [],
       unusedInput: this._unusedInput || [],
       charsLeftOver: this._charsLeftOver || 0,

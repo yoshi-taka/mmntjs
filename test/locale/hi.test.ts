@@ -18,11 +18,11 @@ test('parse', function (assert) {
                 '_'
             ),
         i;
-    function equalTest(input: any, mmm: any, i: any) {
+    function equalTest(input: any, mmm: any, monthIdx: any) {
         assert.equal(
             moment(input, mmm).month(),
-            i,
-            `${input  } should be month ${  i + 1}`
+            monthIdx,
+            `${input  } should be month ${  monthIdx + 1}`
         );
     }
     function equalTestStrict(input: any, mmm: any, monthIndex: any) {
