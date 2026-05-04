@@ -53,7 +53,8 @@
     "typescript/consistent-indexed-object-style": "error",
     "eslint/curly": "error",
     "typescript/consistent-type-assertions": "error",
-    "typescript/no-import-type-side-effects": "error"
+    "typescript/no-import-type-side-effects": "error",
+    "typescript/prefer-return-this-type": "error"
   },
   "ignorePatterns": [
     "test/moment/",
