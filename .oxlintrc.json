@@ -55,7 +55,8 @@
     "typescript/consistent-type-assertions": "error",
     "typescript/no-import-type-side-effects": "error",
     "typescript/prefer-return-this-type": "error",
-    "unicorn/no-length-as-slice-end": "error"
+    "unicorn/no-length-as-slice-end": "error",
+    "unicorn/no-useless-promise-resolve-reject": "error"
   },
   "ignorePatterns": [
     "test/moment/",
