@@ -13,7 +13,8 @@
     "typescript/prefer-includes": "error",
     "typescript/no-unnecessary-type-assertion": "error",
     "unicorn/prefer-node-protocol": "error",
-    "typescript/require-await": "error"
+    "typescript/require-await": "error",
+    "typescript/no-unnecessary-condition": "error"
   },
   "ignorePatterns": [
     "test/moment/",
