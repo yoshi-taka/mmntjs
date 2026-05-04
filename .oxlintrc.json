@@ -59,7 +59,8 @@
     "unicorn/no-useless-promise-resolve-reject": "error",
     "eslint/no-unneeded-ternary": "error",
     "eslint/no-useless-concat": "error",
-    "eslint/no-var": "error"
+    "eslint/no-var": "error",
+    "typescript/no-explicit-any": "error"
   },
   "ignorePatterns": [
     "test/moment/",

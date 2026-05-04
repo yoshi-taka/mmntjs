@@ -78,7 +78,7 @@ const symbolMap = {
     },
     pluralize = function (u) {
         return function (number, withoutSuffix, _string, _isFuture) {
-            var f = pluralForm(number),
+            let f = pluralForm(number),
                 str = plurals[u][pluralForm(number)];
             if (f === 2) {
                 str = str[withoutSuffix ? 0 : 1];

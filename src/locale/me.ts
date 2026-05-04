@@ -21,7 +21,7 @@ const translator = {
               : wordKey[2];
     },
     translate: function (number, withoutSuffix, key) {
-        var wordKey = translator.words[key];
+        const wordKey = translator.words[key];
         if (key.length === 1) {
             return withoutSuffix ? wordKey[0] : wordKey[1];
         } else {

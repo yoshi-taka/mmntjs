@@ -27,7 +27,7 @@ const translator = {
         return wordKey[2];
     },
     translate: function (number, withoutSuffix, key, isFuture) {
-        var wordKey = translator.words[key],
+        let wordKey = translator.words[key],
             word;
 
         if (key.length === 1) {
