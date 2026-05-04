@@ -85,14 +85,14 @@ export const ar_saLocale: LocaleSpec = {
             .replaceAll(/[١٢٣٤٥٦٧٨٩٠]/g, function (match) {
                 return numberMap[match];
             })
-            .replaceAll(/،/g, ',');
+            .replaceAll('،', ',');
     },
     postformat: function (string) {
         return string
             .replaceAll(/\d/g, function (match) {
                 return symbolMap[match];
             })
-            .replaceAll(/,/g, '،');
+            .replaceAll(',', '،');
     },
     week: {
       dow: 0,

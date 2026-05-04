@@ -218,13 +218,13 @@ export class Duration {
 
   private _parseISONum(s: string | undefined): number {
     if (!s) return 0;
-    const parts = s.replaceAll(/,/g, ".").split(".");
+    const parts = s.replaceAll(',', ".").split(".");
     if (parts.length === 1) return parseFloat(parts[0]) || 0;
     return parseFloat(`${parts[0]  }.${  parts[1]}`) || 0;
   }
 
   private _parseString(str: string): void {
-    let cleanStr = str.replaceAll(/,/g, ".");
+    let cleanStr = str.replaceAll(',', ".");
     cleanStr = cleanStr.replaceAll(/([PpTt])\.(\d)/g, "$10.$2");
     cleanStr = cleanStr.replaceAll(/\.(\D)/g, ".0$1");
     cleanStr = cleanStr.replaceAll(/(\d)\.($|[^\d.])/g, "$1$2");

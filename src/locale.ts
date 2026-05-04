@@ -323,7 +323,7 @@ export class Locale {
       const upperKey = key.toUpperCase().replace(/S$/, "S");
       if (key !== upperKey && key.startsWith("l") && (ldf as any)[upperKey]) {
         let fmt = (ldf as any)[upperKey];
-        fmt = fmt.replaceAll(/MMMM/g, "MMM").replaceAll(/dddd/g, "ddd");
+        fmt = fmt.replaceAll('MMMM', "MMM").replaceAll('dddd', "ddd");
         const brackets: string[] = [];
         fmt = fmt.replaceAll(/\[[^\]]*\]/g, (m: any) => { brackets.push(m); return `\x00${brackets.length - 1}\x00`; });
         fmt = fmt.replaceAll(/DD(?!D)/g, "D").replaceAll(/(^|[^M])MM(?!M)([^M]|$)/g, "$1M$2");
@@ -503,7 +503,7 @@ function clearLocaleCache(): void {
 }
 
 function normalizeLocale(key: string): string {
-  return key ? key.toLowerCase().replaceAll(/_/g, "-") : key;
+  return key ? key.toLowerCase().replaceAll('_', "-") : key;
 }
 
 function commonPrefix(arr1: string[], arr2: string[]): number {

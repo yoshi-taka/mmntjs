@@ -92,14 +92,14 @@ export const ar_psLocale: LocaleSpec = {
             .split('')
             .reverse()
             .join('')
-            .replaceAll(/،/g, ',');
+            .replaceAll('،', ',');
     },
     postformat: function (string) {
         return string
             .replaceAll(/\d/g, function (match) {
                 return symbolMap[match];
             })
-            .replaceAll(/,/g, '،');
+            .replaceAll(',', '،');
     },
     week: {
       dow: 0,

@@ -445,10 +445,10 @@ function addCharVariants(names: string[]): string[] {
   const result: string[] = [...names];
   for (const name of names) {
     if (name.includes('\u02BC')) {
-      result.push(name.replaceAll(/\u02BC/g, "'"));
+      result.push(name.replaceAll('ʼ', "'"));
     }
     if (name.includes("'")) {
-      result.push(name.replaceAll(/'/g, '\u02BC'));
+      result.push(name.replaceAll('\'', '\u02BC'));
     }
   }
   return result;

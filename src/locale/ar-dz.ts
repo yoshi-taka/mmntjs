@@ -140,7 +140,7 @@ export const ar_dzLocale: LocaleSpec = {
       yy: pluralize('y')
     },
     postformat: function (string) {
-        return string.replaceAll(/,/g, '،');
+        return string.replaceAll(',', '،');
     },
     week: {
       dow: 0,

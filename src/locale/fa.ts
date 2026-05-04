@@ -89,14 +89,14 @@ export const faLocale: LocaleSpec = {
             .replaceAll(/[۰-۹]/g, function (match) {
                 return numberMap[match];
             })
-            .replaceAll(/،/g, ',');
+            .replaceAll('،', ',');
     },
     postformat: function (string) {
         return string
             .replaceAll(/\d/g, function (match) {
                 return symbolMap[match];
             })
-            .replaceAll(/,/g, '،');
+            .replaceAll(',', '،');
     },
     dayOfMonthOrdinalParse: /\d{1,2}م/,
     ordinal: "%dم",
