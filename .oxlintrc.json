@@ -43,7 +43,8 @@
     "typescript/return-await": "error",
     "typescript/no-unnecessary-type-constraint": "error",
     "unicorn/no-instanceof-builtins": "error",
-    "unicorn/catch-error-name": "error"
+    "unicorn/catch-error-name": "error",
+    "unicorn/prefer-negative-index": "error"
   },
   "ignorePatterns": [
     "test/moment/",
