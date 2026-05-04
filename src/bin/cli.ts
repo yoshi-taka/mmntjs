@@ -9,9 +9,9 @@ const [cmd, ...args] = process.argv.slice(2);
 
 switch (cmd) {
   case "migrate":
-    if (args[0] === "--check") runCheck(args[1]);
-    else if (args[0] === "--apply") runApply(args[1]);
-    else console.error("Usage: moment2 migrate --check|--apply [dir]");
+    if (args[0] === "--check") {runCheck(args[1]);}
+    else if (args[0] === "--apply") {runApply(args[1]);}
+    else {console.error("Usage: moment2 migrate --check|--apply [dir]");}
     break;
   case "init":
     runInit(args[0]);

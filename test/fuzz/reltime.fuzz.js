@@ -5,15 +5,15 @@ const moment = _moment
 const originalMoment = _originalMoment
 
 export function fuzz(buf) {
-  if (buf.length < 4) return
+  if (buf.length < 4) {return}
   const baseTs = Date.now()
   const offset = buf.readInt32LE(0)
-  if (!Number.isFinite(offset)) return
+  if (!Number.isFinite(offset)) {return}
   try {
     const d = new Date(baseTs + offset)
     const m2 = moment(d)
     const mOrig = originalMoment(d)
-    if (!m2.isValid() || !mOrig.isValid()) return
+    if (!m2.isValid() || !mOrig.isValid()) {return}
     const cal2 = m2.calendar()
     const calOrig = mOrig.calendar()
     if (cal2 !== calOrig) {

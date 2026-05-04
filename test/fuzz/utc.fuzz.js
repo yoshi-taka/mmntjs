@@ -14,7 +14,7 @@ export function fuzz(buf) {
     if (isValid2 !== isValidOrig) {
       throw new Error(`isValid mismatch for ${JSON.stringify(str)}: moment2=${isValid2}, original=${isValidOrig}`)
     }
-    if (!isValid2) return
+    if (!isValid2) {return}
     const fmt2 = m2.format('YYYY-MM-DD HH:mm:ss.SSS')
     const fmtOrig = mOrig.format('YYYY-MM-DD HH:mm:ss.SSS')
     if (fmt2 !== fmtOrig) {

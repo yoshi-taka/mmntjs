@@ -120,13 +120,13 @@ const alreadyRegistered = new Set(["en", "de", "ja"]);
 export function registerTestLocales(): void {
   const prevLocale = getCurrentLocale();
   for (const [name, data] of Object.entries(localeData)) {
-    if (alreadyRegistered.has(name)) continue;
+    if (alreadyRegistered.has(name)) {continue;}
     const cfg: Record<string, any> = {
       weekdays: data.weekdays,
       weekdaysShort: data.weekdaysShort,
       weekdaysMin: data.weekdaysMin,
     };
-    if (data.calendar) cfg.calendar = data.calendar;
+    if (data.calendar) {cfg.calendar = data.calendar;}
     defineLocale(name, cfg);
   }
   setLocale(prevLocale);

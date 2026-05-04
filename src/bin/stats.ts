@@ -42,14 +42,14 @@ export function runStats(dir: string = ".") {
   function walk(d: string) {
     const entries = fs.readdirSync(d, { withFileTypes: true });
     for (const entry of entries) {
-      if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
+      if (entry.name.startsWith(".") || entry.name === "node_modules") {continue;}
       const p = path.join(d, entry.name);
-      if (entry.isDirectory()) walk(p);
+      if (entry.isDirectory()) {walk(p);}
       else if (/\.(js|ts|jsx|tsx|vue)$/.test(entry.name)) {
         const content = fs.readFileSync(p, "utf-8");
 
         for (const line of content.split("\n")) {
-          if (!/\bmoment\b/.test(line)) continue;
+          if (!/\bmoment\b/.test(line)) {continue;}
 
           // moment(…) — constructor
           const ctorMatch = line.match(/\bmoment\s*\(/g);
@@ -67,7 +67,7 @@ export function runStats(dir: string = ".") {
           // .xxx(…) after moment — chain methods
           const afterMoment = line.split(/\bmoment\b/).slice(1).join(" ");
           for (const m of afterMoment.matchAll(/\.\s*(\w+)\s*\(/g)) {
-            if (NEVER_MOMENT.has(m[1])) continue;
+            if (NEVER_MOMENT.has(m[1])) {continue;}
             apiCounts[`.${  m[1]}`] = (apiCounts["." + m[1]] || 0) + 1;
             totalUsages++;
           }

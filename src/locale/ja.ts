@@ -9,9 +9,9 @@ const jaWeekdaysShort = '日_月_火_水_木_金_土'.split('_');
 
 function _jaFormatFastPath(m: Moment, format: string): string | undefined {
   const raw = m as any;
-  if (!raw._isValid) return undefined;
+  if (!raw._isValid) {return undefined;}
   const y = raw.$y;
-  if (y < 0 || y > 9999) return undefined;
+  if (y < 0 || y > 9999) {return undefined;}
   const Y = y < 10 ? `000${  y}` : y < 100 ? `00${  y}` : y < 1000 ? `0${  y}` : `${  y}`;
   const M = raw.$M + 1;
   const D = raw.$D;

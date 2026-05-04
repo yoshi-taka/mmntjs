@@ -9,16 +9,16 @@ interface BenchCase {
 }
 
 function micros(ns: number): string {
-  if (ns < 1000) return `${ns.toFixed(0)  }ns`;
-  if (ns < 1_000_000) return `${(ns / 1000).toFixed(2)  }μs`;
+  if (ns < 1000) {return `${ns.toFixed(0)  }ns`;}
+  if (ns < 1_000_000) {return `${(ns / 1000).toFixed(2)  }μs`;}
   return `${(ns / 1_000_000).toFixed(3)  }ms`;
 }
 
 function run(name: string, fn: () => void, iterations: number): number {
   // warmup
-  for (let i = 0; i < Math.min(iterations, 100); i++) fn();
+  for (let i = 0; i < Math.min(iterations, 100); i++) {fn();}
   const start = process.hrtime.bigint();
-  for (let i = 0; i < iterations; i++) fn();
+  for (let i = 0; i < iterations; i++) {fn();}
   const end = process.hrtime.bigint();
   return Number(end - start) / iterations;
 }

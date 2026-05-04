@@ -3,14 +3,14 @@ import moment2 from "../moment";
 import { parseISO, getDayOfYear, addDays, format, isAfter, startOfMonth, differenceInCalendarDays } from "date-fns";
 
 function micros(ns) {
-  if (ns < 1000) return `${ns.toFixed(0)  }ns`;
-  if (ns < 1_000_000) return `${(ns / 1000).toFixed(2)  }\u03BCs`;
+  if (ns < 1000) {return `${ns.toFixed(0)  }ns`;}
+  if (ns < 1_000_000) {return `${(ns / 1000).toFixed(2)  }\u03BCs`;}
   return `${(ns / 1_000_000).toFixed(3)  }ms`;
 }
 
 function run(fn, iter) {
   const start = process.hrtime.bigint();
-  for (let i = 0; i < iter; i++) fn();
+  for (let i = 0; i < iter; i++) {fn();}
   const end = process.hrtime.bigint();
   return Number(end - start) / iter;
 }

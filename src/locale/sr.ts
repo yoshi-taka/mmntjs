@@ -32,7 +32,7 @@ var translator = {
 
         if (key.length === 1) {
             // Nominativ
-            if (key === 'y' && withoutSuffix) return 'jedna godina';
+            if (key === 'y' && withoutSuffix) {return 'jedna godina';}
             return isFuture || withoutSuffix ? wordKey[0] : wordKey[1];
         }
 

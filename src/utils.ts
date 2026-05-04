@@ -2,7 +2,7 @@ export function zeroFill(num: number, targetLength: number): string {
   const sign = num < 0 ? "-" : "";
   const abs = Math.abs(num).toString();
   const padding = targetLength - abs.length;
-  if (padding <= 0) return sign + abs;
+  if (padding <= 0) {return sign + abs;}
   return sign + "0".repeat(padding) + abs;
 }
 
@@ -44,7 +44,7 @@ export function isFunction(input: any): input is Function {
 
 export function isObjectEmpty(obj: any): boolean {
   for (const k in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, k)) return false;
+    if (Object.prototype.hasOwnProperty.call(obj, k)) {return false;}
   }
   return true;
 }
@@ -169,7 +169,7 @@ export class LruMap<K, V> {
     this.map.set(key, value);
     if (this.map.size > this.max) {
       const oldest = this.map.keys().next().value;
-      if (oldest !== undefined) this.map.delete(oldest);
+      if (oldest !== undefined) {this.map.delete(oldest);}
     }
   }
 

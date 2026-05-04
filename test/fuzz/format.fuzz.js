@@ -22,19 +22,19 @@ function randomFormat(buf) {
     }
   }
   let fmt = chars.join('').slice(0, 40)
-  if (fmt.length === 0) fmt = 'YYYY-MM-DD'
+  if (fmt.length === 0) {fmt = 'YYYY-MM-DD'}
   return fmt
 }
 
 export function fuzz(buf) {
-  if (buf.length < 4) return
+  if (buf.length < 4) {return}
   const str = buf.slice(0, Math.min(buf.length, 8)).toString('utf-8')
   const fmtBytes = buf.slice(Math.min(buf.length, 8))
   const fmt = randomFormat(fmtBytes)
   try {
     const m2 = moment(str)
     const mOrig = originalMoment(str)
-    if (!m2.isValid() && !mOrig.isValid()) return
+    if (!m2.isValid() && !mOrig.isValid()) {return}
     if (m2.isValid() !== mOrig.isValid()) {
       throw new Error(`Validity mismatch for "${str}": moment2=${m2.isValid()}, original=${mOrig.isValid()}`)
     }

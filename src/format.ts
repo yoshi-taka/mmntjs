@@ -15,14 +15,14 @@ function year(m: Moment): number {
 
 function getEraInfo(m: Moment, loc: Locale): { era: any; eraYear: number } | null {
   const eras = (loc._config as any).eras;
-  if (!eras || !Array.isArray(eras) || eras.length === 0) return null;
+  if (!eras || !Array.isArray(eras) || eras.length === 0) {return null;}
   const y = year(m);
   const month1 = (m.month() as number) + 1;
   const d = m.date() as number;
 
   function dateToNum(dateStr: string): number {
     const m2 = dateStr.match(/^(-?\d+)-(\d{2})-(\d{2})$/);
-    if (!m2) return -Infinity;
+    if (!m2) {return -Infinity;}
     const yr = parseInt(m2[1], 10);
     return (yr + 100000) * 10000 + parseInt(m2[2], 10) * 100 + parseInt(m2[3], 10);
   }
@@ -108,23 +108,23 @@ function localeWeek(m: Moment): number {
 export const formatToken: Record<string, (m: Moment) => string> = {
   YYYY(m: Moment): string {
     const y = year(m);
-    if (y < 0) return `-${  zeroFill(-y, 4)}`;
+    if (y < 0) {return `-${  zeroFill(-y, 4)}`;}
     return zeroFill(y, 4);
   },
   YY(m: Moment): string {
     const y = year(m) % 100;
-    if (y < 0) return `-${  zeroFill(-y, 2)}`;
+    if (y < 0) {return `-${  zeroFill(-y, 2)}`;}
     return zeroFill(y, 2);
   },
   Y(m: Moment): string {
     const y = year(m);
-    if (y < 0) return `-${  zeroFill(-y, 4)}`;
-    if (y > 9999) return `+${  zeroFill(y, 5)}`;
+    if (y < 0) {return `-${  zeroFill(-y, 4)}`;}
+    if (y > 9999) {return `+${  zeroFill(y, 5)}`;}
     return zeroFill(y, 4);
   },
   YYYYY(m: Moment): string {
     const y = year(m);
-    if (y < 0) return `-${  zeroFill(-y, 5)}`;
+    if (y < 0) {return `-${  zeroFill(-y, 5)}`;}
     return zeroFill(y, 5);
   },
   YYYYYY(m: Moment): string {
@@ -321,7 +321,7 @@ export const formatToken: Record<string, (m: Moment) => string> = {
   },
   z(m: Moment): string {
     if (m._isUTC) {
-      if (m._offset === 0) return "UTC";
+      if (m._offset === 0) {return "UTC";}
       const offset = m._offset;
       const sign = offset >= 0 ? "+" : "-";
       const hours = Math.floor(Math.abs(offset) / 60);
@@ -331,7 +331,7 @@ export const formatToken: Record<string, (m: Moment) => string> = {
     return "";
   },
   zz(m: Moment): string {
-    if (m._isUTC && m._offset === 0) return "Coordinated Universal Time";
+    if (m._isUTC && m._offset === 0) {return "Coordinated Universal Time";}
     return "";
   },
   A(m: Moment): string {
@@ -363,7 +363,7 @@ export const formatToken: Record<string, (m: Moment) => string> = {
   y(m: Moment): string {
     const info = getEraInfo(m, currentLocale!);
     const y = info ? info.eraYear : year(m);
-    if (y < 0) return `-${  zeroFill(-y, 4)}`;
+    if (y < 0) {return `-${  zeroFill(-y, 4)}`;}
     return String(y);
   },
   yy(m: Moment): string {
@@ -375,13 +375,13 @@ export const formatToken: Record<string, (m: Moment) => string> = {
   yyy(m: Moment): string {
     const info = getEraInfo(m, currentLocale!);
     const y = info ? info.eraYear : year(m);
-    if (y < 0) return `-${  zeroFill(-y, 3)}`;
+    if (y < 0) {return `-${  zeroFill(-y, 3)}`;}
     return zeroFill(y, 3);
   },
   yyyy(m: Moment): string {
     const info = getEraInfo(m, currentLocale!);
     const y = info ? info.eraYear : year(m);
-    if (y < 0) return `-${  zeroFill(-y, 4)}`;
+    if (y < 0) {return `-${  zeroFill(-y, 4)}`;}
     return zeroFill(y, 4);
   },
   yo(m: Moment): string {
@@ -413,11 +413,11 @@ const expandLocaleCache = new LruMap<string, string>(500);
 const hasLocaleToken = /[Ll]/;
 
 function expandLocaleTokens(m: Moment, format: string): string {
-  if (!hasLocaleToken.test(format)) return format;
+  if (!hasLocaleToken.test(format)) {return format;}
 
   const cacheKey = `${m._l  }:${  format}`;
   const cached = expandLocaleCache.get(cacheKey);
-  if (cached !== undefined) return cached;
+  if (cached !== undefined) {return cached;}
 
   const loc = currentLocale!;
   const parts: string[] = [];
@@ -462,7 +462,7 @@ for (const key of Object.keys(formatToken)) {
   let entry = tokenByChar[c];
   if (!entry) { entry = { tokens: [], maxLen: 0 }; tokenByChar[c] = entry; }
   entry.tokens.push({ token: key, fn: formatToken[key] });
-  if (key.length > entry.maxLen) entry.maxLen = key.length;
+  if (key.length > entry.maxLen) {entry.maxLen = key.length;}
 }
 for (const c in tokenByChar) {
   tokenByChar[c].tokens.sort((a, b) => b.token.length - a.token.length);
@@ -493,9 +493,9 @@ function formatOffset(offset: number): string {
 
 function formatCommonEn(m: Moment, format: string): string | undefined {
   const raw = m as any;
-  if (raw._l !== "en" || !raw._isValid) return undefined;
+  if (raw._l !== "en" || !raw._isValid) {return undefined;}
   const y = raw.$y;
-  if (y < 0 || y > 9999) return undefined;
+  if (y < 0 || y > 9999) {return undefined;}
   const datePart = `${padYear(y)  }-${  PAD2[raw.$M + 1]  }-${  PAD2[raw.$D]}`;
   switch (format) {
     case "YYYY-MM-DD":
@@ -516,7 +516,7 @@ function formatCommonEn(m: Moment, format: string): string | undefined {
 
 export function formatMoment(m: Moment, format: string): string {
   const common = formatCommonEn(m, format);
-  if (common !== undefined) return common;
+  if (common !== undefined) {return common;}
 
   const loc = m.localeData();
   currentLocale = loc;
@@ -566,7 +566,7 @@ export function formatMoment(m: Moment, format: string): string {
           break;
         }
       }
-      if (matched) continue;
+      if (matched) {continue;}
     }
 
     // Group consecutive non-token chars
@@ -576,7 +576,7 @@ export function formatMoment(m: Moment, format: string): string {
         let j = i + 2;
         while (j < len) {
           const c = format[j];
-          if (c === "[" || tokenByChar[c]) break;
+          if (c === "[" || tokenByChar[c]) {break;}
           j++;
         }
         parts.push(format.slice(i, j));

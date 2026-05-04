@@ -53,7 +53,7 @@ export type { LocaleSpec } from "./locale/en";
 let momentNowFn: (() => number) | undefined;
 
 function nowFn(): number {
-  if (momentNowFn) return momentNowFn();
+  if (momentNowFn) {return momentNowFn();}
   return Date.now();
 }
 
@@ -85,7 +85,7 @@ function moment(input?: any, format?: any, localeOrStrict?: any, fourthArg?: any
     }
     return new Moment({ _dClone: false, _t: nowFn(), _i: input } as any);
   }
-  if (isMoment(input)) return (input as Moment).clone();
+  if (isMoment(input)) {return (input as Moment).clone();}
   if (isObject(input) && (input as any)._isAMomentObject) {
     const obj = input as any;
     const cfg: MomentConfig = {
@@ -100,37 +100,37 @@ function moment(input?: any, format?: any, localeOrStrict?: any, fourthArg?: any
       _overflow: obj._overflow !== undefined ? obj._overflow : -1,
       _parsedDateParts: obj._parsedDateParts || [],
     };
-    if (obj._unusedTokens) cfg._unusedTokens = obj._unusedTokens;
-    if (obj._unusedInput) cfg._unusedInput = obj._unusedInput;
-    if (obj._charsLeftOver !== undefined) cfg._charsLeftOver = obj._charsLeftOver;
-    if (obj._empty !== undefined) cfg._empty = obj._empty;
-    if (obj._nullInput !== undefined) cfg._nullInput = obj._nullInput;
-    if (obj._invalidMonth !== undefined) cfg._invalidMonth = obj._invalidMonth;
-    if (obj._meridiem !== undefined) cfg._meridiem = obj._meridiem;
-    if (obj._iso !== undefined) cfg._iso = obj._iso;
-    if (obj._rfc2822 !== undefined) cfg._rfc2822 = obj._rfc2822;
-    if (obj._weekdayMismatch !== undefined) cfg._weekdayMismatch = obj._weekdayMismatch;
+    if (obj._unusedTokens) {cfg._unusedTokens = obj._unusedTokens;}
+    if (obj._unusedInput) {cfg._unusedInput = obj._unusedInput;}
+    if (obj._charsLeftOver !== undefined) {cfg._charsLeftOver = obj._charsLeftOver;}
+    if (obj._empty !== undefined) {cfg._empty = obj._empty;}
+    if (obj._nullInput !== undefined) {cfg._nullInput = obj._nullInput;}
+    if (obj._invalidMonth !== undefined) {cfg._invalidMonth = obj._invalidMonth;}
+    if (obj._meridiem !== undefined) {cfg._meridiem = obj._meridiem;}
+    if (obj._iso !== undefined) {cfg._iso = obj._iso;}
+    if (obj._rfc2822 !== undefined) {cfg._rfc2822 = obj._rfc2822;}
+    if (obj._weekdayMismatch !== undefined) {cfg._weekdayMismatch = obj._weekdayMismatch;}
     return new Moment(cfg);
   }
-  if (isDate(input)) return new Moment({ _dClone: false, _d: new Date((input as Date).getTime()), _i: input });
+  if (isDate(input)) {return new Moment({ _dClone: false, _d: new Date((input as Date).getTime()), _i: input });}
   if (isNumber(input)) {
     const n = input as number;
     if (isNaN(n) || !isFinite(n))
-      return new Moment({ _dClone: false, _d: new Date(NaN), _isValid: false, _i: input });
-    if (format === "X") return new Moment({ _dClone: false, _d: new Date(n * 1000), _i: input, _f: "X" });
-    if (format === "x") return new Moment({ _dClone: false, _d: new Date(n), _i: input, _f: "x" });
+      {return new Moment({ _dClone: false, _d: new Date(NaN), _isValid: false, _i: input });}
+    if (format === "X") {return new Moment({ _dClone: false, _d: new Date(n * 1000), _i: input, _f: "X" });}
+    if (format === "x") {return new Moment({ _dClone: false, _d: new Date(n), _i: input, _f: "x" });}
     if (format !== undefined)
-      return new Moment({
+      {return new Moment({
         _dClone: false,
         _d: new Date(NaN),
         _isValid: false,
         _overflow: -1,
         _i: input,
         _f: format as string,
-      });
+      });}
     return new Moment({ _dClone: false, _d: new Date(n), _i: input });
   }
-  if (isString(input)) return createFromString(input as string, format, localeOrStrict, fourthArg);
+  if (isString(input)) {return createFromString(input as string, format, localeOrStrict, fourthArg);}
   if (isArray(input)) {
     const arr = input as any[];
     if (arr.length === 0 && (format === "X" || format === "x")) {
@@ -138,7 +138,7 @@ function moment(input?: any, format?: any, localeOrStrict?: any, fourthArg?: any
     }
     return createFromArray(arr);
   }
-  if (isObject(input)) return createFromObject(input as Record<string, any>);
+  if (isObject(input)) {return createFromObject(input as Record<string, any>);}
   return new Moment({ _dClone: false, _d: new Date(NaN), _isValid: false, _i: input });
 }
 
@@ -163,13 +163,13 @@ function hasAnyValue(parsed: any): boolean {
 
 function scoreParsedResult(parsed: any): number {
   let score = 0;
-  if (parsed.year !== undefined) score += 10;
-  if (parsed.month !== undefined) score += 10;
-  if (parsed.day !== undefined) score += 10;
-  if (parsed.hour !== undefined) score += 3;
-  if (parsed.minute !== undefined) score += 2;
-  if (parsed.second !== undefined) score += 1;
-  if (parsed.millisecond !== undefined) score += 1;
+  if (parsed.year !== undefined) {score += 10;}
+  if (parsed.month !== undefined) {score += 10;}
+  if (parsed.day !== undefined) {score += 10;}
+  if (parsed.hour !== undefined) {score += 3;}
+  if (parsed.minute !== undefined) {score += 2;}
+  if (parsed.second !== undefined) {score += 1;}
+  if (parsed.millisecond !== undefined) {score += 1;}
   return score;
 }
 
@@ -197,7 +197,7 @@ function createFromString(
         locale = "en";
       }
     }
-    if (typeof fourthArg === "boolean") strict = fourthArg;
+    if (typeof fourthArg === "boolean") {strict = fourthArg;}
   }
 
   if (isArray(fmt)) {
@@ -213,8 +213,8 @@ function createFromString(
           const overflow = checkOverflow(parsed);
           let score = scoreParsedResult(parsed);
           score += 30;
-          if (parsed._empty === true) score -= 50;
-          if (overflow >= 0) score -= 100;
+          if (parsed._empty === true) {score -= 50;}
+          if (overflow >= 0) {score -= 100;}
           if (score > bestScore) {
             bestParsed = parsed;
             bestScore = score;
@@ -229,13 +229,13 @@ function createFromString(
         const overflow = checkOverflow(parsed);
         let score = scoreParsedResult(parsed);
         score += 30;
-        if (overflow >= 0) score -= 100;
-        if (parsed._empty === true) score -= 50;
+        if (overflow >= 0) {score -= 100;}
+        if (parsed._empty === true) {score -= 50;}
         if (parsed._unusedTokens && parsed._unusedTokens.length > 0)
-          score -= 10 * parsed._unusedTokens.length;
-        if (parsed._charsLeftOver > 0) score -= parsed._charsLeftOver * 3;
+          {score -= 10 * parsed._unusedTokens.length;}
+        if (parsed._charsLeftOver > 0) {score -= parsed._charsLeftOver * 3;}
         if (parsed._unusedInput)
-          score -= parsed._unusedInput.reduce((a: number, s: string) => a + s.length, 0) * 2;
+          {score -= parsed._unusedInput.reduce((a: number, s: string) => a + s.length, 0) * 2;}
         if (
           hasValue &&
           (score > bestScore ||
@@ -295,7 +295,7 @@ function createFromString(
         m._charsLeftOver = bestParsed._charsLeftOver || 0;
         m._empty = bestParsed._empty !== false;
         m._invalidMonth = bestParsed._invalidMonth || null;
-        if (bestFormat === "ISO_8601") m._iso = true;
+        if (bestFormat === "ISO_8601") {m._iso = true;}
         return m;
       }
       const config: MomentConfig = {
@@ -515,7 +515,7 @@ function createFromString(
       _overflow: -1,
     };
     if (parsed) {
-      if (parsed.bigHour) config._bigHour = true;
+      if (parsed.bigHour) {config._bigHour = true;}
       const hasValue = hasAnyValue(parsed);
       const hasIsoWeek = parsed.isoWeekYear !== undefined && parsed.isoWeek !== undefined;
       const overflow = checkOverflow(parsed);
@@ -528,7 +528,7 @@ function createFromString(
       config._invalidMonth = parsed._invalidMonth;
       config._parsedDateParts = parsed._parsedDateParts;
       config._meridiem = parsed._meridiem;
-      if (parsed.bigHour) config._bigHour = true;
+      if (parsed.bigHour) {config._bigHour = true;}
       let weekdayMismatch = false;
       if (
         parsed._weekdayName !== undefined &&
@@ -592,9 +592,9 @@ function createFromString(
     let d = day;
     if (y === undefined || mo === undefined || d === undefined) {
       const now = new Date(nowFn());
-      if (y === undefined) y = now.getFullYear();
-      if (mo === undefined) mo = now.getMonth();
-      if (d === undefined) d = now.getDate();
+      if (y === undefined) {y = now.getFullYear();}
+      if (mo === undefined) {mo = now.getMonth();}
+      if (d === undefined) {d = now.getDate();}
     }
     const h = hour !== undefined ? hour : 0;
     const min = minute !== undefined ? minute : 0;
@@ -618,9 +618,9 @@ function createFromString(
       detectedFmt = "YYYY-MM-DD";
       if (timeMatch) {
         detectedFmt += `${hasT ? "T" : " "  }HH`;
-        if (timeMatch[2] !== undefined) detectedFmt += ":mm";
-        if (timeMatch[3] !== undefined) detectedFmt += ":ss";
-        if (timeMatch[4] !== undefined) detectedFmt += ".SSSS";
+        if (timeMatch[2] !== undefined) {detectedFmt += ":mm";}
+        if (timeMatch[3] !== undefined) {detectedFmt += ":ss";}
+        if (timeMatch[4] !== undefined) {detectedFmt += ".SSSS";}
       }
     } else if (/^\d{4}-\d{2}/.test(trimmedStr)) {
       detectedFmt = "YYYY-MM";
@@ -629,7 +629,7 @@ function createFromString(
     }
     let date: Date;
     let config: MomentConfig = { _d: undefined as any, _i: str };
-    if (detectedFmt) config._f = detectedFmt;
+    if (detectedFmt) {config._f = detectedFmt;}
     if (offset !== undefined) {
       date = createUTCDate(y, mo, d, h, min, s, ms);
       config._d = date;
@@ -698,7 +698,7 @@ function createMomentFromParsed(
   strict?: boolean,
 ): Moment {
   const baseConfig: Record<string, any> = strict !== undefined ? { _strict: strict } : {};
-  if (parsed.bigHour) baseConfig._bigHour = true;
+  if (parsed.bigHour) {baseConfig._bigHour = true;}
 
   if (
     parsed._weekYear !== undefined &&
@@ -725,7 +725,7 @@ function createMomentFromParsed(
       weekCfg.doy,
     );
     if (parsed.hour !== undefined)
-      d.setUTCHours(parsed.hour, parsed.minute || 0, parsed.second || 0, parsed.millisecond || 0);
+      {d.setUTCHours(parsed.hour, parsed.minute || 0, parsed.second || 0, parsed.millisecond || 0);}
     const config: MomentConfig = {
       _d: d,
       _i: str,
@@ -734,11 +734,11 @@ function createMomentFromParsed(
       _parsedDateParts: parsed._parsedDateParts,
       ...baseConfig,
     };
-    if (parsed._unusedTokens) config._unusedTokens = parsed._unusedTokens;
-    if (parsed._unusedInput) config._unusedInput = parsed._unusedInput;
-    if (parsed._charsLeftOver !== undefined) config._charsLeftOver = parsed._charsLeftOver;
-    if (parsed._empty !== undefined) config._empty = parsed._empty;
-    if (parsed._invalidMonth !== undefined) config._invalidMonth = parsed._invalidMonth;
+    if (parsed._unusedTokens) {config._unusedTokens = parsed._unusedTokens;}
+    if (parsed._unusedInput) {config._unusedInput = parsed._unusedInput;}
+    if (parsed._charsLeftOver !== undefined) {config._charsLeftOver = parsed._charsLeftOver;}
+    if (parsed._empty !== undefined) {config._empty = parsed._empty;}
+    if (parsed._invalidMonth !== undefined) {config._invalidMonth = parsed._invalidMonth;}
     return new Moment(config);
   }
 
@@ -752,7 +752,7 @@ function createMomentFromParsed(
     const isoWeekday = parsed._weekdayNum !== undefined ? parsed._weekdayNum : 1;
     const d = weekYearToDate(parsed.isoWeekYear, parsed.isoWeek, isoWeekday);
     if (parsed.hour !== undefined)
-      d.setUTCHours(parsed.hour, parsed.minute || 0, parsed.second || 0, parsed.millisecond || 0);
+      {d.setUTCHours(parsed.hour, parsed.minute || 0, parsed.second || 0, parsed.millisecond || 0);}
     const config: MomentConfig = {
       _d: d,
       _i: str,
@@ -761,11 +761,11 @@ function createMomentFromParsed(
       _parsedDateParts: parsed._parsedDateParts,
       ...baseConfig,
     };
-    if (parsed._unusedTokens) config._unusedTokens = parsed._unusedTokens;
-    if (parsed._unusedInput) config._unusedInput = parsed._unusedInput;
-    if (parsed._charsLeftOver !== undefined) config._charsLeftOver = parsed._charsLeftOver;
-    if (parsed._empty !== undefined) config._empty = parsed._empty;
-    if (parsed._invalidMonth !== undefined) config._invalidMonth = parsed._invalidMonth;
+    if (parsed._unusedTokens) {config._unusedTokens = parsed._unusedTokens;}
+    if (parsed._unusedInput) {config._unusedInput = parsed._unusedInput;}
+    if (parsed._charsLeftOver !== undefined) {config._charsLeftOver = parsed._charsLeftOver;}
+    if (parsed._empty !== undefined) {config._empty = parsed._empty;}
+    if (parsed._invalidMonth !== undefined) {config._invalidMonth = parsed._invalidMonth;}
     return new Moment(config);
   }
 
@@ -793,11 +793,11 @@ function createMomentFromParsed(
       _parsedDateParts: parsed._parsedDateParts,
       _strict: strict,
     };
-    if (parsed._unusedTokens) config._unusedTokens = parsed._unusedTokens;
-    if (parsed._unusedInput) config._unusedInput = parsed._unusedInput;
-    if (parsed._charsLeftOver !== undefined) config._charsLeftOver = parsed._charsLeftOver;
-    if (parsed._empty !== undefined) config._empty = parsed._empty;
-    if (parsed._invalidMonth !== undefined) config._invalidMonth = parsed._invalidMonth;
+    if (parsed._unusedTokens) {config._unusedTokens = parsed._unusedTokens;}
+    if (parsed._unusedInput) {config._unusedInput = parsed._unusedInput;}
+    if (parsed._charsLeftOver !== undefined) {config._charsLeftOver = parsed._charsLeftOver;}
+    if (parsed._empty !== undefined) {config._empty = parsed._empty;}
+    if (parsed._invalidMonth !== undefined) {config._invalidMonth = parsed._invalidMonth;}
     return new Moment(config);
   }
 
@@ -821,11 +821,11 @@ function createMomentFromParsed(
       _parsedDateParts: parsed._parsedDateParts,
       _strict: strict,
     };
-    if (parsed._unusedTokens) config._unusedTokens = parsed._unusedTokens;
-    if (parsed._unusedInput) config._unusedInput = parsed._unusedInput;
-    if (parsed._charsLeftOver !== undefined) config._charsLeftOver = parsed._charsLeftOver;
-    if (parsed._empty !== undefined) config._empty = parsed._empty;
-    if (parsed._invalidMonth !== undefined) config._invalidMonth = parsed._invalidMonth;
+    if (parsed._unusedTokens) {config._unusedTokens = parsed._unusedTokens;}
+    if (parsed._unusedInput) {config._unusedInput = parsed._unusedInput;}
+    if (parsed._charsLeftOver !== undefined) {config._charsLeftOver = parsed._charsLeftOver;}
+    if (parsed._empty !== undefined) {config._empty = parsed._empty;}
+    if (parsed._invalidMonth !== undefined) {config._invalidMonth = parsed._invalidMonth;}
     return new Moment(config);
   }
 
@@ -851,11 +851,11 @@ function createMomentFromParsed(
       _parsedDateParts: parsed._parsedDateParts,
       _strict: strict,
     };
-    if (parsed._unusedTokens) config._unusedTokens = parsed._unusedTokens;
-    if (parsed._unusedInput) config._unusedInput = parsed._unusedInput;
-    if (parsed._charsLeftOver !== undefined) config._charsLeftOver = parsed._charsLeftOver;
-    if (parsed._empty !== undefined) config._empty = parsed._empty;
-    if (parsed._invalidMonth !== undefined) config._invalidMonth = parsed._invalidMonth;
+    if (parsed._unusedTokens) {config._unusedTokens = parsed._unusedTokens;}
+    if (parsed._unusedInput) {config._unusedInput = parsed._unusedInput;}
+    if (parsed._charsLeftOver !== undefined) {config._charsLeftOver = parsed._charsLeftOver;}
+    if (parsed._empty !== undefined) {config._empty = parsed._empty;}
+    if (parsed._invalidMonth !== undefined) {config._invalidMonth = parsed._invalidMonth;}
     return new Moment(config);
   }
 
@@ -879,11 +879,11 @@ function createMomentFromParsed(
       _parsedDateParts: parsed._parsedDateParts,
       ...baseConfig,
     };
-    if (parsed._unusedTokens) config._unusedTokens = parsed._unusedTokens;
-    if (parsed._unusedInput) config._unusedInput = parsed._unusedInput;
-    if (parsed._charsLeftOver !== undefined) config._charsLeftOver = parsed._charsLeftOver;
-    if (parsed._empty !== undefined) config._empty = parsed._empty;
-    if (parsed._invalidMonth !== undefined) config._invalidMonth = parsed._invalidMonth;
+    if (parsed._unusedTokens) {config._unusedTokens = parsed._unusedTokens;}
+    if (parsed._unusedInput) {config._unusedInput = parsed._unusedInput;}
+    if (parsed._charsLeftOver !== undefined) {config._charsLeftOver = parsed._charsLeftOver;}
+    if (parsed._empty !== undefined) {config._empty = parsed._empty;}
+    if (parsed._invalidMonth !== undefined) {config._invalidMonth = parsed._invalidMonth;}
     return new Moment(config);
   }
 
@@ -910,9 +910,9 @@ function createMomentFromParsed(
       _parsedDateParts: parsed._parsedDateParts,
       ...baseConfig,
     };
-    if (parsed._unusedTokens) config._unusedTokens = parsed._unusedTokens;
-    if (parsed._unusedInput) config._unusedInput = parsed._unusedInput;
-    if (parsed._charsLeftOver !== undefined) config._charsLeftOver = parsed._charsLeftOver;
+    if (parsed._unusedTokens) {config._unusedTokens = parsed._unusedTokens;}
+    if (parsed._unusedInput) {config._unusedInput = parsed._unusedInput;}
+    if (parsed._charsLeftOver !== undefined) {config._charsLeftOver = parsed._charsLeftOver;}
     return new Moment(config);
   }
 
@@ -941,11 +941,11 @@ function createMomentFromParsed(
       _parsedDateParts: parsed._parsedDateParts,
       ...baseConfig,
     };
-    if (parsed._unusedTokens) config._unusedTokens = parsed._unusedTokens;
-    if (parsed._unusedInput) config._unusedInput = parsed._unusedInput;
-    if (parsed._charsLeftOver !== undefined) config._charsLeftOver = parsed._charsLeftOver;
-    if (parsed._empty !== undefined) config._empty = parsed._empty;
-    if (parsed._invalidMonth !== undefined) config._invalidMonth = parsed._invalidMonth;
+    if (parsed._unusedTokens) {config._unusedTokens = parsed._unusedTokens;}
+    if (parsed._unusedInput) {config._unusedInput = parsed._unusedInput;}
+    if (parsed._charsLeftOver !== undefined) {config._charsLeftOver = parsed._charsLeftOver;}
+    if (parsed._empty !== undefined) {config._empty = parsed._empty;}
+    if (parsed._invalidMonth !== undefined) {config._invalidMonth = parsed._invalidMonth;}
     return new Moment(config);
   }
 
@@ -973,11 +973,11 @@ function createMomentFromParsed(
       _meridiem: parsed._meridiem,
       ...baseConfig,
     };
-    if (parsed._unusedTokens) config._unusedTokens = parsed._unusedTokens;
-    if (parsed._unusedInput) config._unusedInput = parsed._unusedInput;
-    if (parsed._charsLeftOver !== undefined) config._charsLeftOver = parsed._charsLeftOver;
-    if (parsed._empty !== undefined) config._empty = parsed._empty;
-    if (parsed._invalidMonth !== undefined) config._invalidMonth = parsed._invalidMonth;
+    if (parsed._unusedTokens) {config._unusedTokens = parsed._unusedTokens;}
+    if (parsed._unusedInput) {config._unusedInput = parsed._unusedInput;}
+    if (parsed._charsLeftOver !== undefined) {config._charsLeftOver = parsed._charsLeftOver;}
+    if (parsed._empty !== undefined) {config._empty = parsed._empty;}
+    if (parsed._invalidMonth !== undefined) {config._invalidMonth = parsed._invalidMonth;}
     return new Moment(config);
   }
 
@@ -1010,9 +1010,9 @@ function createMomentFromParsed(
       _meridiem: parsed._meridiem,
       ...baseConfig,
     };
-    if (parsed._unusedTokens) config._unusedTokens = parsed._unusedTokens;
-    if (parsed._unusedInput) config._unusedInput = parsed._unusedInput;
-    if (parsed._charsLeftOver !== undefined) config._charsLeftOver = parsed._charsLeftOver;
+    if (parsed._unusedTokens) {config._unusedTokens = parsed._unusedTokens;}
+    if (parsed._unusedInput) {config._unusedInput = parsed._unusedInput;}
+    if (parsed._charsLeftOver !== undefined) {config._charsLeftOver = parsed._charsLeftOver;}
     return new Moment(config);
   }
   d = createDateSafe(year, month, day, hour, minute, second, ms, false);
@@ -1025,21 +1025,21 @@ function createMomentFromParsed(
     _meridiem: parsed._meridiem,
     ...baseConfig,
   };
-  if (parsed._unusedTokens) config._unusedTokens = parsed._unusedTokens;
-  if (parsed._unusedInput) config._unusedInput = parsed._unusedInput;
-  if (parsed._charsLeftOver !== undefined) config._charsLeftOver = parsed._charsLeftOver;
-  if (parsed._empty !== undefined) config._empty = parsed._empty;
-  if (parsed._invalidMonth !== undefined) config._invalidMonth = parsed._invalidMonth;
+  if (parsed._unusedTokens) {config._unusedTokens = parsed._unusedTokens;}
+  if (parsed._unusedInput) {config._unusedInput = parsed._unusedInput;}
+  if (parsed._charsLeftOver !== undefined) {config._charsLeftOver = parsed._charsLeftOver;}
+  if (parsed._empty !== undefined) {config._empty = parsed._empty;}
+  if (parsed._invalidMonth !== undefined) {config._invalidMonth = parsed._invalidMonth;}
   return new Moment(config);
 }
 
 function createFromArray(arr: any[], isUTC?: boolean): Moment {
-  if (arr.length === 0) return new Moment({ _dClone: false, _t: nowFn(), _i: arr } as any);
+  if (arr.length === 0) {return new Moment({ _dClone: false, _t: nowFn(), _i: arr } as any);}
   let hasNull = false;
   for (const v of arr) {
-    if (v === null) hasNull = true;
+    if (v === null) {hasNull = true;}
   }
-  if (hasNull) return new Moment({ _dClone: false, _d: new Date(NaN), _i: arr, _isValid: false });
+  if (hasNull) {return new Moment({ _dClone: false, _d: new Date(NaN), _i: arr, _isValid: false });}
   const parsed = parseArray(arr);
   if (!parsed) {
     if (arr.some((v) => v === null || v === undefined || (typeof v === "number" && isNaN(v)))) {
@@ -1076,13 +1076,13 @@ function createFromArray(arr: any[], isUTC?: boolean): Moment {
       ],
     });
   }
-  if (isNaN(d.getTime())) return new Moment({ _dClone: false, _d: new Date(NaN), _i: arr, _isValid: false });
+  if (isNaN(d.getTime())) {return new Moment({ _dClone: false, _d: new Date(NaN), _i: arr, _isValid: false });}
   return new Moment({ _dClone: false, _d: d, _i: arr });
 }
 
 function createFromObject(obj: Record<string, any>): Moment {
   const parsed = parseObject(obj);
-  if (isObjectEmpty(parsed)) return new Moment({ _dClone: false, _t: nowFn(), _i: obj } as any);
+  if (isObjectEmpty(parsed)) {return new Moment({ _dClone: false, _t: nowFn(), _i: obj } as any);}
   const now = new Date(nowFn());
   const year = parsed.year !== undefined ? parsed.year : now.getFullYear();
   const month =
@@ -1147,7 +1147,7 @@ Object.defineProperty(moment, "parseTwoDigitYear", {
   get() {
     return (str: string) => {
       const fn = parseTwoDigitYearInternal;
-      if (fn) return fn(str);
+      if (fn) {return fn(str);}
       const num = parseInt(str, 10);
       return num > 68 ? 1900 + num : 2000 + num;
     };
@@ -1232,7 +1232,7 @@ Object.defineProperty(moment, "parseTwoDigitYear", {
   return new Moment(config as MomentConfig);
 };
 (moment as any).locale = function (locale?: string | string[], ...args: any[]): string | Locale {
-  if (locale === undefined) return getCurrentLocale();
+  if (locale === undefined) {return getCurrentLocale();}
   if (Array.isArray(locale)) {
     return setLocaleFromArray(locale);
   }
@@ -1247,7 +1247,7 @@ Object.defineProperty(moment, "parseTwoDigitYear", {
   return getLocale(locale);
 };
 (moment as any).lang = function (locale?: string, ...args: any[]): any {
-  if (locale === undefined) return (moment as any).locale();
+  if (locale === undefined) {return (moment as any).locale();}
   if (args.length > 0 && typeof args[0] === "object") {
     return (moment as any).locale(locale, args[0]);
   }
@@ -1314,7 +1314,7 @@ Object.defineProperty(moment, "parseTwoDigitYear", {
   return getWeekdays(format || "min", index);
 };
 (moment as any).min = function (...args: any[]): Moment {
-  if (args.length === 0) return moment();
+  if (args.length === 0) {return moment();}
   let inputList = args;
   if (args.length === 1 && isArray(args[0]) && !isMoment(args[0])) {
     inputList = args[0] as any;
@@ -1326,7 +1326,7 @@ Object.defineProperty(moment, "parseTwoDigitYear", {
     const m = isMoment(item) ? (item as Moment) : moment(item as any);
     const val = m.valueOf();
     if (isNaN(val) || !m.isValid()) {
-      if (!bestInvalid) bestInvalid = m;
+      if (!bestInvalid) {bestInvalid = m;}
     } else if (val < bestVal) {
       bestVal = val;
       best = m;
@@ -1335,7 +1335,7 @@ Object.defineProperty(moment, "parseTwoDigitYear", {
   return bestInvalid || best!;
 };
 (moment as any).max = function (...args: any[]): Moment {
-  if (args.length === 0) return moment();
+  if (args.length === 0) {return moment();}
   let inputList = args;
   if (args.length === 1 && isArray(args[0]) && !isMoment(args[0])) {
     inputList = args[0] as any;
@@ -1347,7 +1347,7 @@ Object.defineProperty(moment, "parseTwoDigitYear", {
     const m = isMoment(item) ? (item as Moment) : moment(item as any);
     const val = m.valueOf();
     if (isNaN(val) || !m.isValid()) {
-      if (!bestInvalid) bestInvalid = m;
+      if (!bestInvalid) {bestInvalid = m;}
     } else if (val > bestVal) {
       bestVal = val;
       best = m;

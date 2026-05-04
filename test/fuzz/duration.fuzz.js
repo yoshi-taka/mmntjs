@@ -5,7 +5,7 @@ const moment = _moment
 const originalMoment = _originalMoment
 
 export function fuzz(buf) {
-  if (buf.length < 4) return
+  if (buf.length < 4) {return}
   const units = ['years', 'months', 'weeks', 'days', 'hours', 'minutes', 'seconds', 'milliseconds']
   try {
     const val = buf.readInt32LE(0)

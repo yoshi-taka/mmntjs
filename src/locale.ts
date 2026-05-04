@@ -41,7 +41,7 @@ function resolveLocaleConfig(locale: string): LocaleSpec {
   const config = locales[locale];
   const baseEn = { ...enLocale };
   if (!config) {
-    if (locale === "en") return { ...(locales["en"] || enLocale) };
+    if (locale === "en") {return { ...(locales["en"] || enLocale) };}
     const parts = locale.split("-");
     if (parts.length > 1) {
       const parentKey = parts.slice(0, -1).join("-");
@@ -78,22 +78,22 @@ export class Locale {
 
   get _months(): string[] {
     const months = this._config.months || enLocale.months;
-    if (!months) return [];
+    if (!months) {return [];}
     if (isFunction(months)) {
       try {
         const result = (months as Function).call(this._config);
-        if (Array.isArray(result)) return result;
+        if (Array.isArray(result)) {return result;}
       } catch {}
       return [];
     }
-    if (Array.isArray(months)) return months;
-    if (typeof months === "object") return (months as any).standalone || (months as any).format || [];
+    if (Array.isArray(months)) {return months;}
+    if (typeof months === "object") {return (months as any).standalone || (months as any).format || [];}
     return months as string[];
   }
 
   get _monthsShort(): string[] {
     const ms = this._config.monthsShort || enLocale.monthsShort;
-    if (!ms) return this._months;
+    if (!ms) {return this._months;}
     if (isFunction(ms)) {
       const result: string[] = [];
       for (let i = 0; i < this._months.length; i++) {
@@ -102,14 +102,14 @@ export class Locale {
       }
       return result;
     }
-    if (Array.isArray(ms)) return ms;
-    if (typeof ms === "object") return (ms as any).standalone || (ms as any).format || this._months;
+    if (Array.isArray(ms)) {return ms;}
+    if (typeof ms === "object") {return (ms as any).standalone || (ms as any).format || this._months;}
     return ms as string[];
   }
 
   get _weekdays(): string[] {
     const wd = this._config.weekdays || enLocale.weekdays;
-    if (!wd) return [];
+    if (!wd) {return [];}
     if (isFunction(wd)) {
       const result: string[] = [];
       for (let i = 0; i < 7; i++) {
@@ -118,7 +118,7 @@ export class Locale {
       }
       return result;
     }
-    if (Array.isArray(wd)) return wd;
+    if (Array.isArray(wd)) {return wd;}
     if (typeof wd === "object" && wd !== null) {
       return (wd as any).standalone || (wd as any).format || [];
     }
@@ -139,7 +139,7 @@ export class Locale {
 
   weekdaysShortArray(): string[] {
     const ws = this._config.weekdaysShort || enLocale.weekdaysShort;
-    if (!ws) return this._weekdays;
+    if (!ws) {return this._weekdays;}
     if (isFunction(ws)) {
       const result: string[] = [];
       for (let i = 0; i < 7; i++) {
@@ -153,7 +153,7 @@ export class Locale {
 
   weekdaysMinArray(): string[] {
     const wm = this._config.weekdaysMin || enLocale.weekdaysMin;
-    if (!wm) return this.weekdaysShortArray();
+    if (!wm) {return this.weekdaysShortArray();}
     if (isFunction(wm)) {
       const result: string[] = [];
       for (let i = 0; i < 7; i++) {
@@ -170,7 +170,7 @@ export class Locale {
       return this._months;
     }
     const months = this._config.months || enLocale.months;
-    if (!months) return [];
+    if (!months) {return [];}
     if (isFunction(months)) {
       return (months as Function).call(this._config, m, format);
     }
@@ -179,7 +179,7 @@ export class Locale {
     }
     if (Array.isArray(months)) {
       const month = m.month() as number;
-      if ((months as string[])[month]) return (months as string[])[month];
+      if ((months as string[])[month]) {return (months as string[])[month];}
       return months as string[];
     }
     if (typeof months === "object") {
@@ -198,7 +198,7 @@ export class Locale {
       return this._monthsShort;
     }
     const ms = this._config.monthsShort || enLocale.monthsShort;
-    if (!ms) return this.months(m, format);
+    if (!ms) {return this.months(m, format);}
     if (isFunction(ms)) {
       return (ms as Function).call(this._config, m, format);
     }
@@ -207,7 +207,7 @@ export class Locale {
     }
     if (Array.isArray(ms)) {
       const month = m.month() as number;
-      if ((ms as string[])[month]) return (ms as string[])[month];
+      if ((ms as string[])[month]) {return (ms as string[])[month];}
       return ms as string[];
     }
     if (typeof ms === "object") {
@@ -226,13 +226,13 @@ export class Locale {
   }
 
   private _resolveWeekdays(wd: any, m: Moment, format?: string): string {
-    if (isFunction(wd)) return wd(m, format) as string;
-    if (Array.isArray(wd)) return wd[m.day() as number] || "";
+    if (isFunction(wd)) {return wd(m, format) as string;}
+    if (Array.isArray(wd)) {return wd[m.day() as number] || "";}
     if (typeof wd === "object" && wd !== null) {
       const isFmt = (wd as any).isFormat;
       const useFormat = format && isFmt instanceof RegExp && isFmt.test(format);
       const list = useFormat ? (wd as any).format : (wd as any).standalone || (wd as any).format;
-      if (Array.isArray(list)) return list[m.day() as number] || "";
+      if (Array.isArray(list)) {return list[m.day() as number] || "";}
       return "";
     }
     return "";
@@ -246,8 +246,8 @@ export class Locale {
       return this._weekdays;
     }
     const wd = this._config.weekdays || enLocale.weekdays;
-    if (!wd) return [];
-    if (isString(wd)) return wd;
+    if (!wd) {return [];}
+    if (isString(wd)) {return wd;}
     return this._resolveWeekdays(wd, m, format);
   }
 
@@ -257,16 +257,16 @@ export class Locale {
     }
     if (!isMoment(m)) {
       let ws = this._config.weekdaysShort;
-      if (!ws) ws = enLocale.weekdaysShort;
-      if (!ws) return this._weekdays;
-      if (isFunction(ws)) return ws(null as unknown as Moment, format);
+      if (!ws) {ws = enLocale.weekdaysShort;}
+      if (!ws) {return this._weekdays;}
+      if (isFunction(ws)) {return ws(null as unknown as Moment, format);}
       return ws as string[];
     }
     let ws = this._config.weekdaysShort;
-    if (!ws) ws = enLocale.weekdaysShort;
-    if (!ws) return this.weekdays(m) as string[];
-    if (isFunction(ws)) return ws(m, format);
-    if (isString(ws)) return ws;
+    if (!ws) {ws = enLocale.weekdaysShort;}
+    if (!ws) {return this.weekdays(m) as string[];}
+    if (isFunction(ws)) {return ws(m, format);}
+    if (isString(ws)) {return ws;}
     return (ws as string[])[m.day() as number] || (ws as string[]);
   }
 
@@ -276,16 +276,16 @@ export class Locale {
     }
     if (!isMoment(m)) {
       let wm = this._config.weekdaysMin;
-      if (!wm) wm = enLocale.weekdaysMin;
-      if (!wm) return this.weekdaysShortArray();
-      if (isFunction(wm)) return wm(null as unknown as Moment, format);
+      if (!wm) {wm = enLocale.weekdaysMin;}
+      if (!wm) {return this.weekdaysShortArray();}
+      if (isFunction(wm)) {return wm(null as unknown as Moment, format);}
       return wm as string[];
     }
     let wm = this._config.weekdaysMin;
-    if (!wm) wm = enLocale.weekdaysMin;
-    if (!wm) return this.weekdaysShort(m) as string[];
-    if (isFunction(wm)) return wm(m, format);
-    if (isString(wm)) return wm;
+    if (!wm) {wm = enLocale.weekdaysMin;}
+    if (!wm) {return this.weekdaysShort(m) as string[];}
+    if (isFunction(wm)) {return wm(m, format);}
+    if (isString(wm)) {return wm;}
     return (wm as string[])[m.day() as number] || (wm as string[]);
   }
 
@@ -368,7 +368,7 @@ export class Locale {
       } else {
         str = (entry as string).replace("%d", String(num));
       }
-      if (withoutSuffix) return str;
+      if (withoutSuffix) {return str;}
       if (isFuture) {
         const f = rt.future || "in %s";
         return isFunction(f) ? f(str) : (f as string).replace("%s", str);
@@ -381,17 +381,17 @@ export class Locale {
 
   calendar(key: string, m: Moment, ref: Moment): string {
     const cal = this._config.calendar;
-    if (!cal) return m.format("L");
+    if (!cal) {return m.format("L");}
     if (isFunction(cal)) {
       const fmt = (cal as Function).call(this._config, key, m);
-      if (isString(fmt)) return m.format(fmt);
+      if (isString(fmt)) {return m.format(fmt);}
       return fmt;
     }
     const entry = (cal as Record<string, any>)[key];
     if (entry !== undefined) {
       if (isFunction(entry)) {
         const fmt = entry.call(m, ref);
-        if (isString(fmt)) return fmt;
+        if (isString(fmt)) {return fmt;}
         return m.format(fmt);
       }
       if (isString(entry)) {
@@ -402,7 +402,7 @@ export class Locale {
     if (sameElseEntry !== undefined) {
       if (isFunction(sameElseEntry)) {
         const fmt = sameElseEntry.call(m, ref);
-        if (isString(fmt)) return fmt;
+        if (isString(fmt)) {return fmt;}
         return m.format(fmt);
       }
       if (isString(sameElseEntry)) {
@@ -422,20 +422,20 @@ export class Locale {
 
   firstDayOfWeek(): number {
     const week = this._config.week;
-    if (week && week.dow !== undefined) return week.dow;
+    if (week && week.dow !== undefined) {return week.dow;}
     return 0;
   }
 
   firstDayOfYear(): number {
     const week = this._config.week;
-    if (week && week.doy !== undefined) return week.doy;
+    if (week && week.doy !== undefined) {return week.doy;}
     return 6;
   }
 
   meridiemParse(): RegExp | undefined {
     const mp = this._config.meridiemParse;
-    if (mp instanceof RegExp) return mp;
-    if (enLocale.meridiemParse instanceof RegExp) return enLocale.meridiemParse;
+    if (mp instanceof RegExp) {return mp;}
+    if (enLocale.meridiemParse instanceof RegExp) {return enLocale.meridiemParse;}
     return undefined;
   }
 
@@ -445,11 +445,11 @@ export class Locale {
       const arr = this._months;
       const shortArr = this._monthsShort;
       const all = [...new Set([...arr, ...shortArr])];
-      if (all.length === 0) return /^/;
+      if (all.length === 0) {return /^/;}
       return new RegExp(`^(${  all.map(escapeRegex).join("|")  })`, "i");
     }
     const arr = this._months;
-    if (arr.length === 0) return /^/;
+    if (arr.length === 0) {return /^/;}
     return new RegExp(`^(${  arr.map(escapeRegex).join("|")  })`, "i");
   }
 
@@ -459,41 +459,41 @@ export class Locale {
       const arr = this._months;
       const shortArr = this._monthsShort;
       const all = [...new Set([...shortArr, ...arr])];
-      if (all.length === 0) return /^/;
+      if (all.length === 0) {return /^/;}
       return new RegExp(`^(${  all.map(escapeRegex).join("|")  })`, "i");
     }
     const arr = this._monthsShort;
-    if (arr.length === 0) return /^/;
+    if (arr.length === 0) {return /^/;}
     return new RegExp(`^(${  arr.map(escapeRegex).join("|")  })`, "i");
   }
 
   weekdaysRegex(): RegExp {
     const arr = this._weekdays;
-    if (arr.length === 0) return /^/;
+    if (arr.length === 0) {return /^/;}
     return new RegExp(`^(${  arr.map(escapeRegex).join("|")  })`, "i");
   }
 
   weekdaysShortRegex(): RegExp {
     const arr = this.weekdaysShortArray();
-    if (arr.length === 0) return /^/;
+    if (arr.length === 0) {return /^/;}
     return new RegExp(`^(${  arr.map(escapeRegex).join("|")  })`, "i");
   }
 
   weekdaysMinRegex(): RegExp {
     const arr = this.weekdaysMinArray();
-    if (arr.length === 0) return /^/;
+    if (arr.length === 0) {return /^/;}
     return new RegExp(`^(${  arr.map(escapeRegex).join("|")  })`, "i");
   }
 
   preparse(str: string): string {
     const fn = this._config.preparse;
-    if (fn) return fn(str);
+    if (fn) {return fn(str);}
     return str;
   }
 
   postformat(str: string): string {
     const fn = this._config.postformat;
-    if (fn) return fn(str);
+    if (fn) {return fn(str);}
     return str;
   }
 }
@@ -509,7 +509,7 @@ function normalizeLocale(key: string): string {
 function commonPrefix(arr1: string[], arr2: string[]): number {
   const minl = Math.min(arr1.length, arr2.length);
   for (let i = 0; i < minl; i++) {
-    if (arr1[i] !== arr2[i]) return i;
+    if (arr1[i] !== arr2[i]) {return i;}
   }
   return minl;
 }
@@ -543,11 +543,11 @@ function chooseLocale(names: string[]): Locale {
 
 function findBestLocaleName(locale: string): string | null {
   const normalized = normalizeLocale(locale);
-  if (locales[normalized]) return normalized;
+  if (locales[normalized]) {return normalized;}
   const parts = normalized.split("-");
   for (let i = parts.length - 1; i >= 1; i--) {
     const parent = parts.slice(0, i).join("-");
-    if (locales[parent]) return parent;
+    if (locales[parent]) {return parent;}
   }
   return null;
 }
@@ -562,7 +562,7 @@ export function getLocale(locale?: any): Locale {
   }
   const key = locale || currentLocaleName;
   const cached = _localeCache.get(key);
-  if (cached) return cached;
+  if (cached) {return cached;}
   const config = resolveLocaleConfig(key);
   const loc = new Locale(config, key);
   _localeCache.set(key, loc);
@@ -669,7 +669,7 @@ export function hasLocale(name: string): boolean {
 
 export function localeHasMissingParent(name: string): boolean {
   const config = locales[name];
-  if (!config) return false;
+  if (!config) {return false;}
   const parentLocale = (config as any).parentLocale;
   return !!parentLocale && !locales[parentLocale];
 }
@@ -692,13 +692,13 @@ export function getMonths(format?: string | number, index?: number): string | st
       const all: string[] = [];
       for (let i = 0; i < (loc._months || []).length; i++) {
         const r = (cfgShort as Function)({ month: () => i } as any, fmt);
-        if (Array.isArray(r)) return r;
+        if (Array.isArray(r)) {return r;}
         all.push(r);
       }
       return all;
     }
     const ms = loc._monthsShort;
-    if (index !== undefined) return ms[index];
+    if (index !== undefined) {return ms[index];}
     return ms;
   }
   if (index !== undefined) {
@@ -722,32 +722,32 @@ export function getWeekdays(format?: string | number | boolean, index?: number):
   }
   if (format === true) {
     const reordered = reorderByDow(loc._weekdays, dow);
-    if (index !== undefined) return reordered[index];
+    if (index !== undefined) {return reordered[index];}
     return reordered;
   }
   if (format === "short") {
     const ws = loc.weekdaysShortArray();
-    if (index !== undefined) return ws[index];
+    if (index !== undefined) {return ws[index];}
     return ws;
   }
   if (format === "min") {
     const wm = loc.weekdaysMinArray();
-    if (index !== undefined) return wm[index];
+    if (index !== undefined) {return wm[index];}
     return wm;
   }
   if (format === "format") {
     const reordered = reorderByDow(loc._weekdays, dow);
-    if (index !== undefined) return reordered[index];
+    if (index !== undefined) {return reordered[index];}
     return reordered;
   }
   if (format === "shortFormat") {
     const reordered = reorderByDow(loc.weekdaysShortArray(), dow);
-    if (index !== undefined) return reordered[index];
+    if (index !== undefined) {return reordered[index];}
     return reordered;
   }
   if (format === "minFormat") {
     const reordered = reorderByDow(loc.weekdaysMinArray(), dow);
-    if (index !== undefined) return reordered[index];
+    if (index !== undefined) {return reordered[index];}
     return reordered;
   }
   if (index !== undefined) {

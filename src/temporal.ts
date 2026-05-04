@@ -3,7 +3,7 @@ import type { Temporal } from "@js-temporal/polyfill";
 
 let _T: typeof Temporal | null = null;
 function getT(): typeof Temporal {
-  if (!_T) _T = require("@js-temporal/polyfill").Temporal;
+  if (!_T) {_T = require("@js-temporal/polyfill").Temporal;}
   return _T!;
 }
 
@@ -12,7 +12,7 @@ export function getTemporalNamespace(): typeof Temporal {
 }
 
 export function toTemporal(m: Moment): Temporal.PlainDate | Temporal.ZonedDateTime {
-  if (!m.isValid()) throw new Error("Cannot convert invalid moment to Temporal");
+  if (!m.isValid()) {throw new Error("Cannot convert invalid moment to Temporal");}
 
   const year = m.year() as number;
   const month = (m.month() as number) + 1;

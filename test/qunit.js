@@ -76,17 +76,17 @@ function createAssert() {
         ok(val, msg) {
             count++;
             log('ok', msg);
-            if (!val) throw new Error(msg || 'expected truthy');
+            if (!val) {throw new Error(msg || 'expected truthy');}
         },
         equal(a, b, msg) {
             count++;
             log('equal', msg);
-            if (a != b) throw new Error(`${msg || ''  } — actual: ${  JSON.stringify(a)  }, expected: ${  JSON.stringify(b)}`);
+            if (a != b) {throw new Error(`${msg || ''  } — actual: ${  JSON.stringify(a)  }, expected: ${  JSON.stringify(b)}`);}
         },
         strictEqual(a, b, msg) {
             count++;
             log('strictEqual', msg);
-            if (a !== b) throw new Error(msg || `expected ${  a  } === ${  b}`);
+            if (a !== b) {throw new Error(msg || `expected ${  a  } === ${  b}`);}
         },
         deepEqual(a, b, msg) {
             count++;
@@ -100,7 +100,7 @@ function createAssert() {
         notEqual(a, b, msg) {
             count++;
             log('notEqual', msg);
-            if (a == b) throw new Error(msg || `expected ${  a  } != ${  b}`);
+            if (a == b) {throw new Error(msg || `expected ${  a  } != ${  b}`);}
         },
         throws(fn, msg) {
             count++;
@@ -111,7 +111,7 @@ function createAssert() {
             } catch {
                 threw = true;
             }
-            if (!threw) throw new Error(msg || 'expected function to throw');
+            if (!threw) {throw new Error(msg || 'expected function to throw');}
         },
         expect(n) {
             plan = n;

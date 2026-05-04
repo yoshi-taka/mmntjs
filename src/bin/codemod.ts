@@ -48,15 +48,15 @@ function scanFiles(dir: string) {
   function walk(d: string) {
     const entries = fs.readdirSync(d, { withFileTypes: true });
     for (const entry of entries) {
-      if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
+      if (entry.name.startsWith(".") || entry.name === "node_modules") {continue;}
       const p = path.join(d, entry.name);
-      if (entry.isDirectory()) walk(p);
+      if (entry.isDirectory()) {walk(p);}
       else if (/\.(js|ts|jsx|tsx|vue)$/.test(entry.name)) {
         const content = fs.readFileSync(p, "utf-8");
         let count = 0;
         for (const pattern of IMPORT_PATTERNS) {
           const matches = content.match(pattern.from);
-          if (matches) count += matches.length;
+          if (matches) {count += matches.length;}
         }
         if (count > 0) {
           results.total += count;

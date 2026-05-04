@@ -5,7 +5,7 @@ const moment = _moment
 const originalMoment = _originalMoment
 
 export function fuzz(buf) {
-  if (buf.length < 5) return
+  if (buf.length < 5) {return}
   const units = ['years', 'months', 'weeks', 'days', 'hours', 'minutes', 'seconds', 'milliseconds']
   const startEndUnits = ['year', 'quarter', 'month', 'week', 'isoWeek', 'day', 'hour', 'minute', 'second']
   const offset = buf.readInt32LE(0)
@@ -22,7 +22,7 @@ export function fuzz(buf) {
     if (m2.isValid() !== mOrig.isValid()) {
       throw new Error(`isValid() mismatch for offset ${offset}`)
     }
-    if (!m2.isValid()) return
+    if (!m2.isValid()) {return}
     const amount = buf.length >= 9 ? buf.readInt32LE(5) : 0
     try {
       const a2 = m2.clone().add(amount, unit)

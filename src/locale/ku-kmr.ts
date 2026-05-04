@@ -29,7 +29,7 @@ function ezafeNumSuffix(num) {
         !(ll == 12 || ll == 13) &&
         (l == '2' || l == '3' || ll == '50' || l == '70' || l == '80')
     )
-        return 'yê';
+        {return 'yê';}
     return 'ê';
 }
 
@@ -90,7 +90,7 @@ export const ku_kmrLocale: LocaleSpec = {
     dayOfMonthOrdinalParse: /\d{1,2}(?:yê|ê|\.)/,
     ordinal: function (num, period) {
         var p = period.toLowerCase();
-        if (p.includes('w') || p.includes('m')) return `${num  }.`;
+        if (p.includes('w') || p.includes('m')) {return `${num  }.`;}
 
         return num + ezafeNumSuffix(num);
     },

@@ -50,7 +50,8 @@
     "oxc/no-map-spread": "error",
     "typescript/prefer-readonly": "error",
     "typescript/dot-notation": "error",
-    "typescript/consistent-indexed-object-style": "error"
+    "typescript/consistent-indexed-object-style": "error",
+    "eslint/curly": "error"
   },
   "ignorePatterns": [
     "test/moment/",

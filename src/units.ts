@@ -75,29 +75,29 @@ for (const key of Object.keys(_aliases)) {
 }
 
 export function normalizeUnitCode(unit: string): number {
-  if (!unit) return INVALID_UNIT;
+  if (!unit) {return INVALID_UNIT;}
   const exact = _codeAliases[unit];
-  if (exact !== undefined) return exact;
+  if (exact !== undefined) {return exact;}
   const folded = _codeNmap[unit.toLowerCase()];
   return folded !== undefined ? folded : INVALID_UNIT;
 }
 
 export function isLeapYear(y: number): boolean {
-  if (!isFinite(y)) return false;
-  if ((y & 3) !== 0) return false;
-  if (y % 100 !== 0) return true;
+  if (!isFinite(y)) {return false;}
+  if ((y & 3) !== 0) {return false;}
+  if (y % 100 !== 0) {return true;}
   return (y & 15) === 0;
 }
 
 const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
 export function daysInMonth(year: number, month: number): number {
-  if (isNaN(year) || isNaN(month)) return NaN;
+  if (isNaN(year) || isNaN(month)) {return NaN;}
   if (month < 0 || month > 11) {
     const adj = month % 12;
     year += Math.floor(month / 12);
     month = adj < 0 ? adj + 12 : adj;
   }
-  if (month === 1) return isLeapYear(year) ? 29 : 28;
+  if (month === 1) {return isLeapYear(year) ? 29 : 28;}
   return DAYS_IN_MONTH[month];
 }

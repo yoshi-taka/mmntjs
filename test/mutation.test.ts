@@ -30,7 +30,7 @@ function makeMutations(mutations: Mutation[]) {
       for (const [pattern, replacement] of mutation.patterns) {
         const before = mutated
         mutated = mutated.replace(pattern, replacement)
-        if (mutated !== before) applied = true
+        if (mutated !== before) {applied = true}
       }
 
       if (!applied) {
@@ -44,14 +44,14 @@ function makeMutations(mutations: Mutation[]) {
         // Clear require cache so we get the mutated version
         delete require.cache[require.resolve('../moment')]
         for (const key of Object.keys(require.cache)) {
-          if (key.includes('/moment2/src/')) delete require.cache[key]
+          if (key.includes('/moment2/src/')) {delete require.cache[key]}
         }
 
         let killedByOracle = false
 
         fc.assert(
           fc.property(mutation.inputs, (input) => {
-            if (killedByOracle) return true
+            if (killedByOracle) {return true}
             const ok = mutation.testFn(input)
             if (!ok) {
               killedByOracle = true
@@ -75,7 +75,7 @@ function makeMutations(mutations: Mutation[]) {
         fs.writeFileSync(filePath, original, 'utf-8')
         delete require.cache[require.resolve('../moment')]
         for (const key of Object.keys(require.cache)) {
-          if (key.includes('/moment2/src/')) delete require.cache[key]
+          if (key.includes('/moment2/src/')) {delete require.cache[key]}
         }
       }
     }, { timeout: 60000 })

@@ -56,11 +56,11 @@ export function parseString(
   locale?: string,
   strict?: boolean,
 ): any {
-  if (typeof str !== "string") return null;
+  if (typeof str !== "string") {return null;}
 
   if (!format && (locale === "en" || (locale === undefined && getCurrentLocale() === "en"))) {
     const fast = parseCommonISO(str);
-    if (fast) return fast;
+    if (fast) {return fast;}
   }
 
   const locObj = getLocale(locale);
@@ -76,7 +76,7 @@ export function parseString(
   str = locObj.preparse(str);
   const trimmed = str.trim();
 
-  if (trimmed === "") return null;
+  if (trimmed === "") {return null;}
 
   const jsonMatch = trimmed.match(JSON_DATE_REGEX);
   if (jsonMatch) {
@@ -105,7 +105,7 @@ export function parseString(
   const ordinalMatch = trimmed.match(ISO_ORDINAL_REGEX) || trimmed.match(ISO_ORDINAL_COMPACT_REGEX);
   if (ordinalMatch && ordinalMatch[1] && ordinalMatch[2]) {
     const ordinalResult = parseISOOrdinal(ordinalMatch);
-    if (ordinalResult) return ordinalResult;
+    if (ordinalResult) {return ordinalResult;}
   }
 
   const isoMatch = trimmed.match(ISO_8601_REGEX);
@@ -133,14 +133,14 @@ export function parseString(
 function two(str: string, i: number): number {
   const a = str.charCodeAt(i) - 48;
   const b = str.charCodeAt(i + 1) - 48;
-  if (a < 0 || a > 9 || b < 0 || b > 9) return NaN;
+  if (a < 0 || a > 9 || b < 0 || b > 9) {return NaN;}
   return a * 10 + b;
 }
 
 function four(str: string, i: number): number {
   const a = two(str, i);
   const b = two(str, i + 2);
-  if (isNaN(a) || isNaN(b)) return NaN;
+  if (isNaN(a) || isNaN(b)) {return NaN;}
   return a * 100 + b;
 }
 
@@ -149,21 +149,21 @@ function parseCommonISO(str: string): any {
   if (len !== 10 && len !== 19 && len !== 20 && len !== 23 && len !== 24 && len !== 25 && len !== 29) {
     return null;
   }
-  if (str.charCodeAt(4) !== 45 || str.charCodeAt(7) !== 45) return null;
+  if (str.charCodeAt(4) !== 45 || str.charCodeAt(7) !== 45) {return null;}
   const year = four(str, 0);
   const month1 = two(str, 5);
   const day = two(str, 8);
-  if (isNaN(year) || isNaN(month1) || isNaN(day)) return null;
+  if (isNaN(year) || isNaN(month1) || isNaN(day)) {return null;}
   if (len === 10) {
     return { year, month: month1 - 1, day, _hasDate: true, _hasTime: false };
   }
   const sep = str.charCodeAt(10);
-  if (sep !== 84 && sep !== 32) return null;
-  if (str.charCodeAt(13) !== 58 || str.charCodeAt(16) !== 58) return null;
+  if (sep !== 84 && sep !== 32) {return null;}
+  if (str.charCodeAt(13) !== 58 || str.charCodeAt(16) !== 58) {return null;}
   const hour = two(str, 11);
   const minute = two(str, 14);
   const second = two(str, 17);
-  if (isNaN(hour) || isNaN(minute) || isNaN(second)) return null;
+  if (isNaN(hour) || isNaN(minute) || isNaN(second)) {return null;}
 
   let millisecond: number | undefined;
   let pos = 19;
@@ -174,14 +174,14 @@ function parseCommonISO(str: string): any {
     const fracStart = pos;
     while (pos < len) {
       const code = str.charCodeAt(pos);
-      if (code < 48 || code > 57) break;
+      if (code < 48 || code > 57) {break;}
       if (scale > 0) {
         millisecond += (code - 48) * scale;
         scale = Math.floor(scale / 10);
       }
       pos++;
     }
-    if (pos === fracStart) return null;
+    if (pos === fracStart) {return null;}
   }
 
   let offset: number | undefined;
@@ -191,17 +191,17 @@ function parseCommonISO(str: string): any {
       offset = 0;
       pos++;
     } else if (tz === 43 || tz === 45) {
-      if (pos + 6 !== len || str.charCodeAt(pos + 3) !== 58) return null;
+      if (pos + 6 !== len || str.charCodeAt(pos + 3) !== 58) {return null;}
       const offHour = two(str, pos + 1);
       const offMin = two(str, pos + 4);
-      if (isNaN(offHour) || isNaN(offMin)) return null;
+      if (isNaN(offHour) || isNaN(offMin)) {return null;}
       offset = (tz === 43 ? 1 : -1) * (offHour * 60 + offMin);
       pos += 6;
     } else {
       return null;
     }
   }
-  if (pos !== len) return null;
+  if (pos !== len) {return null;}
 
   return {
     year,
@@ -225,7 +225,7 @@ function stripRFC2822Comments(str: string): string {
       depth++;
     } else if (str[i] === ")") {
       depth--;
-      if (depth < 0) depth = 0;
+      if (depth < 0) {depth = 0;}
     } else if (depth === 0) {
       result += str[i];
     }
@@ -258,7 +258,7 @@ function parseRFC2822(match: RegExpMatchArray): any {
   };
 
   const month = monthMap[monthStr];
-  if (month === undefined) return null;
+  if (month === undefined) {return null;}
 
   let year = parseInt(yearStr, 10);
   if (yearStr.length === 2) {
@@ -373,7 +373,7 @@ function parseISOWeek(match: RegExpMatchArray): any {
 function parseISOOrdinal(match: RegExpMatchArray): any {
   const year = parseInt(match[1], 10);
   const dayOfYear = parseInt(match[2], 10);
-  if (dayOfYear === 0) return null;
+  if (dayOfYear === 0) {return null;}
   const hour = match[4] ? parseInt(match[4], 10) : 0;
   const minute = match[6] ? parseInt(match[6], 10) : 0;
   const second = match[8] ? parseInt(match[8], 10) : 0;
@@ -410,7 +410,7 @@ function parseTime(match: RegExpMatchArray): any {
   const second = match[5] ? parseInt(match[5], 10) : 0;
   const millisecond = match[7] ? parseInt(match[7].padEnd(3, "0"), 10) : 0;
 
-  if (hour > 23 || minute > 59 || second > 59) return null;
+  if (hour > 23 || minute > 59 || second > 59) {return null;}
 
   return { hour, minute, second, millisecond };
 }
@@ -479,7 +479,7 @@ function getMonthExtraNames(loc: Locale): string[] {
 }
 
 function getLocaleMonthsFull(loc: Locale): string[] {
-  if ((loc as any)._monthsCache) return (loc as any)._monthsCache;
+  if ((loc as any)._monthsCache) {return (loc as any)._monthsCache;}
   const months = loc.months();
   const monthsArr = Array.isArray(months) ? months : [];
   const lower = monthsArr.map((m: string) => m.toLowerCase());
@@ -499,17 +499,17 @@ function getLocaleMonthsFull(loc: Locale): string[] {
 
 function getLocaleMonthsFullRegex(loc: Locale, strict?: boolean): RegExp {
   if (strict) {
-    if ((loc as any)._monthsStrictRegex) return (loc as any)._monthsStrictRegex;
+    if ((loc as any)._monthsStrictRegex) {return (loc as any)._monthsStrictRegex;}
     getLocaleMonthsFull(loc);
     return (loc as any)._monthsStrictRegex;
   }
-  if ((loc as any)._monthsRegex) return (loc as any)._monthsRegex;
+  if ((loc as any)._monthsRegex) {return (loc as any)._monthsRegex;}
   getLocaleMonthsFull(loc);
   return (loc as any)._monthsRegex;
 }
 
 function getLocaleMonthsShort(loc: Locale): string[] {
-  if ((loc as any)._monthsShortCache) return (loc as any)._monthsShortCache;
+  if ((loc as any)._monthsShortCache) {return (loc as any)._monthsShortCache;}
   const monthsShort = loc.monthsShort && loc.monthsShort();
   let shortArr = Array.isArray(monthsShort) ? monthsShort : [];
   const lower = shortArr.map((m: string) => m.toLowerCase());
@@ -517,17 +517,17 @@ function getLocaleMonthsShort(loc: Locale): string[] {
   const noPeriod = lower.map(m => m.replace(/\.$/, '')).filter(m => m.length > 0);
   const allStrict = [...new Set(addCharVariants([...lower, ...noPeriod]))];
   (loc as any)._monthsShortStrictRegex = new RegExp(`^(${  sortByLengthDesc(allStrict).map(escapeRegex).join("|")  })`, "i");
-  if (lower.length === 0) return getLocaleMonthsFull(loc);
+  if (lower.length === 0) {return getLocaleMonthsFull(loc);}
   return lower;
 }
 
 function getLocaleMonthsShortRegex(loc: Locale, strict?: boolean): RegExp {
   if (strict) {
-    if ((loc as any)._monthsShortStrictRegex) return (loc as any)._monthsShortStrictRegex;
+    if ((loc as any)._monthsShortStrictRegex) {return (loc as any)._monthsShortStrictRegex;}
     getLocaleMonthsShort(loc);
     return (loc as any)._monthsShortStrictRegex;
   }
-  if ((loc as any)._monthsShortRegex) return (loc as any)._monthsShortRegex;
+  if ((loc as any)._monthsShortRegex) {return (loc as any)._monthsShortRegex;}
   const shortList = getLocaleMonthsShort(loc);
   const fullList = getLocaleMonthsFull(loc);
   const extraNames = getMonthExtraNames(loc);
@@ -542,7 +542,7 @@ function sortByLengthDesc(arr: string[]): string[] {
 }
 
 function getLocaleWeekdaysFull(loc: Locale): string[] {
-  if ((loc as any)._weekdaysCache) return (loc as any)._weekdaysCache;
+  if ((loc as any)._weekdaysCache) {return (loc as any)._weekdaysCache;}
   const cfg = (loc as any)._config;
   let names: string[] = [];
   if (Array.isArray(cfg.weekdays)) {
@@ -555,7 +555,7 @@ function getLocaleWeekdaysFull(loc: Locale): string[] {
     for (let i = 0; i < 7; i++) {
       try {
         const r = cfg.weekdays({ day: () => i } as any, "dddd");
-        if (typeof r === "string") names.push(r);
+        if (typeof r === "string") {names.push(r);}
       } catch {}
     }
   }
@@ -567,13 +567,13 @@ function getLocaleWeekdaysFull(loc: Locale): string[] {
 }
 
 function getLocaleWeekdaysFullRegex(loc: Locale): RegExp {
-  if ((loc as any)._weekdaysRegex) return (loc as any)._weekdaysRegex;
+  if ((loc as any)._weekdaysRegex) {return (loc as any)._weekdaysRegex;}
   getLocaleWeekdaysFull(loc);
   return (loc as any)._weekdaysRegex;
 }
 
 function getLocaleWeekdaysShort(loc: Locale): string[] {
-  if ((loc as any)._weekdaysShortCache) return (loc as any)._weekdaysShortCache;
+  if ((loc as any)._weekdaysShortCache) {return (loc as any)._weekdaysShortCache;}
   const cfg = (loc as any)._config;
   let names: string[] = [];
   if (Array.isArray(cfg.weekdaysShort)) {
@@ -593,13 +593,13 @@ function getLocaleWeekdaysShort(loc: Locale): string[] {
 }
 
 function getLocaleWeekdaysShortRegex(loc: Locale): RegExp {
-  if ((loc as any)._weekdaysShortRegex) return (loc as any)._weekdaysShortRegex;
+  if ((loc as any)._weekdaysShortRegex) {return (loc as any)._weekdaysShortRegex;}
   getLocaleWeekdaysShort(loc);
   return (loc as any)._weekdaysShortRegex;
 }
 
 function getLocaleWeekdaysMin(loc: Locale): string[] {
-  if ((loc as any)._weekdaysMinCache) return (loc as any)._weekdaysMinCache;
+  if ((loc as any)._weekdaysMinCache) {return (loc as any)._weekdaysMinCache;}
   const cfg = (loc as any)._config;
   let names: string[] = [];
   if (Array.isArray(cfg.weekdaysMin)) {
@@ -619,7 +619,7 @@ function getLocaleWeekdaysMin(loc: Locale): string[] {
 }
 
 function getLocaleWeekdaysMinRegex(loc: Locale): RegExp {
-  if ((loc as any)._weekdaysMinRegex) return (loc as any)._weekdaysMinRegex;
+  if ((loc as any)._weekdaysMinRegex) {return (loc as any)._weekdaysMinRegex;}
   getLocaleWeekdaysMin(loc);
   return (loc as any)._weekdaysMinRegex;
 }
@@ -631,9 +631,9 @@ function timedMatch(
   strict?: boolean,
 ): RegExpMatchArray | null {
   const match = remaining.match(pattern);
-  if (!match) return null;
-  if (strict && exactLen !== undefined && match[1].length !== exactLen) return null;
-  if (strict && exactLen === undefined && match[1].length > 2) return null;
+  if (!match) {return null;}
+  if (strict && exactLen !== undefined && match[1].length !== exactLen) {return null;}
+  if (strict && exactLen === undefined && match[1].length > 2) {return null;}
   return match;
 }
 
@@ -644,7 +644,7 @@ function skipToNext(
   test: (ch: string) => boolean,
 ): number {
   for (let i = 0; i < str.length; i++) {
-    if (test(str[i])) return i;
+    if (test(str[i])) {return i;}
   }
   return -1;
 }
@@ -704,15 +704,15 @@ function parseWithFormat(
 
     if (token.type === "literal") {
       const val = token.value || "";
-      if (!val) continue;
+      if (!val) {continue;}
 
       if (strIdx >= str.length) {
         for (let j = tokenIndex; j < tokens.length; j++) {
           const t = tokens[j];
-          if (t.type === "token") result._unusedTokens.push(t.name!);
-          else if (strict && t.value && t.value.trim()) result._unusedTokens.push(t.value.trim());
+          if (t.type === "token") {result._unusedTokens.push(t.name!);}
+          else if (strict && t.value && t.value.trim()) {result._unusedTokens.push(t.value.trim());}
           else if (!strict && t.value && /[A-Za-z]/.test(t.value.trim()))
-            result._unusedTokens.push(t.value.trim());
+            {result._unusedTokens.push(t.value.trim());}
         }
         break;
       }
@@ -763,10 +763,10 @@ function parseWithFormat(
     if (strIdx >= str.length) {
       for (let j = tokenIndex; j < tokens.length; j++) {
         const t = tokens[j];
-        if (t.type === "token") result._unusedTokens.push(t.name!);
-        else if (strict && t.value && t.value.trim()) result._unusedTokens.push(t.value.trim());
+        if (t.type === "token") {result._unusedTokens.push(t.name!);}
+        else if (strict && t.value && t.value.trim()) {result._unusedTokens.push(t.value.trim());}
         else if (!strict && t.value && /[A-Za-z]/.test(t.value.trim()))
-          result._unusedTokens.push(t.value.trim());
+          {result._unusedTokens.push(t.value.trim());}
       }
       break;
     }
@@ -976,7 +976,7 @@ function parseWithFormat(
             const era = erasList.find(
               (e: any) => e.abbr === matchedName || e.name === matchedName || e.narrow === matchedName
             );
-            if (era) result._era = era;
+            if (era) {result._era = era;}
             strIdx += nMatch[1].length;
             break;
           }
@@ -993,7 +993,7 @@ function parseWithFormat(
           if (nMatch) {
             const matched = nMatch[1];
             const era = erasWide.find((e: any) => e.name === matched);
-            if (era) result._era = era;
+            if (era) {result._era = era;}
             strIdx += nMatch[1].length;
             break;
           }
@@ -1010,7 +1010,7 @@ function parseWithFormat(
           if (nMatch) {
             const matched = nMatch[1];
             const era = erasNarrow.find((e: any) => e.narrow === matched);
-            if (era) result._era = era;
+            if (era) {result._era = era;}
             strIdx += nMatch[1].length;
             break;
           }
@@ -1033,7 +1033,7 @@ function parseWithFormat(
               const cfgMonths = (loc._config as any).months;
               if (typeof cfgMonths === 'object' && !Array.isArray(cfgMonths)) {
                 const fmt = (cfgMonths as any).format;
-                if (Array.isArray(fmt)) idx = fmt.map((m: string) => m.toLowerCase()).indexOf(matched);
+                if (Array.isArray(fmt)) {idx = fmt.map((m: string) => m.toLowerCase()).indexOf(matched);}
               } else if (typeof cfgMonths === 'function') {
                 for (let mi = 0; mi < 12; mi++) {
                   const fm = { month: () => mi } as any;
@@ -1109,7 +1109,7 @@ function parseWithFormat(
               const cfgMonths = (loc._config as any).months;
               if (typeof cfgMonths === 'object' && !Array.isArray(cfgMonths)) {
                 const fmt = (cfgMonths as any).format;
-                if (Array.isArray(fmt)) idx = fmt.map((m: string) => m.toLowerCase()).indexOf(matched);
+                if (Array.isArray(fmt)) {idx = fmt.map((m: string) => m.toLowerCase()).indexOf(matched);}
               } else if (typeof cfgMonths === 'function') {
                 for (let mi = 0; mi < 12; mi++) {
                   const fm = { month: () => mi } as any;
@@ -1276,7 +1276,7 @@ function parseWithFormat(
           matched = true;
           result._weekdayName = enMatch[1];
           const num = WEEKDAY_NAMES_MAP[enMatch[1].toLowerCase().substring(0, 3)];
-          if (num !== undefined) result._weekdayNum = num;
+          if (num !== undefined) {result._weekdayNum = num;}
           strIdx += enMatch[0].length;
           break;
         }
@@ -1287,7 +1287,7 @@ function parseWithFormat(
             break;
           }
         }
-        if (!matched) failed = true;
+        if (!matched) {failed = true;}
         break;
       }
       case "ddd": {
@@ -1319,7 +1319,7 @@ function parseWithFormat(
           matched = true;
           result._weekdayName = enMatch[1];
           const num = WEEKDAY_NAMES_MAP[enMatch[1].toLowerCase().substring(0, 3)];
-          if (num !== undefined) result._weekdayNum = num;
+          if (num !== undefined) {result._weekdayNum = num;}
           strIdx += enMatch[0].length;
           break;
         }
@@ -1330,7 +1330,7 @@ function parseWithFormat(
             break;
           }
         }
-        if (!matched) failed = true;
+        if (!matched) {failed = true;}
         break;
       }
       case "dd": {
@@ -1364,7 +1364,7 @@ function parseWithFormat(
             break;
           }
         }
-        if (!matched) failed = true;
+        if (!matched) {failed = true;}
         break;
       }
       case "d": {
@@ -1821,7 +1821,7 @@ function parseWithFormat(
           break;
         }
         const hVal = parseInt(match[1], 10);
-        if (hVal > 12) result.bigHour = true;
+        if (hVal > 12) {result.bigHour = true;}
         result.hour = hVal;
         result._parsedDateParts[3] = hVal;
         result.minute = parseInt(match[2], 10);
@@ -1836,7 +1836,7 @@ function parseWithFormat(
           break;
         }
         const hVal = parseInt(match[1], 10);
-        if (hVal > 12) result.bigHour = true;
+        if (hVal > 12) {result.bigHour = true;}
         result.hour = hVal;
         result._parsedDateParts[3] = hVal;
         result.minute = parseInt(match[2], 10);
@@ -1939,7 +1939,7 @@ function parseWithFormat(
 
   if (strIdx < str.length && !failed) {
     const rest = str.substring(strIdx);
-    if (rest) result._unusedInput.push(rest);
+    if (rest) {result._unusedInput.push(rest);}
   }
   result._charsLeftOver = result._unusedInput.reduce((a: number, s: string) => a + s.length, 0);
   result._empty =
@@ -1958,7 +1958,7 @@ function parseWithFormat(
 
   if (failed) {
     if (strict) {
-      if (result.bigHour) return result;
+      if (result.bigHour) {return result;}
       for (let j = tokenIndex; j < tokens.length; j++) {
         const t = tokens[j];
         if (t.type === "token") {
@@ -2056,7 +2056,7 @@ const tokenizeCache = new LruMap<string, FormatToken[]>(1000);
 
 function tokenizeFormat(format: string): FormatToken[] {
   const cached = tokenizeCache.get(format);
-  if (cached) return cached;
+  if (cached) {return cached;}
 
   const tokens: FormatToken[] = [];
   let i = 0;
@@ -2113,7 +2113,7 @@ function parseWithFormats(
   let bestFmt = "";
   for (const fmt of formats) {
     const result = parseWithFormat(str, fmt, locale, strict);
-    if (!result) continue;
+    if (!result) {continue;}
     const hasVal =
       result.year !== undefined ||
       result.month !== undefined ||
@@ -2123,26 +2123,26 @@ function parseWithFormats(
       result.second !== undefined ||
       result.millisecond !== undefined ||
       result.isoWeek !== undefined;
-    if (!hasVal) continue;
+    if (!hasVal) {continue;}
 
     let score = 0;
-    if (result.year !== undefined) score += 40;
-    if (result.month !== undefined) score += 20;
-    if (result.day !== undefined) score += 20;
-    if (result.hour !== undefined) score += 10;
-    if (result.minute !== undefined) score += 8;
-    if (result.second !== undefined) score += 5;
-    if (result.millisecond !== undefined) score += 3;
-    if (result.isoWeek !== undefined) score += 16;
-    if (result.isoWeekYear !== undefined) score += 10;
-    if (result._unusedTokens) score -= result._unusedTokens.length * 10;
+    if (result.year !== undefined) {score += 40;}
+    if (result.month !== undefined) {score += 20;}
+    if (result.day !== undefined) {score += 20;}
+    if (result.hour !== undefined) {score += 10;}
+    if (result.minute !== undefined) {score += 8;}
+    if (result.second !== undefined) {score += 5;}
+    if (result.millisecond !== undefined) {score += 3;}
+    if (result.isoWeek !== undefined) {score += 16;}
+    if (result.isoWeekYear !== undefined) {score += 10;}
+    if (result._unusedTokens) {score -= result._unusedTokens.length * 10;}
     if (result._unusedInput)
-      score -= result._unusedInput.reduce((a: number, s: string) => a + s.length, 0) * 2;
-    if (result._charsLeftOver) score -= result._charsLeftOver * 3;
+      {score -= result._unusedInput.reduce((a: number, s: string) => a + s.length, 0) * 2;}
+    if (result._charsLeftOver) {score -= result._charsLeftOver * 3;}
 
-    if (result.month !== undefined && (result.month < 0 || result.month > 11)) score -= 100;
-    if (result.day !== undefined && result.day < 1) score -= 100;
-    if (result.hour !== undefined && (result.hour < 0 || result.hour > 23)) score -= 100;
+    if (result.month !== undefined && (result.month < 0 || result.month > 11)) {score -= 100;}
+    if (result.day !== undefined && result.day < 1) {score -= 100;}
+    if (result.hour !== undefined && (result.hour < 0 || result.hour > 23)) {score -= 100;}
 
     if (score > bestScore) {
       bestScore = score;
@@ -2157,12 +2157,12 @@ function parseWithFormats(
 }
 
 export function parseArray(arr: any[]): any {
-  if (arr.length === 0) return null;
+  if (arr.length === 0) {return null;}
 
   for (const val of arr) {
-    if (val === null || val === undefined) return null;
+    if (val === null || val === undefined) {return null;}
     const n = Number(val);
-    if (isNaN(n)) return null;
+    if (isNaN(n)) {return null;}
   }
 
   const result: any = {
@@ -2176,13 +2176,13 @@ export function parseArray(arr: any[]): any {
     offset: undefined,
   };
 
-  if (isNaN(result.year)) return null;
+  if (isNaN(result.year)) {return null;}
 
   if (result.year < 0 || result.year > 9999) {
     const d = new Date(0);
     d.setFullYear(result.year, result.month, result.day);
     d.setHours(result.hour, result.minute, result.second, result.millisecond);
-    if (isNaN(d.getTime())) return null;
+    if (isNaN(d.getTime())) {return null;}
     return { ...result, _useConstructor: true };
   }
 
@@ -2194,32 +2194,32 @@ export function parseObject(obj: any): any {
 
   if (hasOwnProp(obj, "year") || hasOwnProp(obj, "years") || hasOwnProp(obj, "y")) {
     const v = obj.year !== undefined ? obj.year : obj.years !== undefined ? obj.years : obj.y;
-    if (v != null) result.year = Number(v);
+    if (v != null) {result.year = Number(v);}
   }
   if (hasOwnProp(obj, "month") || hasOwnProp(obj, "months") || hasOwnProp(obj, "M")) {
     const v = obj.month !== undefined ? obj.month : obj.months !== undefined ? obj.months : obj.M;
-    if (v != null) result.month = Number(v);
+    if (v != null) {result.month = Number(v);}
   }
   if (hasOwnProp(obj, "day") || hasOwnProp(obj, "days") || hasOwnProp(obj, "d")) {
     const v = obj.day !== undefined ? obj.day : obj.days !== undefined ? obj.days : obj.d;
-    if (v != null) result.day = Number(v);
+    if (v != null) {result.day = Number(v);}
   } else if (hasOwnProp(obj, "date") || hasOwnProp(obj, "dates")) {
     const v = obj.date !== undefined ? obj.date : obj.dates;
-    if (v != null) result.day = Number(v);
+    if (v != null) {result.day = Number(v);}
   }
   if (hasOwnProp(obj, "hour") || hasOwnProp(obj, "hours") || hasOwnProp(obj, "h")) {
     const v = obj.hour !== undefined ? obj.hour : obj.hours !== undefined ? obj.hours : obj.h;
-    if (v != null) result.hour = Number(v);
+    if (v != null) {result.hour = Number(v);}
   }
   if (hasOwnProp(obj, "minute") || hasOwnProp(obj, "minutes") || hasOwnProp(obj, "m")) {
     const v =
       obj.minute !== undefined ? obj.minute : obj.minutes !== undefined ? obj.minutes : obj.m;
-    if (v != null) result.minute = Number(v);
+    if (v != null) {result.minute = Number(v);}
   }
   if (hasOwnProp(obj, "second") || hasOwnProp(obj, "seconds") || hasOwnProp(obj, "s")) {
     const v =
       obj.second !== undefined ? obj.second : obj.seconds !== undefined ? obj.seconds : obj.s;
-    if (v != null) result.second = Number(v);
+    if (v != null) {result.second = Number(v);}
   }
   if (hasOwnProp(obj, "millisecond") || hasOwnProp(obj, "milliseconds") || hasOwnProp(obj, "ms")) {
     const v =
@@ -2228,7 +2228,7 @@ export function parseObject(obj: any): any {
         : obj.milliseconds !== undefined
           ? obj.milliseconds
           : obj.ms;
-    if (v != null) result.millisecond = Number(v);
+    if (v != null) {result.millisecond = Number(v);}
   }
 
   return result;

@@ -70,7 +70,7 @@ const KNOWN_MOMENT_INSTANCE = [
 
 function knownApis(): Set<string> {
   const s = new Set(KNOWN_MOMENT_STATICS);
-  for (const m of KNOWN_MOMENT_INSTANCE) s.add(m);
+  for (const m of KNOWN_MOMENT_INSTANCE) {s.add(m);}
   return s;
 }
 
@@ -89,22 +89,22 @@ export function runAudit(dir: string = ".") {
   function walk(d: string) {
     const entries = fs.readdirSync(d, { withFileTypes: true });
     for (const entry of entries) {
-      if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
+      if (entry.name.startsWith(".") || entry.name === "node_modules") {continue;}
       const p = path.join(d, entry.name);
-      if (entry.isDirectory()) walk(p);
+      if (entry.isDirectory()) {walk(p);}
       else if (/\.(js|ts|jsx|tsx|vue)$/.test(entry.name)) {
         const content = fs.readFileSync(p, "utf-8");
         const lines = content.split("\n");
 
         for (let i = 0; i < lines.length; i++) {
           const line = lines[i];
-          if (!/\bmoment\b/.test(line)) continue;
+          if (!/\bmoment\b/.test(line)) {continue;}
 
           totalLines++;
 
           // moment(…) — constructor
           const ctorMatches = line.match(/\bmoment\s*\(/g);
-          if (ctorMatches) constructorCalls += ctorMatches.length;
+          if (ctorMatches) {constructorCalls += ctorMatches.length;}
 
           // moment.xxx(…) — static methods
           const staticMatches = line.matchAll(/\bmoment\s*\.\s*(\w+)\s*\(/g);
@@ -121,7 +121,7 @@ export function runAudit(dir: string = ".") {
           const afterMoment = line.split(/\bmoment\b/).slice(1).join(" ");
           const chainMatches = afterMoment.matchAll(/\.\s*(\w+)\s*\(/g);
           for (const m of chainMatches) {
-            if (NEVER_MOMENT.has(m[1])) continue;
+            if (NEVER_MOMENT.has(m[1])) {continue;}
             chainMethodCalls++;
             if (!known.has(m[1])) {
               unrecognized.add(m[1]);
