@@ -16,7 +16,8 @@
     "typescript/require-await": "error",
     "typescript/no-unnecessary-condition": "error",
     "typescript/prefer-for-of": "error",
-    "eslint/no-constant-condition": "error"
+    "eslint/no-constant-condition": "error",
+    "eslint/no-shadow": "error"
   },
   "ignorePatterns": [
     "test/moment/",
