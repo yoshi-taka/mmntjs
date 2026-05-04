@@ -6,54 +6,54 @@ export function zeroFill(num: number, targetLength: number): string {
   return sign + "0".repeat(padding) + abs;
 }
 
-export function isArray(input: any): input is any[] {
+export function isArray(input: unknown): input is unknown[] {
   return Array.isArray(input);
 }
 
-export function isObject(input: any): input is Record<string, any> {
+export function isObject(input: unknown): input is Record<string, unknown> {
   return typeof input === "object" && input !== null && !Array.isArray(input);
 }
 
-export function isNumber(input: any): input is number {
+export function isNumber(input: unknown): input is number {
   return typeof input === "number" || Object.prototype.toString.call(input) === "[object Number]";
 }
 
-export function isDate(input: any): input is Date {
+export function isDate(input: unknown): input is Date {
   return input instanceof Date || Object.prototype.toString.call(input) === "[object Date]";
 }
 
-export function isMoment(input: any): input is { _isAMomentObject: boolean } {
+export function isMoment(input: unknown): input is { _isAMomentObject: boolean } {
   return input !== null && input !== undefined && input._isAMomentObject === true;
 }
 
-export function isString(input: any): input is string {
+export function isString(input: unknown): input is string {
   return typeof input === "string";
 }
 
-export function isUndefined(input: any): input is undefined {
+export function isUndefined(input: unknown): input is undefined {
   return input === void 0;
 }
 
-export function isBoolean(input: any): input is boolean {
+export function isBoolean(input: unknown): input is boolean {
   return typeof input === "boolean";
 }
 
-export function isFunction(input: any): input is Function {
+export function isFunction(input: unknown): input is Function {
   return typeof input === "function";
 }
 
-export function isObjectEmpty(obj: any): boolean {
+export function isObjectEmpty(obj: object): boolean {
   for (const k in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, k)) {return false;}
   }
   return true;
 }
 
-export function hasOwnProp(obj: any, key: string): boolean {
+export function hasOwnProp(obj: object, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(obj, key);
 }
 
-export function extend(a: any, b: any, ...others: any[]): any {
+export function extend(a: Record<string, unknown>, b: Record<string, unknown>, ...others: Record<string, unknown>[]): Record<string, unknown> {
   for (const source of others) {
     if (source != null) {
       for (const key in source) {
