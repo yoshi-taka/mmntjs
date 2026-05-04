@@ -31,7 +31,8 @@
     "typescript/array-type": "error",
     "typescript/no-inferrable-types": "error",
     "unicorn/no-useless-undefined": "error",
-    "unicorn/prefer-array-some": "error"
+    "unicorn/prefer-array-some": "error",
+    "typescript/no-unnecessary-template-expression": "error"
   },
   "ignorePatterns": [
     "test/moment/",
