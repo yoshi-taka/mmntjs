@@ -28,7 +28,8 @@
     "unicorn/prefer-array-flat-map": "error",
     "unicorn/prefer-set-has": "error",
     "oxc/no-accumulating-spread": "error",
-    "typescript/array-type": "error"
+    "typescript/array-type": "error",
+    "typescript/no-inferrable-types": "error"
   },
   "ignorePatterns": [
     "test/moment/",
