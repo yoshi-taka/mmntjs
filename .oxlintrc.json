@@ -14,7 +14,8 @@
     "typescript/no-unnecessary-type-assertion": "error",
     "unicorn/prefer-node-protocol": "error",
     "typescript/require-await": "error",
-    "typescript/no-unnecessary-condition": "error"
+    "typescript/no-unnecessary-condition": "error",
+    "typescript/prefer-for-of": "error"
   },
   "ignorePatterns": [
     "test/moment/",
