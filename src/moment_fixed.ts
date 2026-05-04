@@ -988,7 +988,7 @@ export class Moment {
   }
 
   private _addSimple(amount: number, unit: number): void {
-    const date = this._getD();
+    const dt = this._getD();
     let changedDays = false;
 
     switch (unit) {
@@ -997,27 +997,19 @@ export class Moment {
       case MONTH: {
         changedDays = true;
         const totalMonths = absRound(unit === YEAR ? amount * 12 : unit === QUARTER ? amount * 3 : amount);
-        addMonths(this, totalMonths);
-        break;
-      }
-      case WEEK: {
-        const days = amount * 7;
-        this._addDays(date, days);
-        break;
-      }
-      case DATE:
-      case WEEKDAY: {
-        this._addDays(date, amount);
-        break;
-      }
-      default: {
-        const ms = amount * MS_IN_UNITS[unit];
-        if (!isNaN(ms)) {
-          this._addTime(date, ms);
+
+        const tm = this.$y * 12 + this.$M + totalMonths;
+        const y = Math.floor(tm / 12);
+        const m = ((tm % 12) + 12) % 12;
+        const maxDay = daysInMonth(y, m);
+        const d_ = this.$D > maxDay ? maxDay : this.$D;
+
+        if (this._isUTC) {
+          this._t = Date.UTC(y, m, d_, this.$H, this.$m, this.$s, this.$ms);
+        } else {
+          this._d = new Date(y, m, d_, this.$H, this.$m, this.$s, this.$ms);
+          this._t = this._d.getTime();
         }
-        break;
-      }
-    }
         this.$y = y;
         this.$M = m;
         this.$D = d_;
@@ -1045,31 +1037,30 @@ export class Moment {
         if (this._isUTC) {
           this._t = Date.UTC(this.$y, this.$M, this.$D, this.$H, this.$m, this.$s, this.$ms);
         } else {
-          const d = this._getD();
-          this._t = d.setFullYear(this.$y, this.$M, this.$D);
-          this.$W = d.getDay();
-          this._offset = -d.getTimezoneOffset();
+          this._t = dt.setFullYear(this.$y, this.$M, this.$D);
+          this.$W = dt.getDay();
+          this._offset = -dt.getTimezoneOffset();
         }
         break;
       }
       case HOUR:
-        d.setTime(d.getTime() + Math.round(amount * 3600000));
-        this._t = d.getTime();
+        dt.setTime(dt.getTime() + Math.round(amount * 3600000));
+        this._t = dt.getTime();
         this._refreshFields();
         break;
       case MINUTE:
-        d.setTime(d.getTime() + Math.round(amount * 60000));
-        this._t = d.getTime();
+        dt.setTime(dt.getTime() + Math.round(amount * 60000));
+        this._t = dt.getTime();
         this._refreshFields();
         break;
       case SECOND:
-        d.setTime(d.getTime() + Math.round(amount * 1000));
-        this._t = d.getTime();
+        dt.setTime(dt.getTime() + Math.round(amount * 1000));
+        this._t = dt.getTime();
         this._refreshFields();
         break;
       case MILLISECOND:
-        d.setTime(d.getTime() + Math.round(amount));
-        this._t = d.getTime();
+        dt.setTime(dt.getTime() + Math.round(amount));
+        this._t = dt.getTime();
         this._refreshFields();
         break;
       default:
