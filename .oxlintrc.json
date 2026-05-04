@@ -12,7 +12,8 @@
     "eslint/prefer-template": "error",
     "typescript/prefer-includes": "error",
     "typescript/no-unnecessary-type-assertion": "error",
-    "unicorn/prefer-node-protocol": "error"
+    "unicorn/prefer-node-protocol": "error",
+    "typescript/require-await": "error"
   },
   "ignorePatterns": [
     "test/moment/",
