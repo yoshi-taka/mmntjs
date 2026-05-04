@@ -47,7 +47,8 @@
     "unicorn/prefer-negative-index": "error",
     "unicorn/prefer-optional-catch-binding": "error",
     "eslint/no-useless-computed-key": "error",
-    "oxc/no-map-spread": "error"
+    "oxc/no-map-spread": "error",
+    "typescript/prefer-readonly": "error"
   },
   "ignorePatterns": [
     "test/moment/",
