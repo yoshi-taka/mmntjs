@@ -6,7 +6,8 @@
     "typescript/prefer-optional-chain": "error",
     "typescript/prefer-nullish-coalescing": "error",
     "typescript/prefer-find": "error",
-    "unicorn/throw-new-error": "error"
+    "unicorn/throw-new-error": "error",
+    "typescript/consistent-type-exports": "error"
   },
   "ignorePatterns": [
     "test/moment/",
