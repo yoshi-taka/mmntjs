@@ -87,16 +87,13 @@ export function absRound(number: number): number {
   return Math.round(number);
 }
 
-// eslint-disable-next-line max-params
 export function createDate(
   year: number,
   month: number,
   day: number,
-  hour?: number,
-  minute?: number,
-  second?: number,
-  ms?: number,
+  ...args: [number?, number?, number?, number?]
 ): Date {
+  const [hour, minute, second, ms] = args;
   if (year >= 0 && year <= 99) {
     const d = new Date(0);
     d.setFullYear(year, month, day ?? 1);
@@ -106,16 +103,13 @@ export function createDate(
   return new Date(year, month, day ?? 1, hour ?? 0, minute ?? 0, second ?? 0, ms ?? 0);
 }
 
-// eslint-disable-next-line max-params
 export function createUTCDate(
   year: number,
   month: number,
   day: number,
-  hour?: number,
-  minute?: number,
-  second?: number,
-  ms?: number,
+  ...args: [number?, number?, number?, number?]
 ): Date {
+  const [hour, minute, second, ms] = args;
   if (year >= 0 && year <= 99) {
     const d = new Date(0);
     d.setUTCFullYear(year, month, day ?? 1);
@@ -125,17 +119,10 @@ export function createUTCDate(
   return new Date(Date.UTC(year, month, day ?? 1, hour ?? 0, minute ?? 0, second ?? 0, ms ?? 0));
 }
 
-// eslint-disable-next-line max-params
 export function createDateSafe(
-  year: number,
-  month: number,
-  day: number,
-  hour: number,
-  minute: number,
-  second: number,
-  ms: number,
-  isUTC?: boolean,
+  ...args: [number, number, number, number, number, number, number, boolean?]
 ): Date {
+  const [year, month, day, hour, minute, second, ms, isUTC] = args;
   if (isUTC) {
     return createUTCDate(year, month, day, hour, minute, second, ms);
   }
