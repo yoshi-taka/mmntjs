@@ -33,7 +33,8 @@
     "unicorn/no-useless-undefined": "error",
     "unicorn/prefer-array-some": "error",
     "typescript/no-unnecessary-template-expression": "error",
-    "typescript/prefer-function-type": "error"
+    "typescript/prefer-function-type": "error",
+    "unicorn/prefer-date-now": "error"
   },
   "ignorePatterns": [
     "test/moment/",
