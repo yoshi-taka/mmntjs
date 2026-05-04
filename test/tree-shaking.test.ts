@@ -1,6 +1,6 @@
 import { test, expect, describe } from "bun:test";
-import { mkdtempSync, writeFileSync, readFileSync, rmSync } from "fs";
-import { join } from "path";
+import { mkdtempSync, writeFileSync, readFileSync, rmSync } from "node:fs";
+import { join } from "node:path";
 import pkg from "../package.json";
 
 const projectRoot = join(import.meta.dir, "..");

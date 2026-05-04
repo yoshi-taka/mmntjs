@@ -11,7 +11,8 @@
     "import/no-duplicates": "error",
     "eslint/prefer-template": "error",
     "typescript/prefer-includes": "error",
-    "typescript/no-unnecessary-type-assertion": "error"
+    "typescript/no-unnecessary-type-assertion": "error",
+    "unicorn/prefer-node-protocol": "error"
   },
   "ignorePatterns": [
     "test/moment/",
