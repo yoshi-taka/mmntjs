@@ -25,7 +25,8 @@
         "max": 5
       }
     ],
-    "unicorn/prefer-array-flat-map": "error"
+    "unicorn/prefer-array-flat-map": "error",
+    "unicorn/prefer-set-has": "error"
   },
   "ignorePatterns": [
     "test/moment/",
