@@ -60,19 +60,19 @@ export const mkLocale: LocaleSpec = {
         var lastDigit = number % 10,
             last2Digits = number % 100;
         if (number === 0) {
-            return number + '-ев';
+            return `${number  }-ев`;
         } else if (last2Digits === 0) {
-            return number + '-ен';
+            return `${number  }-ен`;
         } else if (last2Digits > 10 && last2Digits < 20) {
-            return number + '-ти';
+            return `${number  }-ти`;
         } else if (lastDigit === 1) {
-            return number + '-ви';
+            return `${number  }-ви`;
         } else if (lastDigit === 2) {
-            return number + '-ри';
+            return `${number  }-ри`;
         } else if (lastDigit === 7 || lastDigit === 8) {
-            return number + '-ми';
+            return `${number  }-ми`;
         } else {
-            return number + '-ти';
+            return `${number  }-ти`;
         }
     },
     week: {

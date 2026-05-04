@@ -4,17 +4,17 @@ import type { LocaleSpec } from "./en";
 function processRelativeTime(number, withoutSuffix, key, isFuture) {
     var format = {
         s: ['thoddea sekondamni', 'thodde sekond'],
-        ss: [number + ' sekondamni', number + ' sekond'],
+        ss: [`${number  } sekondamni`, `${number  } sekond`],
         m: ['eka mintan', 'ek minut'],
-        mm: [number + ' mintamni', number + ' mintam'],
+        mm: [`${number  } mintamni`, `${number  } mintam`],
         h: ['eka voran', 'ek vor'],
-        hh: [number + ' voramni', number + ' voram'],
+        hh: [`${number  } voramni`, `${number  } voram`],
         d: ['eka disan', 'ek dis'],
-        dd: [number + ' disamni', number + ' dis'],
+        dd: [`${number  } disamni`, `${number  } dis`],
         M: ['eka mhoinean', 'ek mhoino'],
-        MM: [number + ' mhoineamni', number + ' mhoine'],
+        MM: [`${number  } mhoineamni`, `${number  } mhoine`],
         y: ['eka vorsan', 'ek voros'],
-        yy: [number + ' vorsamni', number + ' vorsam'],
+        yy: [`${number  } vorsamni`, `${number  } vorsam`],
     };
     return isFuture ? format[key][0] : format[key][1];
 }
@@ -73,7 +73,7 @@ export const gom_latnLocale: LocaleSpec = {
         switch (period) {
             // the ordinal 'er' only applies to day of the month
             case 'D':
-                return number + 'er';
+                return `${number  }er`;
             default:
             case 'M':
             case 'Q':

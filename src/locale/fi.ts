@@ -52,7 +52,7 @@ function translate(number, withoutSuffix, key, isFuture) {
             result = isFuture ? 'vuoden' : 'vuotta';
             break;
     }
-    result = verbalNumber(number, isFuture) + ' ' + result;
+    result = `${verbalNumber(number, isFuture)  } ${  result}`;
     return result;
 }
 

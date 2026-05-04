@@ -11,7 +11,7 @@ function plural(n) {
 }
 
 function translate(number, withoutSuffix, key, isFuture) {
-    var result = number + ' ';
+    var result = `${number  } `;
     switch (key) {
         case 's':
             return withoutSuffix || isFuture
@@ -24,7 +24,7 @@ function translate(number, withoutSuffix, key, isFuture) {
                     (withoutSuffix || isFuture ? 'sekúndur' : 'sekúndum')
                 );
             }
-            return result + 'sekúnda';
+            return `${result  }sekúnda`;
         case 'm':
             return withoutSuffix ? 'mínúta' : 'mínútu';
         case 'mm':
@@ -33,9 +33,9 @@ function translate(number, withoutSuffix, key, isFuture) {
                     result + (withoutSuffix || isFuture ? 'mínútur' : 'mínútum')
                 );
             } else if (withoutSuffix) {
-                return result + 'mínúta';
+                return `${result  }mínúta`;
             }
-            return result + 'mínútu';
+            return `${result  }mínútu`;
         case 'hh':
             if (plural(number)) {
                 return (
@@ -45,7 +45,7 @@ function translate(number, withoutSuffix, key, isFuture) {
                         : 'klukkustundum')
                 );
             }
-            return result + 'klukkustund';
+            return `${result  }klukkustund`;
         case 'd':
             if (withoutSuffix) {
                 return 'dagur';
@@ -54,11 +54,11 @@ function translate(number, withoutSuffix, key, isFuture) {
         case 'dd':
             if (plural(number)) {
                 if (withoutSuffix) {
-                    return result + 'dagar';
+                    return `${result  }dagar`;
                 }
                 return result + (isFuture ? 'daga' : 'dögum');
             } else if (withoutSuffix) {
-                return result + 'dagur';
+                return `${result  }dagur`;
             }
             return result + (isFuture ? 'dag' : 'degi');
         case 'M':
@@ -69,11 +69,11 @@ function translate(number, withoutSuffix, key, isFuture) {
         case 'MM':
             if (plural(number)) {
                 if (withoutSuffix) {
-                    return result + 'mánuðir';
+                    return `${result  }mánuðir`;
                 }
                 return result + (isFuture ? 'mánuði' : 'mánuðum');
             } else if (withoutSuffix) {
-                return result + 'mánuður';
+                return `${result  }mánuður`;
             }
             return result + (isFuture ? 'mánuð' : 'mánuði');
         case 'y':

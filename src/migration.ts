@@ -61,9 +61,9 @@ export function track(apiName: string, _args?: any[]): void {
 
 export function warn(message: string, temporalEquivalent?: string): void {
   if (config.deprecationWarnings) {
-    console.warn("[moment2] " + message);
+    console.warn(`[moment2] ${  message}`);
     if (temporalEquivalent) {
-      console.warn("  Temporal equivalent: " + temporalEquivalent);
+      console.warn(`  Temporal equivalent: ${  temporalEquivalent}`);
     }
   }
 }

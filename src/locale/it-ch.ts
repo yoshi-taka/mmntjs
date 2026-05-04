@@ -36,7 +36,7 @@ export const it_chLocale: LocaleSpec = {
     },
     relativeTime: {
       future: function (s) {
-            return (/^[0-9].+$/.test(s) ? 'tra' : 'in') + ' ' + s;
+            return `${/^[0-9].+$/.test(s) ? 'tra' : 'in'  } ${  s}`;
         },
       past: "%s fa",
       s: "alcuni secondi",

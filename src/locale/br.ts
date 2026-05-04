@@ -7,7 +7,7 @@ function relativeTimeWithMutation(number, withoutSuffix, key) {
         MM: 'miz',
         dd: 'devezh',
     };
-    return number + ' ' + mutation(format[key], number);
+    return `${number  } ${  mutation(format[key], number)}`;
 }
 
 function specialMutationForYears(number) {
@@ -17,9 +17,9 @@ function specialMutationForYears(number) {
         case 4:
         case 5:
         case 9:
-            return number + ' bloaz';
+            return `${number  } bloaz`;
         default:
-            return number + ' vloaz';
+            return `${number  } vloaz`;
     }
 }
 

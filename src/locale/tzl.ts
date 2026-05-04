@@ -4,17 +4,17 @@ import type { LocaleSpec } from "./en";
 function processRelativeTime(number, withoutSuffix, key, isFuture) {
     var format = {
         s: ['viensas secunds', "'iensas secunds"],
-        ss: [number + ' secunds', '' + number + ' secunds'],
+        ss: [`${number  } secunds`, `${  number  } secunds`],
         m: ["'n míut", "'iens míut"],
-        mm: [number + ' míuts', '' + number + ' míuts'],
+        mm: [`${number  } míuts`, `${  number  } míuts`],
         h: ["'n þora", "'iensa þora"],
-        hh: [number + ' þoras', '' + number + ' þoras'],
+        hh: [`${number  } þoras`, `${  number  } þoras`],
         d: ["'n ziua", "'iensa ziua"],
-        dd: [number + ' ziuas', '' + number + ' ziuas'],
+        dd: [`${number  } ziuas`, `${  number  } ziuas`],
         M: ["'n mes", "'iens mes"],
-        MM: [number + ' mesen', '' + number + ' mesen'],
+        MM: [`${number  } mesen`, `${  number  } mesen`],
         y: ["'n ar", "'iens ar"],
-        yy: [number + ' ars', '' + number + ' ars'],
+        yy: [`${number  } ars`, `${  number  } ars`],
     };
     return isFuture
         ? format[key][0]

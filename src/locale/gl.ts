@@ -23,20 +23,20 @@ export const glLocale: LocaleSpec = {
     },
     calendar: {
       sameDay: function () {
-            return '[hoxe ' + (this.hours() !== 1 ? 'ás' : 'á') + '] LT';
+            return `[hoxe ${  this.hours() !== 1 ? 'ás' : 'á'  }] LT`;
         },
       nextDay: function () {
-            return '[mañá ' + (this.hours() !== 1 ? 'ás' : 'á') + '] LT';
+            return `[mañá ${  this.hours() !== 1 ? 'ás' : 'á'  }] LT`;
         },
       nextWeek: function () {
-            return 'dddd [' + (this.hours() !== 1 ? 'ás' : 'a') + '] LT';
+            return `dddd [${  this.hours() !== 1 ? 'ás' : 'a'  }] LT`;
         },
       lastDay: function () {
-            return '[onte ' + (this.hours() !== 1 ? 'á' : 'a') + '] LT';
+            return `[onte ${  this.hours() !== 1 ? 'á' : 'a'  }] LT`;
         },
       lastWeek: function () {
             return (
-                '[o] dddd [pasado ' + (this.hours() !== 1 ? 'ás' : 'a') + '] LT'
+                `[o] dddd [pasado ${  this.hours() !== 1 ? 'ás' : 'a'  }] LT`
             );
         },
       sameElse: "L"
@@ -44,9 +44,9 @@ export const glLocale: LocaleSpec = {
     relativeTime: {
       future: function (str) {
             if (str.indexOf('un') === 0) {
-                return 'n' + str;
+                return `n${  str}`;
             }
-            return 'en ' + str;
+            return `en ${  str}`;
         },
       past: "hai %s",
       s: "uns segundos",

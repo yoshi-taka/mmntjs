@@ -27,7 +27,7 @@ function format(forms, number, withoutSuffix) {
 }
 
 function relativeTimeWithPlural(number, withoutSuffix, key) {
-    return number + ' ' + format(units[key], number, withoutSuffix);
+    return `${number  } ${  format(units[key], number, withoutSuffix)}`;
 }
 
 function relativeTimeWithSingular(number, withoutSuffix, key) {

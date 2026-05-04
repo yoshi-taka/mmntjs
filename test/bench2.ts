@@ -3,9 +3,9 @@ import moment2 from "../moment";
 import moment from "../moment/moment.js";
 
 function micros(ns: number): string {
-  if (ns < 1000) return ns.toFixed(0) + "ns";
-  if (ns < 1_000_000) return (ns / 1000).toFixed(2) + "\u03BCs";
-  return (ns / 1_000_000).toFixed(3) + "ms";
+  if (ns < 1000) return `${ns.toFixed(0)  }ns`;
+  if (ns < 1_000_000) return `${(ns / 1000).toFixed(2)  }\u03BCs`;
+  return `${(ns / 1_000_000).toFixed(3)  }ms`;
 }
 
 function run(name: string, fn: () => void, iterations: number): number {

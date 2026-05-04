@@ -73,7 +73,7 @@ export const tkLocale: LocaleSpec = {
             default:
                 if (number === 0) {
                     // special case for zero
-                    return number + "'unjy";
+                    return `${number  }'unjy`;
                 }
                 var a = number % 10,
                     b = (number % 100) - a,

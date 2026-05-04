@@ -18,7 +18,7 @@ test('parse', function (assert) {
         assert.equal(
             moment(input, mmm).month(),
             i,
-            input + ' should be month ' + (i + 1)
+            `${input  } should be month ${  i + 1}`
         );
     }
 
@@ -26,7 +26,7 @@ test('parse', function (assert) {
         assert.equal(
             moment(input, mmm, true).month(),
             monthIndex,
-            input + ' ' + mmm + ' should be strict month ' + (monthIndex + 1)
+            `${input  } ${  mmm  } should be strict month ${  monthIndex + 1}`
         );
     }
 
@@ -73,17 +73,17 @@ test('parse meridiem', function (assert) {
             moment(b.format('h:mm:ss a'), 'h:mm:ss a', 'ss', true),
             'seconds'
         ),
-        b.format('h:mm:ss a') +
-            ' should be equal to ' +
+        `${b.format('h:mm:ss a') 
+            } should be equal to ${ 
             moment(b.format('h:mm:ss a'), 'h:mm:ss a', 'ss', true).format(
                 'h:mm:ss a'
-            )
+            )}`
     );
 
     // test that a formatted moment having a meridiem string can be parsed with strict flag
     assert.ok(
         moment(b.format('h:mm:ss a'), 'h:mm:ss a', 'ss', true).isValid(),
-        b.format('h:mm:ss a') + ' should be parsed as valid'
+        `${b.format('h:mm:ss a')  } should be parsed as valid`
     );
 
     for (i = 0; i < meridiemTests.length; i++) {
@@ -91,13 +91,13 @@ test('parse meridiem', function (assert) {
         assert.equal(
             parsed.isValid(),
             meridiemTests[i][2],
-            'validity for ' + meridiemTests[i][0]
+            `validity for ${  meridiemTests[i][0]}`
         );
         if (parsed.isValid()) {
             assert.equal(
                 parsed.hours(),
                 meridiemTests[i][1],
-                'hours for ' + meridiemTests[i][0]
+                `hours for ${  meridiemTests[i][0]}`
             );
         }
     }
@@ -138,7 +138,7 @@ test('format', function (assert) {
         b = moment(new Date(2010, 1, 14, 15, 25, 50, 125)),
         i;
     for (i = 0; i < a.length; i++) {
-        assert.equal(b.format(a[i][0]), a[i][1], a[i][0] + ' ---> ' + a[i][1]);
+        assert.equal(b.format(a[i][0]), a[i][1], `${a[i][0]  } ---> ${  a[i][1]}`);
     }
 });
 
@@ -425,19 +425,19 @@ test('calendar next week', function (assert) {
         assert.equal(
             m.calendar(),
             m.format('dddd [nga] LT'),
-            'Today + ' + i + ' days current time'
+            `Today + ${  i  } days current time`
         );
         m.hours(0).minutes(0).seconds(0).milliseconds(0);
         assert.equal(
             m.calendar(),
             m.format('dddd [nga] LT'),
-            'Today + ' + i + ' days beginning of day'
+            `Today + ${  i  } days beginning of day`
         );
         m.hours(23).minutes(59).seconds(59).milliseconds(999);
         assert.equal(
             m.calendar(),
             m.format('dddd [nga] LT'),
-            'Today + ' + i + ' days end of day'
+            `Today + ${  i  } days end of day`
         );
     }
 });
@@ -450,19 +450,19 @@ test('calendar last week', function (assert) {
         assert.equal(
             m.calendar(),
             m.format('dddd [leliphelile] [nga] LT'),
-            'Today - ' + i + ' days current time'
+            `Today - ${  i  } days current time`
         );
         m.hours(0).minutes(0).seconds(0).milliseconds(0);
         assert.equal(
             m.calendar(),
             m.format('dddd [leliphelile] [nga] LT'),
-            'Today - ' + i + ' days beginning of day'
+            `Today - ${  i  } days beginning of day`
         );
         m.hours(23).minutes(59).seconds(59).milliseconds(999);
         assert.equal(
             m.calendar(),
             m.format('dddd [leliphelile] [nga] LT'),
-            'Today - ' + i + ' days end of day'
+            `Today - ${  i  } days end of day`
         );
     }
 });

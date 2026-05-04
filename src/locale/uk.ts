@@ -24,7 +24,7 @@ function relativeTimeWithPlural(number, withoutSuffix, key) {
     } else if (key === 'h') {
         return withoutSuffix ? 'година' : 'годину';
     } else {
-        return number + ' ' + plural(format[key], +number);
+        return `${number  } ${  plural(format[key], +number)}`;
     }
 }
 
@@ -64,7 +64,7 @@ function weekdaysCaseReplace(m, format) {
 
 function processHoursFunction(str) {
     return function () {
-        return str + 'о' + (this.hours() === 11 ? 'б' : '') + '] LT';
+        return `${str  }о${  this.hours() === 11 ? 'б' : ''  }] LT`;
     };
 }
 
@@ -150,9 +150,9 @@ export const ukLocale: LocaleSpec = {
             case 'DDD':
             case 'w':
             case 'W':
-                return number + '-й';
+                return `${number  }-й`;
             case 'D':
-                return number + '-го';
+                return `${number  }-го`;
             default:
                 return number;
         }

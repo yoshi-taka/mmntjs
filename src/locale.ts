@@ -69,8 +69,8 @@ export class Locale {
   constructor(config: LocaleSpec, abbr?: string) {
     this._config = { ...config };
     for (const key of Object.keys(config)) {
-      if (!key.startsWith('_') && !((this._config as any)['_' + key] !== undefined)) {
-        (this._config as any)['_' + key] = (config as any)[key];
+      if (!key.startsWith('_') && !((this._config as any)[`_${  key}`] !== undefined)) {
+        (this._config as any)[`_${  key}`] = (config as any)[key];
       }
     }
     this._abbr = abbr || currentLocaleName;
@@ -307,7 +307,7 @@ export class Locale {
     if (enLocale.isPM) {
       return enLocale.isPM(input);
     }
-    return (input + "").toLowerCase().charAt(0) === "p";
+    return (`${input  }`).toLowerCase().charAt(0) === "p";
   }
 
   get _longDateFormat(): Record<string, string> {
@@ -446,11 +446,11 @@ export class Locale {
       const shortArr = this._monthsShort;
       const all = [...new Set([...arr, ...shortArr])];
       if (all.length === 0) return /^/;
-      return new RegExp("^(" + all.map(escapeRegex).join("|") + ")", "i");
+      return new RegExp(`^(${  all.map(escapeRegex).join("|")  })`, "i");
     }
     const arr = this._months;
     if (arr.length === 0) return /^/;
-    return new RegExp("^(" + arr.map(escapeRegex).join("|") + ")", "i");
+    return new RegExp(`^(${  arr.map(escapeRegex).join("|")  })`, "i");
   }
 
   monthsShortRegex(): RegExp {
@@ -460,29 +460,29 @@ export class Locale {
       const shortArr = this._monthsShort;
       const all = [...new Set([...shortArr, ...arr])];
       if (all.length === 0) return /^/;
-      return new RegExp("^(" + all.map(escapeRegex).join("|") + ")", "i");
+      return new RegExp(`^(${  all.map(escapeRegex).join("|")  })`, "i");
     }
     const arr = this._monthsShort;
     if (arr.length === 0) return /^/;
-    return new RegExp("^(" + arr.map(escapeRegex).join("|") + ")", "i");
+    return new RegExp(`^(${  arr.map(escapeRegex).join("|")  })`, "i");
   }
 
   weekdaysRegex(): RegExp {
     const arr = this._weekdays;
     if (arr.length === 0) return /^/;
-    return new RegExp("^(" + arr.map(escapeRegex).join("|") + ")", "i");
+    return new RegExp(`^(${  arr.map(escapeRegex).join("|")  })`, "i");
   }
 
   weekdaysShortRegex(): RegExp {
     const arr = this.weekdaysShortArray();
     if (arr.length === 0) return /^/;
-    return new RegExp("^(" + arr.map(escapeRegex).join("|") + ")", "i");
+    return new RegExp(`^(${  arr.map(escapeRegex).join("|")  })`, "i");
   }
 
   weekdaysMinRegex(): RegExp {
     const arr = this.weekdaysMinArray();
     if (arr.length === 0) return /^/;
-    return new RegExp("^(" + arr.map(escapeRegex).join("|") + ")", "i");
+    return new RegExp(`^(${  arr.map(escapeRegex).join("|")  })`, "i");
   }
 
   preparse(str: string): string {

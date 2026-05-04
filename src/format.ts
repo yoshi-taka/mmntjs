@@ -108,23 +108,23 @@ function localeWeek(m: Moment): number {
 export const formatToken: Record<string, (m: Moment) => string> = {
   YYYY(m: Moment): string {
     const y = year(m);
-    if (y < 0) return "-" + zeroFill(-y, 4);
+    if (y < 0) return `-${  zeroFill(-y, 4)}`;
     return zeroFill(y, 4);
   },
   YY(m: Moment): string {
     const y = year(m) % 100;
-    if (y < 0) return "-" + zeroFill(-y, 2);
+    if (y < 0) return `-${  zeroFill(-y, 2)}`;
     return zeroFill(y, 2);
   },
   Y(m: Moment): string {
     const y = year(m);
-    if (y < 0) return "-" + zeroFill(-y, 4);
-    if (y > 9999) return "+" + zeroFill(y, 5);
+    if (y < 0) return `-${  zeroFill(-y, 4)}`;
+    if (y > 9999) return `+${  zeroFill(y, 5)}`;
     return zeroFill(y, 4);
   },
   YYYYY(m: Moment): string {
     const y = year(m);
-    if (y < 0) return "-" + zeroFill(-y, 5);
+    if (y < 0) return `-${  zeroFill(-y, 5)}`;
     return zeroFill(y, 5);
   },
   YYYYYY(m: Moment): string {
@@ -309,7 +309,7 @@ export const formatToken: Record<string, (m: Moment) => string> = {
     const absOffset = Math.abs(offset);
     const hours = Math.floor(absOffset / 60);
     const minutes = absOffset % 60;
-    return sign + zeroFill(hours, 2) + ":" + zeroFill(minutes, 2);
+    return `${sign + zeroFill(hours, 2)  }:${  zeroFill(minutes, 2)}`;
   },
   ZZ(m: Moment): string {
     const offset = utcOffset(m);
@@ -326,7 +326,7 @@ export const formatToken: Record<string, (m: Moment) => string> = {
       const sign = offset >= 0 ? "+" : "-";
       const hours = Math.floor(Math.abs(offset) / 60);
       const minutes = Math.abs(offset) % 60;
-      return "GMT" + sign + String(hours).padStart(2, "0") + String(minutes).padStart(2, "0");
+      return `GMT${  sign  }${String(hours).padStart(2, "0")  }${String(minutes).padStart(2, "0")}`;
     }
     return "";
   },
@@ -363,7 +363,7 @@ export const formatToken: Record<string, (m: Moment) => string> = {
   y(m: Moment): string {
     const info = getEraInfo(m, currentLocale!);
     const y = info ? info.eraYear : year(m);
-    if (y < 0) return "-" + zeroFill(-y, 4);
+    if (y < 0) return `-${  zeroFill(-y, 4)}`;
     return String(y);
   },
   yy(m: Moment): string {
@@ -375,13 +375,13 @@ export const formatToken: Record<string, (m: Moment) => string> = {
   yyy(m: Moment): string {
     const info = getEraInfo(m, currentLocale!);
     const y = info ? info.eraYear : year(m);
-    if (y < 0) return "-" + zeroFill(-y, 3);
+    if (y < 0) return `-${  zeroFill(-y, 3)}`;
     return zeroFill(y, 3);
   },
   yyyy(m: Moment): string {
     const info = getEraInfo(m, currentLocale!);
     const y = info ? info.eraYear : year(m);
-    if (y < 0) return "-" + zeroFill(-y, 4);
+    if (y < 0) return `-${  zeroFill(-y, 4)}`;
     return zeroFill(y, 4);
   },
   yo(m: Moment): string {
@@ -415,7 +415,7 @@ const hasLocaleToken = /[Ll]/;
 function expandLocaleTokens(m: Moment, format: string): string {
   if (!hasLocaleToken.test(format)) return format;
 
-  const cacheKey = m._l + ":" + format;
+  const cacheKey = `${m._l  }:${  format}`;
   const cached = expandLocaleCache.get(cacheKey);
   if (cached !== undefined) return cached;
 
@@ -478,17 +478,17 @@ const PAD2 = [
 ];
 
 function padYear(y: number): string {
-  return y < 10 ? "000" + y : y < 100 ? "00" + y : y < 1000 ? "0" + y : String(y);
+  return y < 10 ? `000${  y}` : y < 100 ? `00${  y}` : y < 1000 ? `0${  y}` : String(y);
 }
 
 function pad3(n: number): string {
-  return n < 10 ? "00" + n : n < 100 ? "0" + n : String(n);
+  return n < 10 ? `00${  n}` : n < 100 ? `0${  n}` : String(n);
 }
 
 function formatOffset(offset: number): string {
   const sign = offset >= 0 ? "+" : "-";
   const abs = Math.abs(offset);
-  return sign + PAD2[Math.floor(abs / 60)] + ":" + PAD2[abs % 60];
+  return `${sign + PAD2[Math.floor(abs / 60)]  }:${  PAD2[abs % 60]}`;
 }
 
 function formatCommonEn(m: Moment, format: string): string | undefined {
@@ -496,20 +496,20 @@ function formatCommonEn(m: Moment, format: string): string | undefined {
   if (raw._l !== "en" || !raw._isValid) return undefined;
   const y = raw.$y;
   if (y < 0 || y > 9999) return undefined;
-  const datePart = padYear(y) + "-" + PAD2[raw.$M + 1] + "-" + PAD2[raw.$D];
+  const datePart = `${padYear(y)  }-${  PAD2[raw.$M + 1]  }-${  PAD2[raw.$D]}`;
   switch (format) {
     case "YYYY-MM-DD":
       return datePart;
     case "HH:mm:ss":
-      return PAD2[raw.$H] + ":" + PAD2[raw.$m] + ":" + PAD2[raw.$s];
+      return `${PAD2[raw.$H]  }:${  PAD2[raw.$m]  }:${  PAD2[raw.$s]}`;
     case "HH:mm:ss.SSS":
-      return PAD2[raw.$H] + ":" + PAD2[raw.$m] + ":" + PAD2[raw.$s] + "." + pad3(raw.$ms);
+      return `${PAD2[raw.$H]  }:${  PAD2[raw.$m]  }:${  PAD2[raw.$s]  }.${  pad3(raw.$ms)}`;
     case "YYYY-MM-DD HH:mm:ss":
-      return datePart + " " + PAD2[raw.$H] + ":" + PAD2[raw.$m] + ":" + PAD2[raw.$s];
+      return `${datePart  } ${  PAD2[raw.$H]  }:${  PAD2[raw.$m]  }:${  PAD2[raw.$s]}`;
     case "YYYY-MM-DD HH:mm:ss.SSS":
-      return datePart + " " + PAD2[raw.$H] + ":" + PAD2[raw.$m] + ":" + PAD2[raw.$s] + "." + pad3(raw.$ms);
+      return `${datePart  } ${  PAD2[raw.$H]  }:${  PAD2[raw.$m]  }:${  PAD2[raw.$s]  }.${  pad3(raw.$ms)}`;
     case "YYYY-MM-DDTHH:mm:ss.SSSZ":
-      return datePart + "T" + PAD2[raw.$H] + ":" + PAD2[raw.$m] + ":" + PAD2[raw.$s] + "." + pad3(raw.$ms) + formatOffset(m.utcOffset() as number);
+      return `${datePart  }T${  PAD2[raw.$H]  }:${  PAD2[raw.$m]  }:${  PAD2[raw.$s]  }.${  pad3(raw.$ms)  }${formatOffset(m.utcOffset() as number)}`;
   }
   return undefined;
 }

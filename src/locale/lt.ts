@@ -40,7 +40,7 @@ function forms(key) {
 }
 
 function translate(number, withoutSuffix, key, isFuture) {
-    var result = number + ' ';
+    var result = `${number  } `;
     if (number === 1) {
         return (
             result + translateSingular(number, withoutSuffix, key[0], isFuture)
@@ -117,7 +117,7 @@ export const ltLocale: LocaleSpec = {
     },
     dayOfMonthOrdinalParse: /\d{1,2}-oji/,
     ordinal: function (number) {
-        return number + '-oji';
+        return `${number  }-oji`;
     },
     week: {
       dow: 1,

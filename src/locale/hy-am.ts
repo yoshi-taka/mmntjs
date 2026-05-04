@@ -75,9 +75,9 @@ export const hy_amLocale: LocaleSpec = {
             case 'W':
             case 'DDDo':
                 if (number === 1) {
-                    return number + '-ին';
+                    return `${number  }-ին`;
                 }
-                return number + '-րդ';
+                return `${number  }-րդ`;
             default:
                 return number;
         }

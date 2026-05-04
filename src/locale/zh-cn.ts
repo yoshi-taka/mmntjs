@@ -79,12 +79,12 @@ export const zh_cnLocale: LocaleSpec = {
             case 'd':
             case 'D':
             case 'DDD':
-                return number + '日';
+                return `${number  }日`;
             case 'M':
-                return number + '月';
+                return `${number  }月`;
             case 'w':
             case 'W':
-                return number + '周';
+                return `${number  }周`;
             default:
                 return number;
         }

@@ -122,7 +122,7 @@ export const enLocale: LocaleSpec = {
   },
 
   isPM(input: string): boolean {
-    return (input + "").toLowerCase().charAt(0) === "p";
+    return (`${input  }`).toLowerCase().charAt(0) === "p";
   },
 
   meridiemParse: /[ap]\.?m?\.?/i,
@@ -150,17 +150,17 @@ export const enLocale: LocaleSpec = {
     const s = n % 10;
     const t = n % 100;
     if (t === 11 || t === 12 || t === 13) {
-      return n + "th";
+      return `${n  }th`;
     }
     switch (s) {
       case 1:
-        return n + "st";
+        return `${n  }st`;
       case 2:
-        return n + "nd";
+        return `${n  }nd`;
       case 3:
-        return n + "rd";
+        return `${n  }rd`;
       default:
-        return n + "th";
+        return `${n  }th`;
     }
   },
 

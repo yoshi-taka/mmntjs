@@ -41,30 +41,30 @@ export const heLocale: LocaleSpec = {
             if (number === 2) {
                 return 'שעתיים';
             }
-            return number + ' שעות';
+            return `${number  } שעות`;
         },
       d: "יום",
       dd: function (number) {
             if (number === 2) {
                 return 'יומיים';
             }
-            return number + ' ימים';
+            return `${number  } ימים`;
         },
       M: "חודש",
       MM: function (number) {
             if (number === 2) {
                 return 'חודשיים';
             }
-            return number + ' חודשים';
+            return `${number  } חודשים`;
         },
       y: "שנה",
       yy: function (number) {
             if (number === 2) {
                 return 'שנתיים';
             } else if (number % 10 === 0 && number !== 10) {
-                return number + ' שנה';
+                return `${number  } שנה`;
             }
-            return number + ' שנים';
+            return `${number  } שנים`;
         }
     },
     meridiemParse: /אחה"צ|לפנה"צ|אחרי הצהריים|לפני הצהריים|לפנות בוקר|בבוקר|בערב/i,

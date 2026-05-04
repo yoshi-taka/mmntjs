@@ -16,23 +16,23 @@ function translate(number, withoutSuffix, key, isFuture) {
                 ? ' másodperc'
                 : ' másodperce';
         case 'm':
-            return 'egy' + (isFuture || withoutSuffix ? ' perc' : ' perce');
+            return `egy${  isFuture || withoutSuffix ? ' perc' : ' perce'}`;
         case 'mm':
             return num + (isFuture || withoutSuffix ? ' perc' : ' perce');
         case 'h':
-            return 'egy' + (isFuture || withoutSuffix ? ' óra' : ' órája');
+            return `egy${  isFuture || withoutSuffix ? ' óra' : ' órája'}`;
         case 'hh':
             return num + (isFuture || withoutSuffix ? ' óra' : ' órája');
         case 'd':
-            return 'egy' + (isFuture || withoutSuffix ? ' nap' : ' napja');
+            return `egy${  isFuture || withoutSuffix ? ' nap' : ' napja'}`;
         case 'dd':
             return num + (isFuture || withoutSuffix ? ' nap' : ' napja');
         case 'M':
-            return 'egy' + (isFuture || withoutSuffix ? ' hónap' : ' hónapja');
+            return `egy${  isFuture || withoutSuffix ? ' hónap' : ' hónapja'}`;
         case 'MM':
             return num + (isFuture || withoutSuffix ? ' hónap' : ' hónapja');
         case 'y':
-            return 'egy' + (isFuture || withoutSuffix ? ' év' : ' éve');
+            return `egy${  isFuture || withoutSuffix ? ' év' : ' éve'}`;
         case 'yy':
             return num + (isFuture || withoutSuffix ? ' év' : ' éve');
     }
@@ -41,10 +41,10 @@ function translate(number, withoutSuffix, key, isFuture) {
 
 function week(isFuture) {
     return (
-        (isFuture ? '' : '[múlt] ') +
-        '[' +
-        weekEndings[this.day()] +
-        '] LT[-kor]'
+        `${isFuture ? '' : '[múlt] ' 
+        }[${ 
+        weekEndings[this.day()] 
+        }] LT[-kor]`
     );
 }
 

@@ -39,10 +39,10 @@ var translator = {
         word = translator.correctGrammaticalCase(number, wordKey);
         // Nominativ
         if (key === 'yy' && withoutSuffix && word === 'godinu') {
-            return number + ' godina';
+            return `${number  } godina`;
         }
 
-        return number + ' ' + word;
+        return `${number  } ${  word}`;
     },
 };
 

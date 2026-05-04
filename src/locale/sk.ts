@@ -12,7 +12,7 @@ function plural(n) {
 }
 
 function translate(number, withoutSuffix, key, isFuture) {
-    var result = number + ' ';
+    var result = `${number  } `;
     switch (key) {
         case 's': // a few seconds / in a few seconds / a few seconds ago
             return withoutSuffix || isFuture ? 'pár sekúnd' : 'pár sekundami';
@@ -20,7 +20,7 @@ function translate(number, withoutSuffix, key, isFuture) {
             if (withoutSuffix || isFuture) {
                 return result + (plural(number) ? 'sekundy' : 'sekúnd');
             } else {
-                return result + 'sekundami';
+                return `${result  }sekundami`;
             }
         case 'm': // a minute / in a minute / a minute ago
             return withoutSuffix ? 'minúta' : isFuture ? 'minútu' : 'minútou';
@@ -28,7 +28,7 @@ function translate(number, withoutSuffix, key, isFuture) {
             if (withoutSuffix || isFuture) {
                 return result + (plural(number) ? 'minúty' : 'minút');
             } else {
-                return result + 'minútami';
+                return `${result  }minútami`;
             }
         case 'h': // an hour / in an hour / an hour ago
             return withoutSuffix ? 'hodina' : isFuture ? 'hodinu' : 'hodinou';
@@ -36,7 +36,7 @@ function translate(number, withoutSuffix, key, isFuture) {
             if (withoutSuffix || isFuture) {
                 return result + (plural(number) ? 'hodiny' : 'hodín');
             } else {
-                return result + 'hodinami';
+                return `${result  }hodinami`;
             }
         case 'd': // a day / in a day / a day ago
             return withoutSuffix || isFuture ? 'deň' : 'dňom';
@@ -44,7 +44,7 @@ function translate(number, withoutSuffix, key, isFuture) {
             if (withoutSuffix || isFuture) {
                 return result + (plural(number) ? 'dni' : 'dní');
             } else {
-                return result + 'dňami';
+                return `${result  }dňami`;
             }
         case 'M': // a month / in a month / a month ago
             return withoutSuffix || isFuture ? 'mesiac' : 'mesiacom';
@@ -52,7 +52,7 @@ function translate(number, withoutSuffix, key, isFuture) {
             if (withoutSuffix || isFuture) {
                 return result + (plural(number) ? 'mesiace' : 'mesiacov');
             } else {
-                return result + 'mesiacmi';
+                return `${result  }mesiacmi`;
             }
         case 'y': // a year / in a year / a year ago
             return withoutSuffix || isFuture ? 'rok' : 'rokom';
@@ -60,7 +60,7 @@ function translate(number, withoutSuffix, key, isFuture) {
             if (withoutSuffix || isFuture) {
                 return result + (plural(number) ? 'roky' : 'rokov');
             } else {
-                return result + 'rokmi';
+                return `${result  }rokmi`;
             }
     }
 }

@@ -220,7 +220,7 @@ export class Duration {
     if (!s) return 0;
     const parts = s.replace(/,/g, ".").split(".");
     if (parts.length === 1) return parseFloat(parts[0]) || 0;
-    return parseFloat(parts[0] + "." + parts[1]) || 0;
+    return parseFloat(`${parts[0]  }.${  parts[1]}`) || 0;
   }
 
   private _parseString(str: string): void {
@@ -841,7 +841,7 @@ export class Duration {
     for (const u of units) {
       const rawNegative = u.source === "months" ? monthsNegative : daysNegative;
       if (rawNegative !== overallSign) {
-        dateStr += "-" + u.val + u.key;
+        dateStr += `-${  u.val  }${u.key}`;
       } else {
         dateStr += u.val + u.key;
       }
@@ -852,19 +852,19 @@ export class Duration {
       const secStr =
         u.key === "S"
           ? u.val === Math.floor(u.val)
-            ? u.val + "S"
-            : u.val.toFixed(3).replace(/0+$/, "") + "S"
+            ? `${u.val  }S`
+            : `${u.val.toFixed(3).replace(/0+$/, "")  }S`
           : u.val + u.key;
       if (msNegative !== overallSign) {
-        timeStr += "-" + secStr;
+        timeStr += `-${  secStr}`;
       } else {
         timeStr += secStr;
       }
     }
 
-    let result = (overallSign ? "-" : "") + "P" + dateStr;
-    if (timeStr) result += "T" + timeStr;
-    if (result === (overallSign ? "-" : "") + "P" || result === "-P" || result === "P")
+    let result = `${overallSign ? "-" : ""  }P${  dateStr}`;
+    if (timeStr) result += `T${  timeStr}`;
+    if (result === `${overallSign ? "-" : ""  }P` || result === "-P" || result === "P")
       result += "0D";
 
     return result;

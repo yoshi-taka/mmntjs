@@ -26,9 +26,9 @@ var translator = {
             return withoutSuffix ? wordKey[0] : wordKey[1];
         } else {
             return (
-                number +
-                ' ' +
-                translator.correctGrammaticalCase(number, wordKey)
+                `${number 
+                } ${ 
+                translator.correctGrammaticalCase(number, wordKey)}`
             );
         }
     },

@@ -34,22 +34,22 @@ export const caLocale: LocaleSpec = {
     },
     calendar: {
       sameDay: function () {
-            return '[avui a ' + (this.hours() !== 1 ? 'les' : 'la') + '] LT';
+            return `[avui a ${  this.hours() !== 1 ? 'les' : 'la'  }] LT`;
         },
       nextDay: function () {
-            return '[demà a ' + (this.hours() !== 1 ? 'les' : 'la') + '] LT';
+            return `[demà a ${  this.hours() !== 1 ? 'les' : 'la'  }] LT`;
         },
       nextWeek: function () {
-            return 'dddd [a ' + (this.hours() !== 1 ? 'les' : 'la') + '] LT';
+            return `dddd [a ${  this.hours() !== 1 ? 'les' : 'la'  }] LT`;
         },
       lastDay: function () {
-            return '[ahir a ' + (this.hours() !== 1 ? 'les' : 'la') + '] LT';
+            return `[ahir a ${  this.hours() !== 1 ? 'les' : 'la'  }] LT`;
         },
       lastWeek: function () {
             return (
-                '[el] dddd [passat a ' +
-                (this.hours() !== 1 ? 'les' : 'la') +
-                '] LT'
+                `[el] dddd [passat a ${ 
+                this.hours() !== 1 ? 'les' : 'la' 
+                }] LT`
             );
         },
       sameElse: "L"

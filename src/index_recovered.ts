@@ -564,7 +564,7 @@ function createFromString(
     if (/^\d{4}-\d{2}-\d{2}([T ]|$)/.test(trimmedStr)) {
       detectedFmt = "YYYY-MM-DD";
       if (timeMatch) {
-        detectedFmt += (hasT ? "T" : " ") + "HH";
+        detectedFmt += `${hasT ? "T" : " "  }HH`;
         if (timeMatch[2] !== undefined) detectedFmt += ":mm";
         if (timeMatch[3] !== undefined) detectedFmt += ":ss";
         if (timeMatch[4] !== undefined) detectedFmt += ".SSSS";
@@ -1155,7 +1155,7 @@ Object.defineProperty(moment, "parseTwoDigitYear", {
     !isDate(input)
   ) {
     for (const key of Object.keys(input)) {
-      config["_" + key] = (input as any)[key];
+      config[`_${  key}`] = (input as any)[key];
     }
     delete config._userInvalidated;
     config._i = input;

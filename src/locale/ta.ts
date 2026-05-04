@@ -74,7 +74,7 @@ export const taLocale: LocaleSpec = {
     },
     dayOfMonthOrdinalParse: /\d{1,2}வது/,
     ordinal: function (number) {
-        return number + 'வது';
+        return `${number  }வது`;
     },
     preparse: function (string) {
         return string.replace(/[௧௨௩௪௫௬௭௮௯௦]/g, function (match) {

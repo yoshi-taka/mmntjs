@@ -4,25 +4,25 @@ import type { LocaleSpec } from "./en";
 function processRelativeTime(num, withoutSuffix, key, _isFuture) {
     var format = {
         s: ['çend sanîye', 'çend sanîyeyan'],
-        ss: [num + ' sanîye', num + ' sanîyeyan'],
+        ss: [`${num  } sanîye`, `${num  } sanîyeyan`],
         m: ['deqîqeyek', 'deqîqeyekê'],
-        mm: [num + ' deqîqe', num + ' deqîqeyan'],
+        mm: [`${num  } deqîqe`, `${num  } deqîqeyan`],
         h: ['saetek', 'saetekê'],
-        hh: [num + ' saet', num + ' saetan'],
+        hh: [`${num  } saet`, `${num  } saetan`],
         d: ['rojek', 'rojekê'],
-        dd: [num + ' roj', num + ' rojan'],
+        dd: [`${num  } roj`, `${num  } rojan`],
         w: ['hefteyek', 'hefteyekê'],
-        ww: [num + ' hefte', num + ' hefteyan'],
+        ww: [`${num  } hefte`, `${num  } hefteyan`],
         M: ['mehek', 'mehekê'],
-        MM: [num + ' meh', num + ' mehan'],
+        MM: [`${num  } meh`, `${num  } mehan`],
         y: ['salek', 'salekê'],
-        yy: [num + ' sal', num + ' salan'],
+        yy: [`${num  } sal`, `${num  } salan`],
     };
     return withoutSuffix ? format[key][0] : format[key][1];
 }
 
 function ezafeNumSuffix(num) {
-    num = '' + num;
+    num = `${  num}`;
     var l = num.substring(num.length - 1),
         ll = num.length > 1 ? num.substring(num.length - 2) : '';
     if (
@@ -90,7 +90,7 @@ export const ku_kmrLocale: LocaleSpec = {
     dayOfMonthOrdinalParse: /\d{1,2}(?:yê|ê|\.)/,
     ordinal: function (num, period) {
         var p = period.toLowerCase();
-        if (p.includes('w') || p.includes('m')) return num + '.';
+        if (p.includes('w') || p.includes('m')) return `${num  }.`;
 
         return num + ezafeNumSuffix(num);
     },

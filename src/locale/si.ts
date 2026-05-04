@@ -48,7 +48,7 @@ export const siLocale: LocaleSpec = {
     },
     dayOfMonthOrdinalParse: /\d{1,2} වැනි/,
     ordinal: function (number) {
-        return number + ' වැනි';
+        return `${number  } වැනි`;
     },
     meridiemParse: /පෙර වරු|පස් වරු|පෙ.ව|ප.ව./,
     isPM: function (input) {

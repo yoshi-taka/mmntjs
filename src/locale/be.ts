@@ -24,7 +24,7 @@ function relativeTimeWithPlural(number, withoutSuffix, key) {
     } else if (key === 'h') {
         return withoutSuffix ? 'гадзіна' : 'гадзіну';
     } else {
-        return number + ' ' + plural(format[key], +number);
+        return `${number  } ${  plural(format[key], +number)}`;
     }
 }
 
@@ -120,10 +120,10 @@ export const beLocale: LocaleSpec = {
                 return (number % 10 === 2 || number % 10 === 3) &&
                     number % 100 !== 12 &&
                     number % 100 !== 13
-                    ? number + '-і'
-                    : number + '-ы';
+                    ? `${number  }-і`
+                    : `${number  }-ы`;
             case 'D':
-                return number + '-га';
+                return `${number  }-га`;
             default:
                 return number;
         }

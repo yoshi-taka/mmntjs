@@ -19,7 +19,7 @@ test('parse', function (assert) {
         assert.equal(
             moment(input, mmm).month(),
             i,
-            input + ' sepatutnya bulan ' + (i + 1)
+            `${input  } sepatutnya bulan ${  i + 1}`
         );
     }
 
@@ -27,7 +27,7 @@ test('parse', function (assert) {
         assert.equal(
             moment(input, mmm, true).month(),
             monthIndex,
-            input + ' ' + mmm + ' should be strict month ' + (monthIndex + 1)
+            `${input  } ${  mmm  } should be strict month ${  monthIndex + 1}`
         );
     }
 
@@ -84,7 +84,7 @@ test('format', function (assert) {
         i;
 
     for (i = 0; i < a.length; i++) {
-        assert.equal(b.format(a[i][0]), a[i][1], a[i][0] + ' ---> ' + a[i][1]);
+        assert.equal(b.format(a[i][0]), a[i][1], `${a[i][0]  } ---> ${  a[i][1]}`);
     }
 });
 
@@ -370,19 +370,19 @@ test('calendar next week', function (assert) {
         assert.equal(
             m.calendar(),
             m.format('dddd [pukul] LT'),
-            'Hari ini + ' + i + ' hari waktu sekarang'
+            `Hari ini + ${  i  } hari waktu sekarang`
         );
         m.hours(0).minutes(0).seconds(0).milliseconds(0);
         assert.equal(
             m.calendar(),
             m.format('dddd [pukul] LT'),
-            'Hari ini + ' + i + ' hari permulaan hari'
+            `Hari ini + ${  i  } hari permulaan hari`
         );
         m.hours(23).minutes(59).seconds(59).milliseconds(999);
         assert.equal(
             m.calendar(),
             m.format('dddd [pukul] LT'),
-            'Hari ini + ' + i + ' hari tamat hari'
+            `Hari ini + ${  i  } hari tamat hari`
         );
     }
 });
@@ -394,19 +394,19 @@ test('calendar last week', function (assert) {
         assert.equal(
             m.calendar(),
             m.format('dddd [lepas] [pukul] LT'),
-            'Hari ini - ' + i + ' hari waktu sekarang'
+            `Hari ini - ${  i  } hari waktu sekarang`
         );
         m.hours(0).minutes(0).seconds(0).milliseconds(0);
         assert.equal(
             m.calendar(),
             m.format('dddd [lepas] [pukul] LT'),
-            'Hari ini - ' + i + ' hari permulaan hari'
+            `Hari ini - ${  i  } hari permulaan hari`
         );
         m.hours(23).minutes(59).seconds(59).milliseconds(999);
         assert.equal(
             m.calendar(),
             m.format('dddd [lepas] [pukul] LT'),
-            'Hari ini - ' + i + ' hari tamat hari'
+            `Hari ini - ${  i  } hari tamat hari`
         );
     }
 });

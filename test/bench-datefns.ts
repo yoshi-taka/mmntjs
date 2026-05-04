@@ -8,9 +8,9 @@ interface BenchCase {
 }
 
 function micros(ns: number): string {
-  if (ns < 1000) return ns.toFixed(0) + "ns";
-  if (ns < 1_000_000) return (ns / 1000).toFixed(2) + "\u03BCs";
-  return (ns / 1_000_000).toFixed(3) + "ms";
+  if (ns < 1000) return `${ns.toFixed(0)  }ns`;
+  if (ns < 1_000_000) return `${(ns / 1000).toFixed(2)  }\u03BCs`;
+  return `${(ns / 1_000_000).toFixed(3)  }ms`;
 }
 
 function run(name: string, fn: () => void, iterations: number): number {
@@ -117,13 +117,13 @@ const results: { name: string; moment2: number; datefns: number; ratio: string }
 
 for (const c of CASES) {
   const [fnMoment2, fnDatefns] = c.run();
-  const tMoment2 = run(c.name + " (moment2)", fnMoment2, ITER);
-  const tDatefns = run(c.name + " (date-fns)", fnDatefns, ITER);
+  const tMoment2 = run(`${c.name  } (moment2)`, fnMoment2, ITER);
+  const tDatefns = run(`${c.name  } (date-fns)`, fnDatefns, ITER);
   const ratio = (tDatefns / tMoment2 * 100).toFixed(1);
   results.push({ name: c.name, moment2: tMoment2, datefns: tDatefns, ratio });
 }
 
-console.log("\nBenchmark results (" + ITER + " iterations each):\n");
+console.log(`\nBenchmark results (${  ITER  } iterations each):\n`);
 console.log("\u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510");
 console.log("\u2502 Operation                                    \u2502 moment2    \u2502 date-fns   \u2502 %        \u2502");
 console.log("\u2502\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524");
@@ -132,7 +132,7 @@ for (const r of results) {
   const name = r.name.padEnd(44).slice(0, 44);
   const m2 = micros(r.moment2).padStart(10);
   const df = micros(r.datefns).padStart(10);
-  const pct = (r.ratio + "%").padStart(6);
+  const pct = (`${r.ratio  }%`).padStart(6);
   console.log(`\u2502 ${name} \u2502 ${m2} \u2502 ${df} \u2502 ${pct} \u2502`);
 }
 

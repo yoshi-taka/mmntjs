@@ -23,7 +23,7 @@ function relativeTimeWithPlural(number, withoutSuffix, key) {
     if (key === 'm') {
         return withoutSuffix ? 'минута' : 'минуту';
     } else {
-        return number + ' ' + plural(format[key], +number);
+        return `${number  } ${  plural(format[key], +number)}`;
     }
 }
 
@@ -174,12 +174,12 @@ export const ruLocale: LocaleSpec = {
             case 'M':
             case 'd':
             case 'DDD':
-                return number + '-й';
+                return `${number  }-й`;
             case 'D':
-                return number + '-го';
+                return `${number  }-го`;
             case 'w':
             case 'W':
-                return number + '-я';
+                return `${number  }-я`;
             default:
                 return number;
         }

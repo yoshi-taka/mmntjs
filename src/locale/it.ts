@@ -22,53 +22,53 @@ export const itLocale: LocaleSpec = {
     calendar: {
       sameDay: function () {
             return (
-                '[Oggi a' +
-                (this.hours() > 1 ? 'lle ' : this.hours() === 0 ? ' ' : "ll'") +
-                ']LT'
+                `[Oggi a${ 
+                this.hours() > 1 ? 'lle ' : this.hours() === 0 ? ' ' : "ll'" 
+                }]LT`
             );
         },
       nextDay: function () {
             return (
-                '[Domani a' +
-                (this.hours() > 1 ? 'lle ' : this.hours() === 0 ? ' ' : "ll'") +
-                ']LT'
+                `[Domani a${ 
+                this.hours() > 1 ? 'lle ' : this.hours() === 0 ? ' ' : "ll'" 
+                }]LT`
             );
         },
       nextWeek: function () {
             return (
-                'dddd [a' +
-                (this.hours() > 1 ? 'lle ' : this.hours() === 0 ? ' ' : "ll'") +
-                ']LT'
+                `dddd [a${ 
+                this.hours() > 1 ? 'lle ' : this.hours() === 0 ? ' ' : "ll'" 
+                }]LT`
             );
         },
       lastDay: function () {
             return (
-                '[Ieri a' +
-                (this.hours() > 1 ? 'lle ' : this.hours() === 0 ? ' ' : "ll'") +
-                ']LT'
+                `[Ieri a${ 
+                this.hours() > 1 ? 'lle ' : this.hours() === 0 ? ' ' : "ll'" 
+                }]LT`
             );
         },
       lastWeek: function () {
             switch (this.day()) {
                 case 0:
                     return (
-                        '[La scorsa] dddd [a' +
-                        (this.hours() > 1
+                        `[La scorsa] dddd [a${ 
+                        this.hours() > 1
                             ? 'lle '
                             : this.hours() === 0
                               ? ' '
-                              : "ll'") +
-                        ']LT'
+                              : "ll'" 
+                        }]LT`
                     );
                 default:
                     return (
-                        '[Lo scorso] dddd [a' +
-                        (this.hours() > 1
+                        `[Lo scorso] dddd [a${ 
+                        this.hours() > 1
                             ? 'lle '
                             : this.hours() === 0
                               ? ' '
-                              : "ll'") +
-                        ']LT'
+                              : "ll'" 
+                        }]LT`
                     );
             }
         },

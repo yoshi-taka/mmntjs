@@ -1878,12 +1878,12 @@ export class Moment {
       const sign = offset >= 0 ? "+" : "-";
       const absOffset = Math.abs(offset);
       const offsetStr =
-        sign + zeroFill(Math.floor(absOffset / 60), 2) + ":" + zeroFill(absOffset % 60, 2);
+        `${sign + zeroFill(Math.floor(absOffset / 60), 2)  }:${  zeroFill(absOffset % 60, 2)}`;
       let yearStr: string;
       if (year >= 0) {
-        yearStr = year >= 10000 ? "+" + zeroFill(year, 6) : zeroFill(year, 4);
+        yearStr = year >= 10000 ? `+${  zeroFill(year, 6)}` : zeroFill(year, 4);
       } else {
-        yearStr = "-" + zeroFill(-year, 6);
+        yearStr = `-${  zeroFill(-year, 6)}`;
       }
       return `${yearStr}-${month}-${day}T${hour}:${min}:${sec}.${ms}${offsetStr}`;
     }
@@ -1901,12 +1901,12 @@ export class Moment {
     let yearStr: string;
     if (year >= 0) {
       if (year >= 10000) {
-        yearStr = "+" + zeroFill(year, 6);
+        yearStr = `+${  zeroFill(year, 6)}`;
       } else {
         yearStr = zeroFill(year, 4);
       }
     } else {
-      yearStr = "-" + zeroFill(-year, 6);
+      yearStr = `-${  zeroFill(-year, 6)}`;
     }
 
     return `${yearStr}-${month}-${day}T${hour}:${min}:${sec}.${ms}${offsetStr}`;
@@ -2282,7 +2282,7 @@ export class Moment {
           m._isUTC = true;
           m._refreshFields();
         } else {
-          const allInput = (this._i as string) + " " + ((this as any)._unusedInput || []).join("");
+          const allInput = `${this._i as string  } ${  ((this as any)._unusedInput || []).join("")}`;
           const tzMatch = allInput.match(/([+-]\d{2}):?(\d{2})\s*$/);
           if (tzMatch) {
             const sign = tzMatch[1][0] === "+" ? 1 : -1;
@@ -2317,9 +2317,9 @@ export class Moment {
         m._refreshFields();
       } else if (isString(input)) {
         const allInput =
-          (input as string) +
-          " " +
-          (parsed && parsed._unusedInput ? parsed._unusedInput.join("") : "");
+          `${input as string 
+          } ${ 
+          parsed && parsed._unusedInput ? parsed._unusedInput.join("") : ""}`;
         const tzMatch = allInput.match(/([+-]\d{2}):?(\d{2})\s*$/);
         if (tzMatch) {
           const sign = tzMatch[1][0] === "+" ? 1 : -1;
@@ -2379,7 +2379,7 @@ export class Moment {
       const hours = Math.floor(Math.abs(offset) / 60);
       const minutes = Math.abs(offset) % 60;
       const sign = offset >= 0 ? "+" : "-";
-      return "GMT" + sign + String(hours).padStart(2, "0") + String(minutes).padStart(2, "0");
+      return `GMT${  sign  }${String(hours).padStart(2, "0")  }${String(minutes).padStart(2, "0")}`;
     }
     return "";
   }

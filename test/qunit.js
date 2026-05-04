@@ -49,18 +49,18 @@ function createAssert() {
             var diff = count - plan;
             var detail =
                 diff < 0
-                    ? (-diff) + ' missing'
-                    : diff + ' extra';
-            var msg = '[' + currentTestName + '] Expected ' + plan + ' assertions, got ' + count + ' (' + detail + ')';
+                    ? `${-diff  } missing`
+                    : `${diff  } extra`;
+            var msg = `[${  currentTestName  }] Expected ${  plan  } assertions, got ${  count  } (${  detail  })`;
             if (assertLog.length > 0) {
                 var breakdown = Object.keys(summary)
                     .sort()
-                    .map(function (k) { return k + ': ' + summary[k]; })
+                    .map(function (k) { return `${k  }: ${  summary[k]}`; })
                     .join(', ');
-                msg += '\nAssertions run (' + breakdown + '):';
+                msg += `\nAssertions run (${  breakdown  }):`;
                 for (var i = 0; i < assertLog.length; i++) {
                     var entry = assertLog[i];
-                    msg += '\n  #' + (i + 1) + ' ' + entry.method + (entry.msg ? ' - ' + entry.msg : '');
+                    msg += `\n  #${  i + 1  } ${  entry.method  }${entry.msg ? ' - ' + entry.msg : ''}`;
                 }
             }
             throw new Error(msg);
@@ -81,12 +81,12 @@ function createAssert() {
         equal(a, b, msg) {
             count++;
             log('equal', msg);
-            if (a != b) throw new Error((msg || '') + ' — actual: ' + JSON.stringify(a) + ', expected: ' + JSON.stringify(b));
+            if (a != b) throw new Error(`${msg || ''  } — actual: ${  JSON.stringify(a)  }, expected: ${  JSON.stringify(b)}`);
         },
         strictEqual(a, b, msg) {
             count++;
             log('strictEqual', msg);
-            if (a !== b) throw new Error(msg || 'expected ' + a + ' === ' + b);
+            if (a !== b) throw new Error(msg || `expected ${  a  } === ${  b}`);
         },
         deepEqual(a, b, msg) {
             count++;
@@ -100,7 +100,7 @@ function createAssert() {
         notEqual(a, b, msg) {
             count++;
             log('notEqual', msg);
-            if (a == b) throw new Error(msg || 'expected ' + a + ' != ' + b);
+            if (a == b) throw new Error(msg || `expected ${  a  } != ${  b}`);
         },
         throws(fn, msg) {
             count++;
@@ -124,7 +124,7 @@ function runWithLifecycle(name, fn) {
     moment.locale('en');
     if (moment.createFromInputFallback !== undefined) {
         moment.createFromInputFallback = function (config) {
-            throw new Error('input not handled by moment: ' + config._i);
+            throw new Error(`input not handled by moment: ${  config._i}`);
         };
     }
     try {

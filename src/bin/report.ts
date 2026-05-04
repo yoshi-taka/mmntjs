@@ -68,7 +68,7 @@ export function runReport(dir: string = ".") {
           const afterMoment = line.split(/\bmoment\b/).slice(1).join(" ");
           for (const m of afterMoment.matchAll(/\.\s*(\w+)\s*\(/g)) {
             if (NEVER_MOMENT.has(m[1])) continue;
-            apiCounts["." + m[1]] = (apiCounts["." + m[1]] || 0) + 1;
+            apiCounts[`.${  m[1]}`] = (apiCounts["." + m[1]] || 0) + 1;
             totalUsages++;
           }
         }

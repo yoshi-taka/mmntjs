@@ -88,7 +88,7 @@ export const mnLocale: LocaleSpec = {
             case 'd':
             case 'D':
             case 'DDD':
-                return number + ' өдөр';
+                return `${number  } өдөр`;
             default:
                 return number;
         }

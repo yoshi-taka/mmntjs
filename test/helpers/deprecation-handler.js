@@ -17,7 +17,7 @@ export function setupDeprecationHandler(test, moment, _scope) {
         );
         if (deprecationId === -1) {
             throw new Error(
-                'Unexpected deprecation thrown name=' + name + ' msg=' + msg
+                `Unexpected deprecation thrown name=${  name  } msg=${  msg}`
             );
         }
         test._observedDeprecations[deprecationId] = 1;
@@ -36,8 +36,8 @@ export function teardownDeprecationHandler(test, moment, _scope) {
         });
         if (missedDeprecations.length !== 0) {
             throw new Error(
-                'Expected deprecation warnings did not happen: ' +
-                    missedDeprecations.join(' ')
+                `Expected deprecation warnings did not happen: ${ 
+                    missedDeprecations.join(' ')}`
             );
         }
     }

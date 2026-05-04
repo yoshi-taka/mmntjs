@@ -18,7 +18,7 @@ test('parse', function (assert) {
         assert.equal(
             moment(input, mmm).month(),
             i,
-            input + ' should be month ' + (i + 1)
+            `${input  } should be month ${  i + 1}`
         );
     }
 
@@ -26,7 +26,7 @@ test('parse', function (assert) {
         assert.equal(
             moment(input, mmm, true).month(),
             monthIndex,
-            input + ' ' + mmm + ' should be strict month ' + (monthIndex + 1)
+            `${input  } ${  mmm  } should be strict month ${  monthIndex + 1}`
         );
     }
 
@@ -78,7 +78,7 @@ test('format', function (assert) {
         b = moment(new Date(2010, 1, 14, 15, 25, 50, 125)),
         i;
     for (i = 0; i < a.length; i++) {
-        assert.equal(b.format(a[i][0]), a[i][1], a[i][0] + ' ---> ' + a[i][1]);
+        assert.equal(b.format(a[i][0]), a[i][1], `${a[i][0]  } ---> ${  a[i][1]}`);
     }
 });
 
@@ -176,13 +176,13 @@ test('format month case', function (assert) {
     for (i = 0; i < 12; i++) {
         assert.equal(
             moment([2011, i, 1]).format('D MMMM'),
-            '1 ' + months.accusative[i],
-            '1 ' + months.accusative[i]
+            `1 ${  months.accusative[i]}`,
+            `1 ${  months.accusative[i]}`
         );
         assert.equal(
             moment([2011, i, 1]).format('MMMM'),
             months.nominative[i],
-            '1 ' + months.nominative[i]
+            `1 ${  months.nominative[i]}`
         );
     }
 });
@@ -417,20 +417,20 @@ test('calendar next week', function (assert) {
         m = moment().add({ d: i });
         assert.equal(
             m.calendar(),
-            m.format('[У] dddd [о' + (m.hours() === 11 ? 'б' : '') + '] LT'),
-            'Today + ' + i + ' days current time'
+            m.format(`[У] dddd [о${  m.hours() === 11 ? 'б' : ''  }] LT`),
+            `Today + ${  i  } days current time`
         );
         m.hours(0).minutes(0).seconds(0).milliseconds(0);
         assert.equal(
             m.calendar(),
             m.format('[У] dddd [о] LT'),
-            'Today + ' + i + ' days beginning of day'
+            `Today + ${  i  } days beginning of day`
         );
         m.hours(23).minutes(59).seconds(59).milliseconds(999);
         assert.equal(
             m.calendar(),
             m.format('[У] dddd [о] LT'),
-            'Today + ' + i + ' days end of day'
+            `Today + ${  i  } days end of day`
         );
     }
 });
@@ -445,15 +445,15 @@ test('calendar last week', function (assert) {
             case 5:
             case 6:
                 return (
-                    '[Минулої] dddd [о' + (d.hours() === 11 ? 'б' : '') + '] LT'
+                    `[Минулої] dddd [о${  d.hours() === 11 ? 'б' : ''  }] LT`
                 );
             case 1:
             case 2:
             case 4:
                 return (
-                    '[Минулого] dddd [о' +
-                    (d.hours() === 11 ? 'б' : '') +
-                    '] LT'
+                    `[Минулого] dddd [о${ 
+                    d.hours() === 11 ? 'б' : '' 
+                    }] LT`
                 );
         }
     }
@@ -463,19 +463,19 @@ test('calendar last week', function (assert) {
         assert.equal(
             m.calendar(),
             m.format(makeFormat(m)),
-            'Today - ' + i + ' days current time'
+            `Today - ${  i  } days current time`
         );
         m.hours(0).minutes(0).seconds(0).milliseconds(0);
         assert.equal(
             m.calendar(),
             m.format(makeFormat(m)),
-            'Today - ' + i + ' days beginning of day'
+            `Today - ${  i  } days beginning of day`
         );
         m.hours(23).minutes(59).seconds(59).milliseconds(999);
         assert.equal(
             m.calendar(),
             m.format(makeFormat(m)),
-            'Today - ' + i + ' days end of day'
+            `Today - ${  i  } days end of day`
         );
     }
 });

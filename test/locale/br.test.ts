@@ -20,7 +20,7 @@ test('parse', function (assert) {
         assert.equal(
             moment(input, mmm).month(),
             i,
-            input + ' should be month ' + (i + 1)
+            `${input  } should be month ${  i + 1}`
         );
     }
 
@@ -28,7 +28,7 @@ test('parse', function (assert) {
         assert.equal(
             moment(input, mmm, true).month(),
             monthIndex,
-            input + ' ' + mmm + ' should be strict month ' + (monthIndex + 1)
+            `${input  } ${  mmm  } should be strict month ${  monthIndex + 1}`
         );
     }
 
@@ -114,7 +114,7 @@ test('format', function (assert) {
         b = moment(new Date(2010, 1, 14, 15, 25, 50, 125)),
         i;
     for (i = 0; i < a.length; i++) {
-        assert.equal(b.format(a[i][0]), a[i][1], a[i][0] + ' ---> ' + a[i][1]);
+        assert.equal(b.format(a[i][0]), a[i][1], `${a[i][0]  } ---> ${  a[i][1]}`);
     }
 });
 
@@ -417,19 +417,19 @@ test('calendar next week', function (assert) {
         assert.equal(
             m.calendar(),
             m.format('dddd [da] LT'),
-            'Today + ' + i + ' days current time'
+            `Today + ${  i  } days current time`
         );
         m.hours(0).minutes(0).seconds(0).milliseconds(0);
         assert.equal(
             m.calendar(),
             m.format('dddd [da] LT'),
-            'Today + ' + i + ' days beginning of day'
+            `Today + ${  i  } days beginning of day`
         );
         m.hours(23).minutes(59).seconds(59).milliseconds(999);
         assert.equal(
             m.calendar(),
             m.format('dddd [da] LT'),
-            'Today + ' + i + ' days end of day'
+            `Today + ${  i  } days end of day`
         );
     }
 });
@@ -443,19 +443,19 @@ test('calendar last week', function (assert) {
         assert.equal(
             m.calendar(),
             m.format('dddd [paset da] LT'),
-            'Today - ' + i + ' days current time'
+            `Today - ${  i  } days current time`
         );
         m.hours(0).minutes(0).seconds(0).milliseconds(0);
         assert.equal(
             m.calendar(),
             m.format('dddd [paset da] LT'),
-            'Today - ' + i + ' days beginning of day'
+            `Today - ${  i  } days beginning of day`
         );
         m.hours(23).minutes(59).seconds(59).milliseconds(999);
         assert.equal(
             m.calendar(),
             m.format('dddd [paset da] LT'),
-            'Today - ' + i + ' days end of day'
+            `Today - ${  i  } days end of day`
         );
     }
 });

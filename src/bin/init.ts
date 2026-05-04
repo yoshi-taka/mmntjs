@@ -22,7 +22,7 @@ export function runInit(dir: string = ".") {
     delete pkg.devDependencies["@types/moment"];
   }
 
-  fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n");
+  fs.writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)  }\n`);
 
   console.log("Run install to complete setup.");
   console.log();

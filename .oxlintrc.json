@@ -8,7 +8,8 @@
     "typescript/prefer-find": "error",
     "unicorn/throw-new-error": "error",
     "typescript/consistent-type-exports": "error",
-    "import/no-duplicates": "error"
+    "import/no-duplicates": "error",
+    "eslint/prefer-template": "error"
   },
   "ignorePatterns": [
     "test/moment/",

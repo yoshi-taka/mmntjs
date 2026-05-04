@@ -38,7 +38,7 @@ export const kaLocale: LocaleSpec = {
             return s.replace(
                 /(წამ|წუთ|საათ|წელ|დღ|თვ)(ი|ე)/,
                 function ($0, $1, $2) {
-                    return $2 === 'ი' ? $1 + 'ში' : $1 + $2 + 'ში';
+                    return $2 === 'ი' ? `${$1  }ში` : `${$1 + $2  }ში`;
                 }
             );
         },
@@ -70,16 +70,16 @@ export const kaLocale: LocaleSpec = {
             return number;
         }
         if (number === 1) {
-            return number + '-ლი';
+            return `${number  }-ლი`;
         }
         if (
             number < 20 ||
             (number <= 100 && number % 20 === 0) ||
             number % 100 === 0
         ) {
-            return 'მე-' + number;
+            return `მე-${  number}`;
         }
-        return number + '-ე';
+        return `${number  }-ე`;
     },
     week: {
       dow: 1,

@@ -11,17 +11,17 @@ export function defineCommonLocaleTests(locale, _options) {
             assert.equal(
                 testMoment.year(),
                 2014,
-                'lenient day of month ordinal parsing ' + i + ' year check'
+                `lenient day of month ordinal parsing ${  i  } year check`
             );
             assert.equal(
                 testMoment.month(),
                 0,
-                'lenient day of month ordinal parsing ' + i + ' month check'
+                `lenient day of month ordinal parsing ${  i  } month check`
             );
             assert.equal(
                 testMoment.date(),
                 i,
-                'lenient day of month ordinal parsing ' + i + ' date check'
+                `lenient day of month ordinal parsing ${  i  } date check`
             );
         }
     });
@@ -29,27 +29,27 @@ export function defineCommonLocaleTests(locale, _options) {
     test('lenient day of month ordinal parsing of number', function (assert) {
         var i, testMoment;
         for (i = 1; i <= 31; ++i) {
-            testMoment = moment('2014 01 ' + i, 'YYYY MM Do');
+            testMoment = moment(`2014 01 ${  i}`, 'YYYY MM Do');
             assert.equal(
                 testMoment.year(),
                 2014,
-                'lenient day of month ordinal parsing of number ' +
-                    i +
-                    ' year check'
+                `lenient day of month ordinal parsing of number ${ 
+                    i 
+                    } year check`
             );
             assert.equal(
                 testMoment.month(),
                 0,
-                'lenient day of month ordinal parsing of number ' +
-                    i +
-                    ' month check'
+                `lenient day of month ordinal parsing of number ${ 
+                    i 
+                    } month check`
             );
             assert.equal(
                 testMoment.date(),
                 i,
-                'lenient day of month ordinal parsing of number ' +
-                    i +
-                    ' date check'
+                `lenient day of month ordinal parsing of number ${ 
+                    i 
+                    } date check`
             );
         }
     });
@@ -61,7 +61,7 @@ export function defineCommonLocaleTests(locale, _options) {
             testMoment = moment(ordinalStr, 'YYYY MM Do', true);
             assert.ok(
                 testMoment.isValid(),
-                'strict day of month ordinal parsing ' + i
+                `strict day of month ordinal parsing ${  i}`
             );
         }
     });
@@ -75,7 +75,7 @@ export function defineCommonLocaleTests(locale, _options) {
                 assert.equal(
                     t2.format('HH:mm'),
                     t1.format('HH:mm'),
-                    'meridiem at ' + t1.format('HH:mm')
+                    `meridiem at ${  t1.format('HH:mm')}`
                 );
             }
         }
@@ -92,7 +92,7 @@ export function defineCommonLocaleTests(locale, _options) {
                 assert.equal(
                     false,
                     !!~format.indexOf(srchToken),
-                    'contains ' + srchToken + ' in ' + baseToken
+                    `contains ${  srchToken  } in ${  baseToken}`
                 );
             });
         });
@@ -109,41 +109,41 @@ export function defineCommonLocaleTests(locale, _options) {
         function tester(format) {
             var r;
             r = moment(m.format(format), format);
-            assert.equal(r.month(), m.month(), 'month ' + i + ' fmt ' + format);
+            assert.equal(r.month(), m.month(), `month ${  i  } fmt ${  format}`);
             if (locale !== 'ka') {
                 r = moment(m.format(format).toLocaleUpperCase(), format);
                 assert.equal(
                     r.month(),
                     m.month(),
-                    'month ' + i + ' fmt ' + format + ' upper'
+                    `month ${  i  } fmt ${  format  } upper`
                 );
             }
             r = moment(m.format(format).toLocaleLowerCase(), format);
             assert.equal(
                 r.month(),
                 m.month(),
-                'month ' + i + ' fmt ' + format + ' lower'
+                `month ${  i  } fmt ${  format  } lower`
             );
 
             r = moment(m.format(format), format, true);
             assert.equal(
                 r.month(),
                 m.month(),
-                'month ' + i + ' fmt ' + format + ' strict'
+                `month ${  i  } fmt ${  format  } strict`
             );
             if (locale !== 'ka') {
                 r = moment(m.format(format).toLocaleUpperCase(), format, true);
                 assert.equal(
                     r.month(),
                     m.month(),
-                    'month ' + i + ' fmt ' + format + ' upper strict'
+                    `month ${  i  } fmt ${  format  } upper strict`
                 );
             }
             r = moment(m.format(format).toLocaleLowerCase(), format, true);
             assert.equal(
                 r.month(),
                 m.month(),
-                'month ' + i + ' fmt ' + format + ' lower strict'
+                `month ${  i  } fmt ${  format  } lower strict`
             );
         }
 
@@ -177,32 +177,32 @@ export function defineCommonLocaleTests(locale, _options) {
         function tester(format) {
             var r,
                 baseMsg =
-                    'weekday ' +
-                    m.weekday() +
-                    ' fmt ' +
-                    format +
-                    ' ' +
-                    m.toISOString();
+                    `weekday ${ 
+                    m.weekday() 
+                    } fmt ${ 
+                    format 
+                    } ${ 
+                    m.toISOString()}`;
             r = moment(m.format(format), format);
             assert.equal(r.weekday(), m.weekday(), baseMsg);
             if (locale !== 'ka') {
                 r = moment(m.format(format).toLocaleUpperCase(), format);
-                assert.equal(r.weekday(), m.weekday(), baseMsg + ' upper');
+                assert.equal(r.weekday(), m.weekday(), `${baseMsg  } upper`);
             }
             r = moment(m.format(format).toLocaleLowerCase(), format);
-            assert.equal(r.weekday(), m.weekday(), baseMsg + ' lower');
+            assert.equal(r.weekday(), m.weekday(), `${baseMsg  } lower`);
             r = moment(m.format(format), format, true);
-            assert.equal(r.weekday(), m.weekday(), baseMsg + ' strict');
+            assert.equal(r.weekday(), m.weekday(), `${baseMsg  } strict`);
             if (locale !== 'ka') {
                 r = moment(m.format(format).toLocaleUpperCase(), format, true);
                 assert.equal(
                     r.weekday(),
                     m.weekday(),
-                    baseMsg + ' upper strict'
+                    `${baseMsg  } upper strict`
                 );
             }
             r = moment(m.format(format).toLocaleLowerCase(), format, true);
-            assert.equal(r.weekday(), m.weekday(), baseMsg + ' lower strict');
+            assert.equal(r.weekday(), m.weekday(), `${baseMsg  } lower strict`);
         }
 
         for (i = 0; i < 7; ++i) {

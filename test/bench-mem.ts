@@ -25,9 +25,9 @@ console.log("│ Metric              │ moment   │ moment2  │ %      │");
 console.log("├─────────────────────┼──────────┼──────────┼────────┤");
 
 for (const [label, key] of [["heapUsed", "heap"], ["rss", "rss"], ["external", "external"]]) {
-  const v1 = ((f1[key]) / 1024).toFixed(0).padStart(6) + "KB";
-  const v2 = ((f2[key]) / 1024).toFixed(0).padStart(6) + "KB";
-  const pct = (f2[key] / f1[key] * 100).toFixed(0).padStart(5) + "%";
+  const v1 = `${((f1[key]) / 1024).toFixed(0).padStart(6)  }KB`;
+  const v2 = `${((f2[key]) / 1024).toFixed(0).padStart(6)  }KB`;
+  const pct = `${(f2[key] / f1[key] * 100).toFixed(0).padStart(5)  }%`;
   console.log(`│ ${label.padEnd(19)} │ ${v1} │ ${v2} │ ${pct} │`);
 }
 console.log("└─────────────────────┴──────────┴──────────┴────────┘");

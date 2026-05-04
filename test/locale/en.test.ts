@@ -15,7 +15,7 @@ test('parse', function (assert) {
         assert.equal(
             moment(input, mmm).month(),
             i,
-            input + ' should be month ' + (i + 1)
+            `${input  } should be month ${  i + 1}`
         );
     }
 
@@ -23,7 +23,7 @@ test('parse', function (assert) {
         assert.equal(
             moment(input, mmm, true).month(),
             monthIndex,
-            input + ' ' + mmm + ' should be strict month ' + (monthIndex + 1)
+            `${input  } ${  mmm  } should be strict month ${  monthIndex + 1}`
         );
     }
 
@@ -80,7 +80,7 @@ test('format', function (assert) {
         i;
 
     for (i = 0; i < a.length; i++) {
-        assert.equal(b.format(a[i][0]), a[i][1], a[i][0] + ' ---> ' + a[i][1]);
+        assert.equal(b.format(a[i][0]), a[i][1], `${a[i][0]  } ---> ${  a[i][1]}`);
     }
 });
 
@@ -153,7 +153,7 @@ test('format era', function (assert) {
         assert.equal(
             moment(a[i][0]).format(a[i][1]),
             a[i][2],
-            a[i][0] + '; ' + a[i][1] + ' ---> ' + a[i][2]
+            `${a[i][0]  }; ${  a[i][1]  } ---> ${  a[i][2]}`
         );
     }
 });
@@ -437,19 +437,19 @@ test('calendar next week', function (assert) {
         assert.equal(
             m.calendar(),
             m.format('dddd [at] LT'),
-            'Today + ' + i + ' days current time'
+            `Today + ${  i  } days current time`
         );
         m.hours(0).minutes(0).seconds(0).milliseconds(0);
         assert.equal(
             m.calendar(),
             m.format('dddd [at] LT'),
-            'Today + ' + i + ' days beginning of day'
+            `Today + ${  i  } days beginning of day`
         );
         m.hours(23).minutes(59).seconds(59).milliseconds(999);
         assert.equal(
             m.calendar(),
             m.format('dddd [at] LT'),
-            'Today + ' + i + ' days end of day'
+            `Today + ${  i  } days end of day`
         );
     }
 });
@@ -462,19 +462,19 @@ test('calendar last week', function (assert) {
         assert.equal(
             m.calendar(),
             m.format('[Last] dddd [at] LT'),
-            'Today - ' + i + ' days current time'
+            `Today - ${  i  } days current time`
         );
         m.hours(0).minutes(0).seconds(0).milliseconds(0);
         assert.equal(
             m.calendar(),
             m.format('[Last] dddd [at] LT'),
-            'Today - ' + i + ' days beginning of day'
+            `Today - ${  i  } days beginning of day`
         );
         m.hours(23).minutes(59).seconds(59).milliseconds(999);
         assert.equal(
             m.calendar(),
             m.format('[Last] dddd [at] LT'),
-            'Today - ' + i + ' days end of day'
+            `Today - ${  i  } days end of day`
         );
     }
 });
@@ -538,29 +538,29 @@ test('weekdays strict parsing', function (assert) {
         assert.equal(
             moment(enLocale.weekdays(m.day(i), ''), 'dddd', true).isValid(),
             true,
-            'parse weekday ' + i
+            `parse weekday ${  i}`
         );
         assert.equal(
             moment(enLocale.weekdaysShort(m.day(i), ''), 'ddd', true).isValid(),
             true,
-            'parse short weekday ' + i
+            `parse short weekday ${  i}`
         );
         assert.equal(
             moment(enLocale.weekdaysMin(m.day(i), ''), 'dd', true).isValid(),
             true,
-            'parse min weekday ' + i
+            `parse min weekday ${  i}`
         );
 
         // negative tests
         assert.equal(
             moment(enLocale.weekdaysMin(m.day(i), ''), 'ddd', true).isValid(),
             false,
-            'parse short weekday ' + i
+            `parse short weekday ${  i}`
         );
         assert.equal(
             moment(enLocale.weekdaysShort(m.day(i), ''), 'dd', true).isValid(),
             false,
-            'parse min weekday ' + i
+            `parse min weekday ${  i}`
         );
     }
 });

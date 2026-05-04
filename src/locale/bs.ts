@@ -13,7 +13,7 @@ function processRelativeTime(number, withoutSuffix, key, isFuture) {
 }
 
 function translate(number, withoutSuffix, key) {
-    var result = number + ' ';
+    var result = `${number  } `;
     switch (key) {
         case 'ss':
             if (number === 1) {

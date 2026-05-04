@@ -66,12 +66,12 @@ export const zh_hkLocale: LocaleSpec = {
             case 'd':
             case 'D':
             case 'DDD':
-                return number + '日';
+                return `${number  }日`;
             case 'M':
-                return number + '月';
+                return `${number  }月`;
             case 'w':
             case 'W':
-                return number + '週';
+                return `${number  }週`;
             default:
                 return number;
         }

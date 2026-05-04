@@ -12,7 +12,7 @@ function _jaFormatFastPath(m: Moment, format: string): string | undefined {
   if (!raw._isValid) return undefined;
   const y = raw.$y;
   if (y < 0 || y > 9999) return undefined;
-  const Y = y < 10 ? '000' + y : y < 100 ? '00' + y : y < 1000 ? '0' + y : '' + y;
+  const Y = y < 10 ? `000${  y}` : y < 100 ? `00${  y}` : y < 1000 ? `0${  y}` : `${  y}`;
   const M = raw.$M + 1;
   const D = raw.$D;
   const H = raw.$H;
@@ -20,19 +20,19 @@ function _jaFormatFastPath(m: Moment, format: string): string | undefined {
   const s = raw.$s;
   switch (format) {
     case 'YYYY/MM/DD':
-      return Y + '/' + (M < 10 ? '0' + M : '' + M) + '/' + (D < 10 ? '0' + D : '' + D);
+      return `${Y  }/${  M < 10 ? '0' + M : '' + M  }/${  D < 10 ? '0' + D : '' + D}`;
     case 'YYYY年M月D日':
-      return Y + '年' + M + '月' + D + '日';
+      return `${Y  }年${  M  }月${  D  }日`;
     case 'YYYY年M月D日 HH:mm':
-      return Y + '年' + M + '月' + D + '日 ' + (H < 10 ? '0' + H : '' + H) + ':' + (min < 10 ? '0' + min : '' + min);
+      return `${Y  }年${  M  }月${  D  }日 ${  H < 10 ? '0' + H : '' + H  }:${  min < 10 ? '0' + min : '' + min}`;
     case 'YYYY年M月D日 dddd HH:mm':
-      return Y + '年' + M + '月' + D + '日 ' + jaWeekdays[raw.$W] + ' ' + (H < 10 ? '0' + H : '' + H) + ':' + (min < 10 ? '0' + min : '' + min);
+      return `${Y  }年${  M  }月${  D  }日 ${  jaWeekdays[raw.$W]  } ${  H < 10 ? '0' + H : '' + H  }:${  min < 10 ? '0' + min : '' + min}`;
     case 'YYYY年M月D日(ddd) HH:mm':
-      return Y + '年' + M + '月' + D + '日(' + jaWeekdaysShort[raw.$W] + ') ' + (H < 10 ? '0' + H : '' + H) + ':' + (min < 10 ? '0' + min : '' + min);
+      return `${Y  }年${  M  }月${  D  }日(${  jaWeekdaysShort[raw.$W]  }) ${  H < 10 ? '0' + H : '' + H  }:${  min < 10 ? '0' + min : '' + min}`;
     case 'HH:mm':
-      return (H < 10 ? '0' + H : '' + H) + ':' + (min < 10 ? '0' + min : '' + min);
+      return `${H < 10 ? '0' + H : '' + H  }:${  min < 10 ? '0' + min : '' + min}`;
     case 'HH:mm:ss':
-      return (H < 10 ? '0' + H : '' + H) + ':' + (min < 10 ? '0' + min : '' + min) + ':' + (s < 10 ? '0' + s : '' + s);
+      return `${H < 10 ? '0' + H : '' + H  }:${  min < 10 ? '0' + min : '' + min  }:${  s < 10 ? '0' + s : '' + s}`;
   }
   return undefined;
 }
@@ -151,11 +151,11 @@ export const jaLocale: LocaleSpec = {
     ordinal: function (number, period) {
         switch (period) {
             case 'y':
-                return number === 1 ? '元年' : number + '年';
+                return number === 1 ? '元年' : `${number  }年`;
             case 'd':
             case 'D':
             case 'DDD':
-                return number + '日';
+                return `${number  }日`;
             default:
                 return number;
         }

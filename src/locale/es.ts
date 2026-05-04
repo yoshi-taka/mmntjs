@@ -57,22 +57,22 @@ export const esLocale: LocaleSpec = {
     },
     calendar: {
       sameDay: function () {
-            return '[hoy a la' + (this.hours() !== 1 ? 's' : '') + '] LT';
+            return `[hoy a la${  this.hours() !== 1 ? 's' : ''  }] LT`;
         },
       nextDay: function () {
-            return '[mañana a la' + (this.hours() !== 1 ? 's' : '') + '] LT';
+            return `[mañana a la${  this.hours() !== 1 ? 's' : ''  }] LT`;
         },
       nextWeek: function () {
-            return 'dddd [a la' + (this.hours() !== 1 ? 's' : '') + '] LT';
+            return `dddd [a la${  this.hours() !== 1 ? 's' : ''  }] LT`;
         },
       lastDay: function () {
-            return '[ayer a la' + (this.hours() !== 1 ? 's' : '') + '] LT';
+            return `[ayer a la${  this.hours() !== 1 ? 's' : ''  }] LT`;
         },
       lastWeek: function () {
             return (
-                '[el] dddd [pasado a la' +
-                (this.hours() !== 1 ? 's' : '') +
-                '] LT'
+                `[el] dddd [pasado a la${ 
+                this.hours() !== 1 ? 's' : '' 
+                }] LT`
             );
         },
       sameElse: "L"

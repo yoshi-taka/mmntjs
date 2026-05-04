@@ -30,10 +30,10 @@ export function toTemporal(m: Moment): Temporal.PlainDate | Temporal.ZonedDateTi
     const offsetHours = Math.floor(offsetMinutes / 60);
     const offsetMinRemainder = offsetMinutes % 60;
     const offsetStr =
-      (offsetMinutes >= 0 ? "+" : "-") +
-      String(Math.abs(offsetHours)).padStart(2, "0") +
-      ":" +
-      String(Math.abs(offsetMinRemainder)).padStart(2, "0");
+      `${(offsetMinutes >= 0 ? "+" : "-") +
+      String(Math.abs(offsetHours)).padStart(2, "0") 
+      }:${ 
+      String(Math.abs(offsetMinRemainder)).padStart(2, "0")}`;
 
     let timezone: string;
     if (m._isUTC && m._offset === 0) {
@@ -92,5 +92,5 @@ export function fromTemporal(t: any): Moment {
     ]);
   }
 
-  throw new Error("Unsupported Temporal type: " + (t && t.constructor && t.constructor.name));
+  throw new Error(`Unsupported Temporal type: ${  t && t.constructor && t.constructor.name}`);
 }

@@ -486,14 +486,14 @@ function getLocaleMonthsFull(loc: Locale): string[] {
   const extraNames = getMonthExtraNames(loc);
   const allFull = [...new Set(addCharVariants([...lower, ...extraNames]))];
   (loc as any)._monthsCache = lower;
-  (loc as any)._monthsStrictRegex = new RegExp("^(" + sortByLengthDesc(allFull).map(escapeRegex).join("|") + ")", "i");
+  (loc as any)._monthsStrictRegex = new RegExp(`^(${  sortByLengthDesc(allFull).map(escapeRegex).join("|")  })`, "i");
   const monthsShort = loc.monthsShort && loc.monthsShort();
   const shortArr = Array.isArray(monthsShort) ? monthsShort : [];
   const shortLower = shortArr.map((m: string) => m.toLowerCase());
   // Strip trailing periods from short months for matching
   const shortNoPeriod = shortLower.map((m: string) => m.replace(/\.$/, '')).filter((m) => m.length > 0);
   const all = [...new Set(addCharVariants([...allFull, ...shortLower, ...shortNoPeriod]))];
-  (loc as any)._monthsRegex = new RegExp("^(" + sortByLengthDesc(all).map(escapeRegex).join("|") + ")", "i");
+  (loc as any)._monthsRegex = new RegExp(`^(${  sortByLengthDesc(all).map(escapeRegex).join("|")  })`, "i");
   return lower;
 }
 
@@ -516,7 +516,7 @@ function getLocaleMonthsShort(loc: Locale): string[] {
   (loc as any)._monthsShortCache = lower;
   const noPeriod = lower.map(m => m.replace(/\.$/, '')).filter(m => m.length > 0);
   const allStrict = [...new Set(addCharVariants([...lower, ...noPeriod]))];
-  (loc as any)._monthsShortStrictRegex = new RegExp("^(" + sortByLengthDesc(allStrict).map(escapeRegex).join("|") + ")", "i");
+  (loc as any)._monthsShortStrictRegex = new RegExp(`^(${  sortByLengthDesc(allStrict).map(escapeRegex).join("|")  })`, "i");
   if (lower.length === 0) return getLocaleMonthsFull(loc);
   return lower;
 }
@@ -533,7 +533,7 @@ function getLocaleMonthsShortRegex(loc: Locale, strict?: boolean): RegExp {
   const extraNames = getMonthExtraNames(loc);
   const noPeriod = shortList.map(m => m.replace(/\.$/, '')).filter(m => m.length > 0);
   const all = [...new Set(addCharVariants([...shortList, ...fullList, ...extraNames, ...noPeriod]))];
-  (loc as any)._monthsShortRegex = new RegExp("^(" + sortByLengthDesc(all).map(escapeRegex).join("|") + ")", "i");
+  (loc as any)._monthsShortRegex = new RegExp(`^(${  sortByLengthDesc(all).map(escapeRegex).join("|")  })`, "i");
   return (loc as any)._monthsShortRegex;
 }
 
@@ -562,7 +562,7 @@ function getLocaleWeekdaysFull(loc: Locale): string[] {
   const lower = names.map((m: string) => m.toLowerCase());
   (loc as any)._weekdaysCache = lower;
   const all = [...new Set(addCharVariants(lower))];
-  (loc as any)._weekdaysRegex = new RegExp("^(" + sortByLengthDesc(all).map(escapeRegex).join("|") + ")", "i");
+  (loc as any)._weekdaysRegex = new RegExp(`^(${  sortByLengthDesc(all).map(escapeRegex).join("|")  })`, "i");
   return lower;
 }
 
@@ -588,7 +588,7 @@ function getLocaleWeekdaysShort(loc: Locale): string[] {
   const lower = names.map((m: string) => m.toLowerCase());
   (loc as any)._weekdaysShortCache = lower;
   const all = [...new Set(addCharVariants(lower))];
-  (loc as any)._weekdaysShortRegex = new RegExp("^(" + sortByLengthDesc(all).map(escapeRegex).join("|") + ")", "i");
+  (loc as any)._weekdaysShortRegex = new RegExp(`^(${  sortByLengthDesc(all).map(escapeRegex).join("|")  })`, "i");
   return lower;
 }
 
@@ -614,7 +614,7 @@ function getLocaleWeekdaysMin(loc: Locale): string[] {
   const lower = names.map((m: string) => m.toLowerCase());
   (loc as any)._weekdaysMinCache = lower;
   const all = [...new Set(addCharVariants(lower))];
-  (loc as any)._weekdaysMinRegex = new RegExp("^(" + sortByLengthDesc(all).map(escapeRegex).join("|") + ")", "i");
+  (loc as any)._weekdaysMinRegex = new RegExp(`^(${  sortByLengthDesc(all).map(escapeRegex).join("|")  })`, "i");
   return lower;
 }
 
@@ -657,7 +657,7 @@ function parseWithFormat(
 ): any {
 
   const loc = getLocale(locale);
-  const expandedCacheKey = (locale || "en") + ":" + format;
+  const expandedCacheKey = `${locale || "en"  }:${  format}`;
   let expandedFormat = expandedFormatCache.get(expandedCacheKey);
   if (!expandedFormat) {
     expandedFormat = format.replace(/LTS|LT|llll|LLLL|lll|LLL|ll|LL|l|L/g, (match) => {
@@ -969,7 +969,7 @@ function parseWithFormat(
           const names = strict
             ? erasList.map((e: any) => e.abbr).filter(Boolean)
             : [...new Set(erasList.flatMap((e: any) => [e.abbr, e.name, e.narrow].filter(Boolean)))];
-          const regex = new RegExp("^(" + names.map(escapeRegex).join("|") + ")");
+          const regex = new RegExp(`^(${  names.map(escapeRegex).join("|")  })`);
           const nMatch = remaining.match(regex);
           if (nMatch) {
             const matchedName = nMatch[1];
@@ -988,7 +988,7 @@ function parseWithFormat(
         const erasWide = (loc._config as any).eras;
         if (erasWide && Array.isArray(erasWide)) {
           const names = erasWide.map((e: any) => e.name).filter(Boolean);
-          const regex = new RegExp("^(" + names.map(escapeRegex).join("|") + ")");
+          const regex = new RegExp(`^(${  names.map(escapeRegex).join("|")  })`);
           const nMatch = remaining.match(regex);
           if (nMatch) {
             const matched = nMatch[1];
@@ -1005,7 +1005,7 @@ function parseWithFormat(
         const erasNarrow = (loc._config as any).eras;
         if (erasNarrow && Array.isArray(erasNarrow)) {
           const names = erasNarrow.map((e: any) => e.narrow).filter(Boolean);
-          const regex = new RegExp("^(" + names.map(escapeRegex).join("|") + ")");
+          const regex = new RegExp(`^(${  names.map(escapeRegex).join("|")  })`);
           const nMatch = remaining.match(regex);
           if (nMatch) {
             const matched = nMatch[1];
@@ -1227,7 +1227,7 @@ function parseWithFormat(
         let match: RegExpMatchArray | null = null;
 
         if (ordinalParse instanceof RegExp) {
-          match = remaining.match(new RegExp("^(?:" + ordinalParse.source + ")"));
+          match = remaining.match(new RegExp(`^(?:${  ordinalParse.source  })`));
         }
         if (!match) {
           match = remaining.match(/^(\d{1,2})(?:st|nd|rd|th)?/i);
@@ -1571,7 +1571,7 @@ function parseWithFormat(
         const maxDigits = token.name.length;
         const match = timedMatch(
           remaining,
-          new RegExp("^(\\d{1," + maxDigits + "})"),
+          new RegExp(`^(\\d{1,${  maxDigits  }})`),
           strict ? maxDigits : undefined,
           strict,
         );
@@ -1710,7 +1710,7 @@ function parseWithFormat(
       case "DDD":
       case "DDDD": {
         const digits = 3;
-        const match = remaining.match(new RegExp("^(\\d{1," + digits + "})"));
+        const match = remaining.match(new RegExp(`^(\\d{1,${  digits  }})`));
         if (!match) {
           failed = true;
           break;

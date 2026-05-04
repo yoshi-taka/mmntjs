@@ -84,7 +84,7 @@ export const azLocale: LocaleSpec = {
     ordinal: function (number) {
         if (number === 0) {
             // special case for zero
-            return number + '-ıncı';
+            return `${number  }-ıncı`;
         }
         var a = number % 10,
             b = (number % 100) - a,

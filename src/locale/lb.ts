@@ -15,17 +15,17 @@ function processRelativeTime(number, withoutSuffix, key, _isFuture) {
 function processFutureTime(string) {
     var number = string.substr(0, string.indexOf(' '));
     if (eifelerRegelAppliesToNumber(number)) {
-        return 'a ' + string;
+        return `a ${  string}`;
     }
-    return 'an ' + string;
+    return `an ${  string}`;
 }
 
 function processPastTime(string) {
     var number = string.substr(0, string.indexOf(' '));
     if (eifelerRegelAppliesToNumber(number)) {
-        return 'viru ' + string;
+        return `viru ${  string}`;
     }
-    return 'virun ' + string;
+    return `virun ${  string}`;
 }
 
 function eifelerRegelAppliesToNumber(number) {

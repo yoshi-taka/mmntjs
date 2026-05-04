@@ -9,9 +9,9 @@ interface BenchCase {
 }
 
 function micros(ns: number): string {
-  if (ns < 1000) return ns.toFixed(0) + "ns";
-  if (ns < 1_000_000) return (ns / 1000).toFixed(2) + "μs";
-  return (ns / 1_000_000).toFixed(3) + "ms";
+  if (ns < 1000) return `${ns.toFixed(0)  }ns`;
+  if (ns < 1_000_000) return `${(ns / 1000).toFixed(2)  }μs`;
+  return `${(ns / 1_000_000).toFixed(3)  }ms`;
 }
 
 function run(name: string, fn: () => void, iterations: number): number {
@@ -156,13 +156,13 @@ const results: { name: string; moment: number; moment2: number; ratio: string }[
 
 for (const c of CASES) {
   const [fnMoment, fnMoment2] = c.run();
-  const tMoment = run(c.name + " (moment)", fnMoment, ITER);
-  const tMoment2 = run(c.name + " (moment2)", fnMoment2, ITER);
+  const tMoment = run(`${c.name  } (moment)`, fnMoment, ITER);
+  const tMoment2 = run(`${c.name  } (moment2)`, fnMoment2, ITER);
   const ratio = (tMoment2 / tMoment * 100).toFixed(1);
   results.push({ name: c.name, moment: tMoment, moment2: tMoment2, ratio });
 }
 
-console.log("\nBenchmark results (" + ITER + " iterations each):\n");
+console.log(`\nBenchmark results (${  ITER  } iterations each):\n`);
 console.log("┌──────────────────────────────────────────────┬────────────┬────────────┬────────┐");
 console.log("│ Operation                                    │ moment     │ moment2    │ %      │");
 console.log("├──────────────────────────────────────────────┼────────────┼────────────┼────────┤");
@@ -171,7 +171,7 @@ for (const r of results) {
   const name = r.name.padEnd(44).slice(0, 44);
   const m = micros(r.moment).padStart(10);
   const m2 = micros(r.moment2).padStart(10);
-  const pct = (r.ratio + "%").padStart(6);
+  const pct = (`${r.ratio  }%`).padStart(6);
   console.log(`│ ${name} │ ${m} │ ${m2} │ ${pct} │`);
 }
 

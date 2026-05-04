@@ -57,6 +57,6 @@ export const loLocale: LocaleSpec = {
     },
     dayOfMonthOrdinalParse: /(ທີ່)\d{1,2}/,
     ordinal: function (number) {
-        return 'ທີ່' + number;
+        return `ທີ່${  number}`;
     }
   };

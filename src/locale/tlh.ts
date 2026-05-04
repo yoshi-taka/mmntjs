@@ -7,12 +7,12 @@ function translateFuture(output) {
     var time = output;
     time =
         output.indexOf('jaj') !== -1
-            ? time.slice(0, -3) + 'leS'
+            ? `${time.slice(0, -3)  }leS`
             : output.indexOf('jar') !== -1
-              ? time.slice(0, -3) + 'waQ'
+              ? `${time.slice(0, -3)  }waQ`
               : output.indexOf('DIS') !== -1
-                ? time.slice(0, -3) + 'nem'
-                : time + ' pIq';
+                ? `${time.slice(0, -3)  }nem`
+                : `${time  } pIq`;
     return time;
 }
 
@@ -20,12 +20,12 @@ function translatePast(output) {
     var time = output;
     time =
         output.indexOf('jaj') !== -1
-            ? time.slice(0, -3) + 'Hu’'
+            ? `${time.slice(0, -3)  }Hu’`
             : output.indexOf('jar') !== -1
-              ? time.slice(0, -3) + 'wen'
+              ? `${time.slice(0, -3)  }wen`
               : output.indexOf('DIS') !== -1
-                ? time.slice(0, -3) + 'ben'
-                : time + ' ret';
+                ? `${time.slice(0, -3)  }ben`
+                : `${time  } ret`;
     return time;
 }
 
@@ -33,17 +33,17 @@ function translate(number, withoutSuffix, string, _isFuture) {
     var numberNoun = numberAsNoun(number);
     switch (string) {
         case 'ss':
-            return numberNoun + ' lup';
+            return `${numberNoun  } lup`;
         case 'mm':
-            return numberNoun + ' tup';
+            return `${numberNoun  } tup`;
         case 'hh':
-            return numberNoun + ' rep';
+            return `${numberNoun  } rep`;
         case 'dd':
-            return numberNoun + ' jaj';
+            return `${numberNoun  } jaj`;
         case 'MM':
-            return numberNoun + ' jar';
+            return `${numberNoun  } jar`;
         case 'yy':
-            return numberNoun + ' DIS';
+            return `${numberNoun  } DIS`;
     }
 }
 
@@ -53,10 +53,10 @@ function numberAsNoun(number) {
         one = number % 10,
         word = '';
     if (hundred > 0) {
-        word += numbersNouns[hundred] + 'vatlh';
+        word += `${numbersNouns[hundred]  }vatlh`;
     }
     if (ten > 0) {
-        word += (word !== '' ? ' ' : '') + numbersNouns[ten] + 'maH';
+        word += `${(word !== '' ? ' ' : '') + numbersNouns[ten]  }maH`;
     }
     if (one > 0) {
         word += (word !== '' ? ' ' : '') + numbersNouns[one];

@@ -42,7 +42,7 @@ export const elLocale: LocaleSpec = {
         }
     },
     isPM: function (input) {
-        return (input + '').toLowerCase()[0] === 'μ';
+        return (`${input  }`).toLowerCase()[0] === 'μ';
     },
     meridiemParse: /[ΠΜ]\.?Μ?\.?/i,
     longDateFormat: {
