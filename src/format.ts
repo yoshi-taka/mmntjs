@@ -13,8 +13,8 @@ function year(m: Moment): number {
   return m.year() as number;
 }
 
-function getEraInfo(m: Moment, loc: Locale): { era: any; eraYear: number } | null {
-  const eras = (loc._config as any).eras;
+function getEraInfo(m: Moment, loc: Locale): { era: unknown; eraYear: number } | null {
+  const eras = (loc._config as Record<string, unknown>).eras as Array<Record<string, unknown>> | undefined;
   if (!eras || !Array.isArray(eras) || eras.length === 0) {return null;}
   const y = year(m);
   const month1 = (m.month() as number) + 1;
@@ -492,7 +492,7 @@ function formatOffset(offset: number): string {
 }
 
 function formatCommonEn(m: Moment, format: string): string | undefined {
-  const raw = m as any;
+  const raw = m as unknown as { _l: string; $y: number; $M: number; $D: number; _isValid: boolean };
   if (raw._l !== "en" || !raw._isValid) {return undefined;}
   const y = raw.$y;
   if (y < 0 || y > 9999) {return undefined;}
@@ -528,7 +528,7 @@ export function formatMoment(m: Moment, format: string): string {
 
   format = expandLocaleTokens(m, format);
 
-  const fastPath = (loc._config as any)._formatFastPath;
+  const fastPath = (loc._config as Record<string, unknown>)._formatFastPath as ((m: Moment, format: string) => string | undefined) | undefined;
   if (fastPath) {
     const result = fastPath(m, format);
     if (result !== undefined) {
