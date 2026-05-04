@@ -9,7 +9,7 @@ const IMPORT_PATTERNS = [
   { from: /import\s+(\w+)\s+from\s+['"]moment['"]/g, to: "import $1 from '@compat/moment2'" },
 ];
 
-export function runCheck(dir: string = ".") {
+export function runCheck(dir = ".") {
   const results = scanFiles(dir);
   console.log(`\nFound ${results.total} moment import(s) in ${results.files} file(s):`);
   for (const [file, count] of Object.entries(results.fileCounts)) {
@@ -19,7 +19,7 @@ export function runCheck(dir: string = ".") {
   console.log("Run `moment2 migrate --apply` to apply changes\n");
 }
 
-export function runApply(dir: string = ".") {
+export function runApply(dir = ".") {
   const results = scanFiles(dir);
   let modified = 0;
   for (const file of results.modifiedFiles) {

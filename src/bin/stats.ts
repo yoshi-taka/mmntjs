@@ -35,7 +35,7 @@ const TEMPORAL_READY = new Set([
   "get",
 ]);
 
-export function runStats(dir: string = ".") {
+export function runStats(dir = ".") {
   const apiCounts: Record<string, number> = {};
   let totalUsages = 0;
 

@@ -74,7 +74,7 @@ function knownApis(): Set<string> {
   return s;
 }
 
-export function runAudit(dir: string = ".") {
+export function runAudit(dir = ".") {
   console.log(`\nAuditing moment usages in ${path.resolve(dir)}...\n`);
 
   const known = knownApis();

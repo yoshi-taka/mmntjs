@@ -112,18 +112,18 @@ function unitToMs(unit: string): number {
 }
 
 export class Duration {
-  _milliseconds: number = 0;
-  _days: number = 0;
-  _months: number = 0;
-  _bdYears: number = 0;
-  _bdMonths: number = 0;
-  _bdDays: number = 0;
-  _bdHours: number = 0;
-  _bdMinutes: number = 0;
-  _bdSeconds: number = 0;
-  _bdMilliseconds: number = 0;
-  _locale: string = "en";
-  _isValid: boolean = true;
+  _milliseconds= 0;
+  _days= 0;
+  _months= 0;
+  _bdYears= 0;
+  _bdMonths= 0;
+  _bdDays= 0;
+  _bdHours= 0;
+  _bdMinutes= 0;
+  _bdSeconds= 0;
+  _bdMilliseconds= 0;
+  _locale= "en";
+  _isValid= true;
 
   constructor(input?: DurationLike, unit?: string) {
     this._locale = getCurrentLocale();

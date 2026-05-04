@@ -220,7 +220,7 @@ export class Moment {
   _isUTC: boolean;
   _offset: number;
   _l: string | undefined;
-  _isAMomentObject: boolean = true;
+  _isAMomentObject= true;
   _cold?: MomentCold;
   declare _i: any;
   declare _f: string | string[] | undefined;

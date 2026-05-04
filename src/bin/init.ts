@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-export function runInit(dir: string = ".") {
+export function runInit(dir = ".") {
   const pkgPath = path.resolve(dir, "package.json");
 
   if (!fs.existsSync(pkgPath)) {

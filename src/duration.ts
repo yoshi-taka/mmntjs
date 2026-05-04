@@ -113,9 +113,9 @@ function unitToMs(unit: string): number {
 }
 
 export class Duration {
-  _milliseconds: number = 0;
-  _days: number = 0;
-  _months: number = 0;
+  _milliseconds= 0;
+  _days= 0;
+  _months= 0;
   _data: {
     years: number;
     months: number;
@@ -133,8 +133,8 @@ export class Duration {
     seconds: 0,
     milliseconds: 0,
   };
-  _locale: string = "en";
-  _isValid: boolean = true;
+  _locale= "en";
+  _isValid= true;
 
   constructor(input?: DurationLike, unit?: string) {
     this._locale = getCurrentLocale();
