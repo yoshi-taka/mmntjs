@@ -15,7 +15,8 @@
     "unicorn/prefer-node-protocol": "error",
     "typescript/require-await": "error",
     "typescript/no-unnecessary-condition": "error",
-    "typescript/prefer-for-of": "error"
+    "typescript/prefer-for-of": "error",
+    "eslint/no-constant-condition": "error"
   },
   "ignorePatterns": [
     "test/moment/",
