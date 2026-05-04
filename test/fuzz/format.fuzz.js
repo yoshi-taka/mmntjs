@@ -43,11 +43,11 @@ export function fuzz(buf) {
     if (fmt2 !== fmtOrig) {
       throw new Error(`Format("${fmt}") mismatch for "${str}": moment2="${fmt2}", original="${fmtOrig}"`)
     }
-  } catch (e) {
-    if (e instanceof Error &&
-        (e.message.startsWith('Validity mismatch') ||
-         e.message.startsWith('Format('))) {
-      throw e
+  } catch (error) {
+    if (error instanceof Error &&
+        (error.message.startsWith('Validity mismatch') ||
+         error.message.startsWith('Format('))) {
+      throw error
     }
   }
 }

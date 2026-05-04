@@ -30,12 +30,12 @@ export function fuzz(buf) {
         throw new Error(`Timestamp mismatch for "${str}": moment2=${ts}, original=${origTs}`)
       }
     }
-  } catch (e) {
-    if (e instanceof Error &&
-        (e.message.startsWith('Validity mismatch') ||
-         e.message.startsWith('Format mismatch') ||
-         e.message.startsWith('Timestamp mismatch'))) {
-      throw e
+  } catch (error) {
+    if (error instanceof Error &&
+        (error.message.startsWith('Validity mismatch') ||
+         error.message.startsWith('Format mismatch') ||
+         error.message.startsWith('Timestamp mismatch'))) {
+      throw error
     }
   }
 }

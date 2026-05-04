@@ -93,8 +93,8 @@ function createAssert() {
             log('deepEqual', msg);
             try {
                 expect(a).toEqual(b);
-            } catch (e) {
-                throw new Error(msg || e.message);
+            } catch (error) {
+                throw new Error(msg || error.message);
             }
         },
         notEqual(a, b, msg) {

@@ -42,7 +42,8 @@
     "unicorn/prefer-at": "error",
     "typescript/return-await": "error",
     "typescript/no-unnecessary-type-constraint": "error",
-    "unicorn/no-instanceof-builtins": "error"
+    "unicorn/no-instanceof-builtins": "error",
+    "unicorn/catch-error-name": "error"
   },
   "ignorePatterns": [
     "test/moment/",

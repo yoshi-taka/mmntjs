@@ -39,12 +39,12 @@ export function fuzz(buf) {
         }
       }
     }
-  } catch (e) {
-    if (e instanceof Error && typeof e.message === 'string' &&
-        (e.message.startsWith('calendar() mismatch') ||
-         e.message.startsWith('from() mismatch') ||
-         e.message.startsWith('to() mismatch'))) {
-      throw e
+  } catch (error) {
+    if (error instanceof Error && typeof error.message === 'string' &&
+        (error.message.startsWith('calendar() mismatch') ||
+         error.message.startsWith('from() mismatch') ||
+         error.message.startsWith('to() mismatch'))) {
+      throw error
     }
   }
 }

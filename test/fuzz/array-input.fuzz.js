@@ -33,12 +33,12 @@ export function fuzz(buf) {
     if (ts2 !== tsOrig) {
       throw new Error(`valueOf mismatch for [${arr}]: moment2=${ts2}, original=${tsOrig}`)
     }
-  } catch (e) {
-    if (e instanceof Error && typeof e.message === 'string' &&
-        (e.message.startsWith('isValid mismatch') ||
-         e.message.startsWith('format mismatch') ||
-         e.message.startsWith('valueOf mismatch'))) {
-      throw e
+  } catch (error) {
+    if (error instanceof Error && typeof error.message === 'string' &&
+        (error.message.startsWith('isValid mismatch') ||
+         error.message.startsWith('format mismatch') ||
+         error.message.startsWith('valueOf mismatch'))) {
+      throw error
     }
   }
 }

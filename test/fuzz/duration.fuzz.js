@@ -43,11 +43,11 @@ export function fuzz(buf) {
         throw new Error(`Duration.add().as("${unit}") mismatch: moment2=${addAs}, original=${origAddAs}`)
       }
     }
-  } catch (e) {
-    if (e instanceof Error &&
-        (e.message.startsWith('Duration.') ||
-         e.message.startsWith('Duration.add'))) {
-      throw e
+  } catch (error) {
+    if (error instanceof Error &&
+        (error.message.startsWith('Duration.') ||
+         error.message.startsWith('Duration.add'))) {
+      throw error
     }
   }
 }

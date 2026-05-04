@@ -50,14 +50,14 @@ export function fuzz(buf) {
         throw new Error(`diff() mismatch for offset=${offset} ${amount} ${unit}: moment2=${d2}, original=${dOrig}`)
       }
     } catch (_) {}
-  } catch (e) {
-    if (e instanceof Error &&
-        (e.message.startsWith('format() mismatch') ||
-         e.message.startsWith('isValid() mismatch') ||
-         e.message.startsWith('add(') ||
-         e.message.startsWith('startOf(') ||
-         e.message.startsWith('diff('))) {
-      throw e
+  } catch (error) {
+    if (error instanceof Error &&
+        (error.message.startsWith('format() mismatch') ||
+         error.message.startsWith('isValid() mismatch') ||
+         error.message.startsWith('add(') ||
+         error.message.startsWith('startOf(') ||
+         error.message.startsWith('diff('))) {
+      throw error
     }
   }
 }
