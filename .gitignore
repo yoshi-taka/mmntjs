@@ -2,3 +2,4 @@
 .tstree-*
 crash-*
 corpus/
+dist/
