@@ -18,7 +18,13 @@
     "typescript/prefer-for-of": "error",
     "eslint/no-constant-condition": "error",
     "eslint/no-shadow": "error",
-    "typescript/prefer-reduce-type-parameter": "error"
+    "typescript/prefer-reduce-type-parameter": "error",
+    "eslint/max-params": [
+      "error",
+      {
+        "max": 5
+      }
+    ]
   },
   "ignorePatterns": [
     "test/moment/",
