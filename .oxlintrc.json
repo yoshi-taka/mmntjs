@@ -62,7 +62,8 @@
     "eslint/no-var": "error",
     "typescript/no-explicit-any": "error",
     "typescript/ban-ts-comment": "error",
-    "typescript/no-empty-interface": "error"
+    "typescript/no-empty-interface": "error",
+    "eslint/no-useless-call": "error"
   },
   "ignorePatterns": [
     "test/moment/",
