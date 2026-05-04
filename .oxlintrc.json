@@ -10,7 +10,8 @@
     "typescript/consistent-type-exports": "error",
     "import/no-duplicates": "error",
     "eslint/prefer-template": "error",
-    "typescript/prefer-includes": "error"
+    "typescript/prefer-includes": "error",
+    "typescript/no-unnecessary-type-assertion": "error"
   },
   "ignorePatterns": [
     "test/moment/",
