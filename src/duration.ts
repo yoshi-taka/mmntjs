@@ -31,8 +31,8 @@ export interface DurationInput {
   minute?: number;
   second?: number;
   millisecond?: number;
-  from?: any;
-  to?: any;
+  from?: unknown;
+  to?: unknown;
 }
 
 type DurationLike = number | DurationInput | string | Duration;
@@ -140,8 +140,8 @@ export class Duration {
     this._locale = getCurrentLocale();
 
     // If called from moment(), override with the moment's locale
-    if (input && typeof input === "object" && (input as any)._isAMomentObject) {
-      this._locale = (input as any)._l || this._locale;
+    if (input && typeof input === "object" && (input as Record<string, unknown>)._isAMomentObject) {
+      this._locale = (input as Record<string, unknown>)._l || this._locale;
     }
 
     if (input === undefined || input === null) {
@@ -151,7 +151,7 @@ export class Duration {
     } else if (typeof input === "number") {
       if (isNaN(input)) {
         this._isValid = false;
-        this._milliseconds = NaN as any;
+        this._milliseconds = NaN;
       } else if (unit) {
         const aliasKey = unitAliasToKey[unit];
         if (aliasKey === "years" || aliasKey === "months") {
@@ -307,15 +307,15 @@ export class Duration {
   static invalid(): Duration {
     const d = new Duration(0);
     d._isValid = false;
-    d._milliseconds = NaN as any;
+    d._milliseconds = NaN;
     return d;
   }
 
   private _parseObject(obj: DurationInput): void {
     if (hasOwnProp(obj, "from") || hasOwnProp(obj, "to")) {
       const { momentFromAnything, Moment } = require("./moment");
-      const fromVal = (obj as any).from;
-      const toVal = (obj as any).to;
+      const fromVal = (obj as Record<string, unknown>).from;
+      const toVal = (obj as Record<string, unknown>).to;
       const from = fromVal != null ? momentFromAnything(fromVal) : new Moment({ _d: new Date(0), _dClone: false });
       const to = toVal != null ? momentFromAnything(toVal) : new Moment({ _d: new Date(0), _dClone: false });
       if (!from.isValid() || !to.isValid()) {
@@ -372,7 +372,7 @@ export class Duration {
       if (hasOwnProp(obj, key)) {
         const aliased = unitAliasToKey[key];
         if (!aliased) {continue;}
-        const rawVal = (obj as any)[key];
+        const rawVal = (obj as Record<string, unknown>)[key];
         const val = Number(rawVal) || 0;
         const idx = unitIndexMap[aliased];
         if (
@@ -384,7 +384,7 @@ export class Duration {
           rawVal % 1 !== 0
         ) {
           this._isValid = false;
-          this._milliseconds = NaN as any;
+          this._milliseconds = NaN;
           this._days = 0;
           this._months = 0;
           return;
@@ -555,7 +555,7 @@ export class Duration {
   }
 
   milliseconds(n?: number): number | Duration {
-    if (!this._isValid) {return NaN as any;}
+    if (!this._isValid) {return NaN;}
     if (n !== undefined) {
       this._milliseconds = n;
       this._bubble();
@@ -565,7 +565,7 @@ export class Duration {
   }
 
   seconds(n?: number): number | Duration {
-    if (!this._isValid) {return NaN as any;}
+    if (!this._isValid) {return NaN;}
     if (n !== undefined) {
       const diff = n - this._data.seconds;
       this._milliseconds += diff * 1000;
@@ -576,7 +576,7 @@ export class Duration {
   }
 
   minutes(n?: number): number | Duration {
-    if (!this._isValid) {return NaN as any;}
+    if (!this._isValid) {return NaN;}
     if (n !== undefined) {
       const diff = n - this._data.minutes;
       this._milliseconds += diff * 60000;
@@ -587,7 +587,7 @@ export class Duration {
   }
 
   hours(n?: number): number | Duration {
-    if (!this._isValid) {return NaN as any;}
+    if (!this._isValid) {return NaN;}
     if (n !== undefined) {
       const diff = n - this._data.hours;
       this._milliseconds += diff * 3600000;
@@ -598,7 +598,7 @@ export class Duration {
   }
 
   days(n?: number): number | Duration {
-    if (!this._isValid) {return NaN as any;}
+    if (!this._isValid) {return NaN;}
     if (n !== undefined) {
       const diff = n - this._data.days;
       this._days += diff;
@@ -609,7 +609,7 @@ export class Duration {
   }
 
   months(n?: number): number | Duration {
-    if (!this._isValid) {return NaN as any;}
+    if (!this._isValid) {return NaN;}
     if (n !== undefined) {
       const diff = n - this._data.months;
       this._months += diff;
@@ -620,7 +620,7 @@ export class Duration {
   }
 
   years(n?: number): number | Duration {
-    if (!this._isValid) {return NaN as any;}
+    if (!this._isValid) {return NaN;}
     if (n !== undefined) {
       const diff = n - this._data.years;
       this._months += diff * 12;
@@ -631,7 +631,7 @@ export class Duration {
   }
 
   weeks(n?: number): number | Duration {
-    if (!this._isValid) {return NaN as any;}
+    if (!this._isValid) {return NaN;}
     if (n !== undefined) {
       const diff = n - absFloor(this._data.days / 7);
       this._days += diff * 7;
@@ -919,6 +919,6 @@ export class Duration {
   }
 }
 
-export function isDuration(input: any): boolean {
+export function isDuration(input: unknown): boolean {
   return input instanceof Duration;
 }
