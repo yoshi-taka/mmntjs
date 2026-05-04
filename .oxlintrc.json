@@ -29,7 +29,8 @@
     "unicorn/prefer-set-has": "error",
     "oxc/no-accumulating-spread": "error",
     "typescript/array-type": "error",
-    "typescript/no-inferrable-types": "error"
+    "typescript/no-inferrable-types": "error",
+    "unicorn/no-useless-undefined": "error"
   },
   "ignorePatterns": [
     "test/moment/",
