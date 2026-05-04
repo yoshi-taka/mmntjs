@@ -30,7 +30,8 @@
     "oxc/no-accumulating-spread": "error",
     "typescript/array-type": "error",
     "typescript/no-inferrable-types": "error",
-    "unicorn/no-useless-undefined": "error"
+    "unicorn/no-useless-undefined": "error",
+    "unicorn/prefer-array-some": "error"
   },
   "ignorePatterns": [
     "test/moment/",
