@@ -4,7 +4,8 @@
     "no-useless-escape": "warn",
     "typescript/consistent-type-imports": "error",
     "typescript/prefer-optional-chain": "error",
-    "typescript/prefer-nullish-coalescing": "error"
+    "typescript/prefer-nullish-coalescing": "error",
+    "typescript/prefer-find": "error"
   },
   "ignorePatterns": [
     "test/moment/",
