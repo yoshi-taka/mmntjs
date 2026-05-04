@@ -10,14 +10,14 @@ const locales: Record<string, LocaleSpec> = {
 const _localeCache = new Map<string, Locale>();
 const originalLocales: Record<string, LocaleSpec> = {};
 
-function hasOwn(obj: any, key: string): boolean {
+function hasOwn(obj: object, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(obj, key);
 }
 
 function mergeConfig(base: LocaleSpec, override: Partial<LocaleSpec>): LocaleSpec {
-  const result: any = { ...base };
+  const result: Record<string, unknown> = { ...base };
   for (const key of Object.keys(override)) {
-    const val = (override as any)[key];
+    const val = (override as Record<string, unknown>)[key];
     if (val !== undefined) {
       if (
         typeof val === "object" &&
@@ -28,7 +28,7 @@ function mergeConfig(base: LocaleSpec, override: Partial<LocaleSpec>): LocaleSpe
         !Array.isArray(base[key as keyof LocaleSpec]) &&
         !(base[key as keyof LocaleSpec] instanceof RegExp)
       ) {
-        result[key] = { ...(base as any)[key], ...val };
+        result[key] = { ...(base as Record<string, unknown>)[key], ...val };
       } else {
         result[key] = val;
       }
@@ -49,7 +49,7 @@ function resolveLocaleConfig(locale: string): LocaleSpec {
     }
     return baseEn;
   }
-  const parentLocale = (config as any).parentLocale;
+  const parentLocale = (config as LocaleSpec & { parentLocale?: string }).parentLocale;
   if (parentLocale && locales[parentLocale]) {
     const parent = resolveLocaleConfig(parentLocale);
     return mergeConfig(parent, config);
@@ -69,8 +69,8 @@ export class Locale {
   constructor(config: LocaleSpec, abbr?: string) {
     this._config = { ...config };
     for (const key of Object.keys(config)) {
-      if (!key.startsWith('_') && !((this._config as any)[`_${  key}`] !== undefined)) {
-        (this._config as any)[`_${  key}`] = (config as any)[key];
+      if (!key.startsWith('_') && !((this._config as Record<string, unknown>)[`_${  key}`] !== undefined)) {
+        (this._config as Record<string, unknown>)[`_${  key}`] = (config as Record<string, unknown>)[key];
       }
     }
     this._abbr = abbr || currentLocaleName;
@@ -87,7 +87,7 @@ export class Locale {
       return [];
     }
     if (Array.isArray(months)) {return months;}
-    if (typeof months === "object") {return (months as any).standalone || (months as any).format || [];}
+    if (typeof months === "object") {return (months as Record<string, string[]>).standalone || (months as Record<string, string[]>).format || [];}
     return months as string[];
   }
 
@@ -97,13 +97,13 @@ export class Locale {
     if (isFunction(ms)) {
       const result: string[] = [];
       for (let i = 0; i < this._months.length; i++) {
-        const r = (ms as Function).call(this._config, { month: () => i } as any, "MMM");
+        const r = (ms as Function).call(this._config, { month: () => i } as { month: () => number }, "MMM");
         result.push(r);
       }
       return result;
     }
     if (Array.isArray(ms)) {return ms;}
-    if (typeof ms === "object") {return (ms as any).standalone || (ms as any).format || this._months;}
+    if (typeof ms === "object") {return (ms as Record<string, string[]>).standalone || (ms as Record<string, string[]>).format || this._months;}
     return ms as string[];
   }
 
@@ -113,14 +113,14 @@ export class Locale {
     if (isFunction(wd)) {
       const result: string[] = [];
       for (let i = 0; i < 7; i++) {
-        const r = (wd as any)({ day: () => i } as any, "dddd");
+        const r = (wd as Function)({ day: () => i }, "dddd");
         result.push(r);
       }
       return result;
     }
     if (Array.isArray(wd)) {return wd;}
     if (typeof wd === "object" && wd !== null) {
-      return (wd as any).standalone || (wd as any).format || [];
+      return (wd as Record<string, string[]>).standalone || (wd as Record<string, string[]>).format || [];
     }
     return wd as string[];
   }
@@ -143,7 +143,7 @@ export class Locale {
     if (isFunction(ws)) {
       const result: string[] = [];
       for (let i = 0; i < 7; i++) {
-        const r = (ws as any)({ day: () => i } as any, "ddd");
+        const r = (ws as Function)({ day: () => i } as { day: () => number }, "ddd");
         result.push(r);
       }
       return result;
@@ -157,7 +157,7 @@ export class Locale {
     if (isFunction(wm)) {
       const result: string[] = [];
       for (let i = 0; i < 7; i++) {
-        const r = (wm as any)({ day: () => i } as any, "dd");
+        const r = (wm as Function)({ day: () => i } as { day: () => number }, "dd");
         result.push(r);
       }
       return result;
@@ -183,10 +183,10 @@ export class Locale {
       return months as string[];
     }
     if (typeof months === "object") {
-      const isFmt = (months as any).isFormat;
+      const isFmt = (months as Record<string, unknown>).isFormat;
       const monthsInFormat = /D[oD]?(\[[^[\]]*\]|\s)+MMMM?/;
       const useFormat = format && (isFmt instanceof RegExp ? isFmt : monthsInFormat).test(format);
-      const list: string[] = useFormat ? (months as any).format || (months as any).standalone : (months as any).standalone || (months as any).format;
+      const list: string[] = useFormat ? (months as Record<string, string[]>).format || (months as Record<string, string[]>).standalone : (months as Record<string, string[]>).standalone || (months as Record<string, string[]>).format;
       const month = m.month() as number;
       return list[month] || "";
     }
@@ -213,7 +213,7 @@ export class Locale {
     if (typeof ms === "object") {
       const monthsInFormat = /D[oD]?(\[[^[\]]*\]|\s)+MMMM?/;
       const useFormat = format && monthsInFormat.test(format);
-      const list: string[] = useFormat ? (ms as any).format || (ms as any).standalone : (ms as any).standalone || (ms as any).format;
+      const list: string[] = useFormat ? (ms as Record<string, string[]>).format || (ms as Record<string, string[]>).standalone : (ms as Record<string, string[]>).standalone || (ms as Record<string, string[]>).format;
       const month = m.month() as number;
       return list[month] || "";
     }
@@ -225,13 +225,13 @@ export class Locale {
     return arr.slice(dow).concat(arr.slice(0, dow));
   }
 
-  private _resolveWeekdays(wd: any, m: Moment, format?: string): string {
+  private _resolveWeekdays(wd: string[] | Function | Record<string, unknown>, m: Moment, format?: string): string {
     if (isFunction(wd)) {return wd(m, format) as string;}
     if (Array.isArray(wd)) {return wd[m.day() as number] || "";}
     if (typeof wd === "object" && wd !== null) {
-      const isFmt = (wd as any).isFormat;
+      const isFmt = (wd as Record<string, unknown>).isFormat;
       const useFormat = format && isFmt instanceof RegExp && isFmt.test(format);
-      const list = useFormat ? (wd as any).format : (wd as any).standalone || (wd as any).format;
+      const list = useFormat ? (wd as Record<string, string[]>).format : (wd as Record<string, string[]>).standalone || (wd as Record<string, string[]>).format;
       if (Array.isArray(list)) {return list[m.day() as number] || "";}
       return "";
     }
@@ -317,22 +317,22 @@ export class Locale {
   longDateFormat(key: string): string {
     const ldf = this._config.longDateFormat || enLocale.longDateFormat;
     if (ldf) {
-      if ((ldf as any)[key]) {
-        return (ldf as any)[key];
+      if ((ldf as Record<string, string>)[key]) {
+        return (ldf as Record<string, string>)[key];
       }
       const upperKey = key.toUpperCase().replace(/S$/, "S");
-      if (key !== upperKey && key.startsWith("l") && (ldf as any)[upperKey]) {
-        let fmt = (ldf as any)[upperKey];
+      if (key !== upperKey && key.startsWith("l") && (ldf as Record<string, string>)[upperKey]) {
+        let fmt = (ldf as Record<string, string>)[upperKey];
         fmt = fmt.replaceAll('MMMM', "MMM").replaceAll('dddd', "ddd");
         const brackets: string[] = [];
-        fmt = fmt.replaceAll(/\[[^\]]*\]/g, (m: any) => { brackets.push(m); return `\x00${brackets.length - 1}\x00`; });
+        fmt = fmt.replaceAll(/\[[^\]]*\]/g, (m: string) => { brackets.push(m); return `\x00${brackets.length - 1}\x00`; });
         fmt = fmt.replaceAll(/DD(?!D)/g, "D").replaceAll(/(^|[^M])MM(?!M)([^M]|$)/g, "$1M$2");
         // oxlint-disable-next-line no-control-regex
         fmt = fmt.replaceAll(/\x00\d+\x00/g, () => brackets.shift()!);
         return fmt;
       }
-      if ((ldf as any)[upperKey] && key !== upperKey) {
-        return (ldf as any)[upperKey];
+      if ((ldf as Record<string, string>)[upperKey] && key !== upperKey) {
+        return (ldf as Record<string, string>)[upperKey];
       }
     }
     return key;
@@ -360,7 +360,7 @@ export class Locale {
     }
     const rt = this._config.relativeTime || enLocale.relativeTime;
     if (rt && hasOwn(rt, key) && key !== "future" && key !== "past") {
-      const entry = (rt as Record<string, any>)[key];
+      const entry = (rt as Record<string, string | Function>)[key];
       const num = n || 1;
       let str: string;
       if (isFunction(entry)) {
@@ -387,7 +387,7 @@ export class Locale {
       if (isString(fmt)) {return m.format(fmt);}
       return fmt;
     }
-    const entry = (cal as Record<string, any>)[key];
+    const entry = (cal as Record<string, string | Function>)[key];
     if (entry !== undefined) {
       if (isFunction(entry)) {
         const fmt = entry.call(m, ref);
@@ -554,7 +554,7 @@ function findBestLocaleName(locale: string): string | null {
 
 export { findBestLocaleName as _findBestLocaleName };
 
-export function getLocale(locale?: any): Locale {
+export function getLocale(locale?: string | { _locale?: { _abbr?: string }; _l?: string }): Locale {
   if (locale && locale._locale && locale._locale._abbr) {
     locale = locale._locale._abbr;
   } else if (locale && locale._l) {
@@ -601,7 +601,7 @@ export function defineLocale(locale: string, config: LocaleSpec | null): Locale 
     delete originalLocales[locale];
   }
 
-  const parentLocale = (config as any).parentLocale;
+  const parentLocale = (config as LocaleSpec & { parentLocale?: string }).parentLocale;
 
   if (locales[locale] && !parentLocale) {
     locales[locale] = mergeConfig(locales[locale], config);
@@ -648,9 +648,9 @@ export function updateLocale(locale: string, config: Partial<LocaleSpec> | null)
     return getLocale(locale);
   }
 
-  const configParentLocale = (config as any).parentLocale;
+  const configParentLocale = (config as Partial<LocaleSpec> & { parentLocale?: string }).parentLocale;
   if (configParentLocale) {
-    locales[locale] = { ...(config as any) };
+    locales[locale] = { ...(config as Partial<LocaleSpec> & Record<string, unknown>) };
   } else {
     locales[locale] = mergeConfig(locales[locale], config as LocaleSpec);
   }
@@ -670,7 +670,7 @@ export function hasLocale(name: string): boolean {
 export function localeHasMissingParent(name: string): boolean {
   const config = locales[name];
   if (!config) {return false;}
-  const parentLocale = (config as any).parentLocale;
+  const parentLocale = (config as LocaleSpec & { parentLocale?: string }).parentLocale;
   return !!parentLocale && !locales[parentLocale];
 }
 
@@ -686,12 +686,12 @@ export function getMonths(format?: string | number, index?: number): string | st
     if (isFunction(cfgShort)) {
       const fmt = typeof format === "string" && format !== "short" ? format : "MMM";
       if (index !== undefined) {
-        const r = (cfgShort as Function)({ month: () => index } as any, fmt);
+        const r = (cfgShort as Function)({ month: () => index } as { month: () => number }, fmt);
         return r;
       }
       const all: string[] = [];
       for (let i = 0; i < (loc._months || []).length; i++) {
-        const r = (cfgShort as Function)({ month: () => i } as any, fmt);
+        const r = (cfgShort as Function)({ month: () => i } as { month: () => number }, fmt);
         if (Array.isArray(r)) {return r;}
         all.push(r);
       }
@@ -714,7 +714,7 @@ function reorderByDow(arr: string[], dow: number): string[] {
 
 export function getWeekdays(format?: string | number | boolean, index?: number): string | string[] {
   const loc = getLocale();
-  const weekCfg = (loc._config as any).week || { dow: 0 };
+  const weekCfg = (loc._config as LocaleSpec & Record<string, unknown>).week || { dow: 0 };
   const dow = weekCfg.dow;
   if (typeof format === "number") {
     const ws = loc._weekdays;
