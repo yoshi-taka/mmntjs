@@ -24,7 +24,8 @@
       {
         "max": 5
       }
-    ]
+    ],
+    "unicorn/prefer-array-flat-map": "error"
   },
   "ignorePatterns": [
     "test/moment/",
