@@ -37,7 +37,8 @@
     "unicorn/prefer-date-now": "error",
     "unicorn/prefer-string-replace-all": "error",
     "unicorn/no-typeof-undefined": "error",
-    "eslint/prefer-object-spread": "error"
+    "eslint/prefer-object-spread": "error",
+    "unicorn/error-message": "error"
   },
   "ignorePatterns": [
     "test/moment/",
