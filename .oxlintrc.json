@@ -57,7 +57,8 @@
     "typescript/prefer-return-this-type": "error",
     "unicorn/no-length-as-slice-end": "error",
     "unicorn/no-useless-promise-resolve-reject": "error",
-    "eslint/no-unneeded-ternary": "error"
+    "eslint/no-unneeded-ternary": "error",
+    "eslint/no-useless-concat": "error"
   },
   "ignorePatterns": [
     "test/moment/",
