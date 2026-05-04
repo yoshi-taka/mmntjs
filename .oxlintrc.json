@@ -60,7 +60,8 @@
     "eslint/no-unneeded-ternary": "error",
     "eslint/no-useless-concat": "error",
     "eslint/no-var": "error",
-    "typescript/no-explicit-any": "error"
+    "typescript/no-explicit-any": "error",
+    "typescript/ban-ts-comment": "error"
   },
   "ignorePatterns": [
     "test/moment/",
