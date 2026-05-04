@@ -32,7 +32,7 @@ export function fuzz(buf) {
       if (aFmt !== oFmt) {
         throw new Error(`add(${amount}, "${unit}") mismatch for offset=${offset}: moment2="${aFmt}", original="${oFmt}"`)
       }
-    } catch (_) {}
+    } catch {}
     try {
       const se = startEndUnits[buf.length >= 10 ? buf[9] % startEndUnits.length : 0]
       const s2 = m2.clone().startOf(se)
@@ -42,14 +42,14 @@ export function fuzz(buf) {
       if (sFmt !== sOFmt) {
         throw new Error(`startOf("${se}") mismatch for offset=${offset}: moment2="${sFmt}", original="${sOFmt}"`)
       }
-    } catch (_) {}
+    } catch {}
     try {
       const d2 = m2.clone().diff(m2.clone().add(amount, unit), unit.replace(/s$/, ''))
       const dOrig = mOrig.clone().diff(mOrig.clone().add(amount, unit), unit.replace(/s$/, ''))
       if (d2 !== dOrig) {
         throw new Error(`diff() mismatch for offset=${offset} ${amount} ${unit}: moment2=${d2}, original=${dOrig}`)
       }
-    } catch (_) {}
+    } catch {}
   } catch (error) {
     if (error instanceof Error &&
         (error.message.startsWith('format() mismatch') ||
