@@ -230,7 +230,7 @@ function stripRFC2822Comments(str: string): string {
       result += str[i];
     }
   }
-  return result.replace(/\s+/g, " ").trim();
+  return result.replaceAll(/\s+/g, " ").trim();
 }
 
 function parseRFC2822(match: RegExpMatchArray): any {
@@ -290,7 +290,7 @@ function parseRFC2822(match: RegExpMatchArray): any {
   }
 
   const weekday = match[1]
-    ? WEEKDAY_NAMES_MAP[match[1].replace(/[,\s]/g, "").toLowerCase().substring(0, 3)]
+    ? WEEKDAY_NAMES_MAP[match[1].replaceAll(/[,\s]/g, "").toLowerCase().substring(0, 3)]
     : undefined;
 
   return { year, month, day, hour, minute, second, millisecond: 0, offset, _weekdayName: weekday };
@@ -445,10 +445,10 @@ function addCharVariants(names: string[]): string[] {
   const result: string[] = [...names];
   for (const name of names) {
     if (name.includes('\u02BC')) {
-      result.push(name.replace(/\u02BC/g, "'"));
+      result.push(name.replaceAll(/\u02BC/g, "'"));
     }
     if (name.includes("'")) {
-      result.push(name.replace(/'/g, '\u02BC'));
+      result.push(name.replaceAll(/'/g, '\u02BC'));
     }
   }
   return result;
@@ -660,7 +660,7 @@ function parseWithFormat(
   const expandedCacheKey = `${locale || "en"  }:${  format}`;
   let expandedFormat = expandedFormatCache.get(expandedCacheKey);
   if (!expandedFormat) {
-    expandedFormat = format.replace(/LTS|LT|llll|LLLL|lll|LLL|ll|LL|l|L/g, (match) => {
+    expandedFormat = format.replaceAll(/LTS|LT|llll|LLLL|lll|LLL|ll|LL|l|L/g, (match) => {
       return loc.longDateFormat(match);
     });
     expandedFormatCache.set(expandedCacheKey, expandedFormat);

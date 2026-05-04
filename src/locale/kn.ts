@@ -72,12 +72,12 @@ export const knLocale: LocaleSpec = {
       yy: "%d ವರ್ಷ"
     },
     preparse: function (string) {
-        return string.replace(/[೧೨೩೪೫೬೭೮೯೦]/g, function (match) {
+        return string.replaceAll(/[೧೨೩೪೫೬೭೮೯೦]/g, function (match) {
             return numberMap[match];
         });
     },
     postformat: function (string) {
-        return string.replace(/\d/g, function (match) {
+        return string.replaceAll(/\d/g, function (match) {
             return symbolMap[match];
         });
     },

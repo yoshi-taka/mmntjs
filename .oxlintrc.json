@@ -34,7 +34,8 @@
     "unicorn/prefer-array-some": "error",
     "typescript/no-unnecessary-template-expression": "error",
     "typescript/prefer-function-type": "error",
-    "unicorn/prefer-date-now": "error"
+    "unicorn/prefer-date-now": "error",
+    "unicorn/prefer-string-replace-all": "error"
   },
   "ignorePatterns": [
     "test/moment/",

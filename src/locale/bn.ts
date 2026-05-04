@@ -71,12 +71,12 @@ export const bnLocale: LocaleSpec = {
       yy: "%d বছর"
     },
     preparse: function (string) {
-        return string.replace(/[১২৩৪৫৬৭৮৯০]/g, function (match) {
+        return string.replaceAll(/[১২৩৪৫৬৭৮৯০]/g, function (match) {
             return numberMap[match];
         });
     },
     postformat: function (string) {
-        return string.replace(/\d/g, function (match) {
+        return string.replaceAll(/\d/g, function (match) {
             return symbolMap[match];
         });
     },

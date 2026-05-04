@@ -80,26 +80,26 @@ export const ar_psLocale: LocaleSpec = {
     },
     preparse: function (string) {
         return string
-            .replace(/[٣٤٥٦٧٨٩٠]/g, function (match) {
+            .replaceAll(/[٣٤٥٦٧٨٩٠]/g, function (match) {
                 return numberMap[match];
             })
             .split('') // reversed since negative lookbehind not supported everywhere
             .reverse()
             .join('')
-            .replace(/[١٢](?![\u062a\u0643])/g, function (match) {
+            .replaceAll(/[١٢](?![\u062a\u0643])/g, function (match) {
                 return numberMap[match];
             })
             .split('')
             .reverse()
             .join('')
-            .replace(/،/g, ',');
+            .replaceAll(/،/g, ',');
     },
     postformat: function (string) {
         return string
-            .replace(/\d/g, function (match) {
+            .replaceAll(/\d/g, function (match) {
                 return symbolMap[match];
             })
-            .replace(/,/g, '،');
+            .replaceAll(/,/g, '،');
     },
     week: {
       dow: 0,

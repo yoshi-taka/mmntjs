@@ -152,14 +152,14 @@ export const ar_lyLocale: LocaleSpec = {
       yy: pluralize('y')
     },
     preparse: function (string) {
-        return string.replace(/،/g, ',');
+        return string.replaceAll(/،/g, ',');
     },
     postformat: function (string) {
         return string
-            .replace(/\d/g, function (match) {
+            .replaceAll(/\d/g, function (match) {
                 return symbolMap[match];
             })
-            .replace(/,/g, '،');
+            .replaceAll(/,/g, '،');
     },
     week: {
       dow: 6,

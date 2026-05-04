@@ -49,12 +49,12 @@ export const neLocale: LocaleSpec = {
       LLLL: "dddd, D MMMM YYYY, Aको h:mm बजे"
     },
     preparse: function (string) {
-        return string.replace(/[१२३४५६७८९०]/g, function (match) {
+        return string.replaceAll(/[१२३४५६७८९०]/g, function (match) {
             return numberMap[match];
         });
     },
     postformat: function (string) {
-        return string.replace(/\d/g, function (match) {
+        return string.replaceAll(/\d/g, function (match) {
             return symbolMap[match];
         });
     },

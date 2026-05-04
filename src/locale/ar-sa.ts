@@ -82,17 +82,17 @@ export const ar_saLocale: LocaleSpec = {
     },
     preparse: function (string) {
         return string
-            .replace(/[١٢٣٤٥٦٧٨٩٠]/g, function (match) {
+            .replaceAll(/[١٢٣٤٥٦٧٨٩٠]/g, function (match) {
                 return numberMap[match];
             })
-            .replace(/،/g, ',');
+            .replaceAll(/،/g, ',');
     },
     postformat: function (string) {
         return string
-            .replace(/\d/g, function (match) {
+            .replaceAll(/\d/g, function (match) {
                 return symbolMap[match];
             })
-            .replace(/,/g, '،');
+            .replaceAll(/,/g, '،');
     },
     week: {
       dow: 0,

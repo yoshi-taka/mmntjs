@@ -323,12 +323,12 @@ export class Locale {
       const upperKey = key.toUpperCase().replace(/S$/, "S");
       if (key !== upperKey && key.startsWith("l") && (ldf as any)[upperKey]) {
         let fmt = (ldf as any)[upperKey];
-        fmt = fmt.replace(/MMMM/g, "MMM").replace(/dddd/g, "ddd");
+        fmt = fmt.replaceAll(/MMMM/g, "MMM").replaceAll(/dddd/g, "ddd");
         const brackets: string[] = [];
-        fmt = fmt.replace(/\[[^\]]*\]/g, (m: any) => { brackets.push(m); return `\x00${brackets.length - 1}\x00`; });
-        fmt = fmt.replace(/DD(?!D)/g, "D").replace(/(^|[^M])MM(?!M)([^M]|$)/g, "$1M$2");
+        fmt = fmt.replaceAll(/\[[^\]]*\]/g, (m: any) => { brackets.push(m); return `\x00${brackets.length - 1}\x00`; });
+        fmt = fmt.replaceAll(/DD(?!D)/g, "D").replaceAll(/(^|[^M])MM(?!M)([^M]|$)/g, "$1M$2");
         // oxlint-disable-next-line no-control-regex
-        fmt = fmt.replace(/\x00\d+\x00/g, () => brackets.shift()!);
+        fmt = fmt.replaceAll(/\x00\d+\x00/g, () => brackets.shift()!);
         return fmt;
       }
       if ((ldf as any)[upperKey] && key !== upperKey) {
@@ -503,7 +503,7 @@ function clearLocaleCache(): void {
 }
 
 function normalizeLocale(key: string): string {
-  return key ? key.toLowerCase().replace(/_/g, "-") : key;
+  return key ? key.toLowerCase().replaceAll(/_/g, "-") : key;
 }
 
 function commonPrefix(arr1: string[], arr2: string[]): number {

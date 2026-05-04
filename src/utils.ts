@@ -141,7 +141,7 @@ export function createDateSafe(
 }
 
 export function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return str.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 export class LruMap<K, V> {

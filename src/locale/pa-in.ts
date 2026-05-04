@@ -71,12 +71,12 @@ export const pa_inLocale: LocaleSpec = {
       yy: "%d ਸਾਲ"
     },
     preparse: function (string) {
-        return string.replace(/[੧੨੩੪੫੬੭੮੯੦]/g, function (match) {
+        return string.replaceAll(/[੧੨੩੪੫੬੭੮੯੦]/g, function (match) {
             return numberMap[match];
         });
     },
     postformat: function (string) {
-        return string.replace(/\d/g, function (match) {
+        return string.replaceAll(/\d/g, function (match) {
             return symbolMap[match];
         });
     },

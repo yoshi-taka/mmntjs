@@ -69,12 +69,12 @@ export const myLocale: LocaleSpec = {
       yy: "%d နှစ်"
     },
     preparse: function (string) {
-        return string.replace(/[၁၂၃၄၅၆၇၈၉၀]/g, function (match) {
+        return string.replaceAll(/[၁၂၃၄၅၆၇၈၉၀]/g, function (match) {
             return numberMap[match];
         });
     },
     postformat: function (string) {
-        return string.replace(/\d/g, function (match) {
+        return string.replaceAll(/\d/g, function (match) {
             return symbolMap[match];
         });
     },

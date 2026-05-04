@@ -75,12 +75,12 @@ export const boLocale: LocaleSpec = {
       yy: "%d ལོ"
     },
     preparse: function (string) {
-        return string.replace(/[༡༢༣༤༥༦༧༨༩༠]/g, function (match) {
+        return string.replaceAll(/[༡༢༣༤༥༦༧༨༩༠]/g, function (match) {
             return numberMap[match];
         });
     },
     postformat: function (string) {
-        return string.replace(/\d/g, function (match) {
+        return string.replaceAll(/\d/g, function (match) {
             return symbolMap[match];
         });
     },

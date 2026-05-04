@@ -229,16 +229,16 @@ export class Duration {
 
   private _parseISONum(s: string | undefined): number {
     if (!s) return 0;
-    const parts = s.replace(/,/g, ".").split(".");
+    const parts = s.replaceAll(/,/g, ".").split(".");
     if (parts.length === 1) return parseFloat(parts[0]) || 0;
     return parseFloat(`${parts[0]  }.${  parts[1]}`) || 0;
   }
 
   private _parseString(str: string): void {
-    let cleanStr = str.replace(/,/g, ".");
-    cleanStr = cleanStr.replace(/([PpTt])\.(\d)/g, "$10.$2");
-    cleanStr = cleanStr.replace(/\.(\D)/g, ".0$1");
-    cleanStr = cleanStr.replace(/(\d)\.($|[^\d.])/g, "$1$2");
+    let cleanStr = str.replaceAll(/,/g, ".");
+    cleanStr = cleanStr.replaceAll(/([PpTt])\.(\d)/g, "$10.$2");
+    cleanStr = cleanStr.replaceAll(/\.(\D)/g, ".0$1");
+    cleanStr = cleanStr.replaceAll(/(\d)\.($|[^\d.])/g, "$1$2");
 
     const csharpMatch = cleanStr.match(/^([+-]?\d+)[. ](\d{2}):(\d{2}):(\d{2}(?:\.\d+)?)$/);
     if (csharpMatch) {

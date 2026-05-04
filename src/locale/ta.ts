@@ -77,12 +77,12 @@ export const taLocale: LocaleSpec = {
         return `${number  }வது`;
     },
     preparse: function (string) {
-        return string.replace(/[௧௨௩௪௫௬௭௮௯௦]/g, function (match) {
+        return string.replaceAll(/[௧௨௩௪௫௬௭௮௯௦]/g, function (match) {
             return numberMap[match];
         });
     },
     postformat: function (string) {
-        return string.replace(/\d/g, function (match) {
+        return string.replaceAll(/\d/g, function (match) {
             return symbolMap[match];
         });
     },

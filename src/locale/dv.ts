@@ -75,10 +75,10 @@ export const dvLocale: LocaleSpec = {
       yy: "އަހަރު %d"
     },
     preparse: function (string) {
-        return string.replace(/،/g, ',');
+        return string.replaceAll(/،/g, ',');
     },
     postformat: function (string) {
-        return string.replace(/,/g, '،');
+        return string.replaceAll(/,/g, '،');
     },
     week: {
       dow: 7,

@@ -93,10 +93,10 @@ export const ug_cnLocale: LocaleSpec = {
         }
     },
     preparse: function (string) {
-        return string.replace(/،/g, ',');
+        return string.replaceAll(/،/g, ',');
     },
     postformat: function (string) {
-        return string.replace(/,/g, '،');
+        return string.replaceAll(/,/g, '،');
     },
     week: {
       dow: 1,

@@ -72,12 +72,12 @@ export const guLocale: LocaleSpec = {
       yy: "%d વર્ષ"
     },
     preparse: function (string) {
-        return string.replace(/[૧૨૩૪૫૬૭૮૯૦]/g, function (match) {
+        return string.replaceAll(/[૧૨૩૪૫૬૭૮૯૦]/g, function (match) {
             return numberMap[match];
         });
     },
     postformat: function (string) {
-        return string.replace(/\d/g, function (match) {
+        return string.replaceAll(/\d/g, function (match) {
             return symbolMap[match];
         });
     },

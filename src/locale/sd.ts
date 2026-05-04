@@ -66,10 +66,10 @@ export const sdLocale: LocaleSpec = {
       yy: "%d سال"
     },
     preparse: function (string) {
-        return string.replace(/،/g, ',');
+        return string.replaceAll(/،/g, ',');
     },
     postformat: function (string) {
-        return string.replace(/,/g, '،');
+        return string.replaceAll(/,/g, '،');
     },
     week: {
       dow: 1,

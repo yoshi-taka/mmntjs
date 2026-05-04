@@ -86,17 +86,17 @@ export const faLocale: LocaleSpec = {
     },
     preparse: function (string) {
         return string
-            .replace(/[۰-۹]/g, function (match) {
+            .replaceAll(/[۰-۹]/g, function (match) {
                 return numberMap[match];
             })
-            .replace(/،/g, ',');
+            .replaceAll(/،/g, ',');
     },
     postformat: function (string) {
         return string
-            .replace(/\d/g, function (match) {
+            .replaceAll(/\d/g, function (match) {
                 return symbolMap[match];
             })
-            .replace(/,/g, '،');
+            .replaceAll(/,/g, '،');
     },
     dayOfMonthOrdinalParse: /\d{1,2}م/,
     ordinal: "%dم",

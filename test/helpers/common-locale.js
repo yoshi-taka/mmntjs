@@ -88,7 +88,7 @@ export function defineCommonLocaleTests(locale, _options) {
             // tokens that need to be expanded.
             eachOwnProp(data, function (baseToken) {
                 // strip escaped sequences
-                var format = data[baseToken].replace(/(\[[^\]]*\])/g, '');
+                var format = data[baseToken].replaceAll(/(\[[^\]]*\])/g, '');
                 assert.equal(
                     false,
                     !!~format.indexOf(srchToken),

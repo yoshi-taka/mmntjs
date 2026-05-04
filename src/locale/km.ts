@@ -83,12 +83,12 @@ export const kmLocale: LocaleSpec = {
     dayOfMonthOrdinalParse: /ទី\d{1,2}/,
     ordinal: "ទី%d",
     preparse: function (string) {
-        return string.replace(/[១២៣៤៥៦៧៨៩០]/g, function (match) {
+        return string.replaceAll(/[១២៣៤៥៦៧៨៩០]/g, function (match) {
             return numberMap[match];
         });
     },
     postformat: function (string) {
-        return string.replace(/\d/g, function (match) {
+        return string.replaceAll(/\d/g, function (match) {
             return symbolMap[match];
         });
     },

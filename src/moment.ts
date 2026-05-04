@@ -1985,7 +1985,7 @@ export class Moment {
   }
 
   private _trySetLocale(locale: string): boolean {
-    const parts = locale.toLowerCase().replace(/_/g, "-").split("-");
+    const parts = locale.toLowerCase().replaceAll(/_/g, "-").split("-");
     for (let j = parts.length; j > 0; j--) {
       const candidate = parts.slice(0, j).join("-");
       if (hasLocale(candidate)) {
