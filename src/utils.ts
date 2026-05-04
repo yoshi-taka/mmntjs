@@ -88,6 +88,7 @@ export function absRound(number: number): number {
   return Math.round(number);
 }
 
+// eslint-disable-next-line max-params
 export function createDate(
   year: number,
   month: number,
@@ -106,6 +107,7 @@ export function createDate(
   return new Date(year, month, day ?? 1, hour ?? 0, minute ?? 0, second ?? 0, ms ?? 0);
 }
 
+// eslint-disable-next-line max-params
 export function createUTCDate(
   year: number,
   month: number,
@@ -124,6 +126,7 @@ export function createUTCDate(
   return new Date(Date.UTC(year, month, day ?? 1, hour ?? 0, minute ?? 0, second ?? 0, ms ?? 0));
 }
 
+// eslint-disable-next-line max-params
 export function createDateSafe(
   year: number,
   month: number,

@@ -3,7 +3,7 @@ import type { LocaleSpec } from "./en";
 
 function isFunction(input) {
     return (
-        (typeof Function !== 'undefined' && input instanceof Function) ||
+        (typeof Function !== 'undefined' && typeof input === 'function') ||
         Object.prototype.toString.call(input) === '[object Function]'
     );
 }
