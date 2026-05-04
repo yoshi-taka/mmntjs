@@ -27,7 +27,8 @@
     ],
     "unicorn/prefer-array-flat-map": "error",
     "unicorn/prefer-set-has": "error",
-    "oxc/no-accumulating-spread": "error"
+    "oxc/no-accumulating-spread": "error",
+    "typescript/array-type": "error"
   },
   "ignorePatterns": [
     "test/moment/",

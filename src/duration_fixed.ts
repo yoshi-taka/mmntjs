@@ -822,13 +822,13 @@ export class Duration {
     const minutes = Math.floor((msAbs % 3600000) / 60000);
     const seconds = (msAbs % 60000) / 1000;
 
-    const units: Array<{ key: string; val: number; source: "months" | "days" | "ms" }> = [];
+    const units: { key: string; val: number; source: "months" | "days" | "ms" }[] = [];
     if (yearsFromMonths !== 0)
       units.push({ key: "Y", val: Math.abs(yearsFromMonths), source: "months" });
     if (remMonths !== 0) units.push({ key: "M", val: Math.abs(remMonths), source: "months" });
     if (days !== 0) units.push({ key: "D", val: Math.abs(days), source: "days" });
 
-    const timeUnits: Array<{ key: string; val: number; source: "ms" }> = [];
+    const timeUnits: { key: string; val: number; source: "ms" }[] = [];
     if (hours !== 0) timeUnits.push({ key: "H", val: hours, source: "ms" });
     if (minutes !== 0) timeUnits.push({ key: "M", val: minutes, source: "ms" });
     if (seconds !== 0) timeUnits.push({ key: "S", val: seconds, source: "ms" });
