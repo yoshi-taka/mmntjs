@@ -2,7 +2,8 @@
   "rules": {
     "no-unused-vars": "warn",
     "no-useless-escape": "warn",
-    "typescript/consistent-type-imports": "error"
+    "typescript/consistent-type-imports": "error",
+    "typescript/prefer-optional-chain": "error"
   },
   "ignorePatterns": [
     "test/moment/",
