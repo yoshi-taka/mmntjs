@@ -14,7 +14,7 @@ function randomFormat(buf) {
       chars.push(validTokens[buf[i] % validTokens.length])
     } else if (buf[i] < 128) {
       chars.push(String.fromCharCode(buf[i] % 127))
-      if (chars[chars.length - 1] === '[' || chars[chars.length - 1] === ']') {
+      if (chars.at(-1) === '[' || chars.at(-1) === ']') {
         chars.pop()
       }
     } else {

@@ -38,7 +38,8 @@
     "unicorn/prefer-string-replace-all": "error",
     "unicorn/no-typeof-undefined": "error",
     "eslint/prefer-object-spread": "error",
-    "unicorn/error-message": "error"
+    "unicorn/error-message": "error",
+    "unicorn/prefer-at": "error"
   },
   "ignorePatterns": [
     "test/moment/",

@@ -1618,7 +1618,7 @@ export class Moment {
 
     const fromStr = inclusivity || "()";
     const startOpen = fromStr[0] === "(";
-    const endOpen = fromStr[fromStr.length - 1] === ")";
+    const endOpen = fromStr.at(-1) === ")";
 
     const startCheck = startOpen ? this.isAfter(fromM, unit) : this.isSameOrAfter(fromM, unit);
     const endCheck = endOpen ? this.isBefore(toM, unit) : this.isSameOrBefore(toM, unit);
