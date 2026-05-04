@@ -17,7 +17,8 @@
     "typescript/no-unnecessary-condition": "error",
     "typescript/prefer-for-of": "error",
     "eslint/no-constant-condition": "error",
-    "eslint/no-shadow": "error"
+    "eslint/no-shadow": "error",
+    "typescript/prefer-reduce-type-parameter": "error"
   },
   "ignorePatterns": [
     "test/moment/",
