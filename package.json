@@ -38,7 +38,7 @@
   "scripts": {
     "build": "tsup",
     "test": "TZ=UTC bun test --parallel ./test/properties/ ./test/mutation.test.ts ./test/moment2.test.ts ./packages/timezone/test/basic.test.ts",
-    "test:all": "TZ=UTC bun test --parallel ./test/moment/*.js ./test/properties/ ./test/mutation.test.ts ./test/moment2.test.ts ./test/tree-shaking.test.ts ./packages/timezone/test/basic.test.ts",
+    "test:all": "TZ=UTC bun test --parallel ./test/moment/*.js ./test/properties/ ./test/mutation.test.ts ./test/moment2.test.ts ./test/tree-shaking.test.ts ./packages/timezone/test/basic.test.ts && bun run fuzz:quick",
     "bench": "bun test/bench.ts",
     "bench:mem": "bun test/bench-mem.ts",
     "snapshot:save": "bash scripts/snapshot.sh save",
