@@ -1,0 +1,11 @@
+{
+  "rules": {
+    "no-unused-vars": "warn",
+    "no-useless-escape": "warn",
+    "typescript/consistent-type-imports": "error"
+  },
+  "ignorePatterns": [
+    "test/moment/",
+    "src/index.ts.new.js"
+  ]
+}

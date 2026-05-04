@@ -1,0 +1,97 @@
+{
+  "name": "@compat/moment2",
+  "version": "1.0.0",
+  "description": "Drop-in replacement for moment.js — a migration path to Temporal API",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "unpkg": "./dist/moment2.min.js",
+  "jsdelivr": "./dist/moment2.min.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./temporal": {
+      "types": "./dist/temporal-entry.d.ts",
+      "import": "./dist/temporal-entry.js",
+      "require": "./dist/temporal-entry.cjs"
+    },
+    "./locale/*": {
+      "types": "./dist/locale/*.d.ts",
+      "import": "./dist/locale/*.js",
+      "require": "./dist/locale/*.cjs"
+    },
+    "./dist/*": "./dist/*",
+    "./moment": "./moment/moment.js",
+    "./moment/*": "./moment/*"
+  },
+  "bin": {
+    "moment2": "./dist/bin/cli.js"
+  },
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "TZ=UTC bun test --parallel ./test/properties/ ./test/mutation.test.ts ./test/moment2.test.ts ./packages/timezone/test/basic.test.ts",
+    "test:core": "TZ=UTC bun test --parallel ./test/moment/*.js",
+    "test:all": "TZ=UTC bun test --parallel ./test/moment/*.js ./test/properties/ ./test/mutation.test.ts ./test/moment2.test.ts ./test/tree-shaking.test.ts ./packages/timezone/test/basic.test.ts",
+    "test:locale": "TZ=UTC bun test --parallel ./test/locale/",
+    "test:treeshake": "TZ=UTC bun test ./test/tree-shaking.test.ts",
+    "test:sbst": "TZ=UTC bun test ./test/sbst-parse-poc.test.ts",
+    "test:sbst:format-array": "TZ=UTC bun test ./test/sbst-format-array-poc.test.ts",
+    "bench": "bun test/bench.ts",
+    "bench:mem": "bun test/bench-mem.ts",
+    "test:vs-moment2": "bash scripts/compare.sh moment-tests",
+    "snapshot:save": "bash scripts/snapshot.sh save",
+    "snapshot:compare": "bash scripts/snapshot.sh compare",
+    "lint": "oxlint src/ test/",
+    "typecheck": "oxlint --type-aware --type-check src test",
+    "fmt": "oxlint --fix src/ test/",
+    "check": "oxlint src/ test/",
+    "knip": "knip",
+    "fallow": "fallow",
+    "fuzz:parse": "bun run build && jazzer test/fuzz/parse.fuzz.js --sync -i dist/ -- -runs=1000",
+    "fuzz:format": "bun run build && jazzer test/fuzz/format.fuzz.js --sync -i dist/ -- -runs=1000",
+    "fuzz:duration": "bun run build && jazzer test/fuzz/duration.fuzz.js --sync -i dist/ -- -runs=1000",
+    "fuzz:operations": "bun run build && jazzer test/fuzz/operations.fuzz.js --sync -i dist/ -- -runs=1000",
+    "fuzz:array": "bun run build && jazzer test/fuzz/array-input.fuzz.js --sync -i dist/ -- -runs=1000",
+    "fuzz:utc": "bun run build && jazzer test/fuzz/utc.fuzz.js --sync -i dist/ -- -runs=1000",
+    "fuzz:object": "bun run build && jazzer test/fuzz/object-input.fuzz.js --sync -i dist/ -- -runs=1000",
+    "fuzz:reltime": "bun run build && jazzer test/fuzz/reltime.fuzz.js --sync -i dist/ -- -runs=1000",
+    "fuzz": "bun run build && jazzer test/fuzz/parse.fuzz.js --sync -i dist/ -- -max_total_time=60",
+    "fuzz:quick": "bun run build && jazzer test/fuzz/parse.fuzz.js --sync -i dist/ -- -runs=500 -max_len=64 && jazzer test/fuzz/format.fuzz.js --sync -i dist/ -- -runs=500 -max_len=64 && jazzer test/fuzz/duration.fuzz.js --sync -i dist/ -- -runs=500 -max_len=32 && jazzer test/fuzz/operations.fuzz.js --sync -i dist/ -- -runs=500 -max_len=32 && jazzer test/fuzz/array-input.fuzz.js --sync -i dist/ -- -runs=500 -max_len=32 && jazzer test/fuzz/utc.fuzz.js --sync -i dist/ -- -runs=500 -max_len=64 && jazzer test/fuzz/object-input.fuzz.js --sync -i dist/ -- -runs=500 -max_len=32 && jazzer test/fuzz/reltime.fuzz.js --sync -i dist/ -- -runs=500",
+    "sbst:parse-poc": "bun scripts/sbst-parse-poc.ts",
+    "sbst:format-array-poc": "bun scripts/sbst-format-array-poc.ts",
+    "ci": "bun run lint && bun run typecheck && TZ=UTC bun run test:all && bun run build && bun run knip && bun run fallow"
+  },
+  "keywords": [
+    "moment",
+    "date",
+    "temporal",
+    "compat"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@jazzer.js/core": "^4.0.0",
+    "@types/bun": "^1.3.13",
+    "@types/node": "^20.19.39",
+    "date-fns": "^4.1.0",
+    "dayjs": "^1.11.20",
+    "fallow": "^2.54.3",
+    "fast-check": "^4.7.0",
+    "knip": "^6.9.0",
+    "luxon": "^3.7.2",
+    "oxlint": "^1.62.0",
+    "oxlint-tsgolint": "^0.22.1",
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "@js-temporal/polyfill": "^0.5.1"
+  }
+}

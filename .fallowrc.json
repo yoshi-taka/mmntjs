@@ -1,0 +1,11 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  "entry": ["src/index.ts", "src/bin/cli.ts", "src/temporal-entry.ts", "test/mutation.test.ts", "test/properties/basic.test.ts", "test/properties/boundary.test.ts", "src/moment.ts", "src/moment_fixed.ts"],
+  "ignorePatterns": ["moment/**", "lib/**", "test/moment/**", "test/helpers/**", "test/qunit.js", "test/oracle.ts", "test/debug_calendar.js", "src.after/**", "src.orig/**", "src.snapshot/**", "src.before/**", "test/locale/**", "src/locale/**", "test/properties/**", "test/bench-datefns.ts", "test/locale-helper.ts", "scripts/**"],
+  "rules": {
+    "unused-class-members": "off",
+    "unused-exports": "off",
+    "unused-types": "off",
+    "circular-dependencies": "warn"
+  }
+}
