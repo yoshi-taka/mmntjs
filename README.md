@@ -137,7 +137,7 @@ Build:        CJS 227K + ESM 227K + IIFE 255K + DTS
 ```sh
 bun install
 bun run build          # Build with tsup
-bun run test:all       # Full test suite
+bun run test:full      # Full test suite
 bun run lint           # oxlint
 bun run typecheck      # oxlint type-aware
 bun run ci             # Full CI pipeline
