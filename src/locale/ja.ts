@@ -20,19 +20,19 @@ function _jaFormatFastPath(m: Moment, format: string): string | undefined {
   const s = raw.$s;
   switch (format) {
     case 'YYYY/MM/DD':
-      return `${Y  }/${  M < 10 ? '0' + M : '' + M  }/${  D < 10 ? '0' + D : '' + D}`;
+      return `${Y  }/${  M < 10 ? `0${  M}` : `${  M}`  }/${  D < 10 ? `0${  D}` : `${  D}`}`;
     case 'YYYY年M月D日':
       return `${Y  }年${  M  }月${  D  }日`;
     case 'YYYY年M月D日 HH:mm':
-      return `${Y  }年${  M  }月${  D  }日 ${  H < 10 ? '0' + H : '' + H  }:${  min < 10 ? '0' + min : '' + min}`;
+      return `${Y  }年${  M  }月${  D  }日 ${  H < 10 ? `0${  H}` : `${  H}`  }:${  min < 10 ? `0${  min}` : `${  min}`}`;
     case 'YYYY年M月D日 dddd HH:mm':
-      return `${Y  }年${  M  }月${  D  }日 ${  jaWeekdays[raw.$W]  } ${  H < 10 ? '0' + H : '' + H  }:${  min < 10 ? '0' + min : '' + min}`;
+      return `${Y  }年${  M  }月${  D  }日 ${  jaWeekdays[raw.$W]  } ${  H < 10 ? `0${  H}` : `${  H}`  }:${  min < 10 ? `0${  min}` : `${  min}`}`;
     case 'YYYY年M月D日(ddd) HH:mm':
-      return `${Y  }年${  M  }月${  D  }日(${  jaWeekdaysShort[raw.$W]  }) ${  H < 10 ? '0' + H : '' + H  }:${  min < 10 ? '0' + min : '' + min}`;
+      return `${Y  }年${  M  }月${  D  }日(${  jaWeekdaysShort[raw.$W]  }) ${  H < 10 ? `0${  H}` : `${  H}`  }:${  min < 10 ? `0${  min}` : `${  min}`}`;
     case 'HH:mm':
-      return `${H < 10 ? '0' + H : '' + H  }:${  min < 10 ? '0' + min : '' + min}`;
+      return `${H < 10 ? `0${  H}` : `${  H}`  }:${  min < 10 ? `0${  min}` : `${  min}`}`;
     case 'HH:mm:ss':
-      return `${H < 10 ? '0' + H : '' + H  }:${  min < 10 ? '0' + min : '' + min  }:${  s < 10 ? '0' + s : '' + s}`;
+      return `${H < 10 ? `0${  H}` : `${  H}`  }:${  min < 10 ? `0${  min}` : `${  min}`  }:${  s < 10 ? `0${  s}` : `${  s}`}`;
   }
   return undefined;
 }

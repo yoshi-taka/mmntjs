@@ -60,7 +60,7 @@ function createAssert() {
                 msg += `\nAssertions run (${  breakdown  }):`;
                 for (var i = 0; i < assertLog.length; i++) {
                     var entry = assertLog[i];
-                    msg += `\n  #${  i + 1  } ${  entry.method  }${entry.msg ? ' - ' + entry.msg : ''}`;
+                    msg += `\n  #${  i + 1  } ${  entry.method  }${entry.msg ? ` - ${  entry.msg}` : ''}`;
                 }
             }
             throw new Error(msg);

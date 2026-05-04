@@ -9,7 +9,8 @@
     "unicorn/throw-new-error": "error",
     "typescript/consistent-type-exports": "error",
     "import/no-duplicates": "error",
-    "eslint/prefer-template": "error"
+    "eslint/prefer-template": "error",
+    "typescript/prefer-includes": "error"
   },
   "ignorePatterns": [
     "test/moment/",
