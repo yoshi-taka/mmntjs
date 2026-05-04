@@ -39,7 +39,8 @@
     "unicorn/no-typeof-undefined": "error",
     "eslint/prefer-object-spread": "error",
     "unicorn/error-message": "error",
-    "unicorn/prefer-at": "error"
+    "unicorn/prefer-at": "error",
+    "typescript/return-await": "error"
   },
   "ignorePatterns": [
     "test/moment/",
