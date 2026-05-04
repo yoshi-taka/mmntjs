@@ -54,8 +54,7 @@ export function hasOwnProp(obj: any, key: string): boolean {
 }
 
 export function extend(a: any, b: any, ...others: any[]): any {
-  for (let i = 0; i < others.length; i++) {
-    const source = others[i];
+  for (const source of others) {
     if (source != null) {
       for (const key in source) {
         if (hasOwnProp(source, key)) {

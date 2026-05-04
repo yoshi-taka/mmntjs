@@ -314,8 +314,7 @@ export class Moment {
     }
     this._isValid = c._isValid !== undefined ? c._isValid : !isNaN(this._t);
     let cold: any;
-    for (let i = 0; i < coldFieldKeys.length; i++) {
-      const key = coldFieldKeys[i];
+    for (const key of coldFieldKeys) {
       const val = c[key];
       if (val !== undefined) {
         if (!cold) {cold = {};}

@@ -220,10 +220,10 @@ function parseCommonISO(str: string): any {
 function stripRFC2822Comments(str: string): string {
   let result = "";
   let depth = 0;
-  for (let i = 0; i < str.length; i++) {
-    if (str[i] === "(") {
+  for (const ch of str) {
+    if (ch === "(") {
       depth++;
-    } else if (str[i] === ")") {
+    } else if (ch === ")") {
       depth--;
       if (depth < 0) {depth = 0;}
     } else if (depth === 0) {

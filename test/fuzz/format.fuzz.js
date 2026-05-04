@@ -7,18 +7,18 @@ const originalMoment = _originalMoment
 function randomFormat(buf) {
   const chars = []
   const validTokens = 'Y M D d H h m s S A Z z X x'.split(' ')
-  for (let i = 0; i < buf.length; i++) {
-    if (buf[i] < 32) {
-      chars.push(String.fromCharCode(32 + (buf[i] % 16)))
-    } else if (buf[i] < 64) {
-      chars.push(validTokens[buf[i] % validTokens.length])
-    } else if (buf[i] < 128) {
-      chars.push(String.fromCharCode(buf[i] % 127))
+  for (const byte of buf) {
+    if (byte < 32) {
+      chars.push(String.fromCharCode(32 + (byte % 16)))
+    } else if (byte < 64) {
+      chars.push(validTokens[byte % validTokens.length])
+    } else if (byte < 128) {
+      chars.push(String.fromCharCode(byte % 127))
       if (chars.at(-1) === '[' || chars.at(-1) === ']') {
         chars.pop()
       }
     } else {
-      chars.push(String.fromCharCode(buf[i] % 127))
+      chars.push(String.fromCharCode(byte % 127))
     }
   }
   let fmt = chars.join('').slice(0, 40)
