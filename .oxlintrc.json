@@ -3,7 +3,8 @@
     "no-unused-vars": "warn",
     "no-useless-escape": "warn",
     "typescript/consistent-type-imports": "error",
-    "typescript/prefer-optional-chain": "error"
+    "typescript/prefer-optional-chain": "error",
+    "typescript/prefer-nullish-coalescing": "error"
   },
   "ignorePatterns": [
     "test/moment/",
