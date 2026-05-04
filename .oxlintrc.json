@@ -52,7 +52,8 @@
     "typescript/dot-notation": "error",
     "typescript/consistent-indexed-object-style": "error",
     "eslint/curly": "error",
-    "typescript/consistent-type-assertions": "error"
+    "typescript/consistent-type-assertions": "error",
+    "typescript/no-import-type-side-effects": "error"
   },
   "ignorePatterns": [
     "test/moment/",
