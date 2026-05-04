@@ -49,7 +49,8 @@
     "eslint/no-useless-computed-key": "error",
     "oxc/no-map-spread": "error",
     "typescript/prefer-readonly": "error",
-    "typescript/dot-notation": "error"
+    "typescript/dot-notation": "error",
+    "typescript/consistent-indexed-object-style": "error"
   },
   "ignorePatterns": [
     "test/moment/",

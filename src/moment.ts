@@ -36,7 +36,7 @@ export type MomentInput =
   | string
   | number
   | number[]
-  | { [key: string]: any }
+  | Record<string, any>
   | undefined
   | null;
 
