@@ -1,7 +1,7 @@
 // @ts-nocheck
 import type { LocaleSpec } from "./en";
 
-var symbolMap = {
+const symbolMap = {
         1: '१',
         2: '२',
         3: '३',
@@ -27,7 +27,7 @@ var symbolMap = {
     };
 
 function relativeTimeMr(number, withoutSuffix, string, _isFuture) {
-    var output = '';
+    let output = '';
     if (withoutSuffix) {
         switch (string) {
             case 's':

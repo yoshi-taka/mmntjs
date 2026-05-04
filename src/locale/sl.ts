@@ -2,7 +2,7 @@
 import type { LocaleSpec } from "./en";
 
 function processRelativeTime(number, withoutSuffix, key, isFuture) {
-    var result = `${number  } `;
+    let result = `${number  } `;
     switch (key) {
         case 's':
             return withoutSuffix || isFuture

@@ -4,7 +4,7 @@ import moment from '../../moment';
 
 export function defineCommonLocaleTests(locale, _options) {
     test('lenient day of month ordinal parsing', function (assert) {
-        var i, ordinalStr, testMoment;
+        let i, ordinalStr, testMoment;
         for (i = 1; i <= 31; ++i) {
             ordinalStr = moment([2014, 0, i]).format('YYYY MM Do');
             testMoment = moment(ordinalStr, 'YYYY MM Do');
@@ -27,7 +27,7 @@ export function defineCommonLocaleTests(locale, _options) {
     });
 
     test('lenient day of month ordinal parsing of number', function (assert) {
-        var i, testMoment;
+        let i, testMoment;
         for (i = 1; i <= 31; ++i) {
             testMoment = moment(`2014 01 ${  i}`, 'YYYY MM Do');
             assert.equal(
@@ -55,7 +55,7 @@ export function defineCommonLocaleTests(locale, _options) {
     });
 
     test('strict day of month ordinal parsing', function (assert) {
-        var i, ordinalStr, testMoment;
+        let i, ordinalStr, testMoment;
         for (i = 1; i <= 31; ++i) {
             ordinalStr = moment([2014, 0, i]).format('YYYY MM Do');
             testMoment = moment(ordinalStr, 'YYYY MM Do', true);
@@ -67,7 +67,7 @@ export function defineCommonLocaleTests(locale, _options) {
     });
 
     test('meridiem invariant', function (assert) {
-        var h, m, t1, t2;
+        let h, m, t1, t2;
         for (h = 0; h < 24; ++h) {
             for (m = 0; m < 60; m += 15) {
                 t1 = moment.utc([2000, 0, 1, h, m]);
@@ -82,13 +82,13 @@ export function defineCommonLocaleTests(locale, _options) {
     });
 
     test('date format correctness', function (assert) {
-        var data = moment.localeData()._longDateFormat;
+        const data = moment.localeData()._longDateFormat;
         eachOwnProp(data, function (srchToken) {
             // Check each format string to make sure it does not contain any
             // tokens that need to be expanded.
             eachOwnProp(data, function (baseToken) {
                 // strip escaped sequences
-                var format = data[baseToken].replaceAll(/(\[[^\]]*\])/g, '');
+                const format = data[baseToken].replaceAll(/(\[[^\]]*\])/g, '');
                 assert.equal(
                     false,
                     !!~format.indexOf(srchToken),
@@ -99,7 +99,7 @@ export function defineCommonLocaleTests(locale, _options) {
     });
 
     test('month parsing correctness', function (assert) {
-        var i, m;
+        let i, m;
 
         if (locale === 'tr') {
             // I can't fix it :(
@@ -107,7 +107,7 @@ export function defineCommonLocaleTests(locale, _options) {
             return;
         }
         function tester(format) {
-            var r;
+            let r;
             r = moment(m.format(format), format);
             assert.equal(r.month(), m.month(), `month ${  i  } fmt ${  format}`);
             if (locale !== 'ka') {
@@ -157,7 +157,7 @@ export function defineCommonLocaleTests(locale, _options) {
     });
 
     test('weekday parsing correctness', function (assert) {
-        var i, m;
+        let i, m;
 
         if (
             locale === 'tr' ||
@@ -175,7 +175,7 @@ export function defineCommonLocaleTests(locale, _options) {
             return;
         }
         function tester(format) {
-            var r,
+            let r,
                 baseMsg =
                     `weekday ${ 
                     m.weekday() 
@@ -242,7 +242,7 @@ export function defineCommonLocaleTests(locale, _options) {
     });
 
     test('localeData weekdays can localeSort', function (assert) {
-        var weekdays = moment().localeData().weekdays(),
+        const weekdays = moment().localeData().weekdays(),
             weekdaysShort = moment().localeData().weekdaysShort(),
             weekdaysMin = moment().localeData().weekdaysMin(),
             shift = moment().localeData()._week.dow;

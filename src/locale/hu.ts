@@ -1,11 +1,11 @@
 // @ts-nocheck
 import type { LocaleSpec } from "./en";
 
-var weekEndings =
+const weekEndings =
     'vasárnap hétfőn kedden szerdán csütörtökön pénteken szombaton'.split(' ');
 
 function translate(number, withoutSuffix, key, isFuture) {
-    var num = number;
+    const num = number;
     switch (key) {
         case 's':
             return isFuture || withoutSuffix

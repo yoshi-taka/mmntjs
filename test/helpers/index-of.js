@@ -1,10 +1,10 @@
-var indexOf;
+let indexOf;
 
 if (Array.prototype.indexOf) {
     indexOf = Array.prototype.indexOf;
 } else {
     indexOf = function (o) {
-        var i;
+        let i;
         for (i = 0; i < this.length; ++i) {
             if (this[i] === o) {
                 return i;

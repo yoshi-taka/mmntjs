@@ -1,10 +1,10 @@
 // @ts-nocheck
 import type { LocaleSpec } from "./en";
 
-var numbersNouns = 'pagh_wa’_cha’_wej_loS_vagh_jav_Soch_chorgh_Hut'.split('_');
+const numbersNouns = 'pagh_wa’_cha’_wej_loS_vagh_jav_Soch_chorgh_Hut'.split('_');
 
 function translateFuture(output) {
-    var time = output;
+    let time = output;
     time =
         output.indexOf('jaj') !== -1
             ? `${time.slice(0, -3)  }leS`
@@ -17,7 +17,7 @@ function translateFuture(output) {
 }
 
 function translatePast(output) {
-    var time = output;
+    let time = output;
     time =
         output.indexOf('jaj') !== -1
             ? `${time.slice(0, -3)  }Hu’`
@@ -30,7 +30,7 @@ function translatePast(output) {
 }
 
 function translate(number, withoutSuffix, string, _isFuture) {
-    var numberNoun = numberAsNoun(number);
+    const numberNoun = numberAsNoun(number);
     switch (string) {
         case 'ss':
             return `${numberNoun  } lup`;
@@ -48,7 +48,7 @@ function translate(number, withoutSuffix, string, _isFuture) {
 }
 
 function numberAsNoun(number) {
-    var hundred = Math.floor((number % 1000) / 100),
+    let hundred = Math.floor((number % 1000) / 100),
         ten = Math.floor((number % 100) / 10),
         one = number % 10,
         word = '';

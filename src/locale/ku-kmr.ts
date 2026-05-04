@@ -2,7 +2,7 @@
 import type { LocaleSpec } from "./en";
 
 function processRelativeTime(num, withoutSuffix, key, _isFuture) {
-    var format = {
+    const format = {
         s: ['çend sanîye', 'çend sanîyeyan'],
         ss: [`${num  } sanîye`, `${num  } sanîyeyan`],
         m: ['deqîqeyek', 'deqîqeyekê'],
@@ -23,7 +23,7 @@ function processRelativeTime(num, withoutSuffix, key, _isFuture) {
 
 function ezafeNumSuffix(num) {
     num = `${  num}`;
-    var l = num.substring(num.length - 1),
+    const l = num.substring(num.length - 1),
         ll = num.length > 1 ? num.substring(num.length - 2) : '';
     if (
         !(ll == 12 || ll == 13) &&
@@ -89,7 +89,7 @@ export const ku_kmrLocale: LocaleSpec = {
     },
     dayOfMonthOrdinalParse: /\d{1,2}(?:yê|ê|\.)/,
     ordinal: function (num, period) {
-        var p = period.toLowerCase();
+        const p = period.toLowerCase();
         if (p.includes('w') || p.includes('m')) {return `${num  }.`;}
 
         return num + ezafeNumSuffix(num);

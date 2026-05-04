@@ -1,7 +1,7 @@
 // @ts-nocheck
 import type { LocaleSpec } from "./en";
 
-var symbolMap = {
+const symbolMap = {
         1: '೧',
         2: '೨',
         3: '೩',

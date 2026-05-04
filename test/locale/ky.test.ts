@@ -9,7 +9,7 @@ defineLocale("ky", kyLocale);
 localeModule("ky");
 
 test('parse', function (assert) {
-    var tests =
+    let tests =
             'январь янв_февраль фев_март март_апрель апр_май май_июнь июнь_июль июль_август авг_сентябрь сен_октябрь окт_ноябрь ноя_декабрь дек'.split(
                 '_'
             ),
@@ -30,7 +30,7 @@ test('parse', function (assert) {
     }
 
     for (i = 0; i < 12; i++) {
-        var a = tests[i].split(' ');
+        const a = tests[i].split(' ');
         equalTest(a[0], 'MMM', i);
         equalTest(a[1], 'MMM', i);
         equalTest(a[0], 'MMMM', i);
@@ -50,7 +50,7 @@ test('parse', function (assert) {
 });
 
 test('format', function (assert) {
-    var a = [
+    let a = [
             [
                 'dddd, Do MMMM YYYY, HH:mm:ss',
                 'Жекшемби, 14-чү февраль 2010, 15:25:50',
@@ -123,7 +123,7 @@ test('format ordinal', function (assert) {
 });
 
 test('format month', function (assert) {
-    var expected =
+    let expected =
             'январь янв_февраль фев_март март_апрель апр_май май_июнь июнь_июль июль_август авг_сентябрь сен_октябрь окт_ноябрь ноя_декабрь дек'.split(
                 '_'
             ),
@@ -138,7 +138,7 @@ test('format month', function (assert) {
 });
 
 test('format week', function (assert) {
-    var expected =
+    let expected =
             'Жекшемби Жек Жк_Дүйшөмбү Дүй Дй_Шейшемби Шей Шй_Шаршемби Шар Шр_Бейшемби Бей Бй_Жума Жум Жм_Ишемби Ише Иш'.split(
                 '_'
             ),
@@ -153,7 +153,7 @@ test('format week', function (assert) {
 });
 
 test('from', function (assert) {
-    var start = moment([2007, 1, 28]);
+    const start = moment([2007, 1, 28]);
     assert.equal(
         start.from(moment([2007, 1, 28]).add({ s: 44 }), true),
         'бирнече секунд',
@@ -319,7 +319,7 @@ test('fromNow', function (assert) {
 });
 
 test('calendar day', function (assert) {
-    var a = moment().hours(12).minutes(0).seconds(0);
+    const a = moment().hours(12).minutes(0).seconds(0);
 
     assert.equal(
         moment(a).calendar(),
@@ -354,7 +354,7 @@ test('calendar day', function (assert) {
 });
 
 test('calendar next week', function (assert) {
-    var i, m;
+    let i, m;
     for (i = 2; i < 7; i++) {
         m = moment().add({ d: i });
         assert.equal(
@@ -378,7 +378,7 @@ test('calendar next week', function (assert) {
 });
 
 test('calendar last week', function (assert) {
-    var i, m;
+    let i, m;
 
     for (i = 2; i < 7; i++) {
         m = moment().subtract({ d: i });
@@ -403,7 +403,7 @@ test('calendar last week', function (assert) {
 });
 
 test('calendar all else', function (assert) {
-    var weeksAgo = moment().subtract({ w: 1 }),
+    let weeksAgo = moment().subtract({ w: 1 }),
         weeksFromNow = moment().add({ w: 1 });
 
     assert.equal(weeksAgo.calendar(), weeksAgo.format('L'), '1 week ago');

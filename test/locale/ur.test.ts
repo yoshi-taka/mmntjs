@@ -8,7 +8,7 @@ defineLocale("ur", urLocale);
 
 localeModule("ur");
 
-var months = [
+const months = [
         'جنوری',
         'فروری',
         'مارچ',
@@ -41,7 +41,7 @@ test('parse', function (assert) {
         );
     }
 
-    for (var i = 0; i < 12; i++) {
+    for (let i = 0; i < 12; i++) {
         equalTest(months[i], 'MMM', i);
         equalTest(months[i], 'MMMM', i);
 
@@ -51,7 +51,7 @@ test('parse', function (assert) {
 });
 
 test('format', function (assert) {
-    var a = [
+    let a = [
             [
                 'dddd, MMMM Do YYYY, h:mm:ss a',
                 'اتوار، فروری 14 2010، 3:25:50 شام',
@@ -124,7 +124,7 @@ test('format ordinal', function (assert) {
 });
 
 test('format month', function (assert) {
-    for (var i = 0; i < months.length; i++) {
+    for (let i = 0; i < months.length; i++) {
         assert.equal(
             moment([2011, i, 1]).format('MMMM MMM'),
             `${months[i]  } ${  months[i]}`,
@@ -134,7 +134,7 @@ test('format month', function (assert) {
 });
 
 test('format week', function (assert) {
-    for (var i = 0; i < days.length; i++) {
+    for (let i = 0; i < days.length; i++) {
         assert.equal(
             moment([2011, 0, 2 + i]).format('dddd ddd dd'),
             `${days[i]  } ${  days[i]  } ${  days[i]}`,
@@ -144,7 +144,7 @@ test('format week', function (assert) {
 });
 
 test('from', function (assert) {
-    var start = moment([2007, 1, 28]);
+    const start = moment([2007, 1, 28]);
     assert.equal(
         start.from(moment([2007, 1, 28]).add({ s: 44 }), true),
         'چند سیکنڈ',
@@ -310,7 +310,7 @@ test('fromNow', function (assert) {
 });
 
 test('calendar day', function (assert) {
-    var a = moment().hours(12).minutes(0).seconds(0);
+    const a = moment().hours(12).minutes(0).seconds(0);
 
     assert.equal(
         moment(a).calendar(),
@@ -345,7 +345,7 @@ test('calendar day', function (assert) {
 });
 
 test('calendar next week', function (assert) {
-    var i, m;
+    let i, m;
     for (i = 2; i < 7; i++) {
         m = moment().add({ d: i });
         assert.equal(
@@ -369,7 +369,7 @@ test('calendar next week', function (assert) {
 });
 
 test('calendar last week', function (assert) {
-    var i, m;
+    let i, m;
 
     for (i = 2; i < 7; i++) {
         m = moment().subtract({ d: i });
@@ -394,7 +394,7 @@ test('calendar last week', function (assert) {
 });
 
 test('calendar all else', function (assert) {
-    var weeksAgo = moment().subtract({ w: 1 }),
+    let weeksAgo = moment().subtract({ w: 1 }),
         weeksFromNow = moment().add({ w: 1 });
 
     assert.equal(weeksAgo.calendar(), weeksAgo.format('L'), '1 week ago');

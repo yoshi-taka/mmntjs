@@ -1,7 +1,7 @@
 // @ts-nocheck
 import type { LocaleSpec } from "./en";
 
-var suffixes = {
+const suffixes = {
     0: '-ум',
     1: '-ум',
     2: '-юм',
@@ -102,7 +102,7 @@ export const tgLocale: LocaleSpec = {
     },
     dayOfMonthOrdinalParse: /\d{1,2}-(ум|юм)/,
     ordinal: function (number) {
-        var a = number % 10,
+        const a = number % 10,
             b = number >= 100 ? 100 : null;
         return number + (suffixes[number] || suffixes[a] || suffixes[b]);
     },

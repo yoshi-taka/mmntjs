@@ -9,7 +9,7 @@ defineLocale("pa-in", pa_inLocale);
 localeModule("pa-in");
 
 test('parse', function (assert) {
-    var tests =
+    let tests =
             'ਜਨਵਰੀ ਜਨਵਰੀ_ਫ਼ਰਵਰੀ ਫ਼ਰਵਰੀ_ਮਾਰਚ ਮਾਰਚ_ਅਪ੍ਰੈਲ ਅਪ੍ਰੈਲ_ਮਈ ਮਈ_ਜੂਨ ਜੂਨ_ਜੁਲਾਈ ਜੁਲਾਈ_ਅਗਸਤ ਅਗਸਤ_ਸਤੰਬਰ ਸਤੰਬਰ_ਅਕਤੂਬਰ ਅਕਤੂਬਰ_ਨਵੰਬਰ ਨਵੰਬਰ_ਦਸੰਬਰ ਦਸੰਬਰ'.split(
                 '_'
             ),
@@ -31,7 +31,7 @@ test('parse', function (assert) {
     }
 
     for (i = 0; i < 12; i++) {
-        var a = tests[i].split(' ');
+        const a = tests[i].split(' ');
         equalTest(a[0], 'MMM', i);
         equalTest(a[1], 'MMM', i);
         equalTest(a[0], 'MMMM', i);
@@ -51,7 +51,7 @@ test('parse', function (assert) {
 });
 
 test('format', function (assert) {
-    var a = [
+    let a = [
             [
                 'dddd, Do MMMM YYYY, a h:mm:ss ਵਜੇ',
                 'ਐਤਵਾਰ, ੧੪ ਫ਼ਰਵਰੀ ੨੦੧੦, ਦੁਪਹਿਰ ੩:੨੫:੫੦ ਵਜੇ',
@@ -123,7 +123,7 @@ test('format ordinal', function (assert) {
 });
 
 test('format month', function (assert) {
-    var expected =
+    let expected =
             'ਜਨਵਰੀ ਜਨਵਰੀ_ਫ਼ਰਵਰੀ ਫ਼ਰਵਰੀ_ਮਾਰਚ ਮਾਰਚ_ਅਪ੍ਰੈਲ ਅਪ੍ਰੈਲ_ਮਈ ਮਈ_ਜੂਨ ਜੂਨ_ਜੁਲਾਈ ਜੁਲਾਈ_ਅਗਸਤ ਅਗਸਤ_ਸਤੰਬਰ ਸਤੰਬਰ_ਅਕਤੂਬਰ ਅਕਤੂਬਰ_ਨਵੰਬਰ ਨਵੰਬਰ_ਦਸੰਬਰ ਦਸੰਬਰ'.split(
                 '_'
             ),
@@ -138,7 +138,7 @@ test('format month', function (assert) {
 });
 
 test('format week', function (assert) {
-    var expected =
+    let expected =
             'ਐਤਵਾਰ ਐਤ ਐਤ_ਸੋਮਵਾਰ ਸੋਮ ਸੋਮ_ਮੰਗਲਵਾਰ ਮੰਗਲ ਮੰਗਲ_ਬੁਧਵਾਰ ਬੁਧ ਬੁਧ_ਵੀਰਵਾਰ ਵੀਰ ਵੀਰ_ਸ਼ੁੱਕਰਵਾਰ ਸ਼ੁਕਰ ਸ਼ੁਕਰ_ਸ਼ਨੀਚਰਵਾਰ ਸ਼ਨੀ ਸ਼ਨੀ'.split(
                 '_'
             ),
@@ -153,7 +153,7 @@ test('format week', function (assert) {
 });
 
 test('from', function (assert) {
-    var start = moment([2007, 1, 28]);
+    const start = moment([2007, 1, 28]);
     assert.equal(
         start.from(moment([2007, 1, 28]).add({ s: 44 }), true),
         'ਕੁਝ ਸਕਿੰਟ',
@@ -319,7 +319,7 @@ test('fromNow', function (assert) {
 });
 
 test('calendar day', function (assert) {
-    var a = moment().hours(12).minutes(0).seconds(0);
+    const a = moment().hours(12).minutes(0).seconds(0);
 
     assert.equal(
         moment(a).calendar(),
@@ -354,7 +354,7 @@ test('calendar day', function (assert) {
 });
 
 test('calendar next week', function (assert) {
-    var i, m;
+    let i, m;
     for (i = 2; i < 7; i++) {
         m = moment().add({ d: i });
         assert.equal(
@@ -378,7 +378,7 @@ test('calendar next week', function (assert) {
 });
 
 test('calendar last week', function (assert) {
-    var i, m;
+    let i, m;
 
     for (i = 2; i < 7; i++) {
         m = moment().subtract({ d: i });
@@ -403,7 +403,7 @@ test('calendar last week', function (assert) {
 });
 
 test('calendar all else', function (assert) {
-    var weeksAgo = moment().subtract({ w: 1 }),
+    let weeksAgo = moment().subtract({ w: 1 }),
         weeksFromNow = moment().add({ w: 1 });
 
     assert.equal(weeksAgo.calendar(), weeksAgo.format('L'), '1 week ago');
@@ -714,7 +714,7 @@ test('weeks year starting sunday formatted', function (assert) {
 });
 
 test('lenient day of month ordinal parsing', function (assert) {
-    var i, ordinalStr, testMoment;
+    let i, ordinalStr, testMoment;
     for (i = 1; i <= 31; ++i) {
         ordinalStr = moment([2014, 0, i]).format('YYYY MM Do');
         testMoment = moment(ordinalStr, 'YYYY MM Do');
@@ -737,7 +737,7 @@ test('lenient day of month ordinal parsing', function (assert) {
 });
 
 test('lenient day of month ordinal parsing of number', function (assert) {
-    var i, testMoment;
+    let i, testMoment;
     for (i = 1; i <= 31; ++i) {
         testMoment = moment(`2014 01 ${  i}`, 'YYYY MM Do');
         assert.equal(
@@ -765,7 +765,7 @@ test('lenient day of month ordinal parsing of number', function (assert) {
 });
 
 test('strict day of month ordinal parsing', function (assert) {
-    var i, ordinalStr, testMoment;
+    let i, ordinalStr, testMoment;
     for (i = 1; i <= 31; ++i) {
         ordinalStr = moment([2014, 0, i]).format('YYYY MM Do');
         testMoment = moment(ordinalStr, 'YYYY MM Do', true);

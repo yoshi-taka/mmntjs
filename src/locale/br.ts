@@ -2,7 +2,7 @@
 import type { LocaleSpec } from "./en";
 
 function relativeTimeWithMutation(number, withoutSuffix, key) {
-    var format = {
+    const format = {
         mm: 'munutenn',
         MM: 'miz',
         dd: 'devezh',
@@ -38,7 +38,7 @@ function mutation(text, number) {
 }
 
 function softMutation(text) {
-    var mutationTable = {
+    const mutationTable = {
         m: 'v',
         b: 'v',
         d: 'z',
@@ -49,7 +49,7 @@ function softMutation(text) {
     return mutationTable[text.charAt(0)] + text.substring(1);
 }
 
-var monthsParse = [
+const monthsParse = [
         /^gen/i,
         /^c[ʼ']hwe/i,
         /^meu/i,
@@ -150,7 +150,7 @@ export const brLocale: LocaleSpec = {
     },
     dayOfMonthOrdinalParse: /\d{1,2}(añ|vet)/,
     ordinal: function (number) {
-        var output = number === 1 ? 'añ' : 'vet';
+        const output = number === 1 ? 'añ' : 'vet';
         return number + output;
     },
     week: {

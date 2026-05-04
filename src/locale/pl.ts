@@ -1,7 +1,7 @@
 // @ts-nocheck
 import type { LocaleSpec } from "./en";
 
-var monthsNominative =
+const monthsNominative =
         'styczeń_luty_marzec_kwiecień_maj_czerwiec_lipiec_sierpień_wrzesień_październik_listopad_grudzień'.split(
             '_'
         ),
@@ -29,7 +29,7 @@ function plural(n) {
 }
 
 function translate(number, withoutSuffix, key) {
-    var result = `${number  } `;
+    const result = `${number  } `;
     switch (key) {
         case 'ss':
             return result + (plural(number) ? 'sekundy' : 'sekund');

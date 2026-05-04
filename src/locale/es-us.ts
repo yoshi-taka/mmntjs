@@ -1,7 +1,7 @@
 // @ts-nocheck
 import type { LocaleSpec } from "./en";
 
-var monthsShortDot =
+const monthsShortDot =
         'ene._feb._mar._abr._may._jun._jul._ago._sep._oct._nov._dic.'.split(
             '_'
         ),

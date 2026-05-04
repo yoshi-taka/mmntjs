@@ -2,7 +2,7 @@
 import type { LocaleSpec } from "./en";
 
 function translate(number, withoutSuffix, key) {
-    var result = `${number  } `;
+    let result = `${number  } `;
     switch (key) {
         case 'ss':
             if (number === 1) {

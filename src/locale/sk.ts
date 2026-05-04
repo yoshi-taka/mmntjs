@@ -1,7 +1,7 @@
 // @ts-nocheck
 import type { LocaleSpec } from "./en";
 
-var months =
+const months =
         'január_február_marec_apríl_máj_jún_júl_august_september_október_november_december'.split(
             '_'
         ),
@@ -12,7 +12,7 @@ function plural(n) {
 }
 
 function translate(number, withoutSuffix, key, isFuture) {
-    var result = `${number  } `;
+    const result = `${number  } `;
     switch (key) {
         case 's': // a few seconds / in a few seconds / a few seconds ago
             return withoutSuffix || isFuture ? 'pár sekúnd' : 'pár sekundami';

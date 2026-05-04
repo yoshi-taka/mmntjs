@@ -2,7 +2,7 @@
 import type { LocaleSpec } from "./en";
 
 function relativeTimeWithPlural(number, withoutSuffix, key) {
-    var format = {
+    let format = {
             ss: 'secunde',
             mm: 'minute',
             hh: 'ore',

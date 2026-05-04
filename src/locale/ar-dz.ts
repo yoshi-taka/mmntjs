@@ -1,7 +1,7 @@
 // @ts-nocheck
 import type { LocaleSpec } from "./en";
 
-var pluralForm = function (n) {
+const pluralForm = function (n) {
         return n === 0
             ? 0
             : n === 1

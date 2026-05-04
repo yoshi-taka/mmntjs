@@ -29,7 +29,7 @@ export const cvLocale: LocaleSpec = {
     },
     relativeTime: {
       future: function (output) {
-            var affix = /сехет$/i.exec(output)
+            const affix = /сехет$/i.exec(output)
                 ? 'рен'
                 : /ҫул$/i.exec(output)
                   ? 'тан'

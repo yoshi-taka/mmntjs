@@ -1,7 +1,7 @@
 // @ts-nocheck
 import type { LocaleSpec } from "./en";
 
-var months = {
+const months = {
         standalone:
             'leden_únor_březen_duben_květen_červen_červenec_srpen_září_říjen_listopad_prosinec'.split(
                 '_'
@@ -36,7 +36,7 @@ function plural(n) {
 }
 
 function translate(number, withoutSuffix, key, isFuture) {
-    var result = `${number  } `;
+    const result = `${number  } `;
     switch (key) {
         case 's': // a few seconds / in a few seconds / a few seconds ago
             return withoutSuffix || isFuture ? 'pár sekund' : 'pár sekundami';

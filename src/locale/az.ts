@@ -1,7 +1,7 @@
 // @ts-nocheck
 import type { LocaleSpec } from "./en";
 
-var suffixes = {
+const suffixes = {
     1: '-inci',
     5: '-inci',
     8: '-inci',
@@ -86,7 +86,7 @@ export const azLocale: LocaleSpec = {
             // special case for zero
             return `${number  }-ıncı`;
         }
-        var a = number % 10,
+        const a = number % 10,
             b = (number % 100) - a,
             c = number >= 100 ? 100 : null;
         return number + (suffixes[a] || suffixes[b] || suffixes[c]);

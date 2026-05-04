@@ -9,7 +9,7 @@ defineLocale("cs", csLocale);
 localeModule("cs");
 
 test('parse', function (assert) {
-    var tests =
+    let tests =
             'leden led ledna_únor úno února_březen bře března_duben dub dubna_květen kvě května_červen čvn června_červenec čvc července_srpen srp srpna_září zář září_říjen říj října_listopad lis listopadu_prosinec pro prosince'.split(
                 '_'
             ),
@@ -29,7 +29,7 @@ test('parse', function (assert) {
         );
     }
     for (i = 0; i < 12; i++) {
-        var a = tests[i].split(' ');
+        const a = tests[i].split(' ');
         equalTest(a[0], 'MMM', i);
         equalTest(a[1], 'MMM', i);
         equalTest(tests[i][2], 'MMM', i);
@@ -56,7 +56,7 @@ test('parse', function (assert) {
 });
 
 test('format', function (assert) {
-    var a = [
+    let a = [
             ['dddd, Do MMMM YYYY, h:mm:ss', 'neděle, 14. února 2010, 3:25:50'],
             ['ddd, h', 'ne, 3'],
             ['M Mo MM MMMM MMM', '2 2. 02 únor úno'],
@@ -126,7 +126,7 @@ test('format ordinal', function (assert) {
 });
 
 test('format month', function (assert) {
-    var expected =
+    let expected =
             'leden led_únor úno_březen bře_duben dub_květen kvě_červen čvn_červenec čvc_srpen srp_září zář_říjen říj_listopad lis_prosinec pro'.split(
                 '_'
             ),
@@ -141,7 +141,7 @@ test('format month', function (assert) {
 });
 
 test('format month case', function (assert) {
-    var months = {
+    let months = {
             accusative:
                 'ledna_února_března_dubna_května_června_července_srpna_září_října_listopadu_prosince'.split(
                     '_'
@@ -167,7 +167,7 @@ test('format month case', function (assert) {
 });
 
 test('format week', function (assert) {
-    var expected =
+    let expected =
             'neděle ne ne_pondělí po po_úterý út út_středa st st_čtvrtek čt čt_pátek pá pá_sobota so so'.split(
                 '_'
             ),
@@ -182,7 +182,7 @@ test('format week', function (assert) {
 });
 
 test('from', function (assert) {
-    var start = moment([2007, 1, 28]);
+    const start = moment([2007, 1, 28]);
     assert.equal(
         start.from(moment([2007, 1, 28]).add({ s: 44 }), true),
         'pár sekund',
@@ -465,7 +465,7 @@ test('fromNow (past)', function (assert) {
 });
 
 test('calendar day', function (assert) {
-    var a = moment().hours(12).minutes(0).seconds(0);
+    const a = moment().hours(12).minutes(0).seconds(0);
 
     assert.equal(
         moment(a).calendar(),
@@ -500,7 +500,7 @@ test('calendar day', function (assert) {
 });
 
 test('calendar next week', function (assert) {
-    var i, m, nextDay;
+    let i, m, nextDay;
     for (i = 2; i < 7; i++) {
         m = moment().add({ d: i });
         nextDay = '';
@@ -548,7 +548,7 @@ test('calendar next week', function (assert) {
 });
 
 test('calendar last week', function (assert) {
-    var i, m, lastDay;
+    let i, m, lastDay;
     for (i = 2; i < 7; i++) {
         m = moment().subtract({ d: i });
         lastDay = '';
@@ -596,7 +596,7 @@ test('calendar last week', function (assert) {
 });
 
 test('calendar all else', function (assert) {
-    var weeksAgo = moment().subtract({ w: 1 }),
+    let weeksAgo = moment().subtract({ w: 1 }),
         weeksFromNow = moment().add({ w: 1 });
 
     assert.equal(weeksAgo.calendar(), weeksAgo.format('L'), '1 week ago');

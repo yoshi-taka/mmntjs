@@ -11,7 +11,7 @@ function plural(n) {
 }
 
 function translate(number, withoutSuffix, key, isFuture) {
-    var result = `${number  } `;
+    const result = `${number  } `;
     switch (key) {
         case 's':
             return withoutSuffix || isFuture

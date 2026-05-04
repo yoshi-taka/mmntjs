@@ -9,7 +9,7 @@ defineLocale("ja", jaLocale);
 localeModule("ja");
 
 test('parse', function (assert) {
-    var tests =
+    let tests =
             '1月 1月_2月 2月_3月 3月_4月 4月_5月 5月_6月 6月_7月 7月_8月 8月_9月 9月_10月 10月_11月 11月_12月 12月'.split(
                 '_'
             ),
@@ -30,7 +30,7 @@ test('parse', function (assert) {
     }
 
     for (i = 0; i < 12; i++) {
-        var a = tests[i].split(' ');
+        const a = tests[i].split(' ');
         equalTest(a[0], 'MMM', i);
         equalTest(a[1], 'MMM', i);
         equalTest(a[0], 'MMMM', i);
@@ -50,7 +50,7 @@ test('parse', function (assert) {
 });
 
 test('format', function (assert) {
-    var a = [
+    let a = [
             [
                 'dddd, MMMM Do YYYY, a h:mm:ss',
                 '日曜日, 2月 14日 2010, 午後 3:25:50',
@@ -124,7 +124,7 @@ test('parse era', function (assert) {
 });
 
 test('format era', function (assert) {
-    var a = [
+    let a = [
             /* First day of Reiwa Era */
             ['+002019-05-01', 'N, NN, NNN', 'R, R, R'],
             ['+002019-05-01', 'NNNN', '令和'],
@@ -223,7 +223,7 @@ test('format era', function (assert) {
 });
 
 test('format month', function (assert) {
-    var expected =
+    let expected =
             '1月 1月_2月 2月_3月 3月_4月 4月_5月 5月_6月 6月_7月 7月_8月 8月_9月 9月_10月 10月_11月 11月_12月 12月'.split(
                 '_'
             ),
@@ -238,7 +238,7 @@ test('format month', function (assert) {
 });
 
 test('format week', function (assert) {
-    var expected =
+    let expected =
             '日曜日 日 日_月曜日 月 月_火曜日 火 火_水曜日 水 水_木曜日 木 木_金曜日 金 金_土曜日 土 土'.split(
                 '_'
             ),
@@ -253,7 +253,7 @@ test('format week', function (assert) {
 });
 
 test('from', function (assert) {
-    var start = moment([2007, 1, 28]);
+    const start = moment([2007, 1, 28]);
     assert.equal(
         start.from(moment([2007, 1, 28]).add({ s: 44 }), true),
         '数秒',
@@ -419,7 +419,7 @@ test('fromNow', function (assert) {
 });
 
 test('calendar day', function (assert) {
-    var a = moment().hours(12).minutes(0).seconds(0);
+    const a = moment().hours(12).minutes(0).seconds(0);
 
     assert.equal(moment(a).calendar(), '今日 12:00', 'today at the same time');
     assert.equal(
@@ -450,7 +450,7 @@ test('calendar day', function (assert) {
 });
 
 test('calendar next week', function (assert) {
-    var i,
+    let i,
         m,
         dow = moment().day();
     for (i = 2; i < 7; i++) {
@@ -496,7 +496,7 @@ test('calendar next week', function (assert) {
 });
 
 test('calendar last week', function (assert) {
-    var i,
+    let i,
         m,
         dow = moment().day();
     for (i = 2; i < 7; i++) {
@@ -542,7 +542,7 @@ test('calendar last week', function (assert) {
 });
 
 test('calendar all else', function (assert) {
-    var weeksAgo = moment().subtract({ w: 1 }),
+    let weeksAgo = moment().subtract({ w: 1 }),
         weeksFromNow = moment().add({ w: 1 });
 
     assert.equal(weeksAgo.calendar(), weeksAgo.format('L'), '1 week ago');

@@ -2,7 +2,7 @@
 import type { LocaleSpec } from "./en";
 
 function plural(word, num) {
-    var forms = word.split('_');
+    const forms = word.split('_');
     return num % 10 === 1 && num % 100 !== 11
         ? forms[0]
         : num % 10 >= 2 && num % 10 <= 4 && (num % 100 < 10 || num % 100 >= 20)
@@ -11,7 +11,7 @@ function plural(word, num) {
 }
 
 function relativeTimeWithPlural(number, withoutSuffix, key) {
-    var format = {
+    const format = {
         ss: withoutSuffix ? 'секунда_секунди_секунд' : 'секунду_секунди_секунд',
         mm: withoutSuffix ? 'хвилина_хвилини_хвилин' : 'хвилину_хвилини_хвилин',
         hh: withoutSuffix ? 'година_години_годин' : 'годину_години_годин',
@@ -29,7 +29,7 @@ function relativeTimeWithPlural(number, withoutSuffix, key) {
 }
 
 function weekdaysCaseReplace(m, format) {
-    var weekdays = {
+    let weekdays = {
             nominative:
                 'неділя_понеділок_вівторок_середа_четвер_п’ятниця_субота'.split(
                     '_'

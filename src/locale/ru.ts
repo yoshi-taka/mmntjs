@@ -2,7 +2,7 @@
 import type { LocaleSpec } from "./en";
 
 function plural(word, num) {
-    var forms = word.split('_');
+    const forms = word.split('_');
     return num % 10 === 1 && num % 100 !== 11
         ? forms[0]
         : num % 10 >= 2 && num % 10 <= 4 && (num % 100 < 10 || num % 100 >= 20)
@@ -11,7 +11,7 @@ function plural(word, num) {
 }
 
 function relativeTimeWithPlural(number, withoutSuffix, key) {
-    var format = {
+    const format = {
         ss: withoutSuffix ? 'секунда_секунды_секунд' : 'секунду_секунды_секунд',
         mm: withoutSuffix ? 'минута_минуты_минут' : 'минуту_минуты_минут',
         hh: 'час_часа_часов',
@@ -27,7 +27,7 @@ function relativeTimeWithPlural(number, withoutSuffix, key) {
     }
 }
 
-var monthsParse = [
+const monthsParse = [
     /^янв/i,
     /^фев/i,
     /^мар/i,

@@ -9,7 +9,7 @@ defineLocale("hu", huLocale);
 localeModule("hu");
 
 test('parse', function (assert) {
-    var tests =
+    let tests =
             'január jan._február feb._március márc._április ápr._május máj._június jún._július júl._augusztus aug._szeptember szept._október okt._november nov._december dec.'.split(
                 '_'
             ),
@@ -31,7 +31,7 @@ test('parse', function (assert) {
     }
 
     for (i = 0; i < 12; i++) {
-        var a = tests[i].split(' ');
+        const a = tests[i].split(' ');
         equalTest(a[0], 'MMM', i);
         equalTest(a[1], 'MMM', i);
         equalTest(a[0], 'MMMM', i);
@@ -51,7 +51,7 @@ test('parse', function (assert) {
 });
 
 test('format', function (assert) {
-    var a = [
+    let a = [
             [
                 'dddd, MMMM Do YYYY, HH:mm:ss',
                 'vasárnap, február 14. 2010, 15:25:50',
@@ -134,7 +134,7 @@ test('format ordinal', function (assert) {
 });
 
 test('format month', function (assert) {
-    var expected =
+    let expected =
             'január jan._február feb._március márc._április ápr._május máj._június jún._július júl._augusztus aug._szeptember szept._október okt._november nov._december dec.'.split(
                 '_'
             ),
@@ -149,7 +149,7 @@ test('format month', function (assert) {
 });
 
 test('format week', function (assert) {
-    var expected =
+    let expected =
             'vasárnap vas_hétfő hét_kedd kedd_szerda sze_csütörtök csüt_péntek pén_szombat szo'.split(
                 '_'
             ),
@@ -164,7 +164,7 @@ test('format week', function (assert) {
 });
 
 test('from', function (assert) {
-    var start = moment([2007, 1, 28]);
+    const start = moment([2007, 1, 28]);
     assert.equal(
         start.from(moment([2007, 1, 28]).add({ s: 44 }), true),
         'néhány másodperc',
@@ -334,7 +334,7 @@ test('fromNow', function (assert) {
 });
 
 test('calendar day', function (assert) {
-    var a = moment().hours(12).minutes(0).seconds(0);
+    const a = moment().hours(12).minutes(0).seconds(0);
 
     assert.equal(
         moment(a).calendar(),
@@ -369,7 +369,7 @@ test('calendar day', function (assert) {
 });
 
 test('calendar next week', function (assert) {
-    var i,
+    let i,
         m,
         days =
             'vasárnap_hétfőn_kedden_szerdán_csütörtökön_pénteken_szombaton'.split(
@@ -398,7 +398,7 @@ test('calendar next week', function (assert) {
 });
 
 test('calendar last week', function (assert) {
-    var i,
+    let i,
         m,
         days =
             'vasárnap_hétfőn_kedden_szerdán_csütörtökön_pénteken_szombaton'.split(
@@ -428,7 +428,7 @@ test('calendar last week', function (assert) {
 });
 
 test('calendar all else', function (assert) {
-    var weeksAgo = moment().subtract({ w: 1 }),
+    let weeksAgo = moment().subtract({ w: 1 }),
         weeksFromNow = moment().add({ w: 1 });
 
     assert.equal(weeksAgo.calendar(), weeksAgo.format('L'), 'egy héte');

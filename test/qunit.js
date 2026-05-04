@@ -41,25 +41,25 @@ let currentTestName = '';
 function createAssert() {
     let plan = -1;
     let count = 0;
-    var assertLog = [];
-    var summary = {};
+    const assertLog = [];
+    const summary = {};
 
     function verify() {
         if (plan !== -1 && count !== plan) {
-            var diff = count - plan;
-            var detail =
+            const diff = count - plan;
+            const detail =
                 diff < 0
                     ? `${-diff  } missing`
                     : `${diff  } extra`;
-            var msg = `[${  currentTestName  }] Expected ${  plan  } assertions, got ${  count  } (${  detail  })`;
+            let msg = `[${  currentTestName  }] Expected ${  plan  } assertions, got ${  count  } (${  detail  })`;
             if (assertLog.length > 0) {
-                var breakdown = Object.keys(summary)
+                const breakdown = Object.keys(summary)
                     .sort()
                     .map(function (k) { return `${k  }: ${  summary[k]}`; })
                     .join(', ');
                 msg += `\nAssertions run (${  breakdown  }):`;
-                for (var i = 0; i < assertLog.length; i++) {
-                    var entry = assertLog[i];
+                for (let i = 0; i < assertLog.length; i++) {
+                    const entry = assertLog[i];
                     msg += `\n  #${  i + 1  } ${  entry.method  }${entry.msg ? ` - ${  entry.msg}` : ''}`;
                 }
             }
@@ -105,7 +105,7 @@ function createAssert() {
         throws(fn, msg) {
             count++;
             log('throws', msg);
-            var threw = false;
+            let threw = false;
             try {
                 fn();
             } catch {
@@ -138,7 +138,7 @@ function runWithLifecycle(name, fn) {
         currentLifecycle.setup();
     }
 
-    var assert = createAssert();
+    const assert = createAssert();
     try {
         fn(assert);
         assert._verify();
@@ -156,8 +156,8 @@ function runWithLifecycle(name, fn) {
 
 export function test(name, fn) {
     // Store in a local to break any potential reference tracking
-    var _name = name;
-    var _fn = fn;
+    const _name = name;
+    const _fn = fn;
     bunTest(_name, function () {
         currentTestName = _name;
         runWithLifecycle(_name, _fn);
@@ -165,8 +165,8 @@ export function test(name, fn) {
 }
 
 export function only(name, fn) {
-    var _name = name;
-    var _fn = fn;
+    const _name = name;
+    const _fn = fn;
     bunTest.only(_name, function () {
         currentTestName = _name;
         runWithLifecycle(_name, _fn);

@@ -69,7 +69,7 @@ export const elLocale: LocaleSpec = {
       sameElse: "L"
     },
     calendar: function (key, mom) {
-        var output = this._calendarEl[key],
+        let output = this._calendarEl[key],
             hours = mom && mom.hours();
         if (isFunction(output)) {
             output = output.apply(mom);

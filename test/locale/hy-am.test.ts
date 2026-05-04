@@ -9,7 +9,7 @@ defineLocale("hy-am", hy_amLocale);
 localeModule("hy-am");
 
 test('parse', function (assert) {
-    var tests =
+    let tests =
             'հունվար հնվ_փետրվար փտր_մարտ մրտ_ապրիլ ապր_մայիս մյս_հունիս հնս_հուլիս հլս_օգոստոս օգս_սեպտեմբեր սպտ_հոկտեմբեր հկտ_նոյեմբեր նմբ_դեկտեմբեր դկտ'.split(
                 '_'
             ),
@@ -30,7 +30,7 @@ test('parse', function (assert) {
     }
 
     for (i = 0; i < 12; i++) {
-        var a = tests[i].split(' ');
+        const a = tests[i].split(' ');
         equalTest(a[0], 'MMM', i);
         equalTest(a[1], 'MMM', i);
         equalTest(a[0], 'MMMM', i);
@@ -57,7 +57,7 @@ test('parse exceptional case', function (assert) {
 });
 
 test('format', function (assert) {
-    var a = [
+    let a = [
             [
                 'dddd, Do MMMM YYYY, HH:mm:ss',
                 'կիրակի, 14 փետրվարի 2010, 15:25:50',
@@ -165,7 +165,7 @@ test('format ordinal', function (assert) {
 });
 
 test('format month', function (assert) {
-    var expected =
+    let expected =
             'հունվար հնվ_փետրվար փտր_մարտ մրտ_ապրիլ ապր_մայիս մյս_հունիս հնս_հուլիս հլս_օգոստոս օգս_սեպտեմբեր սպտ_հոկտեմբեր հկտ_նոյեմբեր նմբ_դեկտեմբեր դկտ'.split(
                 '_'
             ),
@@ -180,7 +180,7 @@ test('format month', function (assert) {
 });
 
 test('format month case', function (assert) {
-    var months = {
+    let months = {
             nominative:
                 'հունվար_փետրվար_մարտ_ապրիլ_մայիս_հունիս_հուլիս_օգոստոս_սեպտեմբեր_հոկտեմբեր_նոյեմբեր_դեկտեմբեր'.split(
                     '_'
@@ -206,7 +206,7 @@ test('format month case', function (assert) {
 });
 
 test('format month short case', function (assert) {
-    var monthsShort = {
+    let monthsShort = {
             nominative: 'հնվ_փտր_մրտ_ապր_մյս_հնս_հլս_օգս_սպտ_հկտ_նմբ_դկտ'.split(
                 '_'
             ),
@@ -230,7 +230,7 @@ test('format month short case', function (assert) {
 });
 
 test('format month case with escaped symbols', function (assert) {
-    var months = {
+    let months = {
             nominative:
                 'հունվար_փետրվար_մարտ_ապրիլ_մայիս_հունիս_հուլիս_օգոստոս_սեպտեմբեր_հոկտեմբեր_նոյեմբեր_դեկտեմբեր'.split(
                     '_'
@@ -266,7 +266,7 @@ test('format month case with escaped symbols', function (assert) {
 });
 
 test('format month short case with escaped symbols', function (assert) {
-    var monthsShort = {
+    let monthsShort = {
             nominative: 'հնվ_փտր_մրտ_ապր_մյս_հնս_հլս_օգս_սպտ_հկտ_նմբ_դկտ'.split(
                 '_'
             ),
@@ -300,7 +300,7 @@ test('format month short case with escaped symbols', function (assert) {
 });
 
 test('format week', function (assert) {
-    var expected =
+    let expected =
             'կիրակի կրկ կրկ_երկուշաբթի երկ երկ_երեքշաբթի երք երք_չորեքշաբթի չրք չրք_հինգշաբթի հնգ հնգ_ուրբաթ ուրբ ուրբ_շաբաթ շբթ շբթ'.split(
                 '_'
             ),
@@ -315,7 +315,7 @@ test('format week', function (assert) {
 });
 
 test('from', function (assert) {
-    var start = moment([2007, 1, 28]);
+    const start = moment([2007, 1, 28]);
     assert.equal(
         start.from(moment([2007, 1, 28]).add({ s: 44 }), true),
         'մի քանի վայրկյան',
@@ -483,7 +483,7 @@ test('fromNow', function (assert) {
 });
 
 test('calendar day', function (assert) {
-    var a = moment().hours(12).minutes(0).seconds(0);
+    const a = moment().hours(12).minutes(0).seconds(0);
 
     assert.equal(moment(a).calendar(), 'այսօր 12:00', 'today at the same time');
     assert.equal(
@@ -514,7 +514,7 @@ test('calendar day', function (assert) {
 });
 
 test('calendar next week', function (assert) {
-    var i, m;
+    let i, m;
     function makeFormat(_d: any) {
         return 'dddd [օրը ժամը] LT';
     }
@@ -542,7 +542,7 @@ test('calendar next week', function (assert) {
 });
 
 test('calendar last week', function (assert) {
-    var i, m;
+    let i, m;
 
     function makeFormat(_d: any) {
         return '[անցած] dddd [օրը ժամը] LT';
@@ -571,7 +571,7 @@ test('calendar last week', function (assert) {
 });
 
 test('calendar all else', function (assert) {
-    var weeksAgo = moment().subtract({ w: 1 }),
+    let weeksAgo = moment().subtract({ w: 1 }),
         weeksFromNow = moment().add({ w: 1 });
 
     assert.equal(weeksAgo.calendar(), weeksAgo.format('L'), '1 week ago');

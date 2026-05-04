@@ -9,7 +9,7 @@ defineLocale("bn-bd", bn_bdLocale);
 localeModule("bn-bd");
 
 test('parse', function (assert) {
-    var tests =
+    let tests =
             'জানুয়ারি জানু_ফেব্রুয়ারি ফেব্রু_মার্চ মার্চ_এপ্রিল এপ্রিল_মে মে_জুন জুন_জুলাই জুলাই_আগস্ট আগস্ট_সেপ্টেম্বর সেপ্ট_অক্টোবর অক্টো_নভেম্বর নভে_ডিসেম্বর ডিসে'.split(
                 '_'
             ),
@@ -31,7 +31,7 @@ test('parse', function (assert) {
     }
 
     for (i = 0; i < 12; i++) {
-        var a = tests[i].split(' ');
+        const a = tests[i].split(' ');
         equalTest(a[0], 'MMM', i);
         equalTest(a[1], 'MMM', i);
         equalTest(a[0], 'MMMM', i);
@@ -51,7 +51,7 @@ test('parse', function (assert) {
 });
 
 test('format', function (assert) {
-    var a = [
+    let a = [
             [
                 'dddd, Do MMMM YYYY, a h:mm:ss সময়',
                 'রবিবার, ১৪ ফেব্রুয়ারি ২০১০, বিকাল ৩:২৫:৫০ সময়',
@@ -124,7 +124,7 @@ test('format ordinal', function (assert) {
 });
 
 test('format month', function (assert) {
-    var expected =
+    let expected =
             'জানুয়ারি জানু_ফেব্রুয়ারি ফেব্রু_মার্চ মার্চ_এপ্রিল এপ্রিল_মে মে_জুন জুন_জুলাই জুলাই_আগস্ট আগস্ট_সেপ্টেম্বর সেপ্ট_অক্টোবর অক্টো_নভেম্বর নভে_ডিসেম্বর ডিসে'.split(
                 '_'
             ),
@@ -139,7 +139,7 @@ test('format month', function (assert) {
 });
 
 test('format week', function (assert) {
-    var expected =
+    let expected =
             'রবিবার রবি রবি_সোমবার সোম সোম_মঙ্গলবার মঙ্গল মঙ্গল_বুধবার বুধ বুধ_বৃহস্পতিবার বৃহস্পতি বৃহ_শুক্রবার শুক্র শুক্র_শনিবার শনি শনি'.split(
                 '_'
             ),
@@ -154,7 +154,7 @@ test('format week', function (assert) {
 });
 
 test('from', function (assert) {
-    var start = moment([2007, 1, 28]);
+    const start = moment([2007, 1, 28]);
     assert.equal(
         start.from(moment([2007, 1, 28]).add({ s: 44 }), true),
         'কয়েক সেকেন্ড',
@@ -315,7 +315,7 @@ test('fromNow', function (assert) {
 });
 
 test('calendar day', function (assert) {
-    var a = moment().hours(12).minutes(0).seconds(0);
+    const a = moment().hours(12).minutes(0).seconds(0);
 
     assert.equal(
         moment(a).calendar(),
@@ -350,7 +350,7 @@ test('calendar day', function (assert) {
 });
 
 test('calendar next week', function (assert) {
-    var i, m;
+    let i, m;
     for (i = 2; i < 7; i++) {
         m = moment().add({ d: i });
         assert.equal(
@@ -374,7 +374,7 @@ test('calendar next week', function (assert) {
 });
 
 test('calendar last week', function (assert) {
-    var i, m;
+    let i, m;
 
     for (i = 2; i < 7; i++) {
         m = moment().subtract({ d: i });
@@ -399,7 +399,7 @@ test('calendar last week', function (assert) {
 });
 
 test('calendar all else', function (assert) {
-    var weeksAgo = moment().subtract({ w: 1 }),
+    let weeksAgo = moment().subtract({ w: 1 }),
         weeksFromNow = moment().add({ w: 1 });
 
     assert.equal(weeksAgo.calendar(), weeksAgo.format('L'), '1 week ago');

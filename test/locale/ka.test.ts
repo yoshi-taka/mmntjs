@@ -9,7 +9,7 @@ defineLocale("ka", kaLocale);
 localeModule("ka");
 
 test('parse', function (assert) {
-    var i,
+    let i,
         tests =
             'იანვარი იან_თებერვალი თებ_მარტი მარ_აპრილი აპრ_მაისი მაი_ივნისი ივნ_ივლისი ივლ_აგვისტო აგვ_სექტემბერი სექ_ოქტომბერი ოქტ_ნოემბერი ნოე_დეკემბერი დეკ'.split(
                 '_'
@@ -24,7 +24,7 @@ test('parse', function (assert) {
     }
 
     for (i = 0; i < 12; i++) {
-        var a = tests[i].split(' ');
+        const a = tests[i].split(' ');
         equalTest(a[0], 'MMM', i);
         equalTest(a[1], 'MMM', i);
         equalTest(a[0], 'MMMM', i);
@@ -38,7 +38,7 @@ test('parse', function (assert) {
 });
 
 test('format', function (assert) {
-    var a = [
+    let a = [
             [
                 'dddd, MMMM Do YYYY, h:mm:ss a',
                 'კვირა, თებერვალი მე-14 2010, 3:25:50 pm',
@@ -132,7 +132,7 @@ test('format ordinal', function (assert) {
 });
 
 test('format month', function (assert) {
-    var i,
+    let i,
         expected =
             'იანვარი იან_თებერვალი თებ_მარტი მარ_აპრილი აპრ_მაისი მაი_ივნისი ივნ_ივლისი ივლ_აგვისტო აგვ_სექტემბერი სექ_ოქტომბერი ოქტ_ნოემბერი ნოე_დეკემბერი დეკ'.split(
                 '_'
@@ -148,7 +148,7 @@ test('format month', function (assert) {
 });
 
 test('format week', function (assert) {
-    var i,
+    let i,
         expected =
             'კვირა კვი კვ_ორშაბათი ორშ ორ_სამშაბათი სამ სა_ოთხშაბათი ოთხ ოთ_ხუთშაბათი ხუთ ხუ_პარასკევი პარ პა_შაბათი შაბ შა'.split(
                 '_'
@@ -164,7 +164,7 @@ test('format week', function (assert) {
 });
 
 test('from', function (assert) {
-    var start = moment([2007, 1, 28]);
+    const start = moment([2007, 1, 28]);
 
     assert.equal(
         start.from(moment([2007, 1, 28]).add({ s: 44 }), true),
@@ -331,7 +331,7 @@ test('fromNow', function (assert) {
 });
 
 test('calendar day', function (assert) {
-    var a = moment().hours(12).minutes(0).seconds(0);
+    const a = moment().hours(12).minutes(0).seconds(0);
 
     assert.equal(moment(a).calendar(), 'დღეს 12:00-ზე', 'დღეს ამავე დროს');
     assert.equal(
@@ -362,7 +362,7 @@ test('calendar day', function (assert) {
 });
 
 test('calendar next week', function (assert) {
-    var i, m;
+    let i, m;
     for (i = 2; i < 7; i++) {
         m = moment().add({ d: i });
         assert.equal(
@@ -386,7 +386,7 @@ test('calendar next week', function (assert) {
 });
 
 test('calendar last week', function (assert) {
-    var i, m;
+    let i, m;
     for (i = 2; i < 7; i++) {
         m = moment().subtract({ d: i });
         assert.equal(
@@ -410,7 +410,7 @@ test('calendar last week', function (assert) {
 });
 
 test('calendar all else', function (assert) {
-    var weeksAgo = moment().subtract({ w: 1 }),
+    let weeksAgo = moment().subtract({ w: 1 }),
         weeksFromNow = moment().add({ w: 1 });
 
     assert.equal(weeksAgo.calendar(), weeksAgo.format('L'), '1 კვირის წინ');

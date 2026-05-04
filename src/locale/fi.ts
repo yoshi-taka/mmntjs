@@ -1,7 +1,7 @@
 // @ts-nocheck
 import type { LocaleSpec } from "./en";
 
-var numbersPast =
+const numbersPast =
         'nolla yksi kaksi kolme neljä viisi kuusi seitsemän kahdeksan yhdeksän'.split(
             ' '
         ),
@@ -19,7 +19,7 @@ var numbersPast =
     ];
 
 function translate(number, withoutSuffix, key, isFuture) {
-    var result = '';
+    let result = '';
     switch (key) {
         case 's':
             return isFuture ? 'muutaman sekunnin' : 'muutama sekunti';

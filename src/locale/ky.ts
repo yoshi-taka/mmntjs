@@ -1,7 +1,7 @@
 // @ts-nocheck
 import type { LocaleSpec } from "./en";
 
-var suffixes = {
+const suffixes = {
     0: '-чү',
     1: '-чи',
     2: '-чи',
@@ -70,7 +70,7 @@ export const kyLocale: LocaleSpec = {
     },
     dayOfMonthOrdinalParse: /\d{1,2}-(чи|чы|чү|чу)/,
     ordinal: function (number) {
-        var a = number % 10,
+        const a = number % 10,
             b = number >= 100 ? 100 : null;
         return number + (suffixes[number] || suffixes[a] || suffixes[b]);
     },

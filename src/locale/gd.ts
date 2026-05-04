@@ -1,7 +1,7 @@
 // @ts-nocheck
 import type { LocaleSpec } from "./en";
 
-var months = [
+const months = [
         'Am Faoilleach',
         'An Gearran',
         'Am Màrt',
@@ -82,7 +82,7 @@ export const gdLocale: LocaleSpec = {
     },
     dayOfMonthOrdinalParse: /\d{1,2}(d|na|mh)/,
     ordinal: function (number) {
-        var output = number === 1 ? 'd' : number % 10 === 2 ? 'na' : 'mh';
+        const output = number === 1 ? 'd' : number % 10 === 2 ? 'na' : 'mh';
         return number + output;
     },
     week: {

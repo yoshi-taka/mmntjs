@@ -39,7 +39,7 @@ export const ug_cnLocale: LocaleSpec = {
         }
     },
     meridiem: function (hour, minute, _isLower) {
-        var hm = hour * 100 + minute;
+        const hm = hour * 100 + minute;
         if (hm < 600) {
             return 'يېرىم كېچە';
         } else if (hm < 900) {

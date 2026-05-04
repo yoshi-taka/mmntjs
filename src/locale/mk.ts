@@ -57,7 +57,7 @@ export const mkLocale: LocaleSpec = {
     },
     dayOfMonthOrdinalParse: /\d{1,2}-(ев|ен|ти|ви|ри|ми)/,
     ordinal: function (number) {
-        var lastDigit = number % 10,
+        const lastDigit = number % 10,
             last2Digits = number % 100;
         if (number === 0) {
             return `${number  }-ев`;

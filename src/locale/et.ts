@@ -2,7 +2,7 @@
 import type { LocaleSpec } from "./en";
 
 function processRelativeTime(number, withoutSuffix, key, isFuture) {
-    var format = {
+    const format = {
         s: ['mõne sekundi', 'mõni sekund', 'paar sekundit'],
         ss: [`${number  }sekundi`, `${number  }sekundit`],
         m: ['ühe minuti', 'üks minut'],

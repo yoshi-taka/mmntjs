@@ -1,7 +1,7 @@
 // @ts-nocheck
 import type { LocaleSpec } from "./en";
 
-var months = [
+const months = [
         'جنوري',
         'فيبروري',
         'مارچ',

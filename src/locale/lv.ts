@@ -1,7 +1,7 @@
 // @ts-nocheck
 import type { LocaleSpec } from "./en";
 
-var units = {
+const units = {
     ss: 'sekundes_sekundēm_sekunde_sekundes'.split('_'),
     m: 'minūtes_minūtēm_minūte_minūtes'.split('_'),
     mm: 'minūtes_minūtēm_minūte_minūtes'.split('_'),

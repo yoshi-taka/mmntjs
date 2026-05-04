@@ -9,7 +9,7 @@ defineLocale("te", teLocale);
 localeModule("te");
 
 test('parse', function (assert) {
-    var tests =
+    let tests =
             'జనవరి జన._ఫిబ్రవరి ఫిబ్ర._మార్చి మార్చి_ఏప్రిల్ ఏప్రి._మే మే_జూన్ జూన్_జులై జులై_ఆగస్టు ఆగ._సెప్టెంబర్ సెప్._అక్టోబర్ అక్టో._నవంబర్ నవ._డిసెంబర్ డిసె.'.split(
                 '_'
             ),
@@ -31,7 +31,7 @@ test('parse', function (assert) {
     }
 
     for (i = 0; i < 12; i++) {
-        var a = tests[i].split(' ');
+        const a = tests[i].split(' ');
         equalTest(a[0], 'MMM', i);
         equalTest(a[1], 'MMM', i);
         equalTest(a[0], 'MMMM', i);
@@ -51,7 +51,7 @@ test('parse', function (assert) {
 });
 
 test('format', function (assert) {
-    var a = [
+    let a = [
             [
                 'dddd, Do తేదీ MMMM YYYY, a h:mm:ss',
                 'ఆదివారం, 14వ తేదీ ఫిబ్రవరి 2010, మధ్యాహ్నం 3:25:50',
@@ -123,7 +123,7 @@ test('format ordinal', function (assert) {
 });
 
 test('format month', function (assert) {
-    var expected =
+    let expected =
             'జనవరి జన._ఫిబ్రవరి ఫిబ్ర._మార్చి మార్చి_ఏప్రిల్ ఏప్రి._మే మే_జూన్ జూన్_జులై జులై_ఆగస్టు ఆగ._సెప్టెంబర్ సెప్._అక్టోబర్ అక్టో._నవంబర్ నవ._డిసెంబర్ డిసె.'.split(
                 '_'
             ),
@@ -138,7 +138,7 @@ test('format month', function (assert) {
 });
 
 test('format week', function (assert) {
-    var expected =
+    let expected =
             'ఆదివారం ఆది ఆ_సోమవారం సోమ సో_మంగళవారం మంగళ మం_బుధవారం బుధ బు_గురువారం గురు గు_శుక్రవారం శుక్ర శు_శనివారం శని శ'.split(
                 '_'
             ),
@@ -153,7 +153,7 @@ test('format week', function (assert) {
 });
 
 test('from', function (assert) {
-    var start = moment([2007, 1, 28]);
+    const start = moment([2007, 1, 28]);
     assert.equal(
         start.from(moment([2007, 1, 28]).add({ s: 44 }), true),
         'కొన్ని క్షణాలు',
@@ -323,7 +323,7 @@ test('fromNow', function (assert) {
 });
 
 test('calendar day', function (assert) {
-    var a = moment().hours(12).minutes(0).seconds(0);
+    const a = moment().hours(12).minutes(0).seconds(0);
 
     assert.equal(
         moment(a).calendar(),
@@ -358,7 +358,7 @@ test('calendar day', function (assert) {
 });
 
 test('calendar next week', function (assert) {
-    var i, m;
+    let i, m;
     for (i = 2; i < 7; i++) {
         m = moment().add({ d: i });
         assert.equal(
@@ -382,7 +382,7 @@ test('calendar next week', function (assert) {
 });
 
 test('calendar last week', function (assert) {
-    var i, m;
+    let i, m;
 
     for (i = 2; i < 7; i++) {
         m = moment().subtract({ d: i });
@@ -407,7 +407,7 @@ test('calendar last week', function (assert) {
 });
 
 test('calendar all else', function (assert) {
-    var weeksAgo = moment().subtract({ w: 1 }),
+    let weeksAgo = moment().subtract({ w: 1 }),
         weeksFromNow = moment().add({ w: 1 });
 
     assert.equal(weeksAgo.calendar(), weeksAgo.format('L'), '1 week ago');

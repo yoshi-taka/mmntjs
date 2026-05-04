@@ -1,7 +1,7 @@
 // @ts-nocheck
 import type { LocaleSpec } from "./en";
 
-var translator = {
+const translator = {
     words: {
         //Different grammatical cases
         ss: ['секунда', 'секунде', 'секунди'],
@@ -84,7 +84,7 @@ export const sr_cyrlLocale: LocaleSpec = {
         },
       lastDay: "[јуче у] LT",
       lastWeek: function () {
-            var lastWeekDays = [
+            const lastWeekDays = [
                 '[прошле] [недеље] [у] LT',
                 '[прошлог] [понедељка] [у] LT',
                 '[прошлог] [уторка] [у] LT',

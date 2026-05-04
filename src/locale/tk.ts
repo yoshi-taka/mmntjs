@@ -1,7 +1,7 @@
 // @ts-nocheck
 import type { LocaleSpec } from "./en";
 
-var suffixes = {
+const suffixes = {
     1: "'inji",
     5: "'inji",
     8: "'inji",
@@ -75,7 +75,7 @@ export const tkLocale: LocaleSpec = {
                     // special case for zero
                     return `${number  }'unjy`;
                 }
-                var a = number % 10,
+                const a = number % 10,
                     b = (number % 100) - a,
                     c = number >= 100 ? 100 : null;
                 return number + (suffixes[a] || suffixes[b] || suffixes[c]);

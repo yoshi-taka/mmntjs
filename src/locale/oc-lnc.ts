@@ -58,7 +58,7 @@ export const oc_lncLocale: LocaleSpec = {
     },
     dayOfMonthOrdinalParse: /\d{1,2}(r|n|t|è|a)/,
     ordinal: function (number, period) {
-        var output =
+        let output =
             number === 1
                 ? 'r'
                 : number === 2

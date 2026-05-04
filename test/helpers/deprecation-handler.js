@@ -10,7 +10,7 @@ export function setupDeprecationHandler(test, moment, _scope) {
         test._observedDeprecations = [];
     };
     moment.deprecationHandler = function (name, msg) {
-        var deprecationId = matchedDeprecation(
+        const deprecationId = matchedDeprecation(
             name,
             msg,
             test._expectedDeprecations
@@ -28,7 +28,7 @@ export function teardownDeprecationHandler(test, moment, _scope) {
     moment.suppressDeprecationWarnings = test._oldSupress;
 
     if (test._expectedDeprecations != null) {
-        var missedDeprecations = [];
+        const missedDeprecations = [];
         each(test._expectedDeprecations, function (deprecationPattern, id) {
             if (test._observedDeprecations[id] !== 1) {
                 missedDeprecations.push(deprecationPattern);
@@ -47,7 +47,7 @@ function matchedDeprecation(name, msg, deprecations) {
     if (deprecations == null) {
         return -1;
     }
-    for (var i = 0; i < deprecations.length; ++i) {
+    for (let i = 0; i < deprecations.length; ++i) {
         if (name != null && name === deprecations[i]) {
             return i;
         }

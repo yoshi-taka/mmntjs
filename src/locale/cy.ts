@@ -48,7 +48,7 @@ export const cyLocale: LocaleSpec = {
     },
     dayOfMonthOrdinalParse: /\d{1,2}(fed|ain|af|il|ydd|ed|eg)/,
     ordinal: function (number) {
-        var b = number,
+        let b = number,
             output = '',
             lookup = [
                 '',

@@ -1,7 +1,7 @@
 // @ts-nocheck
 import type { LocaleSpec } from "./en";
 
-var units = {
+const units = {
     ss: 'sekundė_sekundžių_sekundes',
     m: 'minutė_minutės_minutę',
     mm: 'minutės_minučių_minutes',
@@ -40,7 +40,7 @@ function forms(key) {
 }
 
 function translate(number, withoutSuffix, key, isFuture) {
-    var result = `${number  } `;
+    const result = `${number  } `;
     if (number === 1) {
         return (
             result + translateSingular(number, withoutSuffix, key[0], isFuture)

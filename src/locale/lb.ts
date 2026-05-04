@@ -2,7 +2,7 @@
 import type { LocaleSpec } from "./en";
 
 function processRelativeTime(number, withoutSuffix, key, _isFuture) {
-    var format = {
+    const format = {
         m: ['eng Minutt', 'enger Minutt'],
         h: ['eng Stonn', 'enger Stonn'],
         d: ['een Dag', 'engem Dag'],
@@ -13,7 +13,7 @@ function processRelativeTime(number, withoutSuffix, key, _isFuture) {
 }
 
 function processFutureTime(string) {
-    var number = string.substr(0, string.indexOf(' '));
+    const number = string.substr(0, string.indexOf(' '));
     if (eifelerRegelAppliesToNumber(number)) {
         return `a ${  string}`;
     }
@@ -21,7 +21,7 @@ function processFutureTime(string) {
 }
 
 function processPastTime(string) {
-    var number = string.substr(0, string.indexOf(' '));
+    const number = string.substr(0, string.indexOf(' '));
     if (eifelerRegelAppliesToNumber(number)) {
         return `viru ${  string}`;
     }
@@ -44,7 +44,7 @@ function eifelerRegelAppliesToNumber(number) {
         return false;
     } else if (number < 100) {
         // 2 digits
-        var lastDigit = number % 10,
+        const lastDigit = number % 10,
             firstDigit = number / 10;
         if (lastDigit === 0) {
             return eifelerRegelAppliesToNumber(firstDigit);
