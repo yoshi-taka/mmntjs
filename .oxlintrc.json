@@ -5,7 +5,8 @@
     "typescript/consistent-type-imports": "error",
     "typescript/prefer-optional-chain": "error",
     "typescript/prefer-nullish-coalescing": "error",
-    "typescript/prefer-find": "error"
+    "typescript/prefer-find": "error",
+    "unicorn/throw-new-error": "error"
   },
   "ignorePatterns": [
     "test/moment/",
