@@ -54,7 +54,8 @@
     "eslint/curly": "error",
     "typescript/consistent-type-assertions": "error",
     "typescript/no-import-type-side-effects": "error",
-    "typescript/prefer-return-this-type": "error"
+    "typescript/prefer-return-this-type": "error",
+    "unicorn/no-length-as-slice-end": "error"
   },
   "ignorePatterns": [
     "test/moment/",
