@@ -1,5 +1,5 @@
 let relTimeRounding: Function | boolean = Math.round;
-let relTimeThreshold: Record<string, any> = {
+let relTimeThreshold: Record<string, number | null> = {
   ss: 44,
   s: 45,
   m: 45,
@@ -25,13 +25,13 @@ export function setRelTimeRounding(fn?: Function | boolean): Function | boolean 
   return relTimeRounding;
 }
 
-export function getRelTimeThreshold(threshold: string): any {
+export function getRelTimeThreshold(threshold: string): number | null | undefined {
   return relTimeThreshold[threshold];
 }
 
-export function setRelTimeThreshold(threshold: string, limit?: number): number | boolean {
+export function setRelTimeThreshold(threshold: string, limit?: number): number | boolean | undefined {
   if (relTimeThreshold[threshold] === undefined) {
-    return undefined as any;
+    return undefined;
   }
   if (limit === undefined) {
     return relTimeThreshold[threshold];
