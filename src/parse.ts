@@ -154,11 +154,14 @@ function parseCommonISOExtended(str: string): Record<string, unknown> | null {
   if (allDigits) {
     // Compact ordinal: YYYYDDD (7 digits)
     if (len === 7) {
-      const year = four(str, 0);
+      const y0 = str.charCodeAt(0) - 48, y1 = str.charCodeAt(1) - 48;
+      const y2 = str.charCodeAt(2) - 48, y3 = str.charCodeAt(3) - 48;
+      if (y0 < 0 || y0 > 9 || y1 < 0 || y1 > 9 || y2 < 0 || y2 > 9 || y3 < 0 || y3 > 9) {return null;}
+      const year = y0 * 1000 + y1 * 100 + y2 * 10 + y3;
       const doy3 = str.charCodeAt(4) - 48, doy2 = str.charCodeAt(5) - 48, doy1 = str.charCodeAt(6) - 48;
       if (doy3 >= 0 && doy3 <= 9 && doy2 >= 0 && doy2 <= 9 && doy1 >= 0 && doy1 <= 9) {
         const dayOfYear = doy3 * 100 + doy2 * 10 + doy1;
-        if (!isNaN(year) && dayOfYear >= 1 && dayOfYear <= 366) {
+        if (dayOfYear >= 1 && dayOfYear <= 366) {
           return { year, dayOfYear };
         }
       }
@@ -167,10 +170,17 @@ function parseCommonISOExtended(str: string): Record<string, unknown> | null {
 
     // Compact date: YYYYMMDD (8 digits)
     if (len === 8) {
-      const year = four(str, 0);
-      const month1 = two(str, 4);
-      const day = two(str, 6);
-      if (!isNaN(year) && !isNaN(month1) && month1 >= 1 && month1 <= 12 && !isNaN(day) && day >= 1 && day <= 31) {
+      const y0 = str.charCodeAt(0) - 48, y1 = str.charCodeAt(1) - 48;
+      const y2 = str.charCodeAt(2) - 48, y3 = str.charCodeAt(3) - 48;
+      if (y0 < 0 || y0 > 9 || y1 < 0 || y1 > 9 || y2 < 0 || y2 > 9 || y3 < 0 || y3 > 9) {return null;}
+      const year = y0 * 1000 + y1 * 100 + y2 * 10 + y3;
+      const m0 = str.charCodeAt(4) - 48, m1 = str.charCodeAt(5) - 48;
+      if (m0 < 0 || m0 > 9 || m1 < 0 || m1 > 9) {return null;}
+      const month1 = m0 * 10 + m1;
+      const d0 = str.charCodeAt(6) - 48, d1 = str.charCodeAt(7) - 48;
+      if (d0 < 0 || d0 > 9 || d1 < 0 || d1 > 9) {return null;}
+      const day = d0 * 10 + d1;
+      if (month1 >= 1 && month1 <= 12 && day >= 1 && day <= 31) {
         return { year, month: month1 - 1, day };
       }
       return null;
@@ -178,10 +188,15 @@ function parseCommonISOExtended(str: string): Record<string, unknown> | null {
 
     // Compact week: GGGG[W]WW (8 digits: 4digits + W + 2digits)
     if (len === 8) {
-      const year = four(str, 0);
-      if (!isNaN(year) && str.charCodeAt(4) === 87) {
-        const weekNum = two(str, 5);
-        if (!isNaN(weekNum) && weekNum >= 1 && weekNum <= 53) {
+      const y0 = str.charCodeAt(0) - 48, y1 = str.charCodeAt(1) - 48;
+      const y2 = str.charCodeAt(2) - 48, y3 = str.charCodeAt(3) - 48;
+      if (y0 < 0 || y0 > 9 || y1 < 0 || y1 > 9 || y2 < 0 || y2 > 9 || y3 < 0 || y3 > 9) {return null;}
+      const year = y0 * 1000 + y1 * 100 + y2 * 10 + y3;
+      if (str.charCodeAt(4) === 87) {
+        const w0 = str.charCodeAt(5) - 48, w1 = str.charCodeAt(6) - 48;
+        if (w0 < 0 || w0 > 9 || w1 < 0 || w1 > 9) {return null;}
+        const weekNum = w0 * 10 + w1;
+        if (weekNum >= 1 && weekNum <= 53) {
           return { isoWeekYear: year, isoWeek: weekNum, _weekdayNum: 1 };
         }
       }
@@ -191,11 +206,14 @@ function parseCommonISOExtended(str: string): Record<string, unknown> | null {
 
   // Extended ordinal: YYYY-DDD (8 chars, dash at position 4)
   if (len === 8 && str.charCodeAt(4) === 45) {
+    const y0 = str.charCodeAt(0) - 48, y1 = str.charCodeAt(1) - 48;
+    const y2 = str.charCodeAt(2) - 48, y3 = str.charCodeAt(3) - 48;
+    if (y0 < 0 || y0 > 9 || y1 < 0 || y1 > 9 || y2 < 0 || y2 > 9 || y3 < 0 || y3 > 9) {return null;}
+    const year = y0 * 1000 + y1 * 100 + y2 * 10 + y3;
     const d1 = str.charCodeAt(5) - 48, d2 = str.charCodeAt(6) - 48, d3 = str.charCodeAt(7) - 48;
     if (d1 >= 0 && d1 <= 9 && d2 >= 0 && d2 <= 9 && d3 >= 0 && d3 <= 9) {
-      const year = four(str, 0);
       const dayOfYear = d1 * 100 + d2 * 10 + d3;
-      if (!isNaN(year) && dayOfYear >= 1 && dayOfYear <= 366) {
+      if (dayOfYear >= 1 && dayOfYear <= 366) {
         return { year, dayOfYear };
       }
     }
@@ -204,11 +222,14 @@ function parseCommonISOExtended(str: string): Record<string, unknown> | null {
 
   // Extended week: GGGG-[W]WW (8 or 9 chars)
   if ((len === 8 || len === 9) && str.charCodeAt(4) === 45 && str.charCodeAt(5) === 87) {
+    const y0 = str.charCodeAt(0) - 48, y1 = str.charCodeAt(1) - 48;
+    const y2 = str.charCodeAt(2) - 48, y3 = str.charCodeAt(3) - 48;
+    if (y0 < 0 || y0 > 9 || y1 < 0 || y1 > 9 || y2 < 0 || y2 > 9 || y3 < 0 || y3 > 9) {return null;}
+    const year = y0 * 1000 + y1 * 100 + y2 * 10 + y3;
     const w1 = str.charCodeAt(6) - 48, w2 = str.charCodeAt(7) - 48;
     if (w1 >= 0 && w1 <= 9 && w2 >= 0 && w2 <= 9) {
-      const year = four(str, 0);
       const weekNum = w1 * 10 + w2;
-      if (!isNaN(year) && weekNum >= 1 && weekNum <= 53) {
+      if (weekNum >= 1 && weekNum <= 53) {
         if (len === 8) {
           return { isoWeekYear: year, isoWeek: weekNum, _weekdayNum: 1 };
         }
@@ -222,20 +243,6 @@ function parseCommonISOExtended(str: string): Record<string, unknown> | null {
   }
 
   return null;
-}
-
-function two(str: string, i: number): number {
-  const a = str.charCodeAt(i) - 48;
-  const b = str.charCodeAt(i + 1) - 48;
-  if (a < 0 || a > 9 || b < 0 || b > 9) {return NaN;}
-  return a * 10 + b;
-}
-
-function four(str: string, i: number): number {
-  const a = two(str, i);
-  const b = two(str, i + 2);
-  if (isNaN(a) || isNaN(b)) {return NaN;}
-  return a * 100 + b;
 }
 
 function parseCommonISO(str: string): Record<string, unknown> | null {
@@ -298,10 +305,10 @@ function parseCommonISO(str: string): Record<string, unknown> | null {
       pos++;
     } else if (tz === 43 || tz === 45) {
       if (pos + 6 !== len || str.charCodeAt(pos + 3) !== 58) {return null;}
-      const offHour = two(str, pos + 1);
-      const offMin = two(str, pos + 4);
-      if (isNaN(offHour) || isNaN(offMin)) {return null;}
-      offset = (tz === 43 ? 1 : -1) * (offHour * 60 + offMin);
+      const offH0 = str.charCodeAt(pos + 1) - 48, offH1 = str.charCodeAt(pos + 2) - 48;
+      const offM0 = str.charCodeAt(pos + 4) - 48, offM1 = str.charCodeAt(pos + 5) - 48;
+      if (offH0 < 0 || offH0 > 9 || offH1 < 0 || offH1 > 9 || offM0 < 0 || offM0 > 9 || offM1 < 0 || offM1 > 9) {return null;}
+      offset = (tz === 43 ? 1 : -1) * ((offH0 * 10 + offH1) * 60 + (offM0 * 10 + offM1));
       pos += 6;
     } else {
       return null;
