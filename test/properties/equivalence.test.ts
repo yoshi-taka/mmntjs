@@ -2,8 +2,8 @@ import { describe, test, expect } from 'bun:test'
 import fc from 'fast-check'
 import _moment from '../../src/index.ts'
 import _originalMoment from '../../moment/moment'
-const moment = _moment as any
-const originalMoment = _originalMoment as any
+const moment = _moment as unknown
+const originalMoment = _originalMoment as unknown
 
 describe('Equivalence partitioning: month', () => {
   const validMonths = fc.constantFrom(0, 1, 6, 11)
@@ -782,7 +782,7 @@ describe('Equivalence partitioning: get/set', () => {
 describe('Equivalence partitioning: moment() constructor with empty/undefined/null', () => {
   test('empty array matches moment', () => {
     fc.assert(
-      fc.property(fc.constantFrom([] as any), (input) => {
+      fc.property(fc.constantFrom([] as unknown[]), (input) => {
         const m2 = moment(input)
         const mOrig = originalMoment(input)
         expect(m2.isValid()).toBe(mOrig.isValid())
@@ -796,7 +796,7 @@ describe('Equivalence partitioning: moment() constructor with empty/undefined/nu
 
   test('empty object matches moment', () => {
     fc.assert(
-      fc.property(fc.constantFrom({} as any), (input) => {
+      fc.property(fc.constantFrom({} as Record<string, unknown>), (input) => {
         const m2 = moment(input)
         const mOrig = originalMoment(input)
         expect(m2.isValid()).toBe(mOrig.isValid())
@@ -810,7 +810,7 @@ describe('Equivalence partitioning: moment() constructor with empty/undefined/nu
 
   test('undefined matches moment', () => {
     fc.assert(
-      fc.property(fc.constantFrom(undefined as any), (input) => {
+      fc.property(fc.constantFrom(undefined as unknown), (input) => {
         const m2 = moment(input)
         const mOrig = originalMoment(input)
         expect(m2.isValid()).toBe(mOrig.isValid())

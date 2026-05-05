@@ -1,1 +1,1 @@
-export function defineCommonLocaleTests(locale: any, _options?: any, ...rest: any[]): void;
+export function defineCommonLocaleTests(locale: unknown, _options?: unknown, ...rest: unknown[]): void;

@@ -3,8 +3,8 @@ import fc from 'fast-check'
 import _moment from '../../src/index.ts'
 import _originalMoment from '../../moment/moment.js'
 
-const moment = _moment as any
-const originalMoment = _originalMoment as any
+const moment = _moment as unknown
+const originalMoment = _originalMoment as unknown
 
 function normalizeZero(value: number): number {
   return Object.is(value, -0) ? 0 : value
