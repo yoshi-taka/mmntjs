@@ -730,6 +730,31 @@ function localeWeekToDate(
   return targetDate;
 }
 
+function buildMomentConfig(
+  d: Date,
+  str: string,
+  format: string | string[] | undefined,
+  locale: string | undefined,
+  parsed: Record<string, unknown>,
+  extra?: MomentConfig,
+): MomentConfig {
+  const config: MomentConfig = {
+    _d: d,
+    _i: str,
+    _f: format,
+    _l: locale,
+    _parsedDateParts: parsed._parsedDateParts as number[] | undefined,
+    ...extra,
+  };
+  const c = config as Record<string, unknown>;
+  if (parsed._unusedTokens) {c._unusedTokens = parsed._unusedTokens;}
+  if (parsed._unusedInput) {c._unusedInput = parsed._unusedInput;}
+  if (parsed._charsLeftOver !== undefined) {c._charsLeftOver = parsed._charsLeftOver;}
+  if (parsed._empty !== undefined) {c._empty = parsed._empty;}
+  if (parsed._invalidMonth !== undefined) {c._invalidMonth = parsed._invalidMonth;}
+  return config;
+}
+
 function createMomentFromParsed(
   parsed: Record<string, unknown>,
   str: string,
@@ -766,20 +791,7 @@ function createMomentFromParsed(
     );
     if (parsed.hour !== undefined)
       {d.setUTCHours(parsed.hour, parsed.minute || 0, parsed.second || 0, parsed.millisecond || 0);}
-    const config: MomentConfig = {
-      _d: d,
-      _i: str,
-      _f: format,
-      _l: locale,
-      _parsedDateParts: parsed._parsedDateParts,
-      ...baseConfig,
-    };
-    if (parsed._unusedTokens) {config._unusedTokens = parsed._unusedTokens;}
-    if (parsed._unusedInput) {config._unusedInput = parsed._unusedInput;}
-    if (parsed._charsLeftOver !== undefined) {config._charsLeftOver = parsed._charsLeftOver;}
-    if (parsed._empty !== undefined) {config._empty = parsed._empty;}
-    if (parsed._invalidMonth !== undefined) {config._invalidMonth = parsed._invalidMonth;}
-    return new Moment(config);
+    return new Moment(buildMomentConfig(d, str, format, locale, parsed, baseConfig));
   }
 
   if (
@@ -793,20 +805,7 @@ function createMomentFromParsed(
     const d = weekYearToDate(parsed.isoWeekYear, parsed.isoWeek, isoWeekday);
     if (parsed.hour !== undefined)
       {d.setUTCHours(parsed.hour, parsed.minute || 0, parsed.second || 0, parsed.millisecond || 0);}
-    const config: MomentConfig = {
-      _d: d,
-      _i: str,
-      _f: format,
-      _l: locale,
-      _parsedDateParts: parsed._parsedDateParts,
-      ...baseConfig,
-    };
-    if (parsed._unusedTokens) {config._unusedTokens = parsed._unusedTokens;}
-    if (parsed._unusedInput) {config._unusedInput = parsed._unusedInput;}
-    if (parsed._charsLeftOver !== undefined) {config._charsLeftOver = parsed._charsLeftOver;}
-    if (parsed._empty !== undefined) {config._empty = parsed._empty;}
-    if (parsed._invalidMonth !== undefined) {config._invalidMonth = parsed._invalidMonth;}
-    return new Moment(config);
+    return new Moment(buildMomentConfig(d, str, format, locale, parsed, baseConfig));
   }
 
   if (
@@ -825,20 +824,7 @@ function createMomentFromParsed(
     const loc = getLocale(locale);
     const weekCfg = (loc._config as Record<string, unknown>).week || { dow: 0, doy: 6 };
     const d = localeWeekToDate(year, Math.max(currentWeekOfYear, 1), 0, weekCfg.dow, weekCfg.doy);
-    const config: MomentConfig = {
-      _d: d,
-      _i: str,
-      _f: format,
-      _l: locale,
-      _parsedDateParts: parsed._parsedDateParts,
-      _strict: strict,
-    };
-    if (parsed._unusedTokens) {config._unusedTokens = parsed._unusedTokens;}
-    if (parsed._unusedInput) {config._unusedInput = parsed._unusedInput;}
-    if (parsed._charsLeftOver !== undefined) {config._charsLeftOver = parsed._charsLeftOver;}
-    if (parsed._empty !== undefined) {config._empty = parsed._empty;}
-    if (parsed._invalidMonth !== undefined) {config._invalidMonth = parsed._invalidMonth;}
-    return new Moment(config);
+    return new Moment(buildMomentConfig(d, str, format, locale, parsed, { _strict: strict }));
   }
 
   if (
@@ -853,20 +839,7 @@ function createMomentFromParsed(
     const loc = getLocale(locale);
     const weekCfg = (loc._config as Record<string, unknown>).week || { dow: 0, doy: 6 };
     const d = localeWeekToDate(year, parsed._week, 0, weekCfg.dow, weekCfg.doy);
-    const config: MomentConfig = {
-      _d: d,
-      _i: str,
-      _f: format,
-      _l: locale,
-      _parsedDateParts: parsed._parsedDateParts,
-      _strict: strict,
-    };
-    if (parsed._unusedTokens) {config._unusedTokens = parsed._unusedTokens;}
-    if (parsed._unusedInput) {config._unusedInput = parsed._unusedInput;}
-    if (parsed._charsLeftOver !== undefined) {config._charsLeftOver = parsed._charsLeftOver;}
-    if (parsed._empty !== undefined) {config._empty = parsed._empty;}
-    if (parsed._invalidMonth !== undefined) {config._invalidMonth = parsed._invalidMonth;}
-    return new Moment(config);
+    return new Moment(buildMomentConfig(d, str, format, locale, parsed, { _strict: strict }));
   }
 
   if (
@@ -883,20 +856,7 @@ function createMomentFromParsed(
     const offset = dayOfJan4 - 1;
     const week1Start = new Date(Date.UTC(nowYear, 0, 4 - offset));
     const d = new Date(week1Start.getTime() + (parsed.isoWeek - 1) * 7 * 86400000);
-    const config: MomentConfig = {
-      _d: d,
-      _i: str,
-      _f: format,
-      _l: locale,
-      _parsedDateParts: parsed._parsedDateParts,
-      _strict: strict,
-    };
-    if (parsed._unusedTokens) {config._unusedTokens = parsed._unusedTokens;}
-    if (parsed._unusedInput) {config._unusedInput = parsed._unusedInput;}
-    if (parsed._charsLeftOver !== undefined) {config._charsLeftOver = parsed._charsLeftOver;}
-    if (parsed._empty !== undefined) {config._empty = parsed._empty;}
-    if (parsed._invalidMonth !== undefined) {config._invalidMonth = parsed._invalidMonth;}
-    return new Moment(config);
+    return new Moment(buildMomentConfig(d, str, format, locale, parsed, { _strict: strict }));
   }
 
   if (
@@ -911,20 +871,7 @@ function createMomentFromParsed(
     const dayOfJan4 = jan4.getUTCDay() || 7;
     const offset = dayOfJan4 - 1;
     const d = new Date(Date.UTC(year, 0, 4 - offset));
-    const config: MomentConfig = {
-      _d: d,
-      _i: str,
-      _f: format,
-      _l: locale,
-      _parsedDateParts: parsed._parsedDateParts,
-      ...baseConfig,
-    };
-    if (parsed._unusedTokens) {config._unusedTokens = parsed._unusedTokens;}
-    if (parsed._unusedInput) {config._unusedInput = parsed._unusedInput;}
-    if (parsed._charsLeftOver !== undefined) {config._charsLeftOver = parsed._charsLeftOver;}
-    if (parsed._empty !== undefined) {config._empty = parsed._empty;}
-    if (parsed._invalidMonth !== undefined) {config._invalidMonth = parsed._invalidMonth;}
-    return new Moment(config);
+    return new Moment(buildMomentConfig(d, str, format, locale, parsed, baseConfig));
   }
 
   if (parsed.dayOfYear !== undefined && parsed.day === undefined && parsed.month === undefined) {
@@ -942,18 +889,7 @@ function createMomentFromParsed(
       });
     }
     const d = new Date(Date.UTC(year, 0, parsed.dayOfYear));
-    const config: MomentConfig = {
-      _d: d,
-      _i: str,
-      _f: format,
-      _l: locale,
-      _parsedDateParts: parsed._parsedDateParts,
-      ...baseConfig,
-    };
-    if (parsed._unusedTokens) {config._unusedTokens = parsed._unusedTokens;}
-    if (parsed._unusedInput) {config._unusedInput = parsed._unusedInput;}
-    if (parsed._charsLeftOver !== undefined) {config._charsLeftOver = parsed._charsLeftOver;}
-    return new Moment(config);
+    return new Moment(buildMomentConfig(d, str, format, locale, parsed, baseConfig));
   }
 
   const isWeekdayOnly =
@@ -973,20 +909,7 @@ function createMomentFromParsed(
     const diff = parsed._weekdayNum - currentDay;
     d.setDate(d.getDate() + diff);
     d.setHours(0, 0, 0, 0);
-    const config: MomentConfig = {
-      _d: d,
-      _i: str,
-      _f: format,
-      _l: locale,
-      _parsedDateParts: parsed._parsedDateParts,
-      ...baseConfig,
-    };
-    if (parsed._unusedTokens) {config._unusedTokens = parsed._unusedTokens;}
-    if (parsed._unusedInput) {config._unusedInput = parsed._unusedInput;}
-    if (parsed._charsLeftOver !== undefined) {config._charsLeftOver = parsed._charsLeftOver;}
-    if (parsed._empty !== undefined) {config._empty = parsed._empty;}
-    if (parsed._invalidMonth !== undefined) {config._invalidMonth = parsed._invalidMonth;}
-    return new Moment(config);
+    return new Moment(buildMomentConfig(d, str, format, locale, parsed, baseConfig));
   }
 
   const isTimeOnly =
@@ -1004,21 +927,10 @@ function createMomentFromParsed(
       d.setDate(d.getDate() + diff);
     }
     d.setHours(parsed.hour || 0, parsed.minute || 0, parsed.second || 0, parsed.millisecond || 0);
-    const config: MomentConfig = {
-      _d: d,
-      _i: str,
-      _f: format,
-      _l: locale,
-      _parsedDateParts: parsed._parsedDateParts,
-      _meridiem: parsed._meridiem,
+    return new Moment(buildMomentConfig(d, str, format, locale, parsed, {
       ...baseConfig,
-    };
-    if (parsed._unusedTokens) {config._unusedTokens = parsed._unusedTokens;}
-    if (parsed._unusedInput) {config._unusedInput = parsed._unusedInput;}
-    if (parsed._charsLeftOver !== undefined) {config._charsLeftOver = parsed._charsLeftOver;}
-    if (parsed._empty !== undefined) {config._empty = parsed._empty;}
-    if (parsed._invalidMonth !== undefined) {config._invalidMonth = parsed._invalidMonth;}
-    return new Moment(config);
+      _meridiem: parsed._meridiem as string | undefined,
+    }));
   }
 
   const hasYear = parsed.year !== undefined;
@@ -1041,36 +953,16 @@ function createMomentFromParsed(
   if (parsed.offset !== undefined) {
     d = createDateSafe(year, month, day, hour, minute, second, ms, true);
     d = new Date(d.getTime() - parsed.offset * 60000);
-    const config: MomentConfig = {
-      _d: d,
-      _i: str,
-      _f: format,
-      _l: locale,
-      _parsedDateParts: parsed._parsedDateParts,
-      _meridiem: parsed._meridiem,
+    return new Moment(buildMomentConfig(d, str, format, locale, parsed, {
       ...baseConfig,
-    };
-    if (parsed._unusedTokens) {config._unusedTokens = parsed._unusedTokens;}
-    if (parsed._unusedInput) {config._unusedInput = parsed._unusedInput;}
-    if (parsed._charsLeftOver !== undefined) {config._charsLeftOver = parsed._charsLeftOver;}
-    return new Moment(config);
+      _meridiem: parsed._meridiem as string | undefined,
+    }));
   }
   d = createDateSafe(year, month, day, hour, minute, second, ms, false);
-  const config: MomentConfig = {
-    _d: d,
-    _i: str,
-    _f: format,
-    _l: locale,
-    _parsedDateParts: parsed._parsedDateParts,
-    _meridiem: parsed._meridiem,
+  return new Moment(buildMomentConfig(d, str, format, locale, parsed, {
     ...baseConfig,
-  };
-  if (parsed._unusedTokens) {config._unusedTokens = parsed._unusedTokens;}
-  if (parsed._unusedInput) {config._unusedInput = parsed._unusedInput;}
-  if (parsed._charsLeftOver !== undefined) {config._charsLeftOver = parsed._charsLeftOver;}
-  if (parsed._empty !== undefined) {config._empty = parsed._empty;}
-  if (parsed._invalidMonth !== undefined) {config._invalidMonth = parsed._invalidMonth;}
-  return new Moment(config);
+    _meridiem: parsed._meridiem as string | undefined,
+  }));
 }
 
 function createFromArray(arr: unknown[], isUTC?: boolean): Moment {
