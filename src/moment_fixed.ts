@@ -1760,40 +1760,30 @@ export class Moment {
         const aYear = a.$y;
         const aMonth = a.$M;
         const aDayOf = a.$D;
-        const aHour = a.$H;
-        const aMin = a.$m;
-        const aSec = a.$s;
-        const aMs = a.$ms;
         const bYear = b.$y;
         const bMonth = b.$M;
 
         const wholeMonthDiff = (bYear - aYear) * 12 + (bMonth - aMonth);
 
-        const addAnchorMs = (n: number): number => {
-          const tm = aYear * 12 + aMonth + n;
-          const y = Math.floor(tm / 12);
-          const m = ((tm % 12) + 12) % 12;
-          const maxDay = daysInMonth(y, m);
-          const d = aDayOf > maxDay ? maxDay : aDayOf;
-          if (a._isUTC) {
-            return Date.UTC(y, m, d, aHour, aMin, aSec, aMs);
-          }
-          return new Date(y, m, d, aHour, aMin, aSec, aMs).getTime();
-        };
-
-        const anchorVal = addAnchorMs(wholeMonthDiff);
+        const anchorVal = anchorMs(aYear, aMonth, aDayOf, a.$H, a.$m, a.$s, a.$ms, a._isUTC, wholeMonthDiff);
         const bVal = b.valueOf();
         const sub = bVal - anchorVal;
 
-        let adjust: number;
-        if (sub < 0) {
-          adjust = sub / (anchorVal - addAnchorMs(wholeMonthDiff - 1));
+        let result: number;
+        if (!float) {
+          if (sub < 0) {
+            result = wholeMonthDiff > 0 ? -wholeMonthDiff + 1 : 0;
+          } else {
+            result = -wholeMonthDiff;
+          }
+          if (swap) {result = -result;}
         } else {
-          adjust = sub / (addAnchorMs(wholeMonthDiff + 1) - anchorVal);
+          const adjust = sub < 0
+            ? sub / (anchorVal - anchorMs(aYear, aMonth, aDayOf, a.$H, a.$m, a.$s, a.$ms, a._isUTC, wholeMonthDiff - 1))
+            : sub / (anchorMs(aYear, aMonth, aDayOf, a.$H, a.$m, a.$s, a.$ms, a._isUTC, wholeMonthDiff + 1) - anchorVal);
+          result = -(wholeMonthDiff + adjust);
+          if (swap) {result = -result;}
         }
-
-        let result = -(wholeMonthDiff + adjust);
-        if (swap) {result = -result;}
 
         if (code === YEAR) {result /= 12;}
         else if (code === QUARTER) {result /= 3;}
@@ -2543,6 +2533,18 @@ for (const key of coldFieldKeys) {
 }
 
 export let nowFn: (() => number) | undefined = Date.now;
+
+function anchorMs(year: number, month: number, day: number, hour: number, min: number, sec: number, ms: number, utc: boolean, n: number): number {
+  const tm = year * 12 + month + n;
+  const y = Math.floor(tm / 12);
+  const m = ((tm % 12) + 12) % 12;
+  const maxDay = daysInMonth(y, m);
+  const d = day > maxDay ? maxDay : day;
+  if (utc) {
+    return Date.UTC(y, m, d, hour, min, sec, ms);
+  }
+  return new Date(y, m, d, hour, min, sec, ms).getTime();
+}
 
 export function checkOverflow(parsed: Record<string, unknown>): number {
   if (parsed.month !== undefined && (parsed.month < 0 || parsed.month > 11)) {return 1;}
