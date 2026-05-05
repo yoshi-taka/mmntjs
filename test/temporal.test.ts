@@ -24,9 +24,9 @@ describe('temporal bridge', () => {
       expect(t.year).toBe(2024)
       expect(t.month).toBe(6)
       expect(t.day).toBe(15)
-      expect((t as any).hour).toBe(10)
-      expect((t as any).minute).toBe(30)
-      expect((t as any).timeZoneId).toBe('UTC')
+      expect((t as Record<string, unknown>).hour as number).toBe(10)
+      expect((t as Record<string, unknown>).minute as number).toBe(30)
+      expect((t as Record<string, unknown>).timeZoneId as string).toBe('UTC')
     })
 
     test('moment with time but local (no offset) returns ZonedDateTime with local offset', () => {
@@ -36,7 +36,7 @@ describe('temporal bridge', () => {
       expect(t.year).toBe(2024)
       expect(t.month).toBe(6)
       expect(t.day).toBe(15)
-      expect((t as any).hour).toBe(10)
+      expect((t as Record<string, unknown>).hour as number).toBe(10)
     })
 
     test('moment with explicit offset returns ZonedDateTime with offset timezone', () => {
@@ -46,12 +46,12 @@ describe('temporal bridge', () => {
       expect(t.year).toBe(2024)
       expect(t.month).toBe(6)
       expect(t.day).toBe(15)
-      expect((t as any).hour).toBe(10)
-      expect((t as any).minute).toBe(30)
+      expect((t as Record<string, unknown>).hour as number).toBe(10)
+      expect((t as Record<string, unknown>).minute as number).toBe(30)
     })
 
     test('throws for invalid moment', () => {
-      const m = moment(null as any)
+      const m = moment(null as unknown)
       expect(() => toTemporal(m)).toThrow('Cannot convert invalid moment')
     })
   })
@@ -60,7 +60,7 @@ describe('temporal bridge', () => {
 
     test('PlainDate returns date-only moment', () => {
       const pd = Temporal.PlainDate.from({ year: 2024, month: 6, day: 15 })
-      const m = fromTemporal(pd) as any
+      const m = fromTemporal(pd) as Moment
       expect(m.isValid()).toBe(true)
       expect(m.year()).toBe(2024)
       expect(m.month()).toBe(5) // 0-indexed
@@ -94,7 +94,7 @@ describe('temporal bridge', () => {
         hour: 10,
         minute: 30,
       })
-      const m = fromTemporal(zdt) as any
+      const m = fromTemporal(zdt) as Moment
       const expected = moment.utc('2024-06-15T05:30:00')
       expect(m.valueOf()).toBe(expected.valueOf())
     })
@@ -108,7 +108,7 @@ describe('temporal bridge', () => {
         minute: 30,
         second: 45,
       })
-      const m = fromTemporal(pdt) as any
+      const m = fromTemporal(pdt) as Moment
       expect(m.year()).toBe(2024)
       expect(m.month()).toBe(5)
       expect(m.date()).toBe(15)
@@ -119,7 +119,7 @@ describe('temporal bridge', () => {
 
     test('PlainTime returns moment with today date and given time', () => {
       const pt = Temporal.PlainTime.from({ hour: 14, minute: 30, second: 15 })
-      const m = fromTemporal(pt) as any
+      const m = fromTemporal(pt) as Moment
       const now = new Date()
       expect(m.year()).toBe(now.getFullYear())
       expect(m.month()).toBe(now.getMonth())
@@ -130,7 +130,7 @@ describe('temporal bridge', () => {
     })
 
     test('throws for unsupported Temporal type', () => {
-      expect(() => fromTemporal({} as any)).toThrow('Unsupported Temporal type')
+      expect(() => fromTemporal({} as unknown)).toThrow('Unsupported Temporal type')
     })
 
     test('roundtrip: moment -> toTemporal -> fromTemporal', () => {
