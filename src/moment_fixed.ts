@@ -1832,6 +1832,9 @@ export class Moment {
       case YEAR:
       case MONTH:
       case QUARTER: {
+        this._ensureFields();
+        other._ensureFields();
+
         const aDay = this.$D;
         const bDay = other.$D;
         const swap = aDay < bDay;
@@ -1840,28 +1843,37 @@ export class Moment {
 
         const aYear = a.$y;
         const aMonth = a.$M;
+        const aDayOf = a.$D;
+        const aHour = a.$H;
+        const aMin = a.$m;
+        const aSec = a.$s;
+        const aMs = a.$ms;
         const bYear = b.$y;
         const bMonth = b.$M;
 
         const wholeMonthDiff = (bYear - aYear) * 12 + (bMonth - aMonth);
 
-        const addMonths = (base: Date, n: number): number => {
-          const d = new Date(base.getTime());
-          const origDate = d.getDate();
-          d.setMonth(d.getMonth() + n);
-          if (d.getDate() !== origDate) {d.setDate(0);}
-          return d.getTime();
+        const addAnchorMs = (n: number): number => {
+          const tm = aYear * 12 + aMonth + n;
+          const y = Math.floor(tm / 12);
+          const m = ((tm % 12) + 12) % 12;
+          const maxDay = daysInMonth(y, m);
+          const d = aDayOf > maxDay ? maxDay : aDayOf;
+          if (a._isUTC) {
+            return Date.UTC(y, m, d, aHour, aMin, aSec, aMs);
+          }
+          return new Date(y, m, d, aHour, aMin, aSec, aMs).getTime();
         };
 
-        const anchorVal = addMonths(a._getD(), wholeMonthDiff);
+        const anchorVal = addAnchorMs(wholeMonthDiff);
         const bVal = b.valueOf();
         const sub = bVal - anchorVal;
 
         let adjust: number;
         if (sub < 0) {
-          adjust = sub / (anchorVal - addMonths(a._getD(), wholeMonthDiff - 1));
+          adjust = sub / (anchorVal - addAnchorMs(wholeMonthDiff - 1));
         } else {
-          adjust = sub / (addMonths(a._getD(), wholeMonthDiff + 1) - anchorVal);
+          adjust = sub / (addAnchorMs(wholeMonthDiff + 1) - anchorVal);
         }
 
         let result = -(wholeMonthDiff + adjust);
