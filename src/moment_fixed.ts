@@ -1367,37 +1367,29 @@ export class Moment {
 
     switch (code) {
       case YEAR:
-        if (utc) { d.setUTCMonth(0); d.setUTCDate(1); d.setUTCHours(0,0,0,0); d.setUTCFullYear(d.getUTCFullYear()+1); d.setUTCMilliseconds(-1); }
-        else { d.setMonth(0); d.setDate(1); d.setHours(0,0,0,0); d.setFullYear(d.getFullYear()+1); d.setMilliseconds(-1); }
+        if (utc) { d.setUTCFullYear(d.getUTCFullYear(), 11, 31); d.setUTCHours(23, 59, 59, 999); }
+        else { d.setFullYear(d.getFullYear(), 11, 31); d.setHours(23, 59, 59, 999); }
         this.$y = utc ? d.getUTCFullYear() : d.getFullYear();
+        this.$M = 11; this.$D = 31;
+        this.$H = 23; this.$m = 59; this.$s = 59; this.$ms = 999;
+        this.$W = _dayOfWeek(this.$y, 11, 31);
+        break;
+      case QUARTER: {
+        const _qEndM = Math.floor(this.$M / 3) * 3 + 2;
+        if (utc) { d.setUTCMonth(_qEndM + 1, 0); d.setUTCHours(23, 59, 59, 999); }
+        else { d.setMonth(_qEndM + 1, 0); d.setHours(23, 59, 59, 999); }
         this.$M = utc ? d.getUTCMonth() : d.getMonth();
         this.$D = utc ? d.getUTCDate() : d.getDate();
-        this.$H = utc ? d.getUTCHours() : d.getHours();
-        this.$m = utc ? d.getUTCMinutes() : d.getMinutes();
-        this.$s = utc ? d.getUTCSeconds() : d.getSeconds();
-        this.$ms = utc ? d.getUTCMilliseconds() : d.getMilliseconds();
+        this.$H = 23; this.$m = 59; this.$s = 59; this.$ms = 999;
         this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
         break;
-      case QUARTER:
-        if (utc) { d.setUTCMonth(Math.floor(this.$M / 3) * 3); d.setUTCDate(1); d.setUTCHours(0,0,0,0); d.setUTCMonth(d.getUTCMonth()+3); d.setUTCMilliseconds(-1); }
-        else { d.setMonth(Math.floor(this.$M / 3) * 3); d.setDate(1); d.setHours(0,0,0,0); d.setMonth(d.getMonth()+3); d.setMilliseconds(-1); }
-        this.$M = utc ? d.getUTCMonth() : d.getMonth();
-        this.$D = utc ? d.getUTCDate() : d.getDate();
-        this.$H = utc ? d.getUTCHours() : d.getHours();
-        this.$m = utc ? d.getUTCMinutes() : d.getMinutes();
-        this.$s = utc ? d.getUTCSeconds() : d.getSeconds();
-        this.$ms = utc ? d.getUTCMilliseconds() : d.getMilliseconds();
-        this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
-        break;
+      }
       case MONTH:
-        if (utc) { d.setUTCDate(1); d.setUTCHours(0,0,0,0); d.setUTCMonth(d.getUTCMonth()+1); d.setUTCMilliseconds(-1); }
-        else { d.setDate(1); d.setHours(0,0,0,0); d.setMonth(d.getMonth()+1); d.setMilliseconds(-1); }
+        if (utc) { d.setUTCMonth(d.getUTCMonth() + 1, 0); d.setUTCHours(23, 59, 59, 999); }
+        else { d.setMonth(d.getMonth() + 1, 0); d.setHours(23, 59, 59, 999); }
         this.$M = utc ? d.getUTCMonth() : d.getMonth();
         this.$D = utc ? d.getUTCDate() : d.getDate();
-        this.$H = utc ? d.getUTCHours() : d.getHours();
-        this.$m = utc ? d.getUTCMinutes() : d.getMinutes();
-        this.$s = utc ? d.getUTCSeconds() : d.getSeconds();
-        this.$ms = utc ? d.getUTCMilliseconds() : d.getMilliseconds();
+        this.$H = 23; this.$m = 59; this.$s = 59; this.$ms = 999;
         this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
         break;
       case WEEK: {
