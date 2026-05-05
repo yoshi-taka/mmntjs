@@ -1078,8 +1078,9 @@ export class Moment {
         if (this._isUTC) {
           this._t = Date.UTC(y, m, d_, this.$H, this.$m, this.$s, this.$ms);
         } else {
-          this._d.setFullYear(y, m, d_);
-          this._t = this._d.getTime();
+          const dt = this._d || (this._d = new Date(this._t));
+          dt.setFullYear(y, m, d_);
+          this._t = dt.getTime();
         }
         this.$y = y;
         this.$M = m;
