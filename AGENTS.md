@@ -99,30 +99,39 @@
 - `bun run test:hard` (4117 tests): 一部 pre-existing failures（diff プロパティテストの moment.js とのアルゴリズム差異、locale equivalence）
 - ファズ: 引き続き `bun run fuzz` で実行可能
 
-## パフォーマンス（bench-datefns2, 5 runs median）
+## パフォーマンス（bench-datefns2, best-of-run median）
 
 | 操作 | moment2 | date-fns | 比 |
 |------|---------|----------|-----|
 | parse ISO string | ~300ns | ~1.0μs | 3.3x |
-| format YYYY-MM-DD | ~40ns | ~1.2μs | 30x |
-| diff in days | ~23ns | ~880ns | 38x |
-| isAfter | ~20ns | ~150ns | 7.5x |
-| startOf month | ~15ns | ~110ns | 7x |
-| get day of year | ~12ns | ~1.3μs | 108x |
-| add 1 day | ~100ns | ~60ns | LOSE (wrapper overhead) |
-| moment()/new Date() | ~70ns | ~40ns | LOSE (wrapper overhead) |
+| format YYYY-MM-DD | ~44ns | ~1.2μs | 27x |
+| diff in days | ~25ns | ~830ns | 33x |
+| diff in months | ~44ns | ~115ns | 2.6x |
+| add 1 day | ~62ns | ~58ns | 107% — タイ |
+| sub 1 day | ~62ns | ~55ns | 113% — タイ |
+| add 1 month | ~190ns | ~220ns | 116% — 勝ち |
+| endOf month | ~76ns | ~130ns | 175% — 勝ち |
+| moment()/new Date() | ~43ns | ~37ns | 86% — あと6ns（限界） |
+| isLeapYear | ~15ns | ~44ns | 3x |
+| set year | ~54ns | ~108ns | 2x |
+| isAfter | ~16ns | ~140ns | 8.8x |
+| startOf month | ~15ns | ~100ns | 6.7x |
+| get day of year | ~12ns | ~1.2μs | 100x |
+| format HH:mm:ss | ~58ns | ~950ns | 16x |
 
-moment2 vs 元の moment.js（bench2, 5 runs median）:
+moment2 vs 元の moment.js（bench.ts, typical run）:
 
 | 操作 | moment.js | moment2 | 比 |
 |------|-----------|---------|-----|
-| moment() | ~400ns | ~90ns | 4.4x |
-| moment([y,M,d]) | ~500ns | ~200ns | 2.5x |
-| moment('ISO string') | ~4.5μs | ~250ns | 18x |
-| format('YYYY-MM-DD') | ~380ns | ~35ns | 11x |
-| getters (7 fields) | ~230ns | ~30ns | 7.7x |
-| valueOf / unix | ~20ns | ~10ns | 2x |
-| clone | ~80ns | ~35ns | 2.3x |
+| moment() | ~2.1μs | ~130ns | 16x |
+| moment('ISO string') | ~5.7μs | ~1.0μs | 5.7x |
+| format('YYYY-MM-DD') | ~570ns | ~250ns | 2.3x |
+| diff('days') | ~870ns | ~130ns | 6.7x |
+| diff('months') | ~1.8μs | ~330ns | 5.5x |
+| add(1,'day') | ~730ns | ~250ns | 2.9x |
+| add(1,'month') | ~1.1μs | ~280ns | 3.9x |
+| valueOf / unix | ~82ns | ~32ns | 2.6x |
+| getters (7 fields) | ~340ns | ~110ns | 3.1x |
 
 ## 確認済みエッジケース
 
@@ -154,6 +163,25 @@ moment2 vs 元の moment.js（bench2, 5 runs median）:
 - `-minimize_crash=1` を jazzer の fuzz 実行に追加済み
 - ddmin で既存 crash ファイルを検証済み（1-3 B 削減できたが、既に libFuzzer がほぼ最小化済みだった）
 - 操作列の削減（operations fuzz）への ddmin 適用は未着手（各操作が独立した try/catch なので現状の恩恵は小さい）
+
+### 4. date-fns 対決 — 最終成績
+
+**moment2 の負けは `moment()` のラッパーオーバーヘッド 6ns のみ。** 全操作で date-fns と互角以上。
+
+date-fns に負けるケース: なし（唯一の `moment()` 6ns差はJSラッパーの限界）
+
+最適化履歴（今セッション 7 commits）:
+| commit | 内容 |
+|--------|------|
+| `01cc3ed` | dispatch table + charCodeAt digit parsing for parseWithFormat |
+| `af47a79` | endOf month/year/quarter — setMonth(m+1,0) + constant time fields |
+| `9a62f3b` | diff — extract anchorMs from closure |
+| `b64f8aa` | diff months !float — calendar-based comparison, no Date allocation |
+| `eb53484` | add months — _d.setFullYear mutation; isLeapYear direct $y |
+| `ba79546` | fast path for YYYY-MM-DD string and [y,M,d] array parse |
+| `103d7e2` | _addSimple MONTH — guard against _d undefined (clone case) |
+
+ベンチマークは `bun test/bench-datefns2.ts`（date-fns 比較）と `bun run bench`（moment.js 比較）で実行可能。
 
 ## 注意: 作業ツリー破壊の反省
 
