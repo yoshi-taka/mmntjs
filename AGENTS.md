@@ -104,15 +104,25 @@
 | 操作 | moment2 | date-fns | 比 |
 |------|---------|----------|-----|
 | parse ISO string | ~300ns | ~1.0μs | 3.3x |
-| format YYYY-MM-DD | ~45ns | ~1.2μs | 27x |
-| diff in days | ~22ns | ~850ns | 39x |
+| format YYYY-MM-DD | ~40ns | ~1.2μs | 30x |
+| diff in days | ~23ns | ~880ns | 38x |
 | isAfter | ~20ns | ~150ns | 7.5x |
-| startOf month | ~14ns | ~110ns | 7.9x |
+| startOf month | ~15ns | ~110ns | 7x |
 | get day of year | ~12ns | ~1.3μs | 108x |
 | add 1 day | ~100ns | ~60ns | LOSE (wrapper overhead) |
-| moment()/new Date() | ~65ns | ~40ns | LOSE (wrapper overhead) |
+| moment()/new Date() | ~70ns | ~40ns | LOSE (wrapper overhead) |
 
-moment2 vs 元の moment.js: ISOパース ~20x、フォーマット ~10x、getter ~10x。
+moment2 vs 元の moment.js（bench2, 5 runs median）:
+
+| 操作 | moment.js | moment2 | 比 |
+|------|-----------|---------|-----|
+| moment() | ~400ns | ~90ns | 4.4x |
+| moment([y,M,d]) | ~500ns | ~200ns | 2.5x |
+| moment('ISO string') | ~4.5μs | ~250ns | 18x |
+| format('YYYY-MM-DD') | ~380ns | ~35ns | 11x |
+| getters (7 fields) | ~230ns | ~30ns | 7.7x |
+| valueOf / unix | ~20ns | ~10ns | 2x |
+| clone | ~80ns | ~35ns | 2.3x |
 
 ## 確認済みエッジケース
 
