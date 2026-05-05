@@ -89,7 +89,7 @@ export function parseString(
   format?: string | string[],
   locale?: string,
   strict?: boolean,
-): any {
+): Record<string, unknown> | null {
   if (typeof str !== "string") {return null;}
 
   if (!format && (locale === "en" || (locale === undefined && getCurrentLocale() === "en"))) {
@@ -149,7 +149,7 @@ export function parseString(
   return null;
 }
 
-function parseCommonISOExtended(str: string): any {
+function parseCommonISOExtended(str: string): Record<string, unknown> | null {
   const len = str.length;
   const ch0 = str.charCodeAt(0);
 
@@ -250,7 +250,7 @@ function four(str: string, i: number): number {
   return a * 100 + b;
 }
 
-function parseCommonISO(str: string): any {
+function parseCommonISO(str: string): Record<string, unknown> | null {
   const len = str.length;
   if (len !== 10 && len !== 19 && len !== 20 && len !== 23 && len !== 24 && len !== 25 && len !== 29) {
     return null;
@@ -339,7 +339,7 @@ function stripRFC2822Comments(str: string): string {
   return result.replaceAll(/\s+/g, " ").trim();
 }
 
-function parseRFC2822(match: RegExpMatchArray): any {
+function parseRFC2822(match: RegExpMatchArray): Record<string, unknown> | null {
   const day = parseInt(match[2], 10);
   const monthStr = match[3];
   const yearStr = match[4];
@@ -413,7 +413,7 @@ function parseRFC2822(match: RegExpMatchArray): any {
   };
 }
 
-function parseISOWithTable(str: string): any {
+function parseISOWithTable(str: string): Record<string, unknown> | null {
   const match = EXTENDED_ISO_REGEX.exec(str) || BASIC_ISO_REGEX.exec(str);
   if (!match) {return null;}
 
@@ -473,7 +473,7 @@ function parseISOWithTable(str: string): any {
   return result;
 }
 
-function parseISO8601(match: RegExpMatchArray): any {
+function parseISO8601(match: RegExpMatchArray): Record<string, unknown> | null {
   let yearStr = match[1];
   let year = parseInt(yearStr, 10);
   let month = match[3] ? parseInt(match[3], 10) - 1 : 0;
@@ -505,7 +505,7 @@ function parseISO8601(match: RegExpMatchArray): any {
   return { year, month, day, hour, minute, second, millisecond, offset, _hasDate, _hasTime };
 }
 
-function parseISOWeek(match: RegExpMatchArray): any {
+function parseISOWeek(match: RegExpMatchArray): Record<string, unknown> | null {
   const year = parseInt(match[1], 10);
   const week = parseInt(match[2], 10);
   const day = match[3] ? parseInt(match[3], 10) : 1;
@@ -547,7 +547,7 @@ function parseISOWeek(match: RegExpMatchArray): any {
   };
 }
 
-function parseISOOrdinal(match: RegExpMatchArray): any {
+function parseISOOrdinal(match: RegExpMatchArray): Record<string, unknown> | null {
   const year = parseInt(match[1], 10);
   const dayOfYear = parseInt(match[2], 10);
   if (dayOfYear === 0) {return null;}
@@ -586,7 +586,7 @@ function parseISOOrdinal(match: RegExpMatchArray): any {
   };
 }
 
-function parseTime(match: RegExpMatchArray): any {
+function parseTime(match: RegExpMatchArray): Record<string, unknown> | null {
   const hour = parseInt(match[1], 10);
   const minute = match[3] ? parseInt(match[3], 10) : 0;
   const second = match[5] ? parseInt(match[5], 10) : 0;
@@ -637,7 +637,7 @@ function addCharVariants(names: string[]): string[] {
 }
 
 function getMonthExtraNames(loc: Locale): string[] {
-  const cfg = (loc as any)._config;
+  const cfg = (loc as Record<string, unknown>)._config;
   const monthsConfig = cfg.months;
   const extra: string[] = [];
   if (typeof monthsConfig === 'object' && monthsConfig !== null && !Array.isArray(monthsConfig)) {
@@ -648,7 +648,7 @@ function getMonthExtraNames(loc: Locale): string[] {
     }
   } else if (typeof monthsConfig === 'function') {
     for (let i = 0; i < 12; i++) {
-      const fakeM = { month: () => i } as any;
+      const fakeM = { month: () => i } as { month: () => number };
       try {
         const name = monthsConfig.call(loc._config, fakeM, 'DD MMMM YYYY');
         if (typeof name === 'string') {
@@ -661,62 +661,62 @@ function getMonthExtraNames(loc: Locale): string[] {
 }
 
 function getLocaleMonthsFull(loc: Locale): string[] {
-  if ((loc as any)._monthsCache) {return (loc as any)._monthsCache;}
+  if ((loc as Record<string, unknown>)._monthsCache) {return (loc as Record<string, unknown>)._monthsCache;}
   const months = loc.months();
   const monthsArr = Array.isArray(months) ? months : [];
   const lower = monthsArr.map((m: string) => m.toLowerCase());
   const extraNames = getMonthExtraNames(loc);
   const allFull = [...new Set(addCharVariants([...lower, ...extraNames]))];
-  (loc as any)._monthsCache = lower;
-  (loc as any)._monthsStrictRegex = new RegExp(`^(${  sortByLengthDesc(allFull).map(escapeRegex).join("|")  })`, "i");
+  (loc as Record<string, unknown>)._monthsCache = lower;
+  (loc as Record<string, unknown>)._monthsStrictRegex = new RegExp(`^(${  sortByLengthDesc(allFull).map(escapeRegex).join("|")  })`, "i");
   const monthsShort = loc.monthsShort && loc.monthsShort();
   const shortArr = Array.isArray(monthsShort) ? monthsShort : [];
   const shortLower = shortArr.map((m: string) => m.toLowerCase());
   // Strip trailing periods from short months for matching
   const shortNoPeriod = shortLower.map((m: string) => m.replace(/\.$/, '')).filter((m) => m.length > 0);
   const all = [...new Set(addCharVariants([...allFull, ...shortLower, ...shortNoPeriod]))];
-  (loc as any)._monthsRegex = new RegExp(`^(${  sortByLengthDesc(all).map(escapeRegex).join("|")  })`, "i");
+  (loc as Record<string, unknown>)._monthsRegex = new RegExp(`^(${  sortByLengthDesc(all).map(escapeRegex).join("|")  })`, "i");
   return lower;
 }
 
 function getLocaleMonthsFullRegex(loc: Locale, strict?: boolean): RegExp {
   if (strict) {
-    if ((loc as any)._monthsStrictRegex) {return (loc as any)._monthsStrictRegex;}
+    if ((loc as Record<string, unknown>)._monthsStrictRegex) {return (loc as Record<string, unknown>)._monthsStrictRegex;}
     getLocaleMonthsFull(loc);
-    return (loc as any)._monthsStrictRegex;
+    return (loc as Record<string, unknown>)._monthsStrictRegex;
   }
-  if ((loc as any)._monthsRegex) {return (loc as any)._monthsRegex;}
+  if ((loc as Record<string, unknown>)._monthsRegex) {return (loc as Record<string, unknown>)._monthsRegex;}
   getLocaleMonthsFull(loc);
-  return (loc as any)._monthsRegex;
+  return (loc as Record<string, unknown>)._monthsRegex;
 }
 
 function getLocaleMonthsShort(loc: Locale): string[] {
-  if ((loc as any)._monthsShortCache) {return (loc as any)._monthsShortCache;}
+  if ((loc as Record<string, unknown>)._monthsShortCache) {return (loc as Record<string, unknown>)._monthsShortCache;}
   const monthsShort = loc.monthsShort && loc.monthsShort();
   let shortArr = Array.isArray(monthsShort) ? monthsShort : [];
   const lower = shortArr.map((m: string) => m.toLowerCase());
-  (loc as any)._monthsShortCache = lower;
+  (loc as Record<string, unknown>)._monthsShortCache = lower;
   const noPeriod = lower.map(m => m.replace(/\.$/, '')).filter(m => m.length > 0);
   const allStrict = [...new Set(addCharVariants([...lower, ...noPeriod]))];
-  (loc as any)._monthsShortStrictRegex = new RegExp(`^(${  sortByLengthDesc(allStrict).map(escapeRegex).join("|")  })`, "i");
+  (loc as Record<string, unknown>)._monthsShortStrictRegex = new RegExp(`^(${  sortByLengthDesc(allStrict).map(escapeRegex).join("|")  })`, "i");
   if (lower.length === 0) {return getLocaleMonthsFull(loc);}
   return lower;
 }
 
 function getLocaleMonthsShortRegex(loc: Locale, strict?: boolean): RegExp {
   if (strict) {
-    if ((loc as any)._monthsShortStrictRegex) {return (loc as any)._monthsShortStrictRegex;}
+    if ((loc as Record<string, unknown>)._monthsShortStrictRegex) {return (loc as Record<string, unknown>)._monthsShortStrictRegex;}
     getLocaleMonthsShort(loc);
-    return (loc as any)._monthsShortStrictRegex;
+    return (loc as Record<string, unknown>)._monthsShortStrictRegex;
   }
-  if ((loc as any)._monthsShortRegex) {return (loc as any)._monthsShortRegex;}
+  if ((loc as Record<string, unknown>)._monthsShortRegex) {return (loc as Record<string, unknown>)._monthsShortRegex;}
   const shortList = getLocaleMonthsShort(loc);
   const fullList = getLocaleMonthsFull(loc);
   const extraNames = getMonthExtraNames(loc);
   const noPeriod = shortList.map(m => m.replace(/\.$/, '')).filter(m => m.length > 0);
   const all = [...new Set(addCharVariants([...shortList, ...fullList, ...extraNames, ...noPeriod]))];
-  (loc as any)._monthsShortRegex = new RegExp(`^(${  sortByLengthDesc(all).map(escapeRegex).join("|")  })`, "i");
-  return (loc as any)._monthsShortRegex;
+  (loc as Record<string, unknown>)._monthsShortRegex = new RegExp(`^(${  sortByLengthDesc(all).map(escapeRegex).join("|")  })`, "i");
+  return (loc as Record<string, unknown>)._monthsShortRegex;
 }
 
 function sortByLengthDesc(arr: string[]): string[] {
@@ -724,86 +724,86 @@ function sortByLengthDesc(arr: string[]): string[] {
 }
 
 function getLocaleWeekdaysFull(loc: Locale): string[] {
-  if ((loc as any)._weekdaysCache) {return (loc as any)._weekdaysCache;}
-  const cfg = (loc as any)._config;
+  if ((loc as Record<string, unknown>)._weekdaysCache) {return (loc as Record<string, unknown>)._weekdaysCache;}
+  const cfg = (loc as Record<string, unknown>)._config;
   let names: string[] = [];
   if (Array.isArray(cfg.weekdays)) {
     names = cfg.weekdays;
   } else if (typeof cfg.weekdays === "object" && cfg.weekdays !== null) {
-    const standalone = (cfg.weekdays as any).standalone || [];
-    const format = (cfg.weekdays as any).format || [];
+    const standalone = (cfg.weekdays as Record<string, unknown>).standalone || [];
+    const format = (cfg.weekdays as Record<string, unknown>).format || [];
     names = [...new Set([...standalone, ...format])];
   } else if (typeof cfg.weekdays === "function") {
     for (let i = 0; i < 7; i++) {
       try {
-        const r = cfg.weekdays({ day: () => i } as any, "dddd");
+        const r = cfg.weekdays({ day: () => i } as { day: () => number }, "dddd");
         if (typeof r === "string") {names.push(r);}
       } catch {}
     }
   }
   const lower = names.map((m: string) => m.toLowerCase());
-  (loc as any)._weekdaysCache = lower;
+  (loc as Record<string, unknown>)._weekdaysCache = lower;
   const all = [...new Set(addCharVariants(lower))];
-  (loc as any)._weekdaysRegex = new RegExp(`^(${  sortByLengthDesc(all).map(escapeRegex).join("|")  })`, "i");
+  (loc as Record<string, unknown>)._weekdaysRegex = new RegExp(`^(${  sortByLengthDesc(all).map(escapeRegex).join("|")  })`, "i");
   return lower;
 }
 
 function getLocaleWeekdaysFullRegex(loc: Locale): RegExp {
-  if ((loc as any)._weekdaysRegex) {return (loc as any)._weekdaysRegex;}
+  if ((loc as Record<string, unknown>)._weekdaysRegex) {return (loc as Record<string, unknown>)._weekdaysRegex;}
   getLocaleWeekdaysFull(loc);
-  return (loc as any)._weekdaysRegex;
+  return (loc as Record<string, unknown>)._weekdaysRegex;
 }
 
 function getLocaleWeekdaysShort(loc: Locale): string[] {
-  if ((loc as any)._weekdaysShortCache) {return (loc as any)._weekdaysShortCache;}
-  const cfg = (loc as any)._config;
+  if ((loc as Record<string, unknown>)._weekdaysShortCache) {return (loc as Record<string, unknown>)._weekdaysShortCache;}
+  const cfg = (loc as Record<string, unknown>)._config;
   let names: string[] = [];
   if (Array.isArray(cfg.weekdaysShort)) {
     names = cfg.weekdaysShort;
   } else if (typeof cfg.weekdaysShort === "object" && cfg.weekdaysShort !== null) {
-    const standalone = (cfg.weekdaysShort as any).standalone || [];
-    const format = (cfg.weekdaysShort as any).format || [];
+    const standalone = (cfg.weekdaysShort as Record<string, unknown>).standalone || [];
+    const format = (cfg.weekdaysShort as Record<string, unknown>).format || [];
     names = [...new Set([...standalone, ...format])];
   } else {
     return getLocaleWeekdaysFull(loc);
   }
   const lower = names.map((m: string) => m.toLowerCase());
-  (loc as any)._weekdaysShortCache = lower;
+  (loc as Record<string, unknown>)._weekdaysShortCache = lower;
   const all = [...new Set(addCharVariants(lower))];
-  (loc as any)._weekdaysShortRegex = new RegExp(`^(${  sortByLengthDesc(all).map(escapeRegex).join("|")  })`, "i");
+  (loc as Record<string, unknown>)._weekdaysShortRegex = new RegExp(`^(${  sortByLengthDesc(all).map(escapeRegex).join("|")  })`, "i");
   return lower;
 }
 
 function getLocaleWeekdaysShortRegex(loc: Locale): RegExp {
-  if ((loc as any)._weekdaysShortRegex) {return (loc as any)._weekdaysShortRegex;}
+  if ((loc as Record<string, unknown>)._weekdaysShortRegex) {return (loc as Record<string, unknown>)._weekdaysShortRegex;}
   getLocaleWeekdaysShort(loc);
-  return (loc as any)._weekdaysShortRegex;
+  return (loc as Record<string, unknown>)._weekdaysShortRegex;
 }
 
 function getLocaleWeekdaysMin(loc: Locale): string[] {
-  if ((loc as any)._weekdaysMinCache) {return (loc as any)._weekdaysMinCache;}
-  const cfg = (loc as any)._config;
+  if ((loc as Record<string, unknown>)._weekdaysMinCache) {return (loc as Record<string, unknown>)._weekdaysMinCache;}
+  const cfg = (loc as Record<string, unknown>)._config;
   let names: string[] = [];
   if (Array.isArray(cfg.weekdaysMin)) {
     names = cfg.weekdaysMin;
   } else if (typeof cfg.weekdaysMin === "object" && cfg.weekdaysMin !== null) {
-    const standalone = (cfg.weekdaysMin as any).standalone || [];
-    const format = (cfg.weekdaysMin as any).format || [];
+    const standalone = (cfg.weekdaysMin as Record<string, unknown>).standalone || [];
+    const format = (cfg.weekdaysMin as Record<string, unknown>).format || [];
     names = [...new Set([...standalone, ...format])];
   } else {
     return getLocaleWeekdaysShort(loc);
   }
   const lower = names.map((m: string) => m.toLowerCase());
-  (loc as any)._weekdaysMinCache = lower;
+  (loc as Record<string, unknown>)._weekdaysMinCache = lower;
   const all = [...new Set(addCharVariants(lower))];
-  (loc as any)._weekdaysMinRegex = new RegExp(`^(${  sortByLengthDesc(all).map(escapeRegex).join("|")  })`, "i");
+  (loc as Record<string, unknown>)._weekdaysMinRegex = new RegExp(`^(${  sortByLengthDesc(all).map(escapeRegex).join("|")  })`, "i");
   return lower;
 }
 
 function getLocaleWeekdaysMinRegex(loc: Locale): RegExp {
-  if ((loc as any)._weekdaysMinRegex) {return (loc as any)._weekdaysMinRegex;}
+  if ((loc as Record<string, unknown>)._weekdaysMinRegex) {return (loc as Record<string, unknown>)._weekdaysMinRegex;}
   getLocaleWeekdaysMin(loc);
-  return (loc as any)._weekdaysMinRegex;
+  return (loc as Record<string, unknown>)._weekdaysMinRegex;
 }
 
 function timedMatch(
@@ -836,7 +836,7 @@ function parseWithFormat(
   format: string,
   locale?: string,
   strict?: boolean,
-): any {
+): Record<string, unknown> | null {
 
   const loc = getLocale(locale);
   const expandedCacheKey = `${locale || "en"  }:${  format}`;
@@ -851,7 +851,7 @@ function parseWithFormat(
 
   const tokens = tokenizeFormat(format);
 
-  const result: any = {
+  const result: Record<string, unknown> = {
     year: undefined,
     month: undefined,
     day: undefined,
@@ -868,7 +868,7 @@ function parseWithFormat(
     _charsLeftOver: 0,
     _empty: true,
     _invalidMonth: null as string | null,
-    _parsedDateParts: [] as any[],
+    _parsedDateParts: [] as number[],
     _meridiem: undefined as string | undefined,
   };
   const _seenUnusedTokens = new Set<string>();
@@ -1123,17 +1123,17 @@ function parseWithFormat(
         break;
       }
       case "yo": {
-        const eras = (loc._config as any).eras;
+        const eras = (loc._config as Record<string, unknown>).eras;
         const eraOrdinalRegex =
-          eras && (loc._config as any).eraYearOrdinalParse
-            ? (loc._config as any).eraYearOrdinalRegex || /(\d+)/
+          eras && (loc._config as Record<string, unknown>).eraYearOrdinalParse
+            ? (loc._config as Record<string, unknown>).eraYearOrdinalRegex || /(\d+)/
             : /(\d+)/;
         const yoMatch = remaining.match(eraOrdinalRegex);
         if (!yoMatch) {
           failed = true;
           break;
         }
-        const eraParseFn = (loc._config as any).eraYearOrdinalParse;
+        const eraParseFn = (loc._config as Record<string, unknown>).eraYearOrdinalParse;
         if (eraParseFn) {
           result._eraYear = eraParseFn(remaining, yoMatch);
         } else {
@@ -1146,17 +1146,17 @@ function parseWithFormat(
       case "N":
       case "NN":
       case "NNN": {
-        const erasList = (loc._config as any).eras;
+        const erasList = (loc._config as Record<string, unknown>).eras;
         if (erasList && Array.isArray(erasList)) {
           const names = strict
-            ? erasList.map((e: any) => e.abbr).filter(Boolean)
-            : [...new Set(erasList.flatMap((e: any) => [e.abbr, e.name, e.narrow].filter(Boolean)))];
+            ? erasList.map((e: Record<string, unknown>) => e.abbr).filter(Boolean)
+            : [...new Set(erasList.flatMap((e: Record<string, unknown>) => [e.abbr, e.name, e.narrow].filter(Boolean)))];
           const regex = new RegExp(`^(${  names.map(escapeRegex).join("|")  })`);
           const nMatch = remaining.match(regex);
           if (nMatch) {
             const matchedName = nMatch[1];
             const era = erasList.find(
-              (e: any) => e.abbr === matchedName || e.name === matchedName || e.narrow === matchedName
+              (e: Record<string, unknown>) => e.abbr === matchedName || e.name === matchedName || e.narrow === matchedName
             );
             if (era) {result._era = era;}
             strIdx += nMatch[1].length;
@@ -1167,14 +1167,14 @@ function parseWithFormat(
         break;
       }
       case "NNNN": {
-        const erasWide = (loc._config as any).eras;
+        const erasWide = (loc._config as Record<string, unknown>).eras;
         if (erasWide && Array.isArray(erasWide)) {
-          const names = erasWide.map((e: any) => e.name).filter(Boolean);
+          const names = erasWide.map((e: Record<string, unknown>) => e.name).filter(Boolean);
           const regex = new RegExp(`^(${  names.map(escapeRegex).join("|")  })`);
           const nMatch = remaining.match(regex);
           if (nMatch) {
             const matched = nMatch[1];
-            const era = erasWide.find((e: any) => e.name === matched);
+            const era = erasWide.find((e: Record<string, unknown>) => e.name === matched);
             if (era) {result._era = era;}
             strIdx += nMatch[1].length;
             break;
@@ -1184,14 +1184,14 @@ function parseWithFormat(
         break;
       }
       case "NNNNN": {
-        const erasNarrow = (loc._config as any).eras;
+        const erasNarrow = (loc._config as Record<string, unknown>).eras;
         if (erasNarrow && Array.isArray(erasNarrow)) {
-          const names = erasNarrow.map((e: any) => e.narrow).filter(Boolean);
+          const names = erasNarrow.map((e: Record<string, unknown>) => e.narrow).filter(Boolean);
           const regex = new RegExp(`^(${  names.map(escapeRegex).join("|")  })`);
           const nMatch = remaining.match(regex);
           if (nMatch) {
             const matched = nMatch[1];
-            const era = erasNarrow.find((e: any) => e.narrow === matched);
+            const era = erasNarrow.find((e: Record<string, unknown>) => e.narrow === matched);
             if (era) {result._era = era;}
             strIdx += nMatch[1].length;
             break;
@@ -1212,15 +1212,15 @@ function parseWithFormat(
               idx = monthListShort.indexOf(matched);
             }
             if (idx < 0) {
-              const cfgMonths = (loc._config as any).months;
+              const cfgMonths = (loc._config as Record<string, unknown>).months;
               if (typeof cfgMonths === 'object' && !Array.isArray(cfgMonths)) {
-                const fmt = (cfgMonths as any).format;
+                const fmt = (cfgMonths as Record<string, unknown>).format;
                 if (Array.isArray(fmt)) {idx = fmt.map((m: string) => m.toLowerCase()).indexOf(matched);}
               } else if (typeof cfgMonths === 'function') {
                 for (let mi = 0; mi < 12; mi++) {
-                  const fm = { month: () => mi } as any;
+                  const fm = { month: () => mi } as { month: () => number };
                   try {
-                    const name = cfgMonths.call((loc as any)._config, fm, 'DD MMMM YYYY');
+                    const name = cfgMonths.call((loc as Record<string, unknown>)._config, fm, 'DD MMMM YYYY');
                     if (typeof name === 'string' && name.toLowerCase() === matched) { idx = mi; break; }
                   } catch {}
                 }
@@ -1288,15 +1288,15 @@ function parseWithFormat(
               idx = monthListFull.indexOf(matched);
             }
             if (idx < 0) {
-              const cfgMonths = (loc._config as any).months;
+              const cfgMonths = (loc._config as Record<string, unknown>).months;
               if (typeof cfgMonths === 'object' && !Array.isArray(cfgMonths)) {
-                const fmt = (cfgMonths as any).format;
+                const fmt = (cfgMonths as Record<string, unknown>).format;
                 if (Array.isArray(fmt)) {idx = fmt.map((m: string) => m.toLowerCase()).indexOf(matched);}
               } else if (typeof cfgMonths === 'function') {
                 for (let mi = 0; mi < 12; mi++) {
-                  const fm = { month: () => mi } as any;
+                  const fm = { month: () => mi } as { month: () => number };
                   try {
-                    const name = cfgMonths.call((loc as any)._config, fm, 'DD MMMM YYYY');
+                    const name = cfgMonths.call((loc as Record<string, unknown>)._config, fm, 'DD MMMM YYYY');
                     if (typeof name === 'string' && name.toLowerCase() === matched) { idx = mi; break; }
                   } catch {}
                 }
@@ -1405,7 +1405,7 @@ function parseWithFormat(
         break;
       }
       case "Do": {
-        const ordinalParse = (loc._config as any).dayOfMonthOrdinalParse;
+        const ordinalParse = (loc._config as Record<string, unknown>).dayOfMonthOrdinalParse;
         let match: RegExpMatchArray | null = null;
 
         if (ordinalParse instanceof RegExp) {
@@ -2071,8 +2071,8 @@ function parseWithFormat(
       failed = false;
       if (token.type === "token" && token.name) {
         result._unusedTokens.push(token.name);
-      } else if ((token as any).type === "literal" && (token as any).value) {
-        result._unusedTokens.push((token as any).value.trim());
+      } else if ((token as Record<string, unknown>).type === "literal" && (token as Record<string, unknown>).value) {
+        result._unusedTokens.push((token as Record<string, unknown>).value.trim());
       }
       const skipMatch = remaining.match(/^[^\p{L}\d]+/u);
       if (skipMatch) {
@@ -2083,7 +2083,7 @@ function parseWithFormat(
   }
 
   if (result.amp !== undefined && result.hour !== undefined) {
-    const mHourFn = (loc._config as any).meridiemHour;
+    const mHourFn = (loc._config as Record<string, unknown>).meridiemHour;
     if (typeof mHourFn === "function") {
       result.hour = mHourFn(result.hour, result._meridiem);
     } else {
@@ -2284,8 +2284,8 @@ function parseWithFormats(
   formats: string[],
   locale?: string,
   strict?: boolean,
-): any {
-  let best: any = null;
+): Record<string, unknown> | null {
+  let best: Record<string, unknown> | null = null;
   let bestScore = -99999;
   let bestFmt = "";
   for (const fmt of formats) {
@@ -2333,7 +2333,7 @@ function parseWithFormats(
   return best;
 }
 
-export function parseArray(arr: any[]): any {
+export function parseArray(arr: unknown[]): Record<string, unknown> | null {
   if (arr.length === 0) {return null;}
 
   for (const val of arr) {
@@ -2342,7 +2342,7 @@ export function parseArray(arr: any[]): any {
     if (isNaN(n)) {return null;}
   }
 
-  const result: any = {
+  const result: Record<string, unknown> = {
     year: Number(arr[0]),
     month: arr[1] !== undefined ? Number(arr[1]) : 0,
     day: arr[2] !== undefined ? Number(arr[2]) : 1,
@@ -2366,8 +2366,8 @@ export function parseArray(arr: any[]): any {
   return result;
 }
 
-export function parseObject(obj: any): any {
-  const result: any = {};
+export function parseObject(obj: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
 
   if (hasOwnProp(obj, "year") || hasOwnProp(obj, "years") || hasOwnProp(obj, "y")) {
     const v = obj.year !== undefined ? obj.year : obj.years !== undefined ? obj.years : obj.y;
