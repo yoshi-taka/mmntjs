@@ -6,7 +6,7 @@ import originalMoment from '../moment/moment'
 
 const ROOT = path.resolve(__dirname, '..')
 
-function mutatedMoment(input: any): any {
+function mutatedMoment(input: unknown): Moment {
   const mod = require('../moment').default || require('../moment')
   return mod(input)
 }
@@ -15,8 +15,8 @@ interface Mutation {
   name: string
   file: string
   patterns: [RegExp, string][]
-  inputs: fc.Arbitrary<any>
-  testFn: (input: any) => boolean
+  inputs: fc.Arbitrary<unknown>
+  testFn: (input: unknown) => boolean
 }
 
 function makeMutations(mutations: Mutation[]) {
@@ -90,7 +90,7 @@ makeMutations([
       [/return this\._d\.getTime\(\)\n/g, 'return this._d.getTime() + 1\n'],
     ],
     inputs: fc.date({ noInvalidDate: true }),
-    testFn: (input: any) => {
+    testFn: (input: unknown) => {
       return mutatedMoment(input).valueOf() === originalMoment(input).valueOf()
     },
   },
@@ -101,7 +101,7 @@ makeMutations([
       [/d\.setDate\(d\.getDate\(\) \+ days\)/g, 'd.setDate(d.getDate() - days)'],
     ],
     inputs: fc.tuple(fc.date({ noInvalidDate: true }), fc.integer({ min: -100, max: 100 })),
-    testFn: ([date, n]: any) => {
+    testFn: ([date, n]: [unknown, unknown]) => {
       return mutatedMoment(date).add(n, 'days').format('YYYY-MM-DD') === originalMoment(date).add(n, 'days').format('YYYY-MM-DD')
     },
   },
@@ -112,7 +112,7 @@ makeMutations([
       [/const diff = this\.valueOf\(\) - other\.valueOf\(\)/g, 'const diff = other.valueOf() - this.valueOf()'],
     ],
     inputs: fc.tuple(fc.date({ noInvalidDate: true }), fc.date({ noInvalidDate: true })),
-    testFn: ([a, b]: any) => {
+    testFn: ([a, b]: [unknown, unknown]) => {
       return mutatedMoment(a).diff(mutatedMoment(b), 'days') === originalMoment(a).diff(originalMoment(b), 'days')
     },
   },
@@ -123,7 +123,7 @@ makeMutations([
       [/return this\.valueOf\(\) < other\.valueOf\(\)/g, 'return this.valueOf() > other.valueOf()'],
     ],
     inputs: fc.tuple(fc.date({ noInvalidDate: true }), fc.date({ noInvalidDate: true })),
-    testFn: ([a, b]: any) => {
+    testFn: ([a, b]: [unknown, unknown]) => {
       return mutatedMoment(a).isBefore(b) === originalMoment(a).isBefore(b)
     },
   },
@@ -134,7 +134,7 @@ makeMutations([
       [/return this\.valueOf\(\) > other\.valueOf\(\)/g, 'return this.valueOf() < other.valueOf()'],
     ],
     inputs: fc.tuple(fc.date({ noInvalidDate: true }), fc.date({ noInvalidDate: true })),
-    testFn: ([a, b]: any) => {
+    testFn: ([a, b]: [unknown, unknown]) => {
       return mutatedMoment(a).isAfter(b) === originalMoment(a).isAfter(b)
     },
   },
@@ -145,7 +145,7 @@ makeMutations([
       [/d\.setMonth\(newMonth\)/g, 'd.setMonth(curMonth - months)'],
     ],
     inputs: fc.tuple(fc.date({ noInvalidDate: true }), fc.integer({ min: -12, max: 12 })),
-    testFn: ([date, n]: any) => {
+    testFn: ([date, n]: [unknown, unknown]) => {
       return mutatedMoment(date).add(n, 'months').format('YYYY-MM-DD') === originalMoment(date).add(n, 'months').format('YYYY-MM-DD')
     },
   },
@@ -156,7 +156,7 @@ makeMutations([
       [/d\.setHours\(0, 0, 0, 0\)/g, 'd.setHours(12, 0, 0, 0)'],
     ],
     inputs: fc.date({ noInvalidDate: true }),
-    testFn: (input: any) => {
+    testFn: (input: unknown) => {
       return mutatedMoment(input).startOf('day').format('HH:mm:ss') === originalMoment(input).startOf('day').format('HH:mm:ss')
     },
   },
@@ -167,7 +167,7 @@ makeMutations([
       [/    return this\._isValid\n/g, '    return true\n'],
     ],
     inputs: fc.constantFrom(null, undefined, '', 'invalid', NaN, Infinity, '2024-13-01'),
-    testFn: (input: any) => {
+    testFn: (input: unknown) => {
       return mutatedMoment(input).isValid() === originalMoment(input).isValid()
     },
   },
@@ -178,7 +178,7 @@ makeMutations([
       [/this\._shared = true;\n    m\._shared = true;/g, '// CoW disabled'],
     ],
     inputs: fc.date({ noInvalidDate: true }),
-    testFn: (input: any) => {
+    testFn: (input: unknown) => {
       const a = mutatedMoment(input)
       const b = a.clone()
       b.add(1, 'day')
@@ -192,7 +192,7 @@ makeMutations([
       [/d\.setMilliseconds\(-1\)/g, 'd.setMilliseconds(0)'],
     ],
     inputs: fc.date({ noInvalidDate: true }),
-    testFn: (input: any) => {
+    testFn: (input: unknown) => {
       return mutatedMoment(input).endOf('day').format('HH:mm:ss.SSS') === originalMoment(input).endOf('day').format('HH:mm:ss.SSS')
     },
   },
