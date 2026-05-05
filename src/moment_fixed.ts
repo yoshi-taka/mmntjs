@@ -1078,13 +1078,13 @@ export class Moment {
         if (this._isUTC) {
           this._t = Date.UTC(y, m, d_, this.$H, this.$m, this.$s, this.$ms);
         } else {
-          this._d = new Date(y, m, d_, this.$H, this.$m, this.$s, this.$ms);
+          this._d.setFullYear(y, m, d_);
           this._t = this._d.getTime();
         }
         this.$y = y;
         this.$M = m;
         this.$D = d_;
-        this.$W = _dayOfWeek(y, m, d_);
+        this.$W = this._isUTC ? _dayOfWeek(y, m, d_) : this._d.getDay();
         break;
       }
       case ISO_WEEK:
@@ -1380,8 +1380,8 @@ export class Moment {
         const _qEndM = Math.floor(this.$M / 3) * 3 + 2;
         if (utc) { d.setUTCMonth(_qEndM + 1, 0); d.setUTCHours(23, 59, 59, 999); }
         else { d.setMonth(_qEndM + 1, 0); d.setHours(23, 59, 59, 999); }
-        this.$M = utc ? d.getUTCMonth() : d.getMonth();
-        this.$D = utc ? d.getUTCDate() : d.getDate();
+        this.$M = _qEndM;
+        this.$D = daysInMonth(this.$y, _qEndM);
         this.$H = 23; this.$m = 59; this.$s = 59; this.$ms = 999;
         this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
         break;
@@ -1389,8 +1389,7 @@ export class Moment {
       case MONTH:
         if (utc) { d.setUTCMonth(d.getUTCMonth() + 1, 0); d.setUTCHours(23, 59, 59, 999); }
         else { d.setMonth(d.getMonth() + 1, 0); d.setHours(23, 59, 59, 999); }
-        this.$M = utc ? d.getUTCMonth() : d.getMonth();
-        this.$D = utc ? d.getUTCDate() : d.getDate();
+        this.$D = daysInMonth(this.$y, this.$M);
         this.$H = 23; this.$m = 59; this.$s = 59; this.$ms = 999;
         this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
         break;
@@ -2021,7 +2020,8 @@ export class Moment {
   }
 
   isLeapYear(): boolean {
-    return isLeapYear(this.year() as number);
+    this._ensureFields();
+    return isLeapYear(this.$y);
   }
 
   isDST(): boolean {
