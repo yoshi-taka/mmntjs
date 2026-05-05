@@ -44,21 +44,75 @@
 
 ## 変更しなかったファイル
 
-- `src/moment_fixed.ts` — 変更なし
 - `src/duration_fixed.ts` — 変更なし
+- `src/duration.ts` — 変更なし
 - `src/utils.ts` — 変更なし
+- `src/format.ts` — 変更なし
 - `moment/` ディレクトリ — 変更なし（元の moment.js ライブラリ）
+
+## 追加のパフォーマンス最適化（2026-05-05）
+
+### 1. diff(YEAR/MONTH/QUARTER) — Date-free addMonths（`src/moment_fixed.ts`）
+- `addMonths` クロージャ（`Date.clone + setMonth + getDate`）を `addAnchorMs`（算術計算＋`Date.UTC`）に置き換え
+- UTC モード: Date アロケーション 0（従来 4）。ローカル: 3（従来 4）
+- `_ensureFields()` を事前呼び出しして stale field バグ修正
+  - 従来は新規作成 Moment で `$y=$M=$D=0` のまま `wholeMonthDiff=0` になり誤った結果
+  - `bun run test:hard` のテスト通過数 +7（プロパティテストがより多くの入力をパス）
+- UTC モードの DST バグも修正（従来は `Date.setMonth` をローカルタイムゾーンで実行）
+- `exp/diff-optimize` ブランチで開発、main にマージ済み
+
+### 2. _addSimple — 不要な _getD() 除去（`src/moment_fixed.ts`）
+- `_getD()` を関数先頭から各ブランチ内に移動
+- YEAR/MONTH ブランチ全モードと UTC DAY/WEEK/DATE で不要な Date 生成を回避
+- 時間単位（HOUR/MINUTE/SECOND/MILLISECOND）とローカル DAY パスでは引き続き `_getD()` を使用
+
+### 3. tokenizeFormat — O(n×62) → O(n×avg-tokens-per-char)（`src/parse.ts`）
+- `FORMAT_TOKENS`（62 トークン）の線形スキャンを `tokenizeByChar` の first-char インデックスに置き換え
+- `startsWith` チェックが 62 回 → 平均 3-4 回に削減
+- `format.ts` の `tokenByChar` と同じパターン
+
+### 4. parseWithFormat — regex → charCodeAt（`src/parse.ts`）
+- `/\d/.test(ch)` → `isDigit()`（charCodeAt 48-57 レンジ）
+- `/[A-Za-z0-9]/.test(ch)` → `isAlphaNum()`
+- `/\s/.test(ch)` → `isWs()`
+- `!/^[+-]/.test(remaining)` → 直接 charCodeAt 43/45
+- `isDigit`, `isAlphaNum`, `isWs`, `charEqCI` ヘルパー関数を追加
+
+### 5. createMomentFromParsed — buildMomentConfig 抽出（`src/index.ts`）
+- 6 ブランチに分散した同一の `MomentConfig` 構築＋`_unusedTokens`/`_unusedInput`/`_charsLeftOver`/`_empty`/`_invalidMonth` 条件付きコピーを `buildMomentConfig()` ヘルパーに抽出
+- **108 行削減**（+42/-150）。各ブランチが 1 行で完結
+
+### 6. four()/two() → inline charCodeAt（`src/parse.ts`）
+- `parseCommonISOExtended` の全 5 箇所の `four(str, 0)` と 3 箇所の `two(str, i)` を直接 charCodeAt に展開
+- `parseCommonISO` のタイムゾーンオフセット解析の `two()` も同様に inline
+- 不要になった `two()` / `four()` 関数を削除
+
+### 見送った最適化
+- **`_refreshFields` 剰余簡略化**: `((x % n) + n) % n` は pre-1970 の負の `_t` で必要
+- **diff から `Date.UTC` 排除**: ネイティブ C++ 関数より JS 算術が遅い
+- **`createFromString` に `parseCommonISO` 直接呼び出し**: `parseString` が先頭で既に呼んでおり、関数呼び出し 1 回分の節約にコード重複が見合わない
+- **コンストラクタ cold field 条件付き化**: `if (hasInfoCold)` ガードが既に存在。17 個の `!== undefined` は V8 最適化で 1ns 以下/個
 
 ## テスト結果
 
-- `bun test` (3470 tests): ✅ baseline と同数（36 fail、locale/equivalence は pre-existing）
-- ファズ: 旧〜26k回 → 新52k回まで通過（〜2倍改善）
+- `bun run test` (669 tests): ✅ 0 fail
+- `bun run test:hard` (4117 tests): 一部 pre-existing failures（diff プロパティテストの moment.js とのアルゴリズム差異、locale equivalence）
+- ファズ: 引き続き `bun run fuzz` で実行可能
 
-## パフォーマンス（予測）
+## パフォーマンス（bench-datefns2, 5 runs median）
 
-- `parseCommonISOExtended` の fast path により、コンパクト/通算日/週フォーマットのパースがテーブルイテレーションを回避
-- 標準ISO文字列（`parseCommonISO`）は従来通り最速
-- 無効文字列は従来通り `parseISOWithTable` で早期リジェクト
+| 操作 | moment2 | date-fns | 比 |
+|------|---------|----------|-----|
+| parse ISO string | ~300ns | ~1.0μs | 3.3x |
+| format YYYY-MM-DD | ~45ns | ~1.2μs | 27x |
+| diff in days | ~22ns | ~850ns | 39x |
+| isAfter | ~20ns | ~150ns | 7.5x |
+| startOf month | ~14ns | ~110ns | 7.9x |
+| get day of year | ~12ns | ~1.3μs | 108x |
+| add 1 day | ~100ns | ~60ns | LOSE (wrapper overhead) |
+| moment()/new Date() | ~65ns | ~40ns | LOSE (wrapper overhead) |
+
+moment2 vs 元の moment.js: ISOパース ~20x、フォーマット ~10x、getter ~10x。
 
 ## 確認済みエッジケース
 
@@ -82,30 +136,9 @@
 `parseWithFormat` は `^` アンカー付き regex で現在位置からマッチする。moment.js は `String.match(regex)` で文字列全体からマッチ位置を探す。この差異により sign-prefixed 文字列のパース結果が一部異なる。本質的には `parseWithFormat` に non-anchored マッチングの skip logic を追加するか、`parseISOWithTable` で個別対応が必要。
 
 ### 2. fuzz継続
-ファザーは永遠に新しいエッジケースを発見し続ける。今回の修正でだいぶ改善したが、根本的には moment.js の format parsing を完全に再現する必要がある（moment.js の `configFromStringAndFormat` 相当の実装）。
+ファザーは永遠に新しいエッジケースを発見し続ける。`bun run fuzz` で実行可能。crash 最小化は `bun run fuzz:ddmin -- crash-xxx`。
 
-### 3. 速度改善
-- `src/parse.ts`: `parseCommonISO` の digit extraction をインライン化（`four()`/`two()` 関数呼び出しを直接 charCodeAt に置き換え）
-- `src/index.ts`: `createFromString` に `parseCommonISO` 結果の高速パス追加（format 検出 regex / checkOverflow / createUTCDate をバイパス）
-- `src/moment_fixed.ts`: コンストラクタの cold field コピーを条件付きに（cold data がない時は配列イテレーションをスキップ）
-- `src/moment_fixed.ts`: `_refreshFields` UTC パス改善（`_d` がある時は `getUTCFullYear()` 等を直接呼び出し、`_epochDaysToYMD` 算術を回避）
-- `src/moment_fixed.ts`: `_addSimple` DAY の while ループを if-else 分岐に最適化（小さい値の場合はループオーバーヘッド排除）
-
-**ベンチマーク修正**: 全ベンチマークファイル（`test/bench*.ts`）の `import moment2 from "../moment"` を `"../moment2"` に修正。元のインポートは moment.js v2.30.1（オリジナル）を参照していた。
-
-**moment2 vs date-fns: 6/8 勝利**
-- parse ISO string: 499ns vs 973ns (1.95x)
-- format YYYY-MM-DD: 35ns vs 1.13μs (32x)
-- diff in days: 20ns vs 789ns (40x)
-- isAfter: 20ns vs 137ns (7x)
-- startOf month: 13ns vs 98ns (7.5x)
-- get day of year: 10ns vs 1.20μs (120x、キャッシュフィールド)
-- add 1 day: LOSE (92ns vs 58ns、ラッパーオーバーヘッド)
-- moment()/new Date(): LOSE (133ns vs 38ns、ラッパーオーバーヘッド)
-
-**moment2 vs 元の moment.js**: ISOパース 12倍、フォーマット 11倍、getter 10倍高速化。
-
-### 4. Delta Debugging 導入
+### 3. Delta Debugging 導入
 - `test/fuzz/ddmin.ts`: ddmin アルゴリズム汎用実装（文字列・配列対応）
 - `test/fuzz/delta-debug.mjs`: post-hoc 最小化スクリプト（`bun run fuzz:ddmin -- crash-xxx`）
 - `-minimize_crash=1` を jazzer の fuzz 実行に追加済み
