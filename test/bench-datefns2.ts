@@ -1,25 +1,36 @@
 // @ts-expect-error TypeScript errors are intentional for compatibility
 import moment2 from "../moment2";
 import {
-  parseISO, getDayOfYear, addDays, addMonths, subDays, format, isAfter, isBefore,
+  parseISO, getDayOfYear, addDays, addMonths, addSeconds, addMilliseconds,
+  subDays, format, lightFormat, isAfter, isBefore,
   startOfMonth, startOfYear, endOfMonth, endOfYear,
   differenceInCalendarDays, differenceInCalendarMonths,
   getDaysInMonth, isLeapYear, setYear, startOfWeek,
 } from "date-fns";
 
-function micros(ns) {
+function micros(ns: number): string {
   if (ns < 1000) {return `${ns.toFixed(0)  }ns`;}
   if (ns < 1_000_000) {return `${(ns / 1000).toFixed(2)  }\u03BCs`;}
   return `${(ns / 1_000_000).toFixed(3)  }ms`;
 }
 
-function run(fn, iter, warmup = 500) {
+function run(fn: () => void, iter: number, warmup = 500): number {
   for (let i = 0; i < warmup; i++) { fn(); }
   const start = process.hrtime.bigint();
   for (let i = 0; i < iter; i++) { fn(); }
   const end = process.hrtime.bigint();
   return Number(end - start) / iter;
 }
+
+function runCold(fn: () => void): number {
+  const start = process.hrtime.bigint();
+  fn();
+  const end = process.hrtime.bigint();
+  return Number(end - start);
+}
+
+const COLD_RUNS = 20;
+const WARM_RUNS = 5;
 
 const CASES = [
   {
@@ -48,6 +59,23 @@ const CASES = [
       const a = moment2("2024-06-15");
       const b = new Date(2024, 5, 15);
       return [() => a.format("YYYY-MM-DD"), () => format(b, "yyyy-MM-dd")];
+    },
+  },
+  {
+    name: "lightFormat YYYY-MM-DD",
+    run: () => {
+      const a = moment2("2024-06-15");
+      const b = new Date(2024, 5, 15);
+      return [() => a.format("YYYY-MM-DD"), () => lightFormat(b, "yyyy-MM-dd")];
+    },
+  },
+  {
+    name: "Intl.DateTimeFormat YYYY-MM-DD",
+    run: () => {
+      const a = moment2("2024-06-15");
+      const b = new Date(2024, 5, 15);
+      const fmt = new Intl.DateTimeFormat("sv-SE", {year: "numeric", month: "2-digit", day: "2-digit"});
+      return [() => a.format("YYYY-MM-DD"), () => fmt.format(b)];
     },
   },
   {
@@ -107,6 +135,22 @@ const CASES = [
     },
   },
   {
+    name: "add 1 second",
+    run: () => {
+      const a = moment2("2024-06-15 10:30:45.123");
+      const b = new Date(2024, 5, 15, 10, 30, 45, 123);
+      return [() => a.add(1, "second"), () => addSeconds(b, 1)];
+    },
+  },
+  {
+    name: "add 1 ms",
+    run: () => {
+      const a = moment2("2024-06-15 10:30:45.123");
+      const b = new Date(2024, 5, 15, 10, 30, 45, 123);
+      return [() => a.add(1, "millisecond"), () => addMilliseconds(b, 1)];
+    },
+  },
+  {
     name: "sub 1 day",
     run: () => {
       const a = moment2("2024-06-15");
@@ -130,6 +174,23 @@ const CASES = [
       const a = moment2("2024-06-15 10:30:45");
       const b = new Date(2024, 5, 15, 10, 30, 45);
       return [() => a.format("HH:mm:ss"), () => format(b, "HH:mm:ss")];
+    },
+  },
+  {
+    name: "lightFormat HH:mm:ss",
+    run: () => {
+      const a = moment2("2024-06-15 10:30:45");
+      const b = new Date(2024, 5, 15, 10, 30, 45);
+      return [() => a.format("HH:mm:ss"), () => lightFormat(b, "HH:mm:ss")];
+    },
+  },
+  {
+    name: "Intl.DateTimeFormat HH:mm:ss",
+    run: () => {
+      const a = moment2("2024-06-15 10:30:45");
+      const b = new Date(2024, 5, 15, 10, 30, 45);
+      const fmt = new Intl.DateTimeFormat("en-US", {hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false});
+      return [() => a.format("HH:mm:ss"), () => fmt.format(b)];
     },
   },
   {
@@ -170,20 +231,32 @@ const CASES = [
 
 const ITER = 5000;
 const WARMUP = 1000;
-const RUNS = 5;
 
-console.log("Operation                           moment2    date-fns     %");
+console.log("Operation                           cold m2      cold df      %    warm m2      warm df      %");
 for (const c of CASES) {
-  const tm = [], td = [];
-  for (let r = 0; r < RUNS; r++) {
+  const cm: number[] = [], cd: number[] = [];
+  for (let r = 0; r < COLD_RUNS; r++) {
+    const [fnM2, fnDF] = c.run();
+    cm.push(runCold(fnM2));
+    cd.push(runCold(fnDF));
+  }
+  cm.sort((a, b) => a - b);
+  cd.sort((a, b) => a - b);
+  const coldM2 = cm[Math.floor(COLD_RUNS / 2)];
+  const coldDF = cd[Math.floor(COLD_RUNS / 2)];
+  const coldRatio = (coldDF / coldM2 * 100).toFixed(1);
+
+  const tm: number[] = [], td: number[] = [];
+  for (let r = 0; r < WARM_RUNS; r++) {
     const [fnM2, fnDF] = c.run();
     tm.push(run(fnM2, ITER, WARMUP));
     td.push(run(fnDF, ITER, WARMUP));
   }
   tm.sort((a, b) => a - b);
   td.sort((a, b) => a - b);
-  const medM2 = tm[Math.floor(RUNS / 2)];
-  const medDF = td[Math.floor(RUNS / 2)];
-  const ratio = (medDF / medM2 * 100).toFixed(1);
-  console.log(`${c.name.padEnd(35)} ${micros(medM2).padStart(10)} ${micros(medDF).padStart(10)} ${ratio.padStart(6)}%`);
+  const warmM2 = tm[Math.floor(WARM_RUNS / 2)];
+  const warmDF = td[Math.floor(WARM_RUNS / 2)];
+  const warmRatio = (warmDF / warmM2 * 100).toFixed(1);
+
+  console.log(`${c.name.padEnd(35)} ${micros(coldM2).padStart(10)} ${micros(coldDF).padStart(10)} ${coldRatio.padStart(6)}%  ${micros(warmM2).padStart(10)} ${micros(warmDF).padStart(10)} ${warmRatio.padStart(6)}%`);
 }

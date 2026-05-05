@@ -23,6 +23,16 @@ function run(name: string, fn: () => void, iterations: number): number {
   return Number(end - start) / iterations;
 }
 
+function runCold(fn: () => void): number {
+  const start = process.hrtime.bigint();
+  fn();
+  const end = process.hrtime.bigint();
+  return Number(end - start);
+}
+
+const COLD_RUNS = 20;
+const WARM_RUNS = 5;
+
 const CASES: BenchCase[] = [
   {
     name: "moment()",
@@ -176,29 +186,36 @@ const CASES: BenchCase[] = [
 ];
 
 const ITER = 5000;
-const results: { name: string; moment: number; moment2: number; ratio: string }[] = [];
+const WARMUP = 100;
 
+console.log(`\ncold/warm benchmark (cold=1st call, warm=${ITER}it after ${WARMUP}warmup):\n`);
+console.log("Operation                           cold mom     cold m2      %   warm mom     warm m2      %");
 for (const c of CASES) {
-  const [fnMoment, fnMoment2] = c.run();
-  const tMoment = run(`${c.name  } (moment)`, fnMoment, ITER);
-  const tMoment2 = run(`${c.name  } (moment2)`, fnMoment2, ITER);
-  const ratio = (tMoment2 / tMoment * 100).toFixed(1);
-  results.push({ name: c.name, moment: tMoment, moment2: tMoment2, ratio });
+  const cm: number[] = [], cd: number[] = [];
+  for (let r = 0; r < COLD_RUNS; r++) {
+    const [fnMoment, fnMoment2] = c.run();
+    cm.push(runCold(fnMoment));
+    cd.push(runCold(fnMoment2));
+  }
+  cm.sort((a, b) => a - b);
+  cd.sort((a, b) => a - b);
+  const coldMom = cm[Math.floor(COLD_RUNS / 2)];
+  const coldM2 = cd[Math.floor(COLD_RUNS / 2)];
+  const coldRatio = (coldM2 / coldMom * 100).toFixed(1);
+
+  const tm: number[] = [], td: number[] = [];
+  for (let r = 0; r < WARM_RUNS; r++) {
+    const [fnMoment, fnMoment2] = c.run();
+    tm.push(run(`${c.name} (moment)`, fnMoment, ITER));
+    td.push(run(`${c.name} (moment2)`, fnMoment2, ITER));
+  }
+  tm.sort((a, b) => a - b);
+  td.sort((a, b) => a - b);
+  const warmMom = tm[Math.floor(WARM_RUNS / 2)];
+  const warmM2 = td[Math.floor(WARM_RUNS / 2)];
+  const warmRatio = (warmM2 / warmMom * 100).toFixed(1);
+
+  console.log(`${c.name.padEnd(35)} ${micros(coldMom).padStart(10)} ${micros(coldM2).padStart(10)} ${coldRatio.padStart(6)}%  ${micros(warmMom).padStart(10)} ${micros(warmM2).padStart(10)} ${warmRatio.padStart(6)}%`);
 }
-
-console.log(`\nBenchmark results (${  ITER  } iterations each):\n`);
-console.log("┌──────────────────────────────────────────────┬────────────┬────────────┬────────┐");
-console.log("│ Operation                                    │ moment     │ moment2    │ %      │");
-console.log("├──────────────────────────────────────────────┼────────────┼────────────┼────────┤");
-
-for (const r of results) {
-  const name = r.name.padEnd(44).slice(0, 44);
-  const m = micros(r.moment).padStart(10);
-  const m2 = micros(r.moment2).padStart(10);
-  const pct = (`${r.ratio  }%`).padStart(6);
-  console.log(`│ ${name} │ ${m} │ ${m2} │ ${pct} │`);
-}
-
-console.log("└──────────────────────────────────────────────┴────────────┴────────────┴────────┘");
 
 
