@@ -705,12 +705,1085 @@ function timedMatch(
 const expandedFormatCache = new LruMap<string, string>(500);
 
 function parseTwo(str: string, idx: number): { v: number; len: number } | null {
+  if (idx >= str.length) return null;
   const c1 = str.charCodeAt(idx);
   if (c1 < 48 || c1 > 57) return null;
   const c2 = str.charCodeAt(idx + 1);
   if (c2 >= 48 && c2 <= 57) return { v: (c1 - 48) * 10 + (c2 - 48), len: 2 };
   return { v: c1 - 48, len: 1 };
 }
+
+function p1(str: string, idx: number): number | null {
+  if (idx >= str.length) return null;
+  const c = str.charCodeAt(idx);
+  return c >= 48 && c <= 57 ? c - 48 : null;
+}
+function p2(str: string, idx: number): number | null {
+  if (idx + 1 >= str.length) return null;
+  const a = str.charCodeAt(idx), b = str.charCodeAt(idx + 1);
+  if (a < 48 || a > 57 || b < 48 || b > 57) return null;
+  return (a - 48) * 10 + (b - 48);
+}
+function p3(str: string, idx: number): number | null {
+  if (idx + 2 >= str.length) return null;
+  const a = str.charCodeAt(idx), b = str.charCodeAt(idx + 1), c = str.charCodeAt(idx + 2);
+  if (a < 48 || a > 57 || b < 48 || b > 57 || c < 48 || c > 57) return null;
+  return (a - 48) * 100 + (b - 48) * 10 + (c - 48);
+}
+function p4(str: string, idx: number): number | null {
+  if (idx + 3 >= str.length) return null;
+  const a = str.charCodeAt(idx), b = str.charCodeAt(idx + 1), c = str.charCodeAt(idx + 2), d = str.charCodeAt(idx + 3);
+  if (a < 48 || a > 57 || b < 48 || b > 57 || c < 48 || c > 57 || d < 48 || d > 57) return null;
+  return (a - 48) * 1000 + (b - 48) * 100 + (c - 48) * 10 + (d - 48);
+}
+
+interface ParseCtx {
+  str: string;
+  strIdx: number;
+  strict: boolean;
+  loc: Locale;
+  result: Record<string, unknown>;
+  _seenUnusedTokens: Set<string>;
+  failed: boolean;
+  tokenIndex: number;
+  tokens: FormatToken[];
+}
+
+type TokenHandler = (ctx: ParseCtx) => void;
+
+// -- Year tokens --
+
+function hYYYYYY(ctx: ParseCtx): void {
+  const s = ctx.str, i = ctx.strIdx, len = s.length;
+  let pos = i;
+  let sign = 1;
+  if (pos < len && (s.charCodeAt(pos) === 43 || s.charCodeAt(pos) === 45)) {
+    sign = s.charCodeAt(pos) === 43 ? 1 : -1;
+    pos++;
+  }
+  const start = pos;
+  while (pos < len && pos - start < 6) {
+    const c = s.charCodeAt(pos);
+    if (c < 48 || c > 57) break;
+    pos++;
+  }
+  if (pos === start || (ctx.strict && pos - start !== 6)) { ctx.failed = true; return; }
+  if (pos - start > 6) pos = start + 6;
+  let y: number;
+  if (pos - start === 6) { y = p6(s, start); }
+  else if (pos - start === 5) { y = p5(s, start); }
+  else if (pos - start === 4) { y = p4(s, start)!; }
+  else if (pos - start === 3) { y = p3(s, start)!; }
+  else if (pos - start === 2) { y = p2(s, start)!; }
+  else { y = p1(s, start)!; }
+  ctx.result.year = sign === -1 ? -y : y;
+  ctx.result._parsedDateParts[0] = ctx.result.year;
+  ctx.strIdx = pos;
+}
+
+function hYYYYY(ctx: ParseCtx): void {
+  const s = ctx.str, i = ctx.strIdx, len = s.length;
+  let pos = i;
+  let sign = 1;
+  if (pos < len && (s.charCodeAt(pos) === 43 || s.charCodeAt(pos) === 45)) {
+    sign = s.charCodeAt(pos) === 43 ? 1 : -1;
+    pos++;
+  }
+  const start = pos;
+  while (pos < len && pos - start < 6) {
+    const c = s.charCodeAt(pos);
+    if (c < 48 || c > 57) break;
+    pos++;
+  }
+  if (pos === start || (ctx.strict && (pos - start < 5 || pos - start > 6))) { ctx.failed = true; return; }
+  if (pos - start > 6) pos = start + 6;
+  let y: number;
+  if (pos - start === 6) { y = p6(s, start); }
+  else if (pos - start === 5) { y = p5(s, start); }
+  else { y = p4(s, start)!; }
+  ctx.result.year = sign === -1 ? -y : y;
+  ctx.result._parsedDateParts[0] = ctx.result.year;
+  ctx.strIdx = pos;
+}
+
+function hYYYY(ctx: ParseCtx): void {
+  const s = ctx.str, i = ctx.strIdx, len = s.length;
+  if (i >= len) { ctx.failed = true; return; }
+  let sign = '';
+  let pos = i;
+  const c0 = s.charCodeAt(pos);
+  if ((c0 === 43 || c0 === 45) && !ctx.strict) {
+    sign = s[pos];
+    pos++;
+  }
+  const start = pos;
+  const maxEnd = Math.min(pos + 4, len);
+  while (pos < maxEnd) {
+    const c = s.charCodeAt(pos);
+    if (c < 48 || c > 57) break;
+    pos++;
+  }
+  if (pos === start || (ctx.strict && pos - start !== 4)) { ctx.failed = true; return; }
+  let y: number;
+  if (pos - start === 4) { y = p4(s, start)!; }
+  else if (pos - start === 3) { y = p3(s, start)!; }
+  else if (pos - start === 2 && !sign) {
+    y = (s.charCodeAt(start) - 48) * 10 + (s.charCodeAt(start + 1) - 48);
+    y = y > 68 ? 1900 + y : 2000 + y;
+  } else if (pos - start === 1 && !sign) {
+    y = s.charCodeAt(start) - 48;
+  } else {
+    y = pos - start === 2 ? p2(s, start)! : p1(s, start)!;
+  }
+  ctx.result.year = sign ? parseInt(sign + s.slice(start, pos), 10) : y;
+  ctx.result._parsedDateParts[0] = ctx.result.year;
+  ctx.strIdx = pos;
+}
+
+function hYY(ctx: ParseCtx): void {
+  const p = parseTwo(ctx.str, ctx.strIdx);
+  if (!p || (ctx.strict && p.len !== 2)) { ctx.failed = true; return; }
+  if (parseTwoDigitYearFn) {
+    ctx.result.year = parseTwoDigitYearFn(ctx.str.slice(ctx.strIdx, ctx.strIdx + p.len));
+  } else {
+    const y = p.v;
+    ctx.result.year = y > 68 ? 1900 + y : 2000 + y;
+  }
+  ctx.result._parsedDateParts[0] = ctx.result.year;
+  ctx.strIdx += p.len;
+}
+
+function hY(ctx: ParseCtx): void {
+  const s = ctx.str, i = ctx.strIdx, len = s.length;
+  if (i >= len) { ctx.failed = true; return; }
+  let pos = i;
+  let sign = 1;
+  if (s.charCodeAt(pos) === 43 || s.charCodeAt(pos) === 45) {
+    sign = s.charCodeAt(pos) === 43 ? 1 : -1;
+    pos++;
+  }
+  const start = pos;
+  while (pos < len) {
+    const c = s.charCodeAt(pos);
+    if (c < 48 || c > 57) break;
+    pos++;
+  }
+  if (pos === start) { ctx.failed = true; return; }
+  const digits = pos - start;
+  let y: number;
+  if (digits === 6) y = p6(s, start);
+  else if (digits === 5) y = p5(s, start);
+  else if (digits === 4) y = p4(s, start)!;
+  else if (digits === 3) y = p3(s, start)!;
+  else if (digits === 2) y = p2(s, start)!;
+  else y = p1(s, start)!;
+  ctx.result.year = sign === -1 ? -y : y;
+  ctx.result._parsedDateParts[0] = ctx.result.year;
+  ctx.strIdx = pos;
+}
+
+function p5(str: string, idx: number): number {
+  return (str.charCodeAt(idx) - 48) * 10000 + (str.charCodeAt(idx + 1) - 48) * 1000 +
+    (str.charCodeAt(idx + 2) - 48) * 100 + (str.charCodeAt(idx + 3) - 48) * 10 +
+    (str.charCodeAt(idx + 4) - 48);
+}
+
+function p6(str: string, idx: number): number {
+  return (str.charCodeAt(idx) - 48) * 100000 + (str.charCodeAt(idx + 1) - 48) * 10000 +
+    (str.charCodeAt(idx + 2) - 48) * 1000 + (str.charCodeAt(idx + 3) - 48) * 100 +
+    (str.charCodeAt(idx + 4) - 48) * 10 + (str.charCodeAt(idx + 5) - 48);
+}
+
+// -- Month tokens --
+
+function hMM(ctx: ParseCtx): void {
+  const p = parseTwo(ctx.str, ctx.strIdx);
+  if (!p || (ctx.strict && p.len !== 2)) { ctx.failed = true; return; }
+  ctx.result.month = p.v - 1;
+  ctx.result._parsedDateParts[1] = ctx.result.month;
+  ctx.strIdx += p.len;
+}
+
+function hM(ctx: ParseCtx): void {
+  const p = parseTwo(ctx.str, ctx.strIdx);
+  if (!p) { ctx.failed = true; return; }
+  if (ctx.strict && p.len === 2 && ctx.str.charCodeAt(ctx.strIdx) === 48) { ctx.failed = true; return; }
+  ctx.result.month = p.v - 1;
+  ctx.result._parsedDateParts[1] = ctx.result.month;
+  ctx.strIdx += p.len;
+}
+
+// -- Day tokens --
+
+function hDD(ctx: ParseCtx): void {
+  const p = parseTwo(ctx.str, ctx.strIdx);
+  if (!p || (ctx.strict && p.len !== 2)) { ctx.failed = true; return; }
+  ctx.result.day = p.v;
+  ctx.result._parsedDateParts[2] = ctx.result.day;
+  ctx.strIdx += p.len;
+}
+
+function hD(ctx: ParseCtx): void {
+  const p = parseTwo(ctx.str, ctx.strIdx);
+  if (!p) { ctx.failed = true; return; }
+  if (ctx.strict && p.len === 2 && ctx.str.charCodeAt(ctx.strIdx) === 48) { ctx.failed = true; return; }
+  ctx.result.day = p.v;
+  ctx.result._parsedDateParts[2] = ctx.result.day;
+  ctx.strIdx += p.len;
+}
+
+function hDo(ctx: ParseCtx): void {
+  const remaining = ctx.str.slice(ctx.strIdx);
+  const ordinalParse = (ctx.loc._config as Record<string, unknown>).dayOfMonthOrdinalParse;
+  let match: RegExpMatchArray | null = null;
+  if (ordinalParse instanceof RegExp) {
+    match = remaining.match(new RegExp(`^(?:${ordinalParse.source})`));
+  }
+  if (!match) { match = remaining.match(/^(\d{1,2})(?:st|nd|rd|th)?/i); }
+  if (!match) { ctx.failed = true; return; }
+  const digitStr = (match[0].match(/\d{1,2}/) || [])[0];
+  if (!digitStr) { ctx.failed = true; return; }
+  ctx.result.day = parseInt(digitStr, 10);
+  ctx.result._parsedDateParts[2] = ctx.result.day;
+  ctx.strIdx += match[0].length;
+}
+
+// -- Hour tokens --
+
+function hHH(ctx: ParseCtx): void {
+  const p = parseTwo(ctx.str, ctx.strIdx);
+  if (!p || (ctx.strict && p.len !== 2)) { ctx.failed = true; return; }
+  ctx.result.hour = p.v;
+  ctx.result._parsedDateParts[3] = ctx.result.hour;
+  ctx.strIdx += p.len;
+}
+
+function hH(ctx: ParseCtx): void {
+  const p = parseTwo(ctx.str, ctx.strIdx);
+  if (!p) { ctx.failed = true; return; }
+  if (ctx.strict && p.len === 2 && ctx.str.charCodeAt(ctx.strIdx) === 48) { ctx.failed = true; return; }
+  ctx.result.hour = p.v;
+  ctx.result._parsedDateParts[3] = ctx.result.hour;
+  ctx.strIdx += p.len;
+}
+
+function hkk(ctx: ParseCtx): void {
+  const p = parseTwo(ctx.str, ctx.strIdx);
+  if (!p || (ctx.strict && p.len !== 2)) { ctx.failed = true; return; }
+  if (p.v === 24) {
+    ctx.result.hour = 0;
+    ctx.result._parsedDateParts[3] = 24;
+  } else {
+    ctx.result.hour = p.v;
+    ctx.result._parsedDateParts[3] = p.v;
+  }
+  ctx.strIdx += p.len;
+}
+
+function hk(ctx: ParseCtx): void {
+  const p = parseTwo(ctx.str, ctx.strIdx);
+  if (!p) { ctx.failed = true; return; }
+  if (ctx.strict && p.len === 2 && ctx.str.charCodeAt(ctx.strIdx) === 48) { ctx.failed = true; return; }
+  if (p.v === 24) {
+    ctx.result.hour = 0;
+    ctx.result._parsedDateParts[3] = 24;
+  } else {
+    ctx.result.hour = p.v;
+    ctx.result._parsedDateParts[3] = p.v;
+  }
+  ctx.strIdx += p.len;
+}
+
+function hhh(ctx: ParseCtx): void {
+  const p = parseTwo(ctx.str, ctx.strIdx);
+  if (!p || (ctx.strict && p.len !== 2)) { ctx.failed = true; return; }
+  if (ctx.strict && p.v === 0) { ctx.failed = true; return; }
+  ctx.result.hour = p.v;
+  ctx.result._parsedDateParts[3] = p.v;
+  if (p.v > 12) {
+    ctx.result.bigHour = true;
+    if (ctx.strict) { ctx.failed = true; return; }
+  }
+  ctx.strIdx += p.len;
+}
+
+function hh(ctx: ParseCtx): void {
+  const p = parseTwo(ctx.str, ctx.strIdx);
+  if (!p) { ctx.failed = true; return; }
+  if (ctx.strict) {
+    if (p.len === 2 && ctx.str.charCodeAt(ctx.strIdx) === 48) { ctx.failed = true; return; }
+    if (p.v === 0) { ctx.failed = true; return; }
+  }
+  ctx.result.hour = p.v;
+  ctx.result._parsedDateParts[3] = p.v;
+  if (p.v > 12) {
+    ctx.result.bigHour = true;
+    if (ctx.strict) { ctx.failed = true; return; }
+  }
+  ctx.strIdx += p.len;
+}
+
+// -- Minute tokens --
+
+function hmm(ctx: ParseCtx): void {
+  const p = parseTwo(ctx.str, ctx.strIdx);
+  if (!p || (ctx.strict && p.len !== 2)) { ctx.failed = true; return; }
+  ctx.result.minute = p.v;
+  ctx.result._parsedDateParts[4] = ctx.result.minute;
+  ctx.strIdx += p.len;
+}
+
+function hm(ctx: ParseCtx): void {
+  const p = parseTwo(ctx.str, ctx.strIdx);
+  if (!p) { ctx.failed = true; return; }
+  if (ctx.strict && p.len === 2 && ctx.str.charCodeAt(ctx.strIdx) === 48) { ctx.failed = true; return; }
+  ctx.result.minute = p.v;
+  ctx.result._parsedDateParts[4] = ctx.result.minute;
+  ctx.strIdx += p.len;
+}
+
+// -- Second tokens --
+
+function hss(ctx: ParseCtx): void {
+  const p = parseTwo(ctx.str, ctx.strIdx);
+  if (!p || (ctx.strict && p.len !== 2)) { ctx.failed = true; return; }
+  ctx.result.second = p.v;
+  ctx.result._parsedDateParts[5] = ctx.result.second;
+  ctx.strIdx += p.len;
+}
+
+function hs(ctx: ParseCtx): void {
+  const p = parseTwo(ctx.str, ctx.strIdx);
+  if (!p) { ctx.failed = true; return; }
+  if (ctx.strict && p.len === 2 && ctx.str.charCodeAt(ctx.strIdx) === 48) { ctx.failed = true; return; }
+  ctx.result.second = p.v;
+  ctx.result._parsedDateParts[5] = ctx.result.second;
+  ctx.strIdx += p.len;
+}
+
+// -- Millisecond tokens --
+
+function hS(ctx: ParseCtx): void {
+  const t = ctx.tokens[ctx.tokenIndex];
+  const maxDigits = t.name!.length;
+  const remaining = ctx.str.slice(ctx.strIdx);
+  const match = timedMatch(remaining, new RegExp(`^(\\d{1,${maxDigits}})`), ctx.strict ? maxDigits : undefined, ctx.strict);
+  if (!match) { ctx.failed = true; return; }
+  ctx.result.millisecond = parseInt(match[1].slice(0, 3).padEnd(3, "0"), 10);
+  ctx.result._parsedDateParts[6] = ctx.result.millisecond;
+  ctx.strIdx += match[1].length;
+}
+
+// -- AM/PM tokens --
+
+function hA(ctx: ParseCtx): void {
+  const remaining = ctx.str.slice(ctx.strIdx);
+  const ampmReg = ctx.loc.meridiemParse() || /[ap]\.?m?\.?/i;
+  const match = remaining.match(ampmReg);
+  if (!match) { ctx.failed = true; return; }
+  ctx.result.amp = match[0].toLowerCase();
+  ctx.result._meridiem = match[0];
+  ctx.strIdx += match[0].length;
+}
+
+// -- Timezone tokens --
+
+function hZ(ctx: ParseCtx): void {
+  let remaining = ctx.str.slice(ctx.strIdx);
+  if (!ctx.strict) {
+    const zTrimMatch = remaining.match(/^\s+/);
+    if (zTrimMatch) {
+      ctx.result._unusedInput!.push(zTrimMatch[0]);
+      ctx.strIdx += zTrimMatch[0].length;
+      remaining = ctx.str.slice(ctx.strIdx);
+    }
+  }
+  const match = remaining.match(/^([+-]\d{2}:?\d{2}|Z)/);
+  if (!match) { ctx.failed = true; return; }
+  if (match[1] === "Z") {
+    ctx.result.offset = 0;
+  } else {
+    const cleaned = match[1].replace(":", "");
+    const sign = cleaned[0] === "+" ? 1 : -1;
+    const tzHour = parseInt(cleaned.substring(1, 3), 10);
+    const tzMin = parseInt(cleaned.substring(3, 5), 10);
+    ctx.result.offset = sign * (tzHour * 60 + tzMin);
+  }
+  ctx.strIdx += match[1].length;
+}
+
+// -- Unix timestamp tokens --
+
+function hX(ctx: ParseCtx): void {
+  const remaining = ctx.str.slice(ctx.strIdx);
+  const match = remaining.match(/^(-?\d+(?:\.\d+)?)/);
+  if (!match) { ctx.failed = true; return; }
+  const ts = parseFloat(match[1]) * 1000;
+  const d = new Date(ts);
+  ctx.result.year = d.getUTCFullYear();
+  ctx.result.month = d.getUTCMonth();
+  ctx.result.day = d.getUTCDate();
+  ctx.result.hour = d.getUTCHours();
+  ctx.result.minute = d.getUTCMinutes();
+  ctx.result.second = d.getUTCSeconds();
+  ctx.result.millisecond = d.getUTCMilliseconds();
+  ctx.strIdx += match[1].length;
+}
+
+function hx(ctx: ParseCtx): void {
+  const remaining = ctx.str.slice(ctx.strIdx);
+  const match = remaining.match(/^(-?\d+)/);
+  if (!match) { ctx.failed = true; return; }
+  const ts = parseInt(match[1], 10);
+  const d = new Date(ts);
+  ctx.result.year = d.getUTCFullYear();
+  ctx.result.month = d.getUTCMonth();
+  ctx.result.day = d.getUTCDate();
+  ctx.result.hour = d.getUTCHours();
+  ctx.result.minute = d.getUTCMinutes();
+  ctx.result.second = d.getUTCSeconds();
+  ctx.result.millisecond = d.getUTCMilliseconds();
+  ctx.strIdx += match[1].length;
+}
+
+// -- Week tokens --
+
+function hWW(ctx: ParseCtx): void {
+  const p = p2(ctx.str, ctx.strIdx);
+  if (p === null) { ctx.failed = true; return; }
+  ctx.result.isoWeek = p;
+  ctx.strIdx += 2;
+}
+
+function hW(ctx: ParseCtx): void {
+  const s = ctx.str; const i = ctx.strIdx;
+  if (i >= s.length) { ctx.failed = true; return; }
+  const c0 = s.charCodeAt(i);
+  if (c0 < 48 || c0 > 57) { ctx.failed = true; return; }
+  const c1 = s.charCodeAt(i + 1);
+  if (c1 >= 48 && c1 <= 57) {
+    if (ctx.strict && c0 === 48) { ctx.failed = true; return; }
+    ctx.result.isoWeek = (c0 - 48) * 10 + (c1 - 48);
+    ctx.strIdx += 2;
+  } else {
+    ctx.result.isoWeek = c0 - 48;
+    ctx.strIdx += 1;
+  }
+}
+
+function hww(ctx: ParseCtx): void {
+  const p = p2(ctx.str, ctx.strIdx);
+  if (p === null) { ctx.failed = true; return; }
+  ctx.result._week = p;
+  ctx.strIdx += 2;
+}
+
+function hw(ctx: ParseCtx): void {
+  const s = ctx.str; const i = ctx.strIdx;
+  if (i >= s.length) { ctx.failed = true; return; }
+  const c0 = s.charCodeAt(i);
+  if (c0 < 48 || c0 > 57) { ctx.failed = true; return; }
+  const c1 = s.charCodeAt(i + 1);
+  if (c1 >= 48 && c1 <= 57) {
+    if (ctx.strict && c0 === 48) { ctx.failed = true; return; }
+    ctx.result._week = (c0 - 48) * 10 + (c1 - 48);
+    ctx.strIdx += 2;
+  } else {
+    ctx.result._week = c0 - 48;
+    ctx.strIdx += 1;
+  }
+}
+
+// -- Week year tokens --
+
+function hGGGG(ctx: ParseCtx): void {
+  const p = p4(ctx.str, ctx.strIdx);
+  if (p === null) { ctx.failed = true; return; }
+  ctx.result.isoWeekYear = p;
+  ctx.strIdx += 4;
+}
+
+function hgggg(ctx: ParseCtx): void {
+  const p = p4(ctx.str, ctx.strIdx);
+  if (p === null) { ctx.failed = true; return; }
+  ctx.result._weekYear = p;
+  ctx.strIdx += 4;
+}
+
+function hGG(ctx: ParseCtx): void {
+  const p = p2(ctx.str, ctx.strIdx);
+  if (p === null) { ctx.failed = true; return; }
+  ctx.result.isoWeekYear = p > 68 ? 1900 + p : 2000 + p;
+  ctx.strIdx += 2;
+}
+
+function hgg(ctx: ParseCtx): void {
+  const p = p2(ctx.str, ctx.strIdx);
+  if (p === null) { ctx.failed = true; return; }
+  ctx.result._weekYear = p > 68 ? 1900 + p : 2000 + p;
+  ctx.strIdx += 2;
+}
+
+// -- Day of year tokens --
+
+function hDDD(ctx: ParseCtx): void {
+  const p = p3(ctx.str, ctx.strIdx);
+  if (p === null) { ctx.failed = true; return; }
+  ctx.result.dayOfYear = p;
+  ctx.strIdx += 3;
+}
+
+// -- Weekday tokens --
+
+function hE(ctx: ParseCtx): void {
+  const p = parseTwo(ctx.str, ctx.strIdx);
+  if (!p) { ctx.failed = true; return; }
+  if (ctx.strict && p.v === 0) { ctx.failed = true; return; }
+  ctx.result._weekdayNum = p.v;
+  ctx.result._parsedDateParts[7] = p.v;
+  ctx.strIdx += p.len;
+}
+
+function he(ctx: ParseCtx): void {
+  const p = parseTwo(ctx.str, ctx.strIdx);
+  if (!p) { ctx.failed = true; return; }
+  ctx.result._parsedDateParts[7] = p.v;
+  ctx.result._localeWeekday = p.v;
+  ctx.result._weekdayNum = p.v;
+  ctx.strIdx += p.len;
+  if (ctx.strict && p.len === 2 && ctx.str.charCodeAt(ctx.strIdx - p.len) === 48) { ctx.failed = true; return; }
+  if (ctx.strict && (p.v < 0 || p.v > 6)) { ctx.result.overflow = 8; ctx.failed = true; return; }
+}
+
+// -- Quarter token --
+
+function hQ(ctx: ParseCtx): void {
+  const p = p1(ctx.str, ctx.strIdx);
+  if (p === null) { ctx.failed = true; return; }
+  ctx.result.quarter = p;
+  ctx.strIdx += 1;
+}
+
+// -- Compact time tokens --
+
+function hhmm(ctx: ParseCtx): void {
+  const s = ctx.str; const i = ctx.strIdx;
+  if (i + 2 >= s.length) { ctx.failed = true; return; }
+  const c0 = s.charCodeAt(i), c1 = s.charCodeAt(i + 1);
+  const c2 = s.charCodeAt(i + 2), c3 = s.charCodeAt(i + 3);
+  if (c0 < 48 || c0 > 57 || c1 < 48 || c1 > 57 || c2 < 48 || c2 > 57 || c3 < 48 || c3 > 57) { ctx.failed = true; return; }
+  const hVal = (c0 - 48) * 10 + (c1 - 48);
+  if (hVal > 12) { ctx.result.bigHour = true; }
+  ctx.result.hour = hVal;
+  ctx.result._parsedDateParts[3] = hVal;
+  ctx.result.minute = (c2 - 48) * 10 + (c3 - 48);
+  ctx.result._parsedDateParts[4] = ctx.result.minute;
+  ctx.strIdx += 4;
+}
+
+function hhmmss(ctx: ParseCtx): void {
+  const s = ctx.str; const i = ctx.strIdx;
+  if (i + 5 >= s.length) { ctx.failed = true; return; }
+  for (let k = 0; k < 6; k++) {
+    const c = s.charCodeAt(i + k);
+    if (c < 48 || c > 57) { ctx.failed = true; return; }
+  }
+  const hVal = (s.charCodeAt(i) - 48) * 10 + (s.charCodeAt(i + 1) - 48);
+  if (hVal > 12) { ctx.result.bigHour = true; }
+  ctx.result.hour = hVal;
+  ctx.result._parsedDateParts[3] = hVal;
+  ctx.result.minute = (s.charCodeAt(i + 2) - 48) * 10 + (s.charCodeAt(i + 3) - 48);
+  ctx.result._parsedDateParts[4] = ctx.result.minute;
+  ctx.result.second = (s.charCodeAt(i + 4) - 48) * 10 + (s.charCodeAt(i + 5) - 48);
+  ctx.result._parsedDateParts[5] = ctx.result.second;
+  ctx.strIdx += 6;
+}
+
+function hHmm(ctx: ParseCtx): void {
+  const s = ctx.str; const i = ctx.strIdx;
+  if (i + 2 >= s.length) { ctx.failed = true; return; }
+  let pos = i, end = Math.min(i + 4, s.length);
+  while (pos < end) {
+    const c = s.charCodeAt(pos);
+    if (c < 48 || c > 57) break;
+    pos++;
+  }
+  const digits = pos - i;
+  if (digits < 3) { ctx.failed = true; return; }
+  ctx.result.hour = digits === 3
+    ? (s.charCodeAt(i) - 48) * 100 + (s.charCodeAt(i + 1) - 48) * 10 + (s.charCodeAt(i + 2) - 48)
+    : (s.charCodeAt(i) - 48) * 1000 + (s.charCodeAt(i + 1) - 48) * 100 + (s.charCodeAt(i + 2) - 48) * 10 + (s.charCodeAt(i + 3) - 48);
+  ctx.result._parsedDateParts[3] = ctx.result.hour;
+  ctx.result.minute = (s.charCodeAt(digits - 2) - 48) * 10 + (s.charCodeAt(digits - 1) - 48);
+  ctx.result._parsedDateParts[4] = ctx.result.minute;
+  ctx.strIdx = pos;
+}
+
+function hHmmss(ctx: ParseCtx): void {
+  const s = ctx.str; const i = ctx.strIdx;
+  if (i + 5 >= s.length) { ctx.failed = true; return; }
+  for (let k = 0; k < 6; k++) {
+    const c = s.charCodeAt(i + k);
+    if (c < 48 || c > 57) { ctx.failed = true; return; }
+  }
+  ctx.result.hour = (s.charCodeAt(i) - 48) * 10 + (s.charCodeAt(i + 1) - 48);
+  ctx.result._parsedDateParts[3] = ctx.result.hour;
+  ctx.result.minute = (s.charCodeAt(i + 2) - 48) * 10 + (s.charCodeAt(i + 3) - 48);
+  ctx.result._parsedDateParts[4] = ctx.result.minute;
+  ctx.result.second = (s.charCodeAt(i + 4) - 48) * 10 + (s.charCodeAt(i + 5) - 48);
+  ctx.result._parsedDateParts[5] = ctx.result.second;
+  ctx.strIdx += 6;
+}
+
+// -- Era year tokens --
+
+function hEraYear(ctx: ParseCtx): void {
+  const s = ctx.str; const i = ctx.strIdx;
+  let pos = i;
+  while (pos < s.length) {
+    const c = s.charCodeAt(pos);
+    if (c < 48 || c > 57) break;
+    pos++;
+  }
+  if (pos === i) { ctx.failed = true; return; }
+  const digits = pos - i;
+  let y: number;
+  if (digits === 4) y = p4(s, i)!;
+  else if (digits === 3) y = p3(s, i)!;
+  else y = digits === 2 ? p2(s, i)! : p1(s, i)!;
+  ctx.result._eraYear = y;
+  ctx.result._parsedDateParts[0] = y;
+  ctx.strIdx = pos;
+}
+
+function hYo(ctx: ParseCtx): void {
+  const remaining = ctx.str.slice(ctx.strIdx);
+  const eras = (ctx.loc._config as Record<string, unknown>).eras;
+  const eraOrdinalRegex = eras && (ctx.loc._config as Record<string, unknown>).eraYearOrdinalParse
+    ? (ctx.loc._config as Record<string, unknown>).eraYearOrdinalRegex || /(\d+)/
+    : /(\d+)/;
+  const yoMatch = remaining.match(eraOrdinalRegex);
+  if (!yoMatch) { ctx.failed = true; return; }
+  const eraParseFn = (ctx.loc._config as Record<string, unknown>).eraYearOrdinalParse;
+  if (eraParseFn) {
+    ctx.result._eraYear = eraParseFn(remaining, yoMatch);
+  } else {
+    ctx.result._eraYear = parseInt(yoMatch[1] || yoMatch[0], 10);
+  }
+  ctx.result._parsedDateParts[0] = ctx.result._eraYear;
+  ctx.strIdx += yoMatch[0].length;
+}
+
+// -- Era name tokens --
+
+function hN(ctx: ParseCtx): void {
+  const remaining = ctx.str.slice(ctx.strIdx);
+  const erasList = (ctx.loc._config as Record<string, unknown>).eras;
+  if (erasList && Array.isArray(erasList)) {
+    const names = ctx.strict
+      ? erasList.map((e: Record<string, unknown>) => e.abbr).filter(Boolean)
+      : [...new Set(erasList.flatMap((e: Record<string, unknown>) => [e.abbr, e.name, e.narrow].filter(Boolean)))];
+    const regex = new RegExp(`^(${names.map(escapeRegex).join("|")})`);
+    const nMatch = remaining.match(regex);
+    if (nMatch) {
+      const matchedName = nMatch[1];
+      const era = erasList.find(
+        (e: Record<string, unknown>) => e.abbr === matchedName || e.name === matchedName || e.narrow === matchedName,
+      );
+      if (era) { ctx.result._era = era; }
+      ctx.strIdx += nMatch[1].length;
+      return;
+    }
+  }
+  ctx.failed = true;
+}
+
+function hNNNN(ctx: ParseCtx): void {
+  const remaining = ctx.str.slice(ctx.strIdx);
+  const erasWide = (ctx.loc._config as Record<string, unknown>).eras;
+  if (erasWide && Array.isArray(erasWide)) {
+    const names = erasWide.map((e: Record<string, unknown>) => e.name).filter(Boolean);
+    const regex = new RegExp(`^(${names.map(escapeRegex).join("|")})`);
+    const nMatch = remaining.match(regex);
+    if (nMatch) {
+      const matched = nMatch[1];
+      const era = erasWide.find((e: Record<string, unknown>) => e.name === matched);
+      if (era) { ctx.result._era = era; }
+      ctx.strIdx += nMatch[1].length;
+      return;
+    }
+  }
+  ctx.failed = true;
+}
+
+function hNNNNN(ctx: ParseCtx): void {
+  const remaining = ctx.str.slice(ctx.strIdx);
+  const erasNarrow = (ctx.loc._config as Record<string, unknown>).eras;
+  if (erasNarrow && Array.isArray(erasNarrow)) {
+    const names = erasNarrow.map((e: Record<string, unknown>) => e.narrow).filter(Boolean);
+    const regex = new RegExp(`^(${names.map(escapeRegex).join("|")})`);
+    const nMatch = remaining.match(regex);
+    if (nMatch) {
+      const matched = nMatch[1];
+      const era = erasNarrow.find((e: Record<string, unknown>) => e.narrow === matched);
+      if (era) { ctx.result._era = era; }
+      ctx.strIdx += nMatch[1].length;
+      return;
+    }
+  }
+  ctx.failed = true;
+}
+
+function hdddd(ctx: ParseCtx): void {
+  const remaining = ctx.str.slice(ctx.strIdx);
+  const wdList = getLocaleWeekdaysFull(ctx.loc);
+  let matched = false;
+  if (wdList.length > 0) {
+    const match = remaining.match(getLocaleWeekdaysFullRegex(ctx.loc));
+    if (match) {
+      const matchedName = match[1].toLowerCase();
+      let idx = wdList.indexOf(matchedName);
+      if (idx < 0) {
+        for (let vi = 0; vi < wdList.length; vi++) {
+          const v = addCharVariants([wdList[vi]]);
+          if (v.includes(matchedName)) { idx = vi; break; }
+        }
+      }
+      if (idx >= 0) {
+        matched = true;
+        ctx.result._weekdayName = match[1];
+        ctx.result._weekdayNum = idx;
+      }
+      ctx.strIdx += match[0].length;
+      return;
+    }
+  }
+  const enMatch = remaining.match(/^(Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)/i);
+  if (enMatch) {
+    matched = true;
+    ctx.result._weekdayName = enMatch[1];
+    const num = WEEKDAY_NAMES_MAP[enMatch[1].toLowerCase().substring(0, 3)];
+    if (num !== undefined) { ctx.result._weekdayNum = num; }
+    ctx.strIdx += enMatch[0].length;
+    return;
+  }
+  if (!ctx.strict) {
+    const looseMatch = remaining.match(/^\w+/);
+    if (looseMatch) { ctx.strIdx += looseMatch[0].length; return; }
+  }
+  if (!matched) { ctx.failed = true; }
+}
+
+function hddd(ctx: ParseCtx): void {
+  const remaining = ctx.str.slice(ctx.strIdx);
+  const wdList = getLocaleWeekdaysShort(ctx.loc);
+  let matched = false;
+  if (wdList.length > 0) {
+    const regex = getLocaleWeekdaysShortRegex(ctx.loc);
+    const match = remaining.match(regex);
+    if (match) {
+      const matchedName = match[1].toLowerCase();
+      let idx = wdList.indexOf(matchedName);
+      if (idx < 0) {
+        for (let vi = 0; vi < wdList.length; vi++) {
+          const v = addCharVariants([wdList[vi]]);
+          if (v.includes(matchedName)) { idx = vi; break; }
+        }
+      }
+      if (idx >= 0) {
+        matched = true;
+        ctx.result._weekdayName = match[1];
+        ctx.result._weekdayNum = idx;
+      }
+      ctx.strIdx += match[0].length;
+      return;
+    }
+  }
+  const enMatch = remaining.match(/^(Sun|Mon|Tue|Wed|Thu|Fri|Sat)/i);
+  if (enMatch) {
+    matched = true;
+    ctx.result._weekdayName = enMatch[1];
+    const num = WEEKDAY_NAMES_MAP[enMatch[1].toLowerCase().substring(0, 3)];
+    if (num !== undefined) { ctx.result._weekdayNum = num; }
+    ctx.strIdx += enMatch[0].length;
+    return;
+  }
+  if (!ctx.strict) {
+    const looseMatch = remaining.match(/^\w+/);
+    if (looseMatch) { ctx.strIdx += looseMatch[0].length; return; }
+  }
+  if (!matched) { ctx.failed = true; }
+}
+
+function hdd(ctx: ParseCtx): void {
+  const remaining = ctx.str.slice(ctx.strIdx);
+  const wdList = getLocaleWeekdaysMin(ctx.loc);
+  let matched = false;
+  if (wdList.length > 0) {
+    const match = remaining.match(getLocaleWeekdaysMinRegex(ctx.loc));
+    if (match) {
+      const matchedName = match[1].toLowerCase();
+      let idx = wdList.indexOf(matchedName);
+      if (idx < 0) {
+        for (let vi = 0; vi < wdList.length; vi++) {
+          const v = addCharVariants([wdList[vi]]);
+          if (v.includes(matchedName)) { idx = vi; break; }
+        }
+      }
+      if (idx >= 0) {
+        matched = true;
+        ctx.result._weekdayName = match[1];
+        ctx.result._weekdayNum = idx;
+      }
+      ctx.strIdx += match[0].length;
+      return;
+    }
+  }
+  const enLoose = remaining.match(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)/i);
+  if (enLoose || !ctx.strict) {
+    const looseMatch = enLoose || remaining.match(/^\w+/);
+    if (looseMatch) { ctx.strIdx += looseMatch[0].length; return; }
+  }
+  if (!matched) { ctx.failed = true; }
+}
+
+function hMMMM(ctx: ParseCtx): void {
+  const remaining = ctx.str.slice(ctx.strIdx);
+  const monthList = getLocaleMonthsFull(ctx.loc);
+  const monthListShort = getLocaleMonthsShort(ctx.loc);
+  if (monthList.length > 0) {
+    const match = remaining.match(getLocaleMonthsFullRegex(ctx.loc, ctx.strict));
+    if (match) {
+      const matched = match[1].toLowerCase();
+      let idx = monthList.indexOf(matched);
+      if (!ctx.strict && idx < 0) { idx = monthListShort.indexOf(matched); }
+      if (idx < 0) {
+        const cfgMonths = (ctx.loc._config as Record<string, unknown>).months;
+        if (typeof cfgMonths === 'object' && !Array.isArray(cfgMonths)) {
+          const fmt = (cfgMonths as Record<string, unknown>).format;
+          if (Array.isArray(fmt)) { idx = fmt.map((m: string) => m.toLowerCase()).indexOf(matched); }
+        } else if (typeof cfgMonths === 'function') {
+          for (let mi = 0; mi < 12; mi++) {
+            const fm = { month: () => mi } as { month: () => number };
+            try {
+              const name = cfgMonths.call((ctx.loc as Record<string, unknown>)._config, fm, 'DD MMMM YYYY');
+              if (typeof name === 'string' && name.toLowerCase() === matched) { idx = mi; break; }
+            } catch {}
+          }
+        }
+      }
+      if (idx < 0) {
+        const noPeriod = matched.replace(/\.$/, '');
+        for (let vi = 0; vi < monthList.length; vi++) {
+          const variants = addCharVariants([monthList[vi]]);
+          if (variants.includes(matched) || variants.map((m: string) => m.replace(/\.$/, '')).includes(noPeriod)) { idx = vi; break; }
+        }
+      }
+      if (idx < 0 && !ctx.strict) {
+        const noPeriod = matched.replace(/\.$/, '');
+        for (let vi = 0; vi < monthListShort.length; vi++) {
+          const variants = addCharVariants([monthListShort[vi]]);
+          if (variants.includes(matched) || variants.map((m: string) => m.replace(/\.$/, '')).includes(noPeriod)) { idx = vi; break; }
+        }
+      }
+      if (idx >= 0) {
+        ctx.result.month = idx;
+        ctx.result._parsedDateParts[1] = idx;
+        ctx.strIdx += match[1].length;
+        return;
+      }
+    }
+  }
+  const enMatch = remaining.match(/^(January|February|March|April|May|June|July|August|September|October|November|December)/i);
+  if (enMatch) {
+    const monthVal = monthNames[enMatch[1].toLowerCase()];
+    if (monthVal !== undefined) {
+      ctx.result.month = monthVal;
+      ctx.result._parsedDateParts[1] = monthVal;
+      ctx.strIdx += enMatch[1].length;
+      return;
+    }
+  }
+  if (!ctx.strict) {
+    const wordMatch = remaining.match(/^\w+/);
+    if (wordMatch) {
+      const monthVal = monthNames[wordMatch[0].toLowerCase()];
+      if (monthVal !== undefined) {
+        ctx.result.month = monthVal;
+        ctx.result._parsedDateParts[1] = monthVal;
+        ctx.strIdx += wordMatch[0].length;
+        return;
+      }
+      ctx.result._invalidMonth = wordMatch[0];
+    }
+  }
+  ctx.failed = true;
+}
+
+function hMMM(ctx: ParseCtx): void {
+  const remaining = ctx.str.slice(ctx.strIdx);
+  const monthListShort = getLocaleMonthsShort(ctx.loc);
+  const monthListFull = getLocaleMonthsFull(ctx.loc);
+  if (monthListShort.length > 0 || monthListFull.length > 0) {
+    const match = remaining.match(getLocaleMonthsShortRegex(ctx.loc, ctx.strict));
+    if (match) {
+      const matched = match[1].toLowerCase();
+      let idx = monthListShort.indexOf(matched);
+      if (!ctx.strict && idx < 0) { idx = monthListFull.indexOf(matched); }
+      if (idx < 0) {
+        const cfgMonths = (ctx.loc._config as Record<string, unknown>).months;
+        if (typeof cfgMonths === 'object' && !Array.isArray(cfgMonths)) {
+          const fmt = (cfgMonths as Record<string, unknown>).format;
+          if (Array.isArray(fmt)) { idx = fmt.map((m: string) => m.toLowerCase()).indexOf(matched); }
+        } else if (typeof cfgMonths === 'function') {
+          for (let mi = 0; mi < 12; mi++) {
+            const fm = { month: () => mi } as { month: () => number };
+            try {
+              const name = cfgMonths.call((ctx.loc as Record<string, unknown>)._config, fm, 'DD MMMM YYYY');
+              if (typeof name === 'string' && name.toLowerCase() === matched) { idx = mi; break; }
+            } catch {}
+          }
+        }
+      }
+      if (idx < 0) {
+        const noPeriod = matched.replace(/\.$/, '');
+        for (let vi = 0; vi < monthListShort.length; vi++) {
+          const variants = addCharVariants([monthListShort[vi]]);
+          if (variants.includes(matched) || variants.map((m: string) => m.replace(/\.$/, '')).includes(noPeriod)) { idx = vi; break; }
+        }
+      }
+      if (idx < 0) {
+        const noPeriod = matched.replace(/\.$/, '');
+        for (let vi = 0; vi < monthListFull.length; vi++) {
+          const variants = addCharVariants([monthListFull[vi]]);
+          if (variants.includes(matched) || variants.map((m: string) => m.replace(/\.$/, '')).includes(noPeriod)) { idx = vi; break; }
+        }
+      }
+      if (idx >= 0) {
+        ctx.result.month = idx;
+        ctx.result._parsedDateParts[1] = idx;
+        ctx.strIdx += match[1].length;
+        return;
+      }
+    }
+  }
+  const enMatch = remaining.match(/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i);
+  if (enMatch) {
+    const monthVal = monthNames[enMatch[1].toLowerCase()];
+    if (monthVal !== undefined) {
+      ctx.result.month = monthVal;
+      ctx.result._parsedDateParts[1] = monthVal;
+      ctx.strIdx += enMatch[1].length;
+      return;
+    }
+  }
+  if (!ctx.strict) {
+    const wordMatch = remaining.match(/^\w+/);
+    if (wordMatch) {
+      const monthVal = monthNames[wordMatch[0].toLowerCase()];
+      if (monthVal !== undefined) {
+        ctx.result.month = monthVal;
+        ctx.result._parsedDateParts[1] = monthVal;
+        ctx.strIdx += wordMatch[0].length;
+        return;
+      }
+      ctx.result._invalidMonth = wordMatch[0];
+    }
+  }
+  ctx.failed = true;
+}
+
+function hd(ctx: ParseCtx): void {
+  const p = p1(ctx.str, ctx.strIdx);
+  if (p !== null) {
+    ctx.result._weekdayNum = p;
+    ctx.strIdx += 1;
+    if (ctx.strict && (p < 0 || p > 6)) { ctx.failed = true; return; }
+    return;
+  }
+  if (!ctx.strict) {
+    const remaining = ctx.str.slice(ctx.strIdx);
+    const looseMatch = remaining.match(/^\w+/);
+    if (looseMatch) {
+      ctx.strIdx += looseMatch[0].length;
+      return;
+    }
+  }
+  ctx.failed = true;
+}
+
+// ===== Dispatch Table =====
+
+const PARSE_DISPATCH: Record<string, TokenHandler> = {
+  YYYYYY: hYYYYYY,
+  YYYYY: hYYYYY,
+  YYYY: hYYYY,
+  yyyy: hYYYY,
+  YY: hYY,
+  Y: hY,
+  y: hEraYear,
+  yy: hEraYear,
+  yyy: hEraYear,
+  yo: hYo,
+  N: hN,
+  NN: hN,
+  NNN: hN,
+  NNNN: hNNNN,
+  NNNNN: hNNNNN,
+  MMMM: hMMMM,
+  MMM: hMMM,
+  MM: hMM,
+  M: hM,
+  DD: hDD,
+  D: hD,
+  Do: hDo,
+  dddd: hdddd,
+  ddd: hddd,
+  dd: hdd,
+  d: hd,
+  E: hE,
+  e: he,
+  Q: hQ,
+  HH: hHH,
+  H: hH,
+  hh: hhh,
+  h: hh,
+  kk: hkk,
+  k: hk,
+  mm: hmm,
+  m: hm,
+  ss: hss,
+  s: hs,
+  SSSSSSSSS: hS,
+  SSSSSSSS: hS,
+  SSSSSSS: hS,
+  SSSSSS: hS,
+  SSSSS: hS,
+  SSSS: hS,
+  SSS: hS,
+  SS: hS,
+  S: hS,
+  A: hA,
+  a: hA,
+  Z: hZ,
+  ZZ: hZ,
+  X: hX,
+  x: hx,
+  DDD: hDDD,
+  DDDD: hDDD,
+  GGGG: hGGGG,
+  gggg: hgggg,
+  GG: hGG,
+  gg: hgg,
+  WW: hWW,
+  ww: hww,
+  W: hW,
+  w: hw,
+  hmm: hhmm,
+  hmmss: hhmmss,
+  Hmm: hHmm,
+  Hmmss: hHmmss,
+};
 
 function parseWithFormat(
   str: string,
@@ -756,14 +1829,19 @@ function parseWithFormat(
 
   let strIdx = 0;
   let failed = false;
-  let failedAt = -1;
   let tokenIndex = -1;
 
+  const ctx: ParseCtx = {
+    str, strIdx, strict: strict || false, loc, result,
+    _seenUnusedTokens, failed: false, tokenIndex, tokens,
+  };
+
   for (const token of tokens) {
-    tokenIndex++;
-    if (strIdx > str.length) {
-      break;
-    }
+    tokenIndex++; ctx.tokenIndex = tokenIndex;
+    ctx.strIdx = strIdx;
+    ctx.failed = false;
+
+    if (strIdx > str.length) { break; }
 
     if (token.type === "literal") {
       const val = token.value || "";
@@ -818,7 +1896,6 @@ function parseWithFormat(
             strIdx = sepIdx + trimmedVal.length;
           }
         } else {
-          // trimmedVal is alphanumeric — use indexOf (native) to find it
           const matchIdx = str.indexOf(trimmedVal, strIdx);
           if (matchIdx !== -1) {
             let hasAlphaBefore = false;
@@ -852,22 +1929,17 @@ function parseWithFormat(
       break;
     }
 
+    // Pre-scan: skip non-matching chars for lenient parsing
     if (token.type === "token" && token.name) {
-        const nameToken =
-          token.name === "MMMM" ||
-          token.name === "MMM" ||
-          token.name === "dddd" ||
-          token.name === "ddd" ||
-          token.name === "dd" ||
-          token.name === "Do";
+      const nameToken =
+        token.name === "MMMM" || token.name === "MMM" ||
+        token.name === "dddd" || token.name === "ddd" ||
+        token.name === "dd" || token.name === "Do";
       const digitLike = /^[YMDWHhmsSXxk]/.test(token.name) && !nameToken;
       if (digitLike) {
         const canHandleSign =
-          (token.name === "YYYYYY" ||
-            token.name === "YYYYY" ||
-            token.name === "YYYY" ||
-            token.name === "yyyy" ||
-            token.name === "Y") &&
+          (token.name === "YYYYYY" || token.name === "YYYYY" ||
+           token.name === "YYYY" || token.name === "yyyy" || token.name === "Y") &&
           strIdx === 0;
         const ch0 = str.charCodeAt(strIdx);
         if ((ch0 < 48 || ch0 > 57) && !canHandleSign) {
@@ -896,11 +1968,8 @@ function parseWithFormat(
           }
         }
       } else if (
-        token.name === "MMMM" ||
-        token.name === "MMM" ||
-        token.name === "dddd" ||
-        token.name === "ddd" ||
-        token.name === "dd"
+        token.name === "MMMM" || token.name === "MMM" ||
+        token.name === "dddd" || token.name === "ddd" || token.name === "dd"
       ) {
         const ch0 = str.charCodeAt(strIdx);
         const isLetterOrDigit = (ch0 >= 65 && ch0 <= 90) || (ch0 >= 97 && ch0 <= 122) || (ch0 >= 48 && ch0 <= 57) || ch0 === 126 || ch0 === 700 || ch0 === 39;
@@ -933,1037 +2002,13 @@ function parseWithFormat(
       }
     }
 
-    let remaining = str.substring(strIdx);
-
-    switch (token.name) {
-      case "YYYYYY": {
-        const yMatch = remaining.match(/^([+-]?\d{1,6})/);
-        if (!yMatch) {
-          failed = true;
-          break;
-        }
-        if (strict) {
-          const digitPart = yMatch[1].replace(/^[+-]/, "");
-          if (digitPart.length !== 6) {
-            failed = true;
-            break;
-          }
-        }
-        let y = parseInt(yMatch[1], 10);
-        result.year = y;
-        result._parsedDateParts[0] = y;
-        strIdx += yMatch[1].length;
-        break;
-      }
-      case "YYYYY": {
-        const yMatch = remaining.match(/^([+-]?\d{1,6})/);
-        if (!yMatch) {
-          failed = true;
-          break;
-        }
-        if (strict) {
-          const digitPart = yMatch[1].replace(/^[+-]/, "");
-          if (digitPart.length < 5 || digitPart.length > 6) {
-            failed = true;
-            break;
-          }
-        }
-        let y = parseInt(yMatch[1], 10);
-        result.year = y;
-        result._parsedDateParts[0] = y;
-        strIdx += yMatch[1].length;
-        break;
-      }
-      case "YYYY":
-      case "yyyy": {
-        let sign = '';
-        if ((remaining.charCodeAt(0) === 43 || remaining.charCodeAt(0) === 45) && !strict) {
-          sign = remaining[0];
-          strIdx++;
-          remaining = str.slice(strIdx);
-        }
-        const yMatch = remaining.match(/^(\d{1,4})/);
-        if (!yMatch) {
-          failed = true;
-          break;
-        }
-        if (strict && yMatch[1].length !== 4) {
-          failed = true;
-          break;
-        }
-        let y = parseInt(yMatch[1], 10);
-        if (yMatch[1].length === 2 && !sign) {
-          y = y > 68 ? 1900 + y : 2000 + y;
-        }
-        result.year = sign ? parseInt(sign + yMatch[1], 10) : y;
-        result._parsedDateParts[0] = result.year;
-        strIdx += yMatch[1].length;
-        if (sign) {result._unusedInput.push(sign);}
-        break;
-      }
-      case "YY": {
-        const match = timedMatch(remaining, /^(\d{1,2})/, 2, strict);
-        if (!match) {
-          failed = true;
-          break;
-        }
-        const yStr = match[1];
-        if (parseTwoDigitYearFn) {
-          result.year = parseTwoDigitYearFn(yStr);
-        } else {
-          const y = parseInt(yStr, 10);
-          result.year = y > 68 ? 1900 + y : 2000 + y;
-        }
-        result._parsedDateParts[0] = result.year;
-        strIdx += match[1].length;
-        break;
-      }
-      case "Y": {
-        const match = remaining.match(/^([+-]?\d+)/);
-        if (!match) {
-          failed = true;
-          break;
-        }
-        result.year = parseInt(match[1], 10);
-        result._parsedDateParts[0] = result.year;
-        strIdx += match[1].length;
-        break;
-      }
-      case "y":
-      case "yy":
-      case "yyy": {
-        const yMatch = remaining.match(/^(\d+)/);
-        if (!yMatch) {
-          failed = true;
-          break;
-        }
-        result._eraYear = parseInt(yMatch[1], 10);
-        result._parsedDateParts[0] = result._eraYear;
-        strIdx += yMatch[1].length;
-        break;
-      }
-      case "yo": {
-        const eras = (loc._config as Record<string, unknown>).eras;
-        const eraOrdinalRegex =
-          eras && (loc._config as Record<string, unknown>).eraYearOrdinalParse
-            ? (loc._config as Record<string, unknown>).eraYearOrdinalRegex || /(\d+)/
-            : /(\d+)/;
-        const yoMatch = remaining.match(eraOrdinalRegex);
-        if (!yoMatch) {
-          failed = true;
-          break;
-        }
-        const eraParseFn = (loc._config as Record<string, unknown>).eraYearOrdinalParse;
-        if (eraParseFn) {
-          result._eraYear = eraParseFn(remaining, yoMatch);
-        } else {
-          result._eraYear = parseInt(yoMatch[1] || yoMatch[0], 10);
-        }
-        result._parsedDateParts[0] = result._eraYear;
-        strIdx += yoMatch[0].length;
-        break;
-      }
-      case "N":
-      case "NN":
-      case "NNN": {
-        const erasList = (loc._config as Record<string, unknown>).eras;
-        if (erasList && Array.isArray(erasList)) {
-          const names = strict
-            ? erasList.map((e: Record<string, unknown>) => e.abbr).filter(Boolean)
-            : [...new Set(erasList.flatMap((e: Record<string, unknown>) => [e.abbr, e.name, e.narrow].filter(Boolean)))];
-          const regex = new RegExp(`^(${  names.map(escapeRegex).join("|")  })`);
-          const nMatch = remaining.match(regex);
-          if (nMatch) {
-            const matchedName = nMatch[1];
-            const era = erasList.find(
-              (e: Record<string, unknown>) => e.abbr === matchedName || e.name === matchedName || e.narrow === matchedName
-            );
-            if (era) {result._era = era;}
-            strIdx += nMatch[1].length;
-            break;
-          }
-        }
-        failed = true;
-        break;
-      }
-      case "NNNN": {
-        const erasWide = (loc._config as Record<string, unknown>).eras;
-        if (erasWide && Array.isArray(erasWide)) {
-          const names = erasWide.map((e: Record<string, unknown>) => e.name).filter(Boolean);
-          const regex = new RegExp(`^(${  names.map(escapeRegex).join("|")  })`);
-          const nMatch = remaining.match(regex);
-          if (nMatch) {
-            const matched = nMatch[1];
-            const era = erasWide.find((e: Record<string, unknown>) => e.name === matched);
-            if (era) {result._era = era;}
-            strIdx += nMatch[1].length;
-            break;
-          }
-        }
-        failed = true;
-        break;
-      }
-      case "NNNNN": {
-        const erasNarrow = (loc._config as Record<string, unknown>).eras;
-        if (erasNarrow && Array.isArray(erasNarrow)) {
-          const names = erasNarrow.map((e: Record<string, unknown>) => e.narrow).filter(Boolean);
-          const regex = new RegExp(`^(${  names.map(escapeRegex).join("|")  })`);
-          const nMatch = remaining.match(regex);
-          if (nMatch) {
-            const matched = nMatch[1];
-            const era = erasNarrow.find((e: Record<string, unknown>) => e.narrow === matched);
-            if (era) {result._era = era;}
-            strIdx += nMatch[1].length;
-            break;
-          }
-        }
-        failed = true;
-        break;
-      }
-      case "MMMM": {
-        const monthList = getLocaleMonthsFull(loc);
-        const monthListShort = getLocaleMonthsShort(loc);
-        if (monthList.length > 0) {
-          const match = remaining.match(getLocaleMonthsFullRegex(loc, strict));
-          if (match) {
-            const matched = match[1].toLowerCase();
-            let idx = monthList.indexOf(matched);
-            if (!strict && idx < 0) {
-              idx = monthListShort.indexOf(matched);
-            }
-            if (idx < 0) {
-              const cfgMonths = (loc._config as Record<string, unknown>).months;
-              if (typeof cfgMonths === 'object' && !Array.isArray(cfgMonths)) {
-                const fmt = (cfgMonths as Record<string, unknown>).format;
-                if (Array.isArray(fmt)) {idx = fmt.map((m: string) => m.toLowerCase()).indexOf(matched);}
-              } else if (typeof cfgMonths === 'function') {
-                for (let mi = 0; mi < 12; mi++) {
-                  const fm = { month: () => mi } as { month: () => number };
-                  try {
-                    const name = cfgMonths.call((loc as Record<string, unknown>)._config, fm, 'DD MMMM YYYY');
-                    if (typeof name === 'string' && name.toLowerCase() === matched) { idx = mi; break; }
-                  } catch {}
-                }
-              }
-            }
-            if (idx < 0) {
-              const noPeriod = matched.replace(/\.$/, '');
-              for (let vi = 0; vi < monthList.length; vi++) {
-                const variants = addCharVariants([monthList[vi]]);
-                if (variants.includes(matched) || variants.map((m: string) => m.replace(/\.$/, '')).includes(noPeriod)) { idx = vi; break; }
-              }
-            }
-            if (idx < 0 && !strict) {
-              const noPeriod = matched.replace(/\.$/, '');
-              for (let vi = 0; vi < monthListShort.length; vi++) {
-                const variants = addCharVariants([monthListShort[vi]]);
-                if (variants.includes(matched) || variants.map((m: string) => m.replace(/\.$/, '')).includes(noPeriod)) { idx = vi; break; }
-              }
-            }
-            if (idx >= 0) {
-              result.month = idx;
-              result._parsedDateParts[1] = idx;
-              strIdx += match[1].length;
-              break;
-            }
-          }
-        }
-        const enMatch = remaining.match(
-          /^(January|February|March|April|May|June|July|August|September|October|November|December)/i,
-        );
-        if (enMatch) {
-          const monthVal = monthNames[enMatch[1].toLowerCase()];
-          if (monthVal !== undefined) {
-            result.month = monthVal;
-            result._parsedDateParts[1] = monthVal;
-            strIdx += enMatch[1].length;
-            break;
-          }
-        }
-        if (!strict) {
-          const wordMatch = remaining.match(/^\w+/);
-          if (wordMatch) {
-            const monthVal = monthNames[wordMatch[0].toLowerCase()];
-            if (monthVal !== undefined) {
-              result.month = monthVal;
-              result._parsedDateParts[1] = monthVal;
-              strIdx += wordMatch[0].length;
-              break;
-            }
-            result._invalidMonth = wordMatch[0];
-          }
-        }
-        failed = true;
-        break;
-      }
-      case "MMM": {
-        const monthListShort = getLocaleMonthsShort(loc);
-        const monthListFull = getLocaleMonthsFull(loc);
-        if (monthListShort.length > 0 || monthListFull.length > 0) {
-          const match = remaining.match(getLocaleMonthsShortRegex(loc, strict));
-          if (match) {
-            const matched = match[1].toLowerCase();
-            let idx = monthListShort.indexOf(matched);
-            if (!strict && idx < 0) {
-              idx = monthListFull.indexOf(matched);
-            }
-            if (idx < 0) {
-              const cfgMonths = (loc._config as Record<string, unknown>).months;
-              if (typeof cfgMonths === 'object' && !Array.isArray(cfgMonths)) {
-                const fmt = (cfgMonths as Record<string, unknown>).format;
-                if (Array.isArray(fmt)) {idx = fmt.map((m: string) => m.toLowerCase()).indexOf(matched);}
-              } else if (typeof cfgMonths === 'function') {
-                for (let mi = 0; mi < 12; mi++) {
-                  const fm = { month: () => mi } as { month: () => number };
-                  try {
-                    const name = cfgMonths.call((loc as Record<string, unknown>)._config, fm, 'DD MMMM YYYY');
-                    if (typeof name === 'string' && name.toLowerCase() === matched) { idx = mi; break; }
-                  } catch {}
-                }
-              }
-            }
-            if (idx < 0) {
-              const noPeriod = matched.replace(/\.$/, '');
-              for (let vi = 0; vi < monthListShort.length; vi++) {
-                const variants = addCharVariants([monthListShort[vi]]);
-                if (variants.includes(matched) || variants.map((m: string) => m.replace(/\.$/, '')).includes(noPeriod)) { idx = vi; break; }
-              }
-            }
-            if (idx < 0) {
-              const noPeriod = matched.replace(/\.$/, '');
-              for (let vi = 0; vi < monthListFull.length; vi++) {
-                const variants = addCharVariants([monthListFull[vi]]);
-                if (variants.includes(matched) || variants.map((m: string) => m.replace(/\.$/, '')).includes(noPeriod)) { idx = vi; break; }
-              }
-            }
-            if (idx >= 0) {
-              result.month = idx;
-              result._parsedDateParts[1] = idx;
-              strIdx += match[1].length;
-              break;
-            }
-          }
-        }
-        const enMatch = remaining.match(/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i);
-        if (enMatch) {
-          const monthVal = monthNames[enMatch[1].toLowerCase()];
-          if (monthVal !== undefined) {
-            result.month = monthVal;
-            result._parsedDateParts[1] = monthVal;
-            strIdx += enMatch[1].length;
-            break;
-          }
-        }
-        if (!strict) {
-          const wordMatch = remaining.match(/^\w+/);
-          if (wordMatch) {
-            const monthVal = monthNames[wordMatch[0].toLowerCase()];
-            if (monthVal !== undefined) {
-              result.month = monthVal;
-              result._parsedDateParts[1] = monthVal;
-              strIdx += wordMatch[0].length;
-              break;
-            }
-            result._invalidMonth = wordMatch[0];
-          }
-        }
-        failed = true;
-        break;
-      }
-      case "MM": {
-        const p = parseTwo(str, strIdx);
-        if (!p || (strict && p.len !== 2)) {
-          failed = true;
-          break;
-        }
-        result.month = p.v - 1;
-        result._parsedDateParts[1] = result.month;
-        strIdx += p.len;
-        break;
-      }
-      case "M": {
-        const p = parseTwo(str, strIdx);
-        if (!p) {
-          failed = true;
-          break;
-        }
-        if (strict && p.len === 2 && str.charCodeAt(strIdx) === 48) {
-          failed = true;
-          break;
-        }
-        result.month = p.v - 1;
-        result._parsedDateParts[1] = result.month;
-        strIdx += p.len;
-        break;
-      }
-      case "DD": {
-        const p = parseTwo(str, strIdx);
-        if (!p || (strict && p.len !== 2)) {
-          failed = true;
-          break;
-        }
-        result.day = p.v;
-        result._parsedDateParts[2] = result.day;
-        strIdx += p.len;
-        break;
-      }
-      case "D": {
-        const p = parseTwo(str, strIdx);
-        if (!p) {
-          failed = true;
-          break;
-        }
-        if (strict && p.len === 2 && str.charCodeAt(strIdx) === 48) {
-          failed = true;
-          break;
-        }
-        result.day = p.v;
-        result._parsedDateParts[2] = result.day;
-        strIdx += p.len;
-        break;
-      }
-      case "Do": {
-        const ordinalParse = (loc._config as Record<string, unknown>).dayOfMonthOrdinalParse;
-        let match: RegExpMatchArray | null = null;
-
-        if (ordinalParse instanceof RegExp) {
-          match = remaining.match(new RegExp(`^(?:${  ordinalParse.source  })`));
-        }
-        if (!match) {
-          match = remaining.match(/^(\d{1,2})(?:st|nd|rd|th)?/i);
-        }
-        if (!match) {
-          failed = true;
-          break;
-        }
-        const digitStr = (match[0].match(/\d{1,2}/) || [])[0];
-        if (!digitStr) {
-          failed = true;
-          break;
-        }
-        result.day = parseInt(digitStr, 10);
-        result._parsedDateParts[2] = result.day;
-        strIdx += match[0].length;
-        break;
-      }
-      case "dddd": {
-        const wdList = getLocaleWeekdaysFull(loc);
-        let matched = false;
-        if (wdList.length > 0) {
-          const match = remaining.match(getLocaleWeekdaysFullRegex(loc));
-          if (match) {
-            const matchedName = match[1].toLowerCase();
-            let idx = wdList.indexOf(matchedName);
-            if (idx < 0) {
-              for (let vi = 0; vi < wdList.length; vi++) {
-                const v = addCharVariants([wdList[vi]]);
-                if (v.includes(matchedName)) { idx = vi; break; }
-              }
-            }
-            if (idx >= 0) {
-              matched = true;
-              result._weekdayName = match[1];
-              result._weekdayNum = idx;
-            }
-            strIdx += match[0].length;
-            break;
-          }
-        }
-        const enMatch = remaining.match(
-          /^(Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)/i,
-        );
-        if (enMatch) {
-          matched = true;
-          result._weekdayName = enMatch[1];
-          const num = WEEKDAY_NAMES_MAP[enMatch[1].toLowerCase().substring(0, 3)];
-          if (num !== undefined) {result._weekdayNum = num;}
-          strIdx += enMatch[0].length;
-          break;
-        }
-        if (!strict) {
-          const looseMatch = remaining.match(/^\w+/);
-          if (looseMatch) {
-            strIdx += looseMatch[0].length;
-            break;
-          }
-        }
-        if (!matched) {failed = true;}
-        break;
-      }
-      case "ddd": {
-        const wdList = getLocaleWeekdaysShort(loc);
-        let matched = false;
-        if (wdList.length > 0) {
-          const regex = getLocaleWeekdaysShortRegex(loc);
-          const match = remaining.match(regex);
-          if (match) {
-            const matchedName = match[1].toLowerCase();
-            let idx = wdList.indexOf(matchedName);
-            if (idx < 0) {
-              for (let vi = 0; vi < wdList.length; vi++) {
-                const v = addCharVariants([wdList[vi]]);
-                if (v.includes(matchedName)) { idx = vi; break; }
-              }
-            }
-            if (idx >= 0) {
-              matched = true;
-              result._weekdayName = match[1];
-              result._weekdayNum = idx;
-            }
-            strIdx += match[0].length;
-            break;
-          }
-        }
-        const enMatch = remaining.match(/^(Sun|Mon|Tue|Wed|Thu|Fri|Sat)/i);
-        if (enMatch) {
-          matched = true;
-          result._weekdayName = enMatch[1];
-          const num = WEEKDAY_NAMES_MAP[enMatch[1].toLowerCase().substring(0, 3)];
-          if (num !== undefined) {result._weekdayNum = num;}
-          strIdx += enMatch[0].length;
-          break;
-        }
-        if (!strict) {
-          const looseMatch = remaining.match(/^\w+/);
-          if (looseMatch) {
-            strIdx += looseMatch[0].length;
-            break;
-          }
-        }
-        if (!matched) {failed = true;}
-        break;
-      }
-      case "dd": {
-        const wdList = getLocaleWeekdaysMin(loc);
-        let matched = false;
-        if (wdList.length > 0) {
-          const match = remaining.match(getLocaleWeekdaysMinRegex(loc));
-          if (match) {
-            const matchedName = match[1].toLowerCase();
-            let idx = wdList.indexOf(matchedName);
-            if (idx < 0) {
-              for (let vi = 0; vi < wdList.length; vi++) {
-                const v = addCharVariants([wdList[vi]]);
-                if (v.includes(matchedName)) { idx = vi; break; }
-              }
-            }
-            if (idx >= 0) {
-              matched = true;
-              result._weekdayName = match[1];
-              result._weekdayNum = idx;
-            }
-            strIdx += match[0].length;
-            break;
-          }
-        }
-        const enLoose = remaining.match(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)/i);
-        if (enLoose || !strict) {
-          const looseMatch = enLoose || remaining.match(/^\w+/);
-          if (looseMatch) {
-            strIdx += looseMatch[0].length;
-            break;
-          }
-        }
-        if (!matched) {failed = true;}
-        break;
-      }
-      case "d": {
-        const match = remaining.match(/^(\d)/);
-        if (match) {
-          const dv = parseInt(match[1], 10);
-          result._weekdayNum = dv;
-          strIdx += match[1].length;
-          if (strict && (dv < 0 || dv > 6)) {
-            failed = true;
-          }
-          break;
-        }
-        if (!strict) {
-          const looseMatch = remaining.match(/^\w+/);
-          if (looseMatch) {
-            strIdx += looseMatch[0].length;
-            break;
-          }
-        }
-        failed = true;
-        break;
-      }
-      case "HH": {
-        const p = parseTwo(str, strIdx);
-        if (!p || (strict && p.len !== 2)) {
-          failed = true;
-          break;
-        }
-        result.hour = p.v;
-        result._parsedDateParts[3] = result.hour;
-        strIdx += p.len;
-        break;
-      }
-      case "H": {
-        const p = parseTwo(str, strIdx);
-        if (!p) {
-          failed = true;
-          break;
-        }
-        if (strict && p.len === 2 && str.charCodeAt(strIdx) === 48) {
-          failed = true;
-          break;
-        }
-        result.hour = p.v;
-        result._parsedDateParts[3] = result.hour;
-        strIdx += p.len;
-        break;
-      }
-      case "kk": {
-        const p = parseTwo(str, strIdx);
-        if (!p || (strict && p.len !== 2)) {
-          failed = true;
-          break;
-        }
-        if (p.v === 24) {
-          result.hour = 0;
-          result._parsedDateParts[3] = 24;
-        } else {
-          result.hour = p.v;
-          result._parsedDateParts[3] = p.v;
-        }
-        strIdx += p.len;
-        break;
-      }
-      case "k": {
-        const p = parseTwo(str, strIdx);
-        if (!p) {
-          failed = true;
-          break;
-        }
-        if (strict && p.len === 2 && str.charCodeAt(strIdx) === 48) {
-          failed = true;
-          break;
-        }
-        if (p.v === 24) {
-          result.hour = 0;
-          result._parsedDateParts[3] = 24;
-        } else {
-          result.hour = p.v;
-          result._parsedDateParts[3] = p.v;
-        }
-        strIdx += p.len;
-        break;
-      }
-      case "hh": {
-        const p = parseTwo(str, strIdx);
-        if (!p || (strict && p.len !== 2)) {
-          failed = true;
-          break;
-        }
-        if (strict && p.v === 0) {
-          failed = true;
-          break;
-        }
-        result.hour = p.v;
-        result._parsedDateParts[3] = p.v;
-        if (p.v > 12) {
-          result.bigHour = true;
-          if (strict) {
-            failed = true;
-            break;
-          }
-        }
-        strIdx += p.len;
-        break;
-      }
-      case "h": {
-        const p = parseTwo(str, strIdx);
-        if (!p) {
-          failed = true;
-          break;
-        }
-        if (strict) {
-          if (p.len === 2 && str.charCodeAt(strIdx) === 48) {
-            failed = true;
-            break;
-          }
-          if (p.v === 0) {
-            failed = true;
-            break;
-          }
-        }
-        result.hour = p.v;
-        result._parsedDateParts[3] = p.v;
-        if (p.v > 12) {
-          result.bigHour = true;
-          if (strict) {
-            failed = true;
-            break;
-          }
-        }
-        strIdx += p.len;
-        break;
-      }
-      case "mm": {
-        const p = parseTwo(str, strIdx);
-        if (!p || (strict && p.len !== 2)) {
-          failed = true;
-          break;
-        }
-        result.minute = p.v;
-        result._parsedDateParts[4] = result.minute;
-        strIdx += p.len;
-        break;
-      }
-      case "m": {
-        const p = parseTwo(str, strIdx);
-        if (!p) {
-          failed = true;
-          break;
-        }
-        if (strict && p.len === 2 && str.charCodeAt(strIdx) === 48) {
-          failed = true;
-          break;
-        }
-        result.minute = p.v;
-        result._parsedDateParts[4] = result.minute;
-        strIdx += p.len;
-        break;
-      }
-      case "ss": {
-        const p = parseTwo(str, strIdx);
-        if (!p || (strict && p.len !== 2)) {
-          failed = true;
-          break;
-        }
-        result.second = p.v;
-        result._parsedDateParts[5] = result.second;
-        strIdx += p.len;
-        break;
-      }
-      case "s": {
-        const p = parseTwo(str, strIdx);
-        if (!p) {
-          failed = true;
-          break;
-        }
-        if (strict && p.len === 2 && str.charCodeAt(strIdx) === 48) {
-          failed = true;
-          break;
-        }
-        result.second = p.v;
-        result._parsedDateParts[5] = result.second;
-        strIdx += p.len;
-        break;
-      }
-      case "SSSSSSSSS":
-      case "SSSSSSSS":
-      case "SSSSSSS":
-      case "SSSSSS":
-      case "SSSSS":
-      case "SSSS":
-      case "SSS":
-      case "SS":
-      case "S": {
-        const maxDigits = token.name.length;
-        const match = timedMatch(
-          remaining,
-          new RegExp(`^(\\d{1,${  maxDigits  }})`),
-          strict ? maxDigits : undefined,
-          strict,
-        );
-        if (!match) {
-          failed = true;
-          break;
-        }
-        result.millisecond = parseInt(match[1].slice(0, 3).padEnd(3, "0"), 10);
-        result._parsedDateParts[6] = result.millisecond;
-        strIdx += match[1].length;
-        break;
-      }
-      case "A":
-      case "a": {
-        const ampmReg = loc.meridiemParse() || /[ap]\.?m?\.?/i;
-        const match = remaining.match(ampmReg);
-        if (!match) {
-          failed = true;
-          break;
-        }
-      result.amp = match[0].toLowerCase();
-      result._meridiem = match[0];
-        strIdx += match[0].length;
-        break;
-      }
-      case "Z":
-      case "ZZ": {
-        if (!strict) {
-          const zTrimMatch = remaining.match(/^\s+/);
-          if (zTrimMatch) {
-            result._unusedInput.push(zTrimMatch[0]);
-            strIdx += zTrimMatch[0].length;
-            remaining = str.substring(strIdx);
-          }
-        }
-        const match = remaining.match(/^([+-]\d{2}:?\d{2}|Z)/);
-        if (!match) {
-          failed = true;
-          break;
-        }
-        if (match[1] === "Z") {
-          result.offset = 0;
-        } else {
-          const cleaned = match[1].replace(":", "");
-          const sign = cleaned[0] === "+" ? 1 : -1;
-          const tzHour = parseInt(cleaned.substring(1, 3), 10);
-          const tzMin = parseInt(cleaned.substring(3, 5), 10);
-          result.offset = sign * (tzHour * 60 + tzMin);
-        }
-        strIdx += match[1].length;
-        break;
-      }
-      case "X": {
-        const match = remaining.match(/^(-?\d+(?:\.\d+)?)/);
-        if (!match) {
-          failed = true;
-          break;
-        }
-        const ts = parseFloat(match[1]) * 1000;
-        const d = new Date(ts);
-        result.year = d.getUTCFullYear();
-        result.month = d.getUTCMonth();
-        result.day = d.getUTCDate();
-        result.hour = d.getUTCHours();
-        result.minute = d.getUTCMinutes();
-        result.second = d.getUTCSeconds();
-        result.millisecond = d.getUTCMilliseconds();
-        strIdx += match[1].length;
-        break;
-      }
-      case "x": {
-        const match = remaining.match(/^(-?\d+)/);
-        if (!match) {
-          failed = true;
-          break;
-        }
-        const ts = parseInt(match[1], 10);
-        const d = new Date(ts);
-        result.year = d.getUTCFullYear();
-        result.month = d.getUTCMonth();
-        result.day = d.getUTCDate();
-        result.hour = d.getUTCHours();
-        result.minute = d.getUTCMinutes();
-        result.second = d.getUTCSeconds();
-        result.millisecond = d.getUTCMilliseconds();
-        strIdx += match[1].length;
-        break;
-      }
-      case "E": {
-        const match = remaining.match(/^(\d{1,2})/);
-        if (match) {
-          const eVal = parseInt(match[1], 10);
-          if (strict && eVal === 0) {
-            failed = true;
-            break;
-          }
-          result._weekdayNum = eVal;
-          result._parsedDateParts[7] = eVal;
-          strIdx += match[1].length;
-          break;
-        }
-        failed = true;
-        break;
-      }
-        case "e": {
-          const match = remaining.match(/^(\d{1,2})/);
-          if (match) {
-            const ev = parseInt(match[1], 10);
-            result._parsedDateParts[7] = ev;
-            result._localeWeekday = ev;
-            result._weekdayNum = ev;
-            strIdx += match[1].length;
-            if (strict && match[1].length === 2 && match[1][0] === "0") {
-              failed = true;
-              break;
-            }
-            if (strict && (ev < 0 || ev > 6)) {
-              result.overflow = 8;
-              failed = true;
-            }
-            break;
-          }
-          failed = true;
-          break;
-        }
-      case "Q": {
-        const match = remaining.match(/^(\d)/);
-        if (!match) {
-          failed = true;
-          break;
-        }
-        result.quarter = parseInt(match[1], 10);
-        strIdx += match[1].length;
-        break;
-      }
-      case "DDD":
-      case "DDDD": {
-        const match = remaining.match(/^(\d{3})/);
-        if (!match) {
-          failed = true;
-          break;
-        }
-        const dayOfYearNum = parseInt(match[1], 10);
-        result.dayOfYear = dayOfYearNum;
-        strIdx += 3;
-        break;
-      }
-      case "GGGG": {
-        const match = remaining.match(/^(\d{4})/);
-        if (!match) {
-          failed = true;
-          break;
-        }
-        result.isoWeekYear = parseInt(match[1], 10);
-        strIdx += match[1].length;
-        break;
-      }
-      case "gggg": {
-        const match = remaining.match(/^(\d{4})/);
-        if (!match) {
-          failed = true;
-          break;
-        }
-        result._weekYear = parseInt(match[1], 10);
-        strIdx += match[1].length;
-        break;
-      }
-      case "GG": {
-        const match = remaining.match(/^(\d{2})/);
-        if (!match) {
-          failed = true;
-          break;
-        }
-        const y = parseInt(match[1], 10);
-        result.isoWeekYear = y > 68 ? 1900 + y : 2000 + y;
-        strIdx += match[1].length;
-        break;
-      }
-      case "gg": {
-        const match = remaining.match(/^(\d{2})/);
-        if (!match) {
-          failed = true;
-          break;
-        }
-        const y = parseInt(match[1], 10);
-        result._weekYear = y > 68 ? 1900 + y : 2000 + y;
-        strIdx += match[1].length;
-        break;
-      }
-      case "WW": {
-        const match = remaining.match(/^(\d{2})/);
-        if (!match) {
-          failed = true;
-          break;
-        }
-        result.isoWeek = parseInt(match[1], 10);
-        strIdx += match[1].length;
-        break;
-      }
-      case "ww": {
-        const match = remaining.match(/^(\d{2})/);
-        if (!match) {
-          failed = true;
-          break;
-        }
-        result._week = parseInt(match[1], 10);
-        strIdx += match[1].length;
-        break;
-      }
-      case "W": {
-        const match = remaining.match(/^(\d{1,2})/);
-        if (!match) {
-          failed = true;
-          break;
-        }
-        if (strict && match[1].length === 2 && match[1][0] === "0") {
-          failed = true;
-          break;
-        }
-        result.isoWeek = parseInt(match[1], 10);
-        strIdx += match[1].length;
-        break;
-      }
-      case "w": {
-        const match = remaining.match(/^(\d{1,2})/);
-        if (!match) {
-          failed = true;
-          break;
-        }
-        if (strict && match[1].length === 2 && match[1][0] === "0") {
-          failed = true;
-          break;
-        }
-        result._week = parseInt(match[1], 10);
-        strIdx += match[1].length;
-        break;
-      }
-      case "hmm": {
-        const match = remaining.match(/^(\d{1,2})(\d{2})/);
-        if (!match) {
-          failed = true;
-          break;
-        }
-        const hVal = parseInt(match[1], 10);
-        if (hVal > 12) {result.bigHour = true;}
-        result.hour = hVal;
-        result._parsedDateParts[3] = hVal;
-        result.minute = parseInt(match[2], 10);
-        result._parsedDateParts[4] = result.minute;
-        strIdx += match[0].length;
-        break;
-      }
-      case "hmmss": {
-        const match = remaining.match(/^(\d{1,2})(\d{2})(\d{2})/);
-        if (!match) {
-          failed = true;
-          break;
-        }
-        const hVal = parseInt(match[1], 10);
-        if (hVal > 12) {result.bigHour = true;}
-        result.hour = hVal;
-        result._parsedDateParts[3] = hVal;
-        result.minute = parseInt(match[2], 10);
-        result._parsedDateParts[4] = result.minute;
-        result.second = parseInt(match[3], 10);
-        result._parsedDateParts[5] = result.second;
-        strIdx += match[0].length;
-        break;
-      }
-      case "Hmm": {
-        const match = remaining.match(/^(\d{1,2})(\d{2})/);
-        if (!match) {
-          failed = true;
-          break;
-        }
-        result.hour = parseInt(match[1], 10);
-        result._parsedDateParts[3] = result.hour;
-        result.minute = parseInt(match[2], 10);
-        result._parsedDateParts[4] = result.minute;
-        strIdx += match[0].length;
-        break;
-      }
-      case "Hmmss": {
-        const match = remaining.match(/^(\d{1,2})(\d{2})(\d{2})/);
-        if (!match) {
-          failed = true;
-          break;
-        }
-        result.hour = parseInt(match[1], 10);
-        result._parsedDateParts[3] = result.hour;
-        result.minute = parseInt(match[2], 10);
-        result._parsedDateParts[4] = result.minute;
-        result.second = parseInt(match[3], 10);
-        result._parsedDateParts[5] = result.second;
-        strIdx += match[0].length;
-        break;
-      }
-      default:
-        break;
+    // Dispatch to token handler
+    const handler = token.type === "token" && token.name ? PARSE_DISPATCH[token.name] : undefined;
+    if (handler) {
+      ctx.strIdx = strIdx;
+      handler(ctx);
+      strIdx = ctx.strIdx;
+      failed = ctx.failed;
     }
 
     if (failed) {
@@ -1985,7 +2030,7 @@ function parseWithFormat(
       } else if ((token as Record<string, unknown>).type === "literal" && (token as Record<string, unknown>).value) {
         result._unusedTokens.push((token as Record<string, unknown>).value.trim());
       }
-      const skipMatch = remaining.match(/^[^\p{L}\d]+/u);
+      const skipMatch = str.slice(strIdx).match(/^[^\p{L}\d]+/u);
       if (skipMatch) {
         result._unusedInput.push(skipMatch[0]);
         strIdx += skipMatch[0].length;
@@ -2007,7 +2052,6 @@ function parseWithFormat(
     }
   }
 
-  // Convert era + eraYear to absolute year
   if (result._era && result._eraYear !== undefined) {
     const era = result._era;
     const sinceStr = era.since ? String(era.since) : null;
@@ -2057,14 +2101,6 @@ function parseWithFormat(
         }
       }
       return result;
-    }
-    if (failedAt >= 0) {
-      for (let j = failedAt; j < tokens.length; j++) {
-        const t = tokens[j];
-        if (t.type === "token") {
-          if (!_seenUnusedTokens.has(t.name!)) { _seenUnusedTokens.add(t.name!); result._unusedTokens.push(t.name!); }
-        }
-      }
     }
   }
 

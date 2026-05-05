@@ -83,7 +83,15 @@ function moment(input?: unknown, format?: unknown, localeOrStrict?: unknown, fou
         _nullInput: true,
       });
     }
-    return new Moment({ _dClone: false, _t: nowFn(), _i: input } as MomentConfig);
+    // Fast path: bypass Moment constructor to avoid ~30 property assignments + getCurrentLocale() call
+    const m = Object.create(Moment.prototype) as Moment;
+    m._isAMomentObject = true;
+    m._isUTC = false;
+    m._offset = 0;
+    m._t = momentNowFn ? momentNowFn() : Date.now();
+    m._isValid = true;
+    m._dirty = true;
+    return m;
   }
   if (isMoment(input)) {return (input as Moment).clone();}
   if (isObject(input) && (input as Record<string, unknown>)._isAMomentObject) {

@@ -13,9 +13,10 @@ function micros(ns) {
   return `${(ns / 1_000_000).toFixed(3)  }ms`;
 }
 
-function run(fn, iter) {
+function run(fn, iter, warmup = 500) {
+  for (let i = 0; i < warmup; i++) { fn(); }
   const start = process.hrtime.bigint();
-  for (let i = 0; i < iter; i++) {fn();}
+  for (let i = 0; i < iter; i++) { fn(); }
   const end = process.hrtime.bigint();
   return Number(end - start) / iter;
 }
@@ -168,21 +169,16 @@ const CASES = [
 ];
 
 const ITER = 5000;
+const WARMUP = 1000;
 const RUNS = 5;
-
-// warmup
-for (const c of CASES) {
-  const [f1, f2] = c.run();
-  for (let i = 0; i < 500; i++) { f1(); f2(); }
-}
 
 console.log("Operation                           moment2    date-fns     %");
 for (const c of CASES) {
-  const [fnM2, fnDF] = c.run();
   const tm = [], td = [];
   for (let r = 0; r < RUNS; r++) {
-    tm.push(run(fnM2, ITER));
-    td.push(run(fnDF, ITER));
+    const [fnM2, fnDF] = c.run();
+    tm.push(run(fnM2, ITER, WARMUP));
+    td.push(run(fnDF, ITER, WARMUP));
   }
   tm.sort((a, b) => a - b);
   td.sort((a, b) => a - b);

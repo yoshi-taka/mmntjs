@@ -847,6 +847,7 @@ export class Moment {
 
   set(unit: string | object, value?: number): Moment {
     if (isObject(unit)) {
+      this._ensureFields();
       const obj = unit as Record<string, unknown>;
 
       const yearVal =
@@ -1090,29 +1091,22 @@ export class Moment {
       case DAY:
       case DATE: {
         changedDays = true;
-        this._ensureFields();
         const rounded = absRound((unit === WEEK || unit === ISO_WEEK) ? amount * 7 : amount);
         if (rounded !== 0) {
-          this.$D += rounded;
-          while (this.$D > daysInMonth(this.$y, this.$M)) {
-            this.$D -= daysInMonth(this.$y, this.$M);
-            if (++this.$M >= 12) { this.$M = 0; this.$y++; }
+          if (this._isUTC) {
+            this._t += rounded * 86400000;
+            this._d = undefined;
+            this._dirty = true;
+          } else {
+            const dt = this._d || (this._d = new Date(this._t));
+            dt.setDate(dt.getDate() + rounded);
+            this._t = dt.getTime();
+            this.$y = dt.getFullYear();
+            this.$M = dt.getMonth();
+            this.$D = dt.getDate();
+            this.$W = dt.getDay();
+            this._offset = -dt.getTimezoneOffset();
           }
-          while (this.$D < 1) {
-            if (--this.$M < 0) { this.$M = 11; this.$y--; }
-            this.$D += daysInMonth(this.$y, this.$M);
-          }
-          this.$W = ((this.$W + rounded) % 7 + 7) % 7;
-        }
-
-        if (this._isUTC) {
-          this._t = Date.UTC(this.$y, this.$M, this.$D, this.$H, this.$m, this.$s, this.$ms);
-        } else {
-          const dt = this._d || (this._d = new Date(this._t));
-          dt.setFullYear(this.$y, this.$M, this.$D);
-          this._t = dt.getTime();
-          this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
-          this._offset = -dt.getTimezoneOffset();
         }
         break;
       }
