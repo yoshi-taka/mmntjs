@@ -24,7 +24,7 @@ const months = [
 ];
 
 test('parse', function (assert) {
-    function equalTest(monthName: any, monthFormat: any, monthNum: any) {
+    function equalTest(monthName: unknown, monthFormat: unknown, monthNum: unknown) {
         assert.equal(
             moment(monthName, monthFormat).month(),
             monthNum,
@@ -32,7 +32,7 @@ test('parse', function (assert) {
         );
     }
 
-    function equalTestStrict(input: any, mmm: any, monthIndex: any) {
+    function equalTestStrict(input: unknown, mmm: unknown, monthIndex: unknown) {
         assert.equal(
             moment(input, mmm, true).month(),
             monthIndex,

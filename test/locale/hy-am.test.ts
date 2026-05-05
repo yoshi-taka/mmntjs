@@ -14,14 +14,14 @@ test('parse', function (assert) {
                 '_'
             ),
         i;
-    function equalTest(input: any, mmm: any, monthIdx: any) {
+    function equalTest(input: unknown, mmm: unknown, monthIdx: unknown) {
         assert.equal(
             moment(input, mmm).month(),
             monthIdx,
             `${input  } should be month ${  monthIdx + 1}`
         );
     }
-    function equalTestStrict(input: any, mmm: any, monthIndex: any) {
+    function equalTestStrict(input: unknown, mmm: unknown, monthIndex: unknown) {
         assert.equal(
             moment(input, mmm, true).month(),
             monthIndex,
@@ -515,7 +515,7 @@ test('calendar day', function (assert) {
 
 test('calendar next week', function (assert) {
     let i, m;
-    function makeFormat(_d: any) {
+    function makeFormat(_d: unknown) {
         return 'dddd [օրը ժամը] LT';
     }
 
@@ -544,7 +544,7 @@ test('calendar next week', function (assert) {
 test('calendar last week', function (assert) {
     let i, m;
 
-    function makeFormat(_d: any) {
+    function makeFormat(_d: unknown) {
         return '[անցած] dddd [օրը ժամը] LT';
     }
 

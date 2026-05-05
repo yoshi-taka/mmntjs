@@ -15,7 +15,7 @@ test('parse', function (assert) {
                 '_'
             );
 
-    function equalTest(input: any, mmm: any, monthIdx: any) {
+    function equalTest(input: unknown, mmm: unknown, monthIdx: unknown) {
         assert.equal(
             moment(input, mmm).month(),
             monthIdx,

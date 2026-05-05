@@ -14,14 +14,14 @@ test('parse', function (assert) {
                 '_'
             ),
         i;
-    function equalTest(input: any, mmm: any, monthIdx: any) {
+    function equalTest(input: unknown, mmm: unknown, monthIdx: unknown) {
         assert.equal(
             moment(input, mmm).month(),
             monthIdx,
             `${input  } should be month ${  monthIdx + 1}`
         );
     }
-    function equalTestStrict(input: any, mmm: any, monthIndex: any) {
+    function equalTestStrict(input: unknown, mmm: unknown, monthIndex: unknown) {
         assert.equal(
             moment(input, mmm, true).month(),
             monthIndex,
@@ -532,7 +532,7 @@ test('calendar day', function (assert) {
 test('calendar next week', function (assert) {
     let i, m, now;
 
-    function makeFormatNext(d: any) {
+    function makeFormatNext(d: unknown) {
         switch (d.day()) {
             case 0:
                 return '[В следующее] dddd, [в] LT';
@@ -547,7 +547,7 @@ test('calendar next week', function (assert) {
         }
     }
 
-    function makeFormatThis(d: any) {
+    function makeFormatThis(d: unknown) {
         if (d.day() === 2) {
             return '[Во] dddd, [в] LT';
         } else {
@@ -603,7 +603,7 @@ test('calendar next week', function (assert) {
 test('calendar last week', function (assert) {
     let i, m, now;
 
-    function makeFormatLast(d: any) {
+    function makeFormatLast(d: unknown) {
         switch (d.day()) {
             case 0:
                 return '[В прошлое] dddd, [в] LT';
@@ -618,7 +618,7 @@ test('calendar last week', function (assert) {
         }
     }
 
-    function makeFormatThis(d: any) {
+    function makeFormatThis(d: unknown) {
         if (d.day() === 2) {
             return '[Во] dddd, [в] LT';
         } else {

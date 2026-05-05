@@ -31,7 +31,7 @@ test('parse', function (assert) {
                 '_'
             ),
         i;
-    function equalTest(input: any, mmm: any, monthIdx: any) {
+    function equalTest(input: unknown, mmm: unknown, monthIdx: unknown) {
         assert.equal(
             moment(input, mmm).month(),
             monthIdx,
@@ -39,7 +39,7 @@ test('parse', function (assert) {
         );
     }
 
-    function equalTestStrict(input: any, mmm: any, monthIndex: any) {
+    function equalTestStrict(input: unknown, mmm: unknown, monthIndex: unknown) {
         assert.equal(
             moment(input, mmm, true).month(),
             monthIndex,
@@ -83,7 +83,7 @@ test('parse strict', function (assert) {
                 '_'
             ),
         i;
-    function equalTest(input: any, mmm: any, monthIdx: any) {
+    function equalTest(input: unknown, mmm: unknown, monthIdx: unknown) {
         assert.equal(
             moment(input, mmm, true).month(),
             monthIdx,
@@ -432,7 +432,7 @@ test('calendar day', function (assert) {
 test('calendar next week', function (assert) {
     let i, m;
 
-    function makeFormat(d: any) {
+    function makeFormat(d: unknown) {
         switch (d.day()) {
             case 0:
                 return '[W niedzielę o] LT';
@@ -478,7 +478,7 @@ test('calendar next week', function (assert) {
 test('calendar last week', function (assert) {
     let i, m;
 
-    function makeFormat(d: any) {
+    function makeFormat(d: unknown) {
         switch (d.day()) {
             case 0:
                 return '[W zeszłą niedzielę o] LT';
