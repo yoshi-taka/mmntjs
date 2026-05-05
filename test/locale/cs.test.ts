@@ -32,26 +32,26 @@ test('parse', function (assert) {
         const a = tests[i].split(' ');
         equalTest(a[0], 'MMM', i);
         equalTest(a[1], 'MMM', i);
-        equalTest(tests[i][2], 'MMM', i);
+        equalTest(a[2], 'MMM', i);
         equalTest(a[0], 'MMMM', i);
         equalTest(a[1], 'MMMM', i);
-        equalTest(tests[i][2], 'MMMM', i);
+        equalTest(a[2], 'MMMM', i);
         equalTest(a[0].toLocaleLowerCase(), 'MMMM', i);
         equalTest(a[1].toLocaleLowerCase(), 'MMMM', i);
-        equalTest(tests[i][2].toLocaleLowerCase(), 'MMMM', i);
+        equalTest(a[2].toLocaleLowerCase(), 'MMMM', i);
         equalTest(a[0].toLocaleUpperCase(), 'MMMM', i);
         equalTest(a[1].toLocaleUpperCase(), 'MMMM', i);
-        equalTest(tests[i][2].toLocaleUpperCase(), 'MMMM', i);
+        equalTest(a[2].toLocaleUpperCase(), 'MMMM', i);
 
         equalTestStrict(a[1], 'MMM', i);
         equalTestStrict(a[0], 'MMMM', i);
-        equalTestStrict(tests[i][2], 'MMMM', i);
+        equalTestStrict(a[2], 'MMMM', i);
         equalTestStrict(a[1].toLocaleLowerCase(), 'MMM', i);
         equalTestStrict(a[1].toLocaleUpperCase(), 'MMM', i);
         equalTestStrict(a[0].toLocaleLowerCase(), 'MMMM', i);
         equalTestStrict(a[0].toLocaleUpperCase(), 'MMMM', i);
-        equalTestStrict(tests[i][2].toLocaleLowerCase(), 'MMMM', i);
-        equalTestStrict(tests[i][2].toLocaleUpperCase(), 'MMMM', i);
+        equalTestStrict(a[2].toLocaleLowerCase(), 'MMMM', i);
+        equalTestStrict(a[2].toLocaleUpperCase(), 'MMMM', i);
     }
 });
 

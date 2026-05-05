@@ -14,24 +14,58 @@ export function setParseTwoDigitYear(fn: ((input: string) => number) | undefined
 }
 
 const ISO_8601_REGEX =
-  /^\s*([+-]?\d{4,})(-?(\d{2})(-?(\d{2})([T ](\d{2})(:?(\d{2})(:?(\d{2})([.,](\d+))?)?)?\s*(Z|([+-])(\d{2})(:?(\d{2}))?)?)?)?)?\s*$/;
+  /^\s*([+-]\d{6}|\d{4})(?!\d{2}\b)(-?(\d{2})(-?(\d{2})([T ](\d{2})(:?(\d{2})(:?(\d{2})([.,](\d+))?)?)?\s*(Z|([+-])(\d{2})(:?(\d{2}))?)?)?)?)?$/;
 
-const TIME_REGEX = /^\s*(\d{2})(:?(\d{2})(:?(\d{2})(\.(\d+))?)?)?\s*$/;
+const EXTENDED_ISO_REGEX =
+  /^\s*((?:[+-]\d{6}|\d{4})-(?:\d\d-\d\d|W\d\d-\d|W\d\d|\d\d\d|\d\d))(?:(T| )(\d\d(?::\d\d(?::\d\d(?:[.,]\d+)?)?)?)([+-]\d\d(?::?\d\d)?|\s*Z)?)?$/;
+const BASIC_ISO_REGEX =
+  /^\s*((?:[+-]\d{6}|\d{4})(?:\d\d\d\d|W\d\d\d|W\d\d|\d\d\d|\d\d|))(?:(T| )(\d\d(?:\d\d(?:\d\d(?:[.,]\d+)?)?)?)([+-]\d\d(?::?\d\d)?|\s*Z)?)?$/;
+
+const isoDates: [string, RegExp, boolean?][] = [
+  ['YYYYYY-MM-DD', /[+-]\d{6}-\d\d-\d\d/],
+  ['YYYY-MM-DD', /\d{4}-\d\d-\d\d/],
+  ['GGGG-[W]WW-E', /\d{4}-W\d\d-\d/],
+  ['GGGG-[W]WW', /\d{4}-W\d\d/, false],
+  ['YYYY-DDD', /\d{4}-\d{3}/],
+  ['YYYY-MM', /\d{4}-\d\d/, false],
+  ['YYYYYYMMDD', /[+-]\d{10}/],
+  ['YYYYMMDD', /\d{8}/],
+  ['GGGG[W]WWE', /\d{4}W\d{3}/],
+  ['GGGG[W]WW', /\d{4}W\d{2}/, false],
+  ['YYYYDDD', /\d{7}/],
+  ['YYYYMM', /\d{6}/, false],
+  ['YYYY', /\d{4}/, false],
+];
+const isoTimes: [string, RegExp][] = [
+  ['HH:mm:ss.SSSS', /\d\d:\d\d:\d\d\.\d+/],
+  ['HH:mm:ss,SSSS', /\d\d:\d\d:\d\d,\d+/],
+  ['HH:mm:ss', /\d\d:\d\d:\d\d/],
+  ['HH:mm', /\d\d:\d\d/],
+  ['HHmmss.SSSS', /\d\d\d\d\d\d\.\d+/],
+  ['HHmmss,SSSS', /\d\d\d\d\d\d,\d+/],
+  ['HHmmss', /\d\d\d\d\d\d/],
+  ['HHmm', /\d\d\d\d/],
+  ['HH', /\d\d/],
+];
+
+const TZ_REGEX = /Z|[+-]\d\d(?::?\d\d)?/;
+
+const TIME_REGEX = /^\s*(\d{2})(:?(\d{2})(:?(\d{2})(\.(\d+))?)?)?$/;
 
 const RFC_2822_REGEX =
   /^\s*((?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s)?(\d{1,2})\s(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s(\d{2,4})\s(\d{2}):(\d{2})(?::(\d{2}))?\s(?:([+-]\d{4})|(UTC|GMT|EST|EDT|CST|CDT|MST|MDT|PST|PDT|[A-IK-Za-ik-z]))?/;
 
 const ISO_WEEK_REGEX =
-  /^\s*(\d{4})-?W(\d{2})(?:-?(\d))?([T ](\d{2})(:?(\d{2})(:?(\d{2})([.,](\d+))?)?)?\s*(Z|([+-])(\d{2})(:?(\d{2}))?)?)?\s*$/;
+  /^\s*(\d{4})-?W(\d{2})(?:-?(\d))?([T ](\d{2})(:?(\d{2})(:?(\d{2})([.,](\d+))?)?)?\s*(Z|([+-])(\d{2})(:?(\d{2}))?)?)?$/;
 
-const ISO_WEEK_SIMPLE_REGEX = /^\s*(\d{4})-?W(\d{2})(?:-?(\d))?\s*$/;
+const ISO_WEEK_SIMPLE_REGEX = /^\s*(\d{4})-?W(\d{2})(?:-?(\d))?$/;
 
 const ISO_ORDINAL_REGEX =
-  /^\s*(\d{4})-(\d{3})([T ](\d{2})(:?(\d{2})(:?(\d{2})([.,](\d+))?)?)?\s*(Z|([+-])(\d{2})(:?(\d{2}))?)?)?\s*$/;
+  /^\s*(\d{4})-(\d{3})([T ](\d{2})(:?(\d{2})(:?(\d{2})([.,](\d+))?)?)?\s*(Z|([+-])(\d{2})(:?(\d{2}))?)?)?$/;
 const ISO_ORDINAL_COMPACT_REGEX =
-  /^\s*(\d{4})(\d{3})([T ](\d{2})(:?(\d{2})(:?(\d{2})([.,](\d+))?)?)?\s*(Z|([+-])(\d{2})(:?(\d{2}))?)?)?\s*$/;
+  /^\s*(\d{4})(\d{3})([T ](\d{2})(:?(\d{2})(:?(\d{2})([.,](\d+))?)?)?\s*(Z|([+-])(\d{2})(:?(\d{2}))?)?)?$/;
 
-const JSON_DATE_REGEX = /^\/?Date\((-?\d+)(?:[+-]\d{4})?\)\/?\s*$/;
+const JSON_DATE_REGEX = /^\/?Date\((-?\d+)(?:[+-]\d{4})?\)\/?$/;
 
 const WEEKDAY_NAMES_MAP: Record<string, number> = {
   sun: 0,
@@ -74,9 +108,9 @@ export function parseString(
   }
 
   str = locObj.preparse(str);
-  const trimmed = str.trim();
+  const trimmed = str;
 
-  if (trimmed === "") {return null;}
+  if (trimmed.trim() === "") {return null;}
 
   const jsonMatch = trimmed.match(JSON_DATE_REGEX);
   if (jsonMatch) {
@@ -94,23 +128,13 @@ export function parseString(
     };
   }
 
-  let weekMatch = trimmed.match(ISO_WEEK_REGEX);
-  if (!weekMatch) {
-    weekMatch = trimmed.match(ISO_WEEK_SIMPLE_REGEX);
-  }
-  if (weekMatch && weekMatch[1] && weekMatch[2]) {
-    return parseISOWeek(weekMatch);
-  }
+  const fastResult = parseCommonISOExtended(trimmed);
+  if (fastResult) {return fastResult;}
 
-  const ordinalMatch = trimmed.match(ISO_ORDINAL_REGEX) || trimmed.match(ISO_ORDINAL_COMPACT_REGEX);
-  if (ordinalMatch && ordinalMatch[1] && ordinalMatch[2]) {
-    const ordinalResult = parseISOOrdinal(ordinalMatch);
-    if (ordinalResult) {return ordinalResult;}
-  }
-
-  const isoMatch = trimmed.match(ISO_8601_REGEX);
-  if (isoMatch && isoMatch[1]) {
-    return parseISO8601(isoMatch);
+  const isoResult = parseISOWithTable(trimmed);
+  if (isoResult) {
+    if (isoResult._claimed) {return { _claimed: true };}
+    return isoResult;
   }
 
   let rfcStr = stripRFC2822Comments(trimmed);
@@ -122,9 +146,91 @@ export function parseString(
     return parseRFC2822(rfcMatch);
   }
 
-  const timeMatch = trimmed.match(TIME_REGEX);
-  if (timeMatch && timeMatch[1]) {
-    return parseTime(timeMatch);
+  return null;
+}
+
+function parseCommonISOExtended(str: string): any {
+  const len = str.length;
+  const ch0 = str.charCodeAt(0);
+
+  // Quick reject for non-digit start (handles sign-prefixed and non-numeric)
+  if (ch0 < 48 || ch0 > 57) {return null;}
+
+  // Check all chars are digits (quick reject for strings with separators)
+  let allDigits = true;
+  for (let i = 1; i < len && allDigits; i++) {
+    const c = str.charCodeAt(i);
+    if (c < 48 || c > 57) {allDigits = false;}
+  }
+
+  if (allDigits) {
+    // Compact ordinal: YYYYDDD (7 digits)
+    if (len === 7) {
+      const year = four(str, 0);
+      const doy3 = str.charCodeAt(4) - 48, doy2 = str.charCodeAt(5) - 48, doy1 = str.charCodeAt(6) - 48;
+      if (doy3 >= 0 && doy3 <= 9 && doy2 >= 0 && doy2 <= 9 && doy1 >= 0 && doy1 <= 9) {
+        const dayOfYear = doy3 * 100 + doy2 * 10 + doy1;
+        if (!isNaN(year) && dayOfYear >= 1 && dayOfYear <= 366) {
+          return { year, dayOfYear };
+        }
+      }
+      return null;
+    }
+
+    // Compact date: YYYYMMDD (8 digits)
+    if (len === 8) {
+      const year = four(str, 0);
+      const month1 = two(str, 4);
+      const day = two(str, 6);
+      if (!isNaN(year) && !isNaN(month1) && month1 >= 1 && month1 <= 12 && !isNaN(day) && day >= 1 && day <= 31) {
+        return { year, month: month1 - 1, day };
+      }
+      return null;
+    }
+
+    // Compact week: GGGG[W]WW (8 digits: 4digits + W + 2digits)
+    if (len === 8) {
+      const year = four(str, 0);
+      if (!isNaN(year) && str.charCodeAt(4) === 87) {
+        const weekNum = two(str, 5);
+        if (!isNaN(weekNum) && weekNum >= 1 && weekNum <= 53) {
+          return { isoWeekYear: year, isoWeek: weekNum, _weekdayNum: 1 };
+        }
+      }
+      return null;
+    }
+  }
+
+  // Extended ordinal: YYYY-DDD (8 chars, dash at position 4)
+  if (len === 8 && str.charCodeAt(4) === 45) {
+    const d1 = str.charCodeAt(5) - 48, d2 = str.charCodeAt(6) - 48, d3 = str.charCodeAt(7) - 48;
+    if (d1 >= 0 && d1 <= 9 && d2 >= 0 && d2 <= 9 && d3 >= 0 && d3 <= 9) {
+      const year = four(str, 0);
+      const dayOfYear = d1 * 100 + d2 * 10 + d3;
+      if (!isNaN(year) && dayOfYear >= 1 && dayOfYear <= 366) {
+        return { year, dayOfYear };
+      }
+    }
+    return null;
+  }
+
+  // Extended week: GGGG-[W]WW (8 or 9 chars)
+  if ((len === 8 || len === 9) && str.charCodeAt(4) === 45 && str.charCodeAt(5) === 87) {
+    const w1 = str.charCodeAt(6) - 48, w2 = str.charCodeAt(7) - 48;
+    if (w1 >= 0 && w1 <= 9 && w2 >= 0 && w2 <= 9) {
+      const year = four(str, 0);
+      const weekNum = w1 * 10 + w2;
+      if (!isNaN(year) && weekNum >= 1 && weekNum <= 53) {
+        if (len === 8) {
+          return { isoWeekYear: year, isoWeek: weekNum, _weekdayNum: 1 };
+        }
+        const wd = str.charCodeAt(8) - 48;
+        if (wd >= 1 && wd <= 7) {
+          return { isoWeekYear: year, isoWeek: weekNum, _weekdayNum: wd };
+        }
+      }
+    }
+    return null;
   }
 
   return null;
@@ -307,6 +413,66 @@ function parseRFC2822(match: RegExpMatchArray): any {
   };
 }
 
+function parseISOWithTable(str: string): any {
+  const match = EXTENDED_ISO_REGEX.exec(str) || BASIC_ISO_REGEX.exec(str);
+  if (!match) {return null;}
+
+  const datePart = match[1];
+  let dateFormat: string | undefined;
+  let allowTime = true;
+
+  const dateHasDash = datePart.indexOf("-", datePart.charCodeAt(0) === 45 ? 1 : 0) >= 0;
+
+  for (const [fmt, regex, allowT] of isoDates) {
+    if (dateHasDash !== (fmt.indexOf("-") >= 0)) {continue;}
+    if (regex.exec(datePart)) {
+      dateFormat = fmt;
+      if (allowT === false) {allowTime = false;}
+      break;
+    }
+  }
+
+  if (!dateFormat) {return null;}
+
+  if (match[3]) {
+    if (!allowTime) {return { _claimed: true };}
+    let timeFormat: string | undefined;
+    for (const [fmt, regex] of isoTimes) {
+      if (regex.exec(match[3])) {
+        timeFormat = fmt;
+        break;
+      }
+    }
+    if (!timeFormat) {return { _claimed: true };}
+    dateFormat = dateFormat + (match[2] || " ") + timeFormat;
+  }
+
+  if (match[4]) {
+    const tzMatch = match[4].match(TZ_REGEX);
+    if (tzMatch) {
+      dateFormat += "Z";
+    } else {
+      return { _claimed: true };
+    }
+  }
+
+  let parseStr = str;
+  const ch0 = parseStr.charCodeAt(0);
+  if ((ch0 === 43 || ch0 === 45) && datePart.charCodeAt(0) === ch0 && !dateFormat.startsWith("YYYYYY")) {
+    parseStr = parseStr.slice(1);
+  }
+
+  const result = parseWithFormat(parseStr, dateFormat);
+  if (!result) {return { _claimed: true };}
+  if (result._weekdayNum !== undefined && (result._weekdayNum < 1 || result._weekdayNum > 7)) {
+    return { _claimed: true };
+  }
+  if (dateFormat.includes("DDD") && result.year !== undefined && result.dayOfYear === undefined) {
+    return { _claimed: true };
+  }
+  return result;
+}
+
 function parseISO8601(match: RegExpMatchArray): any {
   let yearStr = match[1];
   let year = parseInt(yearStr, 10);
@@ -385,6 +551,8 @@ function parseISOOrdinal(match: RegExpMatchArray): any {
   const year = parseInt(match[1], 10);
   const dayOfYear = parseInt(match[2], 10);
   if (dayOfYear === 0) {return null;}
+  const maxDay = (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)) ? 366 : 365;
+  if (dayOfYear > maxDay) {return null;}
   const hour = match[4] ? parseInt(match[4], 10) : 0;
   const minute = match[6] ? parseInt(match[6], 10) : 0;
   const second = match[8] ? parseInt(match[8], 10) : 0;
@@ -395,6 +563,9 @@ function parseISOOrdinal(match: RegExpMatchArray): any {
   const tzMinute = match[15] ? parseInt(match[15], 10) : 0;
 
   const date = new Date(Date.UTC(year, 0, dayOfYear));
+  if (year >= 0 && year < 100) {
+    date.setUTCFullYear(year);
+  }
 
   let offset: number | undefined = undefined;
   if (tz === "Z") {
@@ -853,7 +1024,7 @@ function parseWithFormat(
 
     switch (token.name) {
       case "YYYYYY": {
-        const yMatch = remaining.match(/^([+-]?\d{1,7})/);
+        const yMatch = remaining.match(/^([+-]?\d{1,6})/);
         if (!yMatch) {
           failed = true;
           break;
@@ -1720,19 +1891,14 @@ function parseWithFormat(
       }
       case "DDD":
       case "DDDD": {
-        const digits = 3;
-        const match = remaining.match(new RegExp(`^(\\d{1,${  digits  }})`));
+        const match = remaining.match(/^(\d{3})/);
         if (!match) {
           failed = true;
           break;
         }
         const dayOfYearNum = parseInt(match[1], 10);
-        if (dayOfYearNum === 0) {
-          failed = true;
-          break;
-        }
         result.dayOfYear = dayOfYearNum;
-        strIdx += match[1].length;
+        strIdx += 3;
         break;
       }
       case "GGGG": {

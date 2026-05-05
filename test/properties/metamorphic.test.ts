@@ -521,7 +521,7 @@ describe('Metamorphic properties', () => {
       fc.property(safeDates, safeDates, (aDate, bDate) => {
         const ab = moment.duration({ from: moment(aDate), to: moment(bDate) }).valueOf()
         const ba = moment.duration({ from: moment(bDate), to: moment(aDate) }).valueOf()
-        expect(ab).toBe(-ba)
+        expect(normalizeZero(ab)).toBe(normalizeZero(-ba))
       }),
       { numRuns: 200 }
     )

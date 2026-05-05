@@ -57,7 +57,7 @@ function nowFn(): number {
   return Date.now();
 }
 
-function moment(input?: any, format?: any, localeOrStrict?: any, fourthArg?: any): Moment {
+function moment(input?: unknown, format?: unknown, localeOrStrict?: unknown, fourthArg?: unknown): Moment {
   if (input === null) {
     return new Moment({
         _dClone: false,
@@ -72,7 +72,7 @@ function moment(input?: any, format?: any, localeOrStrict?: any, fourthArg?: any
     if (
       format !== undefined &&
       typeof format !== "boolean" &&
-      !(isArray(format) && (format as any[]).length === 0)
+      !(isArray(format) && (format as unknown[]).length === 0)
     ) {
       return new Moment({
         _dClone: false,
@@ -83,11 +83,11 @@ function moment(input?: any, format?: any, localeOrStrict?: any, fourthArg?: any
         _nullInput: true,
       });
     }
-    return new Moment({ _dClone: false, _t: nowFn(), _i: input } as any);
+    return new Moment({ _dClone: false, _t: nowFn(), _i: input } as MomentConfig);
   }
   if (isMoment(input)) {return (input as Moment).clone();}
-  if (isObject(input) && (input as any)._isAMomentObject) {
-    const obj = input as any;
+  if (isObject(input) && (input as Record<string, unknown>)._isAMomentObject) {
+    const obj = input as Record<string, unknown>;
     const cfg: MomentConfig = {
       _d: obj._d ? new Date(obj._d.getTime()) : new Date(NaN),
       _i: obj._i !== undefined ? obj._i : input,
@@ -132,17 +132,17 @@ function moment(input?: any, format?: any, localeOrStrict?: any, fourthArg?: any
   }
   if (isString(input)) {return createFromString(input as string, format, localeOrStrict, fourthArg);}
   if (isArray(input)) {
-    const arr = input as any[];
+    const arr = input as unknown[];
     if (arr.length === 0 && (format === "X" || format === "x")) {
       return new Moment({ _dClone: false, _d: new Date(NaN), _i: arr, _isValid: false, _f: format as string });
     }
     return createFromArray(arr);
   }
-  if (isObject(input)) {return createFromObject(input as Record<string, any>);}
+  if (isObject(input)) {return createFromObject(input as Record<string, unknown>);}
   return new Moment({ _dClone: false, _d: new Date(NaN), _isValid: false, _i: input });
 }
 
-function hasAnyValue(parsed: any): boolean {
+function hasAnyValue(parsed: Record<string, unknown>): boolean {
   return (
     parsed.year !== undefined ||
     parsed.month !== undefined ||
@@ -161,7 +161,7 @@ function hasAnyValue(parsed: any): boolean {
   );
 }
 
-function scoreParsedResult(parsed: any): number {
+function scoreParsedResult(parsed: Record<string, unknown>): number {
   let score = 0;
   if (parsed.year !== undefined) {score += 10;}
   if (parsed.month !== undefined) {score += 10;}
@@ -175,9 +175,9 @@ function scoreParsedResult(parsed: any): number {
 
 function createFromString(
   str: string,
-  format?: any,
-  localeOrStrict?: any,
-  fourthArg?: any,
+  format?: unknown,
+  localeOrStrict?: unknown,
+  fourthArg?: unknown,
 ): Moment {
   let strict = false;
   let locale: string | undefined;
@@ -202,7 +202,7 @@ function createFromString(
 
   if (isArray(fmt)) {
     const formats = fmt as string[];
-    let bestParsed: any = null;
+    let bestParsed: Record<string, unknown> | null = null;
     let bestScore = -99999;
     let bestFormat: string | undefined;
 
@@ -507,7 +507,7 @@ function createFromString(
   if (fmtStr) {
     const parsed = parseString(str, fmtStr, locale, strict);
     const config: MomentConfig = {
-      _d: undefined as any,
+      _d: undefined,
       _i: str,
       _f: fmtStr,
       _l: locale,
@@ -585,16 +585,38 @@ function createFromString(
   }
 
   const parsed = parseString(str);
-  if (parsed) {
-    const { year, month, day, hour, minute, second, millisecond, offset } = parsed;
+  if (parsed && !parsed._claimed) {
+    if (((parsed.isoWeekYear !== undefined || parsed.isoWeek !== undefined) ||
+         (parsed._weekYear !== undefined || parsed._week !== undefined)) &&
+        parsed.year === undefined && parsed.month === undefined && parsed.day === undefined) {
+      const weekOverflow = checkOverflow(parsed);
+      if (weekOverflow >= 0) {
+        return new Moment({ _dClone: false, _d: new Date(NaN), _i: str, _isValid: false, _overflow: weekOverflow });
+      }
+      return createMomentFromParsed(parsed, str, undefined, undefined, undefined);
+    }
+    const { year, month, day, hour, minute, second, millisecond, offset, dayOfYear } = parsed;
     let y = year;
     let mo = month;
     let d = day;
-    if (y === undefined || mo === undefined || d === undefined) {
+    if (dayOfYear !== undefined && mo === undefined && d === undefined) {
+      const maxDay = (y !== undefined && ((y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)) ? 366 : 365)) || 366;
+      if (dayOfYear === 0 || dayOfYear > maxDay) {
+        return new Moment({ _dClone: false, _d: new Date(NaN), _i: str, _isValid: false, _overflow: 2 });
+      }
+      const date = createUTCDate(y !== undefined ? y : new Date(nowFn()).getFullYear(), 0, dayOfYear);
+      y = date.getUTCFullYear();
+      mo = date.getUTCMonth();
+      d = date.getUTCDate();
+    } else if (y === undefined && mo === undefined && d === undefined) {
       const now = new Date(nowFn());
-      if (y === undefined) {y = now.getFullYear();}
-      if (mo === undefined) {mo = now.getMonth();}
-      if (d === undefined) {d = now.getDate();}
+      y = now.getFullYear();
+      mo = now.getMonth();
+      d = now.getDate();
+    } else {
+      if (y === undefined) {y = new Date(nowFn()).getFullYear();}
+      if (mo === undefined && y !== undefined) {mo = 0;}
+      if (d === undefined) {d = 1;}
     }
     const h = hour !== undefined ? hour : 0;
     const min = minute !== undefined ? minute : 0;
@@ -628,7 +650,7 @@ function createFromString(
       detectedFmt = "YYYY";
     }
     let date: Date;
-    let config: MomentConfig = { _d: undefined as any, _i: str };
+    let config: MomentConfig = { _d: undefined, _i: str };
     if (detectedFmt) {config._f = detectedFmt;}
     if (offset !== undefined) {
       date = createUTCDate(y, mo, d, h, min, s, ms);
@@ -655,11 +677,6 @@ function createFromString(
   const fallbackDate = new Date(str);
   if (!isNaN(fallbackDate.getTime())) {
     return new Moment({ _dClone: false, _d: fallbackDate, _i: str });
-  }
-
-  const num = Number(str);
-  if (!isNaN(num) && str.trim() !== "") {
-    return new Moment({ _dClone: false, _d: new Date(num), _i: str });
   }
 
   return new Moment({ _dClone: false, _d: new Date(NaN), _i: str, _isValid: false });
@@ -693,13 +710,13 @@ function localeWeekToDate(
 }
 
 function createMomentFromParsed(
-  parsed: any,
+  parsed: Record<string, unknown>,
   str: string,
   format?: string | string[],
   locale?: string,
   strict?: boolean,
 ): Moment {
-  const baseConfig: Record<string, any> = strict !== undefined ? { _strict: strict } : {};
+  const baseConfig: Record<string, unknown> = strict !== undefined ? { _strict: strict } : {};
   if (parsed.bigHour) {baseConfig._bigHour = true;}
 
   if (
@@ -710,7 +727,7 @@ function createMomentFromParsed(
     parsed.day === undefined
   ) {
     const loc = getLocale(locale);
-    const weekCfg = (loc._config as any).week || { dow: 0, doy: 6 };
+    const weekCfg = (loc._config as Record<string, unknown>).week || { dow: 0, doy: 6 };
     let weekdayOffset: number;
     if (parsed._localeWeekday !== undefined) {
       weekdayOffset = parsed._localeWeekday;
@@ -785,7 +802,7 @@ function createMomentFromParsed(
     const dayOfYear = Math.floor((nowTs - nowYearStart.getTime()) / 86400000);
     const currentWeekOfYear = Math.ceil((dayOfYear + nowYearStart.getDay() + 1) / 7);
     const loc = getLocale(locale);
-    const weekCfg = (loc._config as any).week || { dow: 0, doy: 6 };
+    const weekCfg = (loc._config as Record<string, unknown>).week || { dow: 0, doy: 6 };
     const d = localeWeekToDate(year, Math.max(currentWeekOfYear, 1), 0, weekCfg.dow, weekCfg.doy);
     const config: MomentConfig = {
       _d: d,
@@ -813,7 +830,7 @@ function createMomentFromParsed(
     const nowTs = momentNowFn ? momentNowFn() : Date.now();
     const year = new Date(nowTs).getFullYear();
     const loc = getLocale(locale);
-    const weekCfg = (loc._config as any).week || { dow: 0, doy: 6 };
+    const weekCfg = (loc._config as Record<string, unknown>).week || { dow: 0, doy: 6 };
     const d = localeWeekToDate(year, parsed._week, 0, weekCfg.dow, weekCfg.doy);
     const config: MomentConfig = {
       _d: d,
@@ -1035,8 +1052,8 @@ function createMomentFromParsed(
   return new Moment(config);
 }
 
-function createFromArray(arr: any[], isUTC?: boolean): Moment {
-  if (arr.length === 0) {return new Moment({ _dClone: false, _t: nowFn(), _i: arr } as any);}
+function createFromArray(arr: unknown[], isUTC?: boolean): Moment {
+  if (arr.length === 0) {return new Moment({ _dClone: false, _t: nowFn(), _i: arr });}
   let hasNull = false;
   for (const v of arr) {
     if (v === null) {hasNull = true;}
@@ -1082,9 +1099,9 @@ function createFromArray(arr: any[], isUTC?: boolean): Moment {
   return new Moment({ _dClone: false, _d: d, _i: arr });
 }
 
-function createFromObject(obj: Record<string, any>): Moment {
+function createFromObject(obj: Record<string, unknown>): Moment {
   const parsed = parseObject(obj);
-  if (isObjectEmpty(parsed)) {return new Moment({ _dClone: false, _t: nowFn(), _i: obj } as any);}
+  if (isObjectEmpty(parsed)) {return new Moment({ _dClone: false, _t: nowFn(), _i: obj });}
   const now = new Date(nowFn());
   const year = parsed.year !== undefined ? parsed.year : now.getFullYear();
   const month =
@@ -1108,17 +1125,17 @@ function createFromObject(obj: Record<string, any>): Moment {
 }
 
 // Static methods
-(moment as any).duration = function (input?: any, unit?: string): Duration {
-  return new Duration(input as any, unit);
+(moment as Record<string, unknown>).duration = function (input?: unknown, unit?: string): Duration {
+  return new Duration(input as unknown, unit);
 };
-(moment as any).duration.invalid = function (): Duration {
+(moment as Record<string, unknown>).duration.invalid = function (): Duration {
   return Duration.invalid();
 };
-(moment as any).duration.fn = Duration.prototype;
-(moment as any).fn = Moment.prototype;
-(moment as any).prototype = Moment.prototype;
+(moment as Record<string, unknown>).duration.fn = Duration.prototype;
+(moment as Record<string, unknown>).fn = Moment.prototype;
+(moment as Record<string, unknown>).prototype = Moment.prototype;
 
-(moment as any).version = "2.30.1";
+(moment as Record<string, unknown>).version = "2.30.1";
 Object.defineProperty(moment, "updateOffset", {
   get(): ((m: Moment, keepTime?: boolean) => void) | undefined {
     return getUpdateOffsetCallback();
@@ -1139,12 +1156,12 @@ Object.defineProperty(moment, "now", {
   enumerable: true,
   configurable: true,
 });
-(moment as any).isMoment = isMoment;
-(moment as any).isDate = isDate;
-(moment as any).isDuration = function (obj: any): boolean {
+(moment as Record<string, unknown>).isMoment = isMoment;
+(moment as Record<string, unknown>).isDate = isDate;
+(moment as Record<string, unknown>).isDuration = function (obj: unknown): boolean {
   return checkIsDuration(obj);
 };
-(moment as any).normalizeUnits = normUnits;
+(moment as Record<string, unknown>).normalizeUnits = normUnits;
 Object.defineProperty(moment, "parseTwoDigitYear", {
   get() {
     return (str: string) => {
@@ -1160,10 +1177,10 @@ Object.defineProperty(moment, "parseTwoDigitYear", {
   enumerable: true,
   configurable: true,
 });
-(moment as any).momentProperties = momentProperties;
-(moment as any).ISO_8601 = "ISO_8601";
-(moment as any).RFC_2822 = "RFC_2822";
-(moment as any).HTML5_FMT = {
+(moment as Record<string, unknown>).momentProperties = momentProperties;
+(moment as Record<string, unknown>).ISO_8601 = "ISO_8601";
+(moment as Record<string, unknown>).RFC_2822 = "RFC_2822";
+(moment as Record<string, unknown>).HTML5_FMT = {
   DATETIME_LOCAL: "YYYY-MM-DDTHH:mm",
   DATETIME_LOCAL_SECONDS: "YYYY-MM-DDTHH:mm:ss",
   DATETIME_LOCAL_MS: "YYYY-MM-DDTHH:mm:ss.SSS",
@@ -1174,7 +1191,7 @@ Object.defineProperty(moment, "parseTwoDigitYear", {
   WEEK: "GGGG-[W]WW",
   MONTH: "YYYY-MM",
 };
-(moment as any).utc = function (input?: any, format?: any, localeOrStrict?: any, fourthArg?: any): Moment {
+(moment as Record<string, unknown>).utc = function (input?: unknown, format?: unknown, localeOrStrict?: unknown, fourthArg?: unknown): Moment {
   if (input === null) {
     return new Moment({
         _dClone: false,
@@ -1196,26 +1213,31 @@ Object.defineProperty(moment, "parseTwoDigitYear", {
     m._offset = 0;
     return m;
   }
-  if (!m._isUTC && (isString(input) || isArray(input))) {
-    m._d = new Date(absTime - m._d!.getTimezoneOffset() * 60000);
+  if (!m._isUTC && isString(input)) {
+    const utcDate = new Date((input as string) + " UTC");
+    if (!isNaN(utcDate.getTime())) {
+      m._d = utcDate;
+    } else {
+      m._d = new Date(absTime - m._d!.getTimezoneOffset() * 60000);
+    }
   } else {
     m._d = new Date(absTime);
   }
   m._t = m._d.getTime();
   m._isUTC = true;
   m._offset = 0;
-  (m as any)._refreshFields();
+  (m as Record<string, unknown>)._refreshFields();
   return m;
 };
-(moment as any).parseZone = function (input?: any, format?: any, strict?: boolean): Moment {
+(moment as Record<string, unknown>).parseZone = function (input?: unknown, format?: unknown, strict?: boolean): Moment {
   const m = moment(input, format, strict);
   return m.parseZone();
 };
-(moment as any).unix = function (ts: number): Moment {
+(moment as Record<string, unknown>).unix = function (ts: number): Moment {
   return moment(ts * 1000);
 };
-(moment as any).invalid = function (input?: any): Moment {
-  const config: any = { _d: new Date(NaN), _isValid: false, _userInvalidated: true };
+(moment as Record<string, unknown>).invalid = function (input?: unknown): Moment {
+  const config: Record<string, unknown> = { _d: new Date(NaN), _isValid: false, _userInvalidated: true };
   if (
     typeof input === "object" &&
     input !== null &&
@@ -1224,7 +1246,7 @@ Object.defineProperty(moment, "parseTwoDigitYear", {
     !isDate(input)
   ) {
     for (const key of Object.keys(input)) {
-      config[`_${  key}`] = (input as any)[key];
+      config[`_${  key}`] = (input as Record<string, unknown>)[key];
     }
     delete config._userInvalidated;
     config._i = input;
@@ -1233,7 +1255,7 @@ Object.defineProperty(moment, "parseTwoDigitYear", {
   }
   return new Moment(config as MomentConfig);
 };
-(moment as any).locale = function (locale?: string | string[], ...args: any[]): string | Locale {
+(moment as Record<string, unknown>).locale = function (locale?: string | string[], ...args: unknown[]): string | Locale {
   if (locale === undefined) {return getCurrentLocale();}
   if (Array.isArray(locale)) {
     return setLocaleFromArray(locale);
@@ -1245,30 +1267,30 @@ Object.defineProperty(moment, "parseTwoDigitYear", {
   setLocale(locale as string);
   return getCurrentLocale();
 };
-(moment as any).localeData = function (locale?: string): Locale {
+(moment as Record<string, unknown>).localeData = function (locale?: string): Locale {
   return getLocale(locale);
 };
-(moment as any).lang = function (locale?: string, ...args: any[]): any {
-  if (locale === undefined) {return (moment as any).locale();}
+(moment as Record<string, unknown>).lang = function (locale?: string, ...args: unknown[]): string | Locale {
+  if (locale === undefined) {return (moment as Record<string, unknown>).locale();}
   if (args.length > 0 && typeof args[0] === "object") {
-    return (moment as any).locale(locale, args[0]);
+    return (moment as Record<string, unknown>).locale(locale, args[0]);
   }
-  return (moment as any).locale(locale);
+  return (moment as Record<string, unknown>).locale(locale);
 };
-(moment as any).langData = function (locale?: string): Locale {
-  return (moment as any).localeData(locale);
+(moment as Record<string, unknown>).langData = function (locale?: string): Locale {
+  return (moment as Record<string, unknown>).localeData(locale);
 };
-(moment as any).defineLocale = function (locale: string, config: any): Locale | void {
+(moment as Record<string, unknown>).defineLocale = function (locale: string, config: Record<string, unknown>): Locale | void {
   return defineLocale(locale, config);
 };
-(moment as any).updateLocale = function (locale: string, config: any): Locale | void {
+(moment as Record<string, unknown>).updateLocale = function (locale: string, config: Record<string, unknown>): Locale | void {
   return updateLocale(locale, config);
 };
-(moment as any).locales = listLocales;
-(moment as any).months = function (format?: string, index?: number): string | string[] {
+(moment as Record<string, unknown>).locales = listLocales;
+(moment as Record<string, unknown>).months = function (format?: string, index?: number): string | string[] {
   return getMonths(format, index);
 };
-(moment as any).monthsShort = function (
+(moment as Record<string, unknown>).monthsShort = function (
   format?: string | number,
   index?: number,
 ): string | string[] {
@@ -1279,7 +1301,7 @@ Object.defineProperty(moment, "parseTwoDigitYear", {
   }
   return getMonths(format || "short", index);
 };
-(moment as any).weekdays = function (
+(moment as Record<string, unknown>).weekdays = function (
   format?: string | boolean | number,
   index?: number,
 ): string | string[] {
@@ -1287,9 +1309,9 @@ Object.defineProperty(moment, "parseTwoDigitYear", {
     const loc = getLocale();
     return loc._weekdays[format];
   }
-  return getWeekdays(format as any, index);
+  return getWeekdays(format as string | boolean, index);
 };
-(moment as any).weekdaysShort = function (
+(moment as Record<string, unknown>).weekdaysShort = function (
   format?: string | boolean | number,
   index?: number,
 ): string | string[] {
@@ -1302,7 +1324,7 @@ Object.defineProperty(moment, "parseTwoDigitYear", {
   }
   return getWeekdays(format || "short", index);
 };
-(moment as any).weekdaysMin = function (
+(moment as Record<string, unknown>).weekdaysMin = function (
   format?: string | boolean | number,
   index?: number,
 ): string | string[] {
@@ -1315,17 +1337,17 @@ Object.defineProperty(moment, "parseTwoDigitYear", {
   }
   return getWeekdays(format || "min", index);
 };
-(moment as any).min = function (...args: any[]): Moment {
+(moment as Record<string, unknown>).min = function (...args: unknown[]): Moment {
   if (args.length === 0) {return moment();}
   let inputList = args;
   if (args.length === 1 && isArray(args[0]) && !isMoment(args[0])) {
-    inputList = args[0] as any;
+    inputList = args[0] as unknown[];
   }
   let best: Moment | null = null;
   let bestVal = Infinity;
   let bestInvalid: Moment | null = null;
   for (const item of inputList) {
-    const m = isMoment(item) ? (item as Moment) : moment(item as any);
+    const m = isMoment(item) ? (item as Moment) : moment(item as unknown);
     const val = m.valueOf();
     if (isNaN(val) || !m.isValid()) {
       if (!bestInvalid) {bestInvalid = m;}
@@ -1336,17 +1358,17 @@ Object.defineProperty(moment, "parseTwoDigitYear", {
   }
   return bestInvalid || best!;
 };
-(moment as any).max = function (...args: any[]): Moment {
+(moment as Record<string, unknown>).max = function (...args: unknown[]): Moment {
   if (args.length === 0) {return moment();}
   let inputList = args;
   if (args.length === 1 && isArray(args[0]) && !isMoment(args[0])) {
-    inputList = args[0] as any;
+    inputList = args[0] as unknown[];
   }
   let best: Moment | null = null;
   let bestVal = -Infinity;
   let bestInvalid: Moment | null = null;
   for (const item of inputList) {
-    const m = isMoment(item) ? (item as Moment) : moment(item as any);
+    const m = isMoment(item) ? (item as Moment) : moment(item as unknown);
     const val = m.valueOf();
     if (isNaN(val) || !m.isValid()) {
       if (!bestInvalid) {bestInvalid = m;}
@@ -1357,14 +1379,14 @@ Object.defineProperty(moment, "parseTwoDigitYear", {
   }
   return bestInvalid || best!;
 };
-(moment as any).relativeTimeRounding = function (fn?: Function | boolean): Function | boolean {
-  return setRelTimeRounding(fn as any);
+(moment as Record<string, unknown>).relativeTimeRounding = function (fn?: Function | boolean): Function | boolean {
+  return setRelTimeRounding(fn as Function | boolean);
 };
-(moment as any).relativeTimeThreshold = function (
+(moment as Record<string, unknown>).relativeTimeThreshold = function (
   threshold: string,
   limit?: number,
 ): number | boolean {
-  return setRelTimeThreshold(threshold, limit as any) as any;
+  return setRelTimeThreshold(threshold, limit as number | undefined) as number | boolean;
 };
 Object.defineProperty(moment, "calendarFormat", {
   get(): ((m: Moment, now: Moment) => string) | undefined {
@@ -1376,16 +1398,16 @@ Object.defineProperty(moment, "calendarFormat", {
   enumerable: true,
   configurable: true,
 });
-(moment as any).suppressDeprecationWarnings = false;
-(moment as any).deprecationHandler = null as ((name: string, msg: string) => void) | null;
+(moment as Record<string, unknown>).suppressDeprecationWarnings = false;
+(moment as Record<string, unknown>).deprecationHandler = null as ((name: string, msg: string) => void) | null;
 
 // Register test locale data
 import { registerTestLocales } from "./locale/test-locales";
 registerTestLocales();
 
 // Temporal bridge — lazily loaded to avoid bundling @js-temporal/polyfill for non-users
-let _toTemporalFn: any = null;
-let _fromTemporalFn: any = null;
+let _toTemporalFn: ((t: unknown) => unknown) | null = null;
+let _fromTemporalFn: ((t: unknown) => unknown) | null = null;
 function _ensureTemporal() {
   if (!_toTemporalFn) {
     const mod = require("./temporal");
@@ -1393,39 +1415,39 @@ function _ensureTemporal() {
     _fromTemporalFn = mod.fromTemporal;
   }
 }
-(moment as any).config = configure;
-(moment as any).report = reportFn;
-(moment as any).fn.toTemporal = function (this: Moment): any {
+(moment as Record<string, unknown>).config = configure;
+(moment as Record<string, unknown>).report = reportFn;
+(moment as Record<string, unknown>).fn.toTemporal = function (this: Moment): unknown {
   _ensureTemporal();
-  return _toTemporalFn!(this as any);
+  return _toTemporalFn!(this as Moment);
 };
-(moment as any).fromTemporal = function (t: any): any {
+(moment as Record<string, unknown>).fromTemporal = function (t: unknown): unknown {
   _ensureTemporal();
   return _fromTemporalFn!(t);
 };
 
 interface MomentStatic {
-  (input?: any, format?: any, localeOrStrict?: any, fourthArg?: any): Moment;
-  duration(input?: any, unit?: string): Duration;
-  locale(locale?: string | string[], ...args: any[]): string | Locale;
+  (input?: unknown, format?: unknown, localeOrStrict?: unknown, fourthArg?: unknown): Moment;
+  duration(input?: unknown, unit?: string): Duration;
+  locale(locale?: string | string[], ...args: unknown[]): string | Locale;
   localeData(locale?: string): Locale;
-  defineLocale(locale: string, config: any): Locale | void;
-  updateLocale(locale: string, config: any): Locale | void;
-  utc(input?: any, format?: any, localeOrStrict?: any, fourthArg?: any): Moment;
-  isMoment(obj: any): boolean;
-  isDate(obj: any): boolean;
-  isDuration(obj: any): boolean;
+  defineLocale(locale: string, config: Record<string, unknown>): Locale | void;
+  updateLocale(locale: string, config: Record<string, unknown>): Locale | void;
+  utc(input?: unknown, format?: unknown, localeOrStrict?: unknown, fourthArg?: unknown): Moment;
+  isMoment(obj: unknown): boolean;
+  isDate(obj: unknown): boolean;
+  isDuration(obj: unknown): boolean;
   normalizeUnits(unit: string): string;
   unix(ts: number): Moment;
-  invalid(input?: any): Moment;
-  parseZone(input?: any, format?: any, strict?: boolean): Moment;
+  invalid(input?: unknown): Moment;
+  parseZone(input?: unknown, format?: unknown, strict?: boolean): Moment;
   months(format?: string, index?: number): string | string[];
   monthsShort(format?: string | number, index?: number): string | string[];
   weekdays(format?: string | boolean | number, index?: number): string | string[];
   weekdaysShort(format?: string | boolean | number, index?: number): string | string[];
   weekdaysMin(format?: string | boolean | number, index?: number): string | string[];
-  min(...args: any[]): Moment;
-  max(...args: any[]): Moment;
+  min(...args: unknown[]): Moment;
+  max(...args: unknown[]): Moment;
   relativeTimeRounding(fn?: Function | boolean): Function | boolean;
   relativeTimeThreshold(threshold: string, limit?: number): number | boolean;
   now: () => number;
@@ -1448,9 +1470,9 @@ interface MomentStatic {
     MONTH: string;
   };
   parseTwoDigitYear: (str: string) => number;
-  config(key: string, value?: any): void;
+  config(key: string, value?: unknown): void;
   report(type?: string): void;
-  fromTemporal(t: any): any;
+  fromTemporal(t: unknown): unknown;
   suppressDeprecationWarnings: boolean;
   deprecationHandler: ((name: string, msg: string) => void) | null;
 }
