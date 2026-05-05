@@ -50,20 +50,8 @@ const isoTimes: [string, RegExp][] = [
 
 const TZ_REGEX = /Z|[+-]\d\d(?::?\d\d)?/;
 
-const TIME_REGEX = /^\s*(\d{2})(:?(\d{2})(:?(\d{2})(\.(\d+))?)?)?$/;
-
 const RFC_2822_REGEX =
   /^\s*((?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s)?(\d{1,2})\s(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s(\d{2,4})\s(\d{2}):(\d{2})(?::(\d{2}))?\s(?:([+-]\d{4})|(UTC|GMT|EST|EDT|CST|CDT|MST|MDT|PST|PDT|[A-IK-Za-ik-z]))?/;
-
-const ISO_WEEK_REGEX =
-  /^\s*(\d{4})-?W(\d{2})(?:-?(\d))?([T ](\d{2})(:?(\d{2})(:?(\d{2})([.,](\d+))?)?)?\s*(Z|([+-])(\d{2})(:?(\d{2}))?)?)?$/;
-
-const ISO_WEEK_SIMPLE_REGEX = /^\s*(\d{4})-?W(\d{2})(?:-?(\d))?$/;
-
-const ISO_ORDINAL_REGEX =
-  /^\s*(\d{4})-(\d{3})([T ](\d{2})(:?(\d{2})(:?(\d{2})([.,](\d+))?)?)?\s*(Z|([+-])(\d{2})(:?(\d{2}))?)?)?$/;
-const ISO_ORDINAL_COMPACT_REGEX =
-  /^\s*(\d{4})(\d{3})([T ](\d{2})(:?(\d{2})(:?(\d{2})([.,](\d+))?)?)?\s*(Z|([+-])(\d{2})(:?(\d{2}))?)?)?$/;
 
 const JSON_DATE_REGEX = /^\/?Date\((-?\d+)(?:[+-]\d{4})?\)\/?$/;
 
@@ -471,130 +459,6 @@ function parseISOWithTable(str: string): Record<string, unknown> | null {
     return { _claimed: true };
   }
   return result;
-}
-
-function parseISO8601(match: RegExpMatchArray): Record<string, unknown> | null {
-  let yearStr = match[1];
-  let year = parseInt(yearStr, 10);
-  let month = match[3] ? parseInt(match[3], 10) - 1 : 0;
-  let day = match[5] ? parseInt(match[5], 10) : 1;
-  let _hasDate = match[3] !== undefined;
-  if (!_hasDate && yearStr.length >= 8 && !yearStr.startsWith("+") && !yearStr.startsWith("-")) {
-    year = parseInt(yearStr.substring(0, 4), 10);
-    month = parseInt(yearStr.substring(4, 6), 10) - 1;
-    day = parseInt(yearStr.substring(6, 8), 10);
-    _hasDate = true;
-  }
-  const _hasTime = match[7] !== undefined;
-  const hour = _hasTime ? parseInt(match[7], 10) : undefined;
-  const minute = match[9] !== undefined ? parseInt(match[9], 10) : undefined;
-  const second = match[11] !== undefined ? parseInt(match[11], 10) : undefined;
-  let millisecond = match[13] !== undefined ? parseInt(match[13].padEnd(3, "0"), 10) : undefined;
-  const tz = match[14];
-  const tzSign = match[15];
-  const tzHour = match[16] ? parseInt(match[16], 10) : 0;
-  const tzMinute = match[18] ? parseInt(match[18], 10) : 0;
-
-  let offset: number | undefined = undefined;
-  if (tz === "Z") {
-    offset = 0;
-  } else if (tzSign) {
-    offset = (tzSign === "+" ? 1 : -1) * (tzHour * 60 + tzMinute);
-  }
-
-  return { year, month, day, hour, minute, second, millisecond, offset, _hasDate, _hasTime };
-}
-
-function parseISOWeek(match: RegExpMatchArray): Record<string, unknown> | null {
-  const year = parseInt(match[1], 10);
-  const week = parseInt(match[2], 10);
-  const day = match[3] ? parseInt(match[3], 10) : 1;
-  const parsedWeekdayNum = match[3] ? parseInt(match[3], 10) : 1;
-  const hour = match[5] ? parseInt(match[5], 10) : 0;
-  const minute = match[7] ? parseInt(match[7], 10) : 0;
-  const second = match[9] ? parseInt(match[9], 10) : 0;
-  let millisecond = match[11] ? parseInt(match[11].padEnd(3, "0"), 10) : 0;
-  const tz = match[12];
-  const tzSign = match[13];
-  const tzHour = match[14] ? parseInt(match[14], 10) : 0;
-  const tzMinute = match[16] ? parseInt(match[16], 10) : 0;
-
-  const jan4 = new Date(Date.UTC(year, 0, 4));
-  const dow = jan4.getUTCDay() || 7;
-  const mondayOfWeek1 = new Date(Date.UTC(year, 0, 4 - (dow - 1)));
-  const date = new Date(mondayOfWeek1.getTime() + ((week - 1) * 7 + (day - 1)) * 86400000);
-
-  let offset: number | undefined = undefined;
-  if (tz === "Z") {
-    offset = 0;
-  } else if (tzSign) {
-    offset = (tzSign === "+" ? 1 : -1) * (tzHour * 60 + tzMinute);
-  }
-
-  return {
-    year: date.getUTCFullYear(),
-    month: date.getUTCMonth(),
-    day: date.getUTCDate(),
-    hour,
-    minute,
-    second,
-    millisecond,
-    offset,
-    isoWeekYear: year,
-    isoWeek: week,
-    _isoWeekNum: week,
-    _weekdayNum: parsedWeekdayNum,
-  };
-}
-
-function parseISOOrdinal(match: RegExpMatchArray): Record<string, unknown> | null {
-  const year = parseInt(match[1], 10);
-  const dayOfYear = parseInt(match[2], 10);
-  if (dayOfYear === 0) {return null;}
-  const maxDay = (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)) ? 366 : 365;
-  if (dayOfYear > maxDay) {return null;}
-  const hour = match[4] ? parseInt(match[4], 10) : 0;
-  const minute = match[6] ? parseInt(match[6], 10) : 0;
-  const second = match[8] ? parseInt(match[8], 10) : 0;
-  let millisecond = match[10] ? parseInt(match[10].padEnd(3, "0"), 10) : 0;
-  const tz = match[11];
-  const tzSign = match[12];
-  const tzHour = match[13] ? parseInt(match[13], 10) : 0;
-  const tzMinute = match[15] ? parseInt(match[15], 10) : 0;
-
-  const date = new Date(Date.UTC(year, 0, dayOfYear));
-  if (year >= 0 && year < 100) {
-    date.setUTCFullYear(year);
-  }
-
-  let offset: number | undefined = undefined;
-  if (tz === "Z") {
-    offset = 0;
-  } else if (tzSign) {
-    offset = (tzSign === "+" ? 1 : -1) * (tzHour * 60 + tzMinute);
-  }
-
-  return {
-    year: date.getUTCFullYear(),
-    month: date.getUTCMonth(),
-    day: date.getUTCDate(),
-    hour,
-    minute,
-    second,
-    millisecond,
-    offset,
-  };
-}
-
-function parseTime(match: RegExpMatchArray): Record<string, unknown> | null {
-  const hour = parseInt(match[1], 10);
-  const minute = match[3] ? parseInt(match[3], 10) : 0;
-  const second = match[5] ? parseInt(match[5], 10) : 0;
-  const millisecond = match[7] ? parseInt(match[7].padEnd(3, "0"), 10) : 0;
-
-  if (hour > 23 || minute > 59 || second > 59) {return null;}
-
-  return { hour, minute, second, millisecond };
 }
 
 const monthNames: Record<string, number> = {
