@@ -1040,7 +1040,6 @@ export class Moment {
   }
 
   private _addSimple(amount: number, unit: number): void {
-    const dt = this._getD();
     let changedDays = false;
 
     switch (unit) {
@@ -1048,6 +1047,7 @@ export class Moment {
       case QUARTER:
       case MONTH: {
         changedDays = true;
+        this._ensureFields();
         const totalMonths = absRound(unit === YEAR ? amount * 12 : unit === QUARTER ? amount * 3 : amount);
 
         const tm = this.$y * 12 + this.$M + totalMonths;
@@ -1073,6 +1073,7 @@ export class Moment {
       case DAY:
       case DATE: {
         changedDays = true;
+        this._ensureFields();
         const rounded = absRound((unit === WEEK || unit === ISO_WEEK) ? amount * 7 : amount);
         if (rounded !== 0) {
           this.$D += rounded;
@@ -1093,6 +1094,7 @@ export class Moment {
         if (this._isUTC) {
           this._t = Date.UTC(this.$y, this.$M, this.$D, this.$H, this.$m, this.$s, this.$ms);
         } else {
+          const dt = this._getD();
           dt.setFullYear(this.$y, this.$M, this.$D);
           this._t = dt.getTime();
           this.$W = dt.getDay();
@@ -1100,26 +1102,34 @@ export class Moment {
         }
         break;
       }
-      case HOUR:
+      case HOUR: {
+        const dt = this._getD();
         dt.setTime(dt.getTime() + Math.round(amount * 3600000));
         this._t = dt.getTime();
         this._refreshFields();
         break;
-      case MINUTE:
+      }
+      case MINUTE: {
+        const dt = this._getD();
         dt.setTime(dt.getTime() + Math.round(amount * 60000));
         this._t = dt.getTime();
         this._refreshFields();
         break;
-      case SECOND:
+      }
+      case SECOND: {
+        const dt = this._getD();
         dt.setTime(dt.getTime() + Math.round(amount * 1000));
         this._t = dt.getTime();
         this._refreshFields();
         break;
-      case MILLISECOND:
+      }
+      case MILLISECOND: {
+        const dt = this._getD();
         dt.setTime(dt.getTime() + Math.round(amount));
         this._t = dt.getTime();
         this._refreshFields();
         break;
+      }
       default:
         return;
     }
