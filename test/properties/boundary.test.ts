@@ -2,8 +2,8 @@ import { describe, test, expect } from 'bun:test'
 import fc from 'fast-check'
 import _moment from '../../src/index.ts'
 import _originalMoment from '../../moment/moment'
-const moment = _moment as any
-const originalMoment = _originalMoment as any
+const moment = _moment as unknown
+const originalMoment = _originalMoment as unknown
 
 describe('Property-based: boundary values', () => {
   test('boundary and degenerate inputs', () => {
@@ -11,8 +11,8 @@ describe('Property-based: boundary values', () => {
       fc.property(
         fc.constantFrom(null, undefined, 0, '', NaN, Infinity, -Infinity, false, true),
         (input) => {
-          const m2 = moment(input as any)
-          const mOrig = originalMoment(input as any)
+          const m2 = moment(input as unknown)
+          const mOrig = originalMoment(input as unknown)
           expect(m2.isValid()).toBe(mOrig.isValid())
           if (mOrig.isValid()) {
             if (input === undefined || input === null) {
@@ -65,7 +65,7 @@ describe('Property-based: boundary values', () => {
         fc.array(fc.integer({ min: -10000, max: 10000 }), { maxLength: 10 }),
         (arr) => {
           const m2 = moment(arr)
-          const mOrig = (originalMoment as any)(arr)
+          const mOrig = (originalMoment as Function)(arr)
           expect(m2.isValid()).toBe(mOrig.isValid())
           if (mOrig.isValid()) {
             expect(m2.format('YYYY-MM-DD')).toBe(mOrig.format('YYYY-MM-DD'))
@@ -86,7 +86,7 @@ describe('Property-based: boundary values', () => {
         }),
         (obj) => {
           const m2 = moment(obj)
-          const mOrig = (originalMoment as any)(obj)
+          const mOrig = (originalMoment as Function)(obj)
           expect(m2.isValid()).toBe(mOrig.isValid())
         }
       ),
@@ -119,8 +119,8 @@ describe('Property-based: boundary values', () => {
       fc.property(
         fc.constantFrom(null, undefined, NaN, Infinity, -Infinity),
         (input) => {
-          const m2 = moment(input as any)
-          const mOrig = originalMoment(input as any)
+          const m2 = moment(input as unknown)
+          const mOrig = originalMoment(input as unknown)
           expect(m2.isValid()).toBe(mOrig.isValid())
         }
       ),
@@ -235,7 +235,7 @@ describe('Property-based: boundary values', () => {
         ),
         (arr) => {
           const m2 = moment(arr)
-          const mOrig = (originalMoment as any)(arr)
+          const mOrig = (originalMoment as Function)(arr)
           expect(m2.isValid()).toBe(mOrig.isValid())
 if (mOrig.isValid()) {
           expect(m2.format('YYYY-MM-DD')).toBe(mOrig.format('YYYY-MM-DD'))

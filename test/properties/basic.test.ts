@@ -2,8 +2,8 @@ import { describe, test, expect } from 'bun:test'
 import fc from 'fast-check'
 import _moment from '../../src/index.ts'
 import _originalMoment from '../../moment/moment'
-const moment = _moment as any
-const originalMoment = _originalMoment as any
+const moment = _moment as unknown
+const originalMoment = _originalMoment as unknown
 
 describe('Property-based: moment vs original moment', () => {
   const safeMin = new Date('1900-01-01')
@@ -503,8 +503,8 @@ describe('Property-based: moment vs original moment', () => {
   test('isBetween matches moment', () => {
     fc.assert(
       fc.property(safeDates, safeDates, safeDates, compUnits, inclusivityModes, (a, b, c, unit, mode) => {
-        const from = (moment as any).min(moment(b), moment(c))
-        const to = (moment as any).max(moment(b), moment(c))
+        const from = (moment as Function).min(moment(b), moment(c))
+        const to = (moment as Function).max(moment(b), moment(c))
         const fromO = originalMoment.min(originalMoment(b), originalMoment(c))
         const toO = originalMoment.max(originalMoment(b), originalMoment(c))
         expect(moment(a).isBetween(from, to, unit, mode)).toBe(
@@ -631,7 +631,7 @@ describe('Property-based: moment vs original moment', () => {
   test('toObject matches moment', () => {
     fc.assert(
       fc.property(safeDates, (date) => {
-        expect((moment(date) as any).toObject()).toEqual(originalMoment(date).toObject())
+        expect((moment(date) as Record<string, unknown>).toObject()).toEqual(originalMoment(date).toObject())
       }),
       { numRuns: 100 }
     )
@@ -698,7 +698,7 @@ describe('Property-based: moment vs original moment', () => {
   test('moment.utc() vs originalMoment.utc()', () => {
     fc.assert(
       fc.property(safeDates, (date) => {
-        const m2 = (moment as any).utc(date)
+        const m2 = (moment as Function).utc(date)
         const mOrig = originalMoment.utc(date)
         expect(m2.format('YYYY-MM-DDTHH:mm:ss.SSSZ')).toBe(mOrig.format('YYYY-MM-DDTHH:mm:ss.SSSZ'))
         expect(m2.isUTC()).toBe(mOrig.isUTC())
@@ -744,7 +744,7 @@ describe('Property-based: moment vs original moment', () => {
   test('format output with UTC mode matches moment', () => {
     fc.assert(
       fc.property(safeDates, (date) => {
-        const m2 = (moment as any).utc(date)
+        const m2 = (moment as Function).utc(date)
         const mOrig = originalMoment.utc(date)
         expect(m2.format('YYYY-MM-DD HH:mm:ss')).toBe(mOrig.format('YYYY-MM-DD HH:mm:ss'))
       }),
