@@ -697,6 +697,25 @@ function timedMatch(
 
 const expandedFormatCache = new LruMap<string, string>(500);
 
+function isDigit(ch: string): boolean {
+  const c = ch.charCodeAt(0);
+  return c >= 48 && c <= 57;
+}
+
+function isAlphaNum(ch: string): boolean {
+  const c = ch.charCodeAt(0);
+  return (c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122);
+}
+
+function isWs(ch: string): boolean {
+  const c = ch.charCodeAt(0);
+  return c === 0x20 || c === 0x09 || c === 0x0A || c === 0x0D || c === 0x0C;
+}
+
+function charEqCI(ch: string, ch2: string): boolean {
+  return (ch.charCodeAt(0) | 32) === (ch2.charCodeAt(0) | 32);
+}
+
 function skipToNext(
   str: string,
   test: (ch: string) => boolean,
@@ -777,7 +796,7 @@ function parseWithFormat(
 
       const trimmedVal = val.trim();
       if (!trimmedVal) {
-        while (strIdx < str.length && /\s/.test(str[strIdx])) {
+        while (strIdx < str.length && isWs(str[strIdx])) {
           strIdx++;
         }
         continue;
@@ -790,7 +809,10 @@ function parseWithFormat(
           result._unusedTokens.push(val);
         }
       } else {
-        const isSep = !/[A-Za-z0-9]/.test(trimmedVal);
+        let isSep = trimmedVal.length > 0;
+        for (let ci = 0; ci < trimmedVal.length; ci++) {
+          if (isAlphaNum(trimmedVal[ci])) {isSep = false; break;}
+        }
         if (str.startsWith(trimmedVal, strIdx)) {
           strIdx += trimmedVal.length;
         } else if (isSep) {
@@ -801,7 +823,7 @@ function parseWithFormat(
           if (matchIdx !== -1) {
             let hasAlphaBefore = false;
             for (let check = strIdx; check < matchIdx; check++) {
-              if (/[A-Za-z0-9]/.test(str[check])) {
+              if (isAlphaNum(str[check])) {
                 hasAlphaBefore = true;
                 break;
               }
@@ -848,16 +870,17 @@ function parseWithFormat(
             token.name === "yyyy" ||
             token.name === "Y") &&
           strIdx === 0;
-        if (!/^\d/.test(remaining) && !canHandleSign) {
-          const skipIdx = skipToNext(remaining, (ch) => /\d/.test(ch));
+        if (!isDigit(remaining[0]) && !canHandleSign) {
+          const skipIdx = skipToNext(remaining, isDigit);
           if (skipIdx > 0) {
             result._unusedInput.push(remaining.substring(0, skipIdx));
             strIdx += skipIdx;
             remaining = str.substring(strIdx);
           }
-        } else if (!/^\d/.test(remaining) && canHandleSign) {
-          if (!/^[+-]/.test(remaining)) {
-            const skipIdx = skipToNext(remaining, (ch) => /\d/.test(ch));
+        } else if (!isDigit(remaining[0]) && canHandleSign) {
+          const rc0 = remaining.charCodeAt(0);
+          if (rc0 !== 43 && rc0 !== 45) {
+            const skipIdx = skipToNext(remaining, isDigit);
             if (skipIdx > 0) {
               result._unusedInput.push(remaining.substring(0, skipIdx));
               strIdx += skipIdx;
@@ -884,7 +907,8 @@ function parseWithFormat(
         if (!/[ap]/i.test(remaining)) {
           let skipIdx = -1;
           for (let si = 0; si < remaining.length; si++) {
-            if (/[ap]/i.test(remaining[si])) {
+            const rc = remaining.charCodeAt(si);
+            if (rc === 65 || rc === 97 || rc === 80 || rc === 112) {
               skipIdx = si;
               break;
             }
