@@ -1138,7 +1138,7 @@ function createFromObject(obj: Record<string, unknown>): Moment {
   const second = parsed.second !== undefined ? parsed.second : 0;
   const ms = parsed.millisecond !== undefined ? parsed.millisecond : 0;
   const overflow = checkOverflow({ year, month, day, hour, minute, second, millisecond: ms });
-  const d = new Date(year, month, day, hour, minute, second, ms);
+  const d = createDate(year, month, day, hour, minute, second, ms);
   if (overflow >= 0) {
     return new Moment({ _dClone: false, _d: d, _i: obj, _isValid: false, _overflow: overflow });
   }
