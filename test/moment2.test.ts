@@ -8,7 +8,7 @@ defineLocale('de', deLocale)
 describe('moment2 specific', () => {
 
   test('clone should not share _d reference', () => {
-    const m = moment('2024-01-15') as any
+    const m = moment('2024-01-15') as Moment
     const c = m.clone()
 
     c.year(2025)
@@ -25,7 +25,7 @@ describe('moment2 specific', () => {
   })
 
   test('clone should be independent after add/subtract', () => {
-    const m = moment('2024-01-15') as any
+    const m = moment('2024-01-15') as Moment
     const c = m.clone()
 
     c.add(1, 'day')
@@ -39,18 +39,18 @@ describe('moment2 specific', () => {
 
   test('constructor should not share _d reference', () => {
     const d = new Date('2024-01-15')
-    const m = moment(d) as any
+    const m = moment(d) as Moment
     d.setFullYear(2025)
     expect(m.year()).toBe(2024)
   })
 
   test('defineLocale after creation should not affect existing Moment instances', () => {
-    const m = moment('2024-06-15') as any
+    const m = moment('2024-06-15') as Moment
     const original = m.format('MMMM')
     moment.defineLocale('_test_cow', {
       parentLocale: 'en',
       months: 'A_B_C_D_E_F_G_H_I_J_K_L'.split('_'),
-    } as any)
+    } as LocaleSpec)
     const after = m.format('MMMM')
     expect(after).toBe(original)
     moment.locale('en')
@@ -60,18 +60,18 @@ describe('moment2 specific', () => {
     moment.defineLocale('_test_cow', {
       parentLocale: 'en',
       months: 'A_B_C_D_E_F_G_H_I_J_K_L'.split('_'),
-    } as any)
-    const m = moment('2024-06-15').locale('_test_cow') as any
+    } as LocaleSpec)
+    const m = moment('2024-06-15').locale('_test_cow') as Moment
     expect(m.format('MMMM')).toBe('F')
     moment.locale('en')
   })
 
   test('setLocale changes default locale for new moments only', () => {
     moment.locale('en')
-    const existing = moment('2024-06-15 10:30:00') as any
+    const existing = moment('2024-06-15 10:30:00') as Moment
     const existingLocale = existing.locale()
     moment.locale('de')
-    const created = moment('2024-06-15 10:30:00') as any
+    const created = moment('2024-06-15 10:30:00') as Moment
     expect(existing.locale()).toBe(existingLocale)
     expect(created.locale()).toBe('de')
     moment.locale('en')
@@ -80,23 +80,23 @@ describe('moment2 specific', () => {
   test('moment.now can override Date.now for new moments', () => {
     const fixed = new Date('2025-01-01T00:00:00Z').valueOf()
     moment.now = () => fixed
-    const m = moment() as any
+    const m = moment() as Moment
     expect(m.valueOf()).toBe(fixed)
-    moment.now = undefined as any
-    const after = moment() as any
+    moment.now = undefined as unknown
+    const after = moment() as Moment
     expect(Math.abs(Date.now() - after.valueOf())).toBeLessThan(100)
   })
 
   test('updateOffset callback is called on setters', () => {
     const calls: string[] = []
-    moment.updateOffset = ((m: any, keepTime?: boolean) => {
+    moment.updateOffset = ((m: Moment, keepTime?: boolean) => {
       calls.push(keepTime ? 'keep' : 'no-keep')
-    }) as any
-    const m = moment('2024-06-15') as any
+    }) as (m: Moment, keepTime?: boolean) => void
+    const m = moment('2024-06-15') as Moment
     calls.length = 0
     m.year(2025)
     expect(calls.length).toBeGreaterThanOrEqual(1)
-    moment.updateOffset = undefined as any
+    moment.updateOffset = undefined as unknown
   })
 
   test('ISO string without timezone is parsed as local time (matching moment.js)', () => {
@@ -110,12 +110,12 @@ describe('moment2 specific', () => {
   })
 
   test('ISO string with timezone uses UTC internally', () => {
-    const utc = moment('2024-03-09T12:00:00Z') as any
+    const utc = moment('2024-03-09T12:00:00Z') as Moment
     expect(utc._isUTC).toBe(true)
     // moment2 keeps _isUTC=true for Z strings, so hour() is UTC hour
     expect(utc.hour()).toBe(12)
 
-    const withOffset = moment('2024-03-09T12:00:00+05:00') as any
+    const withOffset = moment('2024-03-09T12:00:00+05:00') as Moment
     expect(withOffset._isUTC).toBe(true)
     expect(withOffset._offset).toBe(300)
     expect(withOffset.valueOf()).toBe(new Date('2024-03-09T07:00:00Z').getTime())
@@ -126,7 +126,7 @@ describe('moment2 specific', () => {
     // moment.utc creates _isUTC=true, so hour() returns UTC hour
     expect(utc.hour()).toBe(12)
     expect(utc.valueOf()).toBe(new Date('2024-03-09T12:00:00Z').getTime())
-    expect((utc as any).isUTC()).toBe(true)
+    expect((utc as Moment).isUTC()).toBe(true)
   })
 
   test('ISO date-only string is parsed as local time (no hour shift)', () => {
@@ -140,7 +140,7 @@ describe('moment2 specific', () => {
   test('_dClone: false skips defensive clone in constructor', () => {
     const MomentCtor = Object.getPrototypeOf(moment()).constructor
     const d = new Date('2024-06-15T12:00:00Z')
-    const m = new MomentCtor({ _d: d, _dClone: false }) as any
+    const m = new MomentCtor({ _d: d, _dClone: false }) as (m: Moment, keepTime?: boolean) => void
     expect(m._d).toBe(d) // 同じ参照 → cloneされていない
     m.add(1, 'day')
     expect(d.getDate()).toBe(16) // 外部Dateも変わってしまう
@@ -149,7 +149,7 @@ describe('moment2 specific', () => {
   test('_dClone無指定なら防御的にcloneされる', () => {
     const MomentCtor = Object.getPrototypeOf(moment()).constructor
     const external = new Date('2024-06-15T12:00:00Z')
-    const m = new MomentCtor({ _d: external }) as any
+    const m = new MomentCtor({ _d: external }) as (m: Moment, keepTime?: boolean) => void
     expect(m._d).not.toBe(external) // cloneされた → 別参照
     m.add(1, 'day')
     expect(external.getDate()).toBe(15) // 外部は不変
