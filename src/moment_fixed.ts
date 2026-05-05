@@ -1066,7 +1066,8 @@ export class Moment {
       case MONTH: {
         changedDays = true;
         this._ensureFields();
-        const totalMonths = absRound(unit === YEAR ? amount * 12 : unit === QUARTER ? amount * 3 : amount);
+        const rawMonths = unit === YEAR ? amount * 12 : unit === QUARTER ? amount * 3 : amount;
+        const totalMonths = Number.isInteger(rawMonths) ? rawMonths : (rawMonths < 0 ? Math.round(rawMonths * -1) * -1 : Math.round(rawMonths));
 
         const tm = this.$y * 12 + this.$M + totalMonths;
         const y = Math.floor(tm / 12);
@@ -1091,7 +1092,8 @@ export class Moment {
       case DAY:
       case DATE: {
         changedDays = true;
-        const rounded = absRound((unit === WEEK || unit === ISO_WEEK) ? amount * 7 : amount);
+        const raw = (unit === WEEK || unit === ISO_WEEK) ? amount * 7 : amount;
+        const rounded = Number.isInteger(raw) ? raw : (raw < 0 ? Math.round(raw * -1) * -1 : Math.round(raw));
         if (rounded !== 0) {
           if (this._isUTC) {
             this._t += rounded * 86400000;
@@ -1765,25 +1767,54 @@ export class Moment {
 
         const wholeMonthDiff = (bYear - aYear) * 12 + (bMonth - aMonth);
 
-        const anchorVal = anchorMs(aYear, aMonth, aDayOf, a.$H, a.$m, a.$s, a.$ms, a._isUTC, wholeMonthDiff);
-        const bVal = b.valueOf();
-        const sub = bVal - anchorVal;
-
-        let result: number;
         if (!float) {
-          if (sub < 0) {
+          // Calendar-based month diff: determine sign by comparing b with anchor date
+          const tm = aYear * 12 + aMonth + wholeMonthDiff;
+          const anchorY = Math.floor(tm / 12);
+          const anchorM = ((tm % 12) + 12) % 12;
+          const maxDay = daysInMonth(anchorY, anchorM);
+          const anchorD = aDayOf > maxDay ? maxDay : aDayOf;
+          const bDay = b.$D;
+
+          let bBeforeAnchor: boolean;
+          if (bYear !== anchorY) bBeforeAnchor = bYear < anchorY;
+          else if (bMonth !== anchorM) bBeforeAnchor = bMonth < anchorM;
+          else if (bDay !== anchorD) bBeforeAnchor = bDay < anchorD;
+          else {
+            const aH = a.$H, am = a.$m, aS = a.$s, aMs = a.$ms;
+            const bH = b.$H, bm = b.$m, bS = b.$s, bMs = b.$ms;
+            if (bH !== aH) bBeforeAnchor = bH < aH;
+            else if (bm !== am) bBeforeAnchor = bm < am;
+            else if (bS !== aS) bBeforeAnchor = bS < aS;
+            else bBeforeAnchor = bMs < aMs;
+          }
+
+          let result: number;
+          if (bBeforeAnchor) {
             result = wholeMonthDiff > 0 ? -wholeMonthDiff + 1 : 0;
           } else {
             result = -wholeMonthDiff;
           }
           if (swap) {result = -result;}
-        } else {
-          const adjust = sub < 0
-            ? sub / (anchorVal - anchorMs(aYear, aMonth, aDayOf, a.$H, a.$m, a.$s, a.$ms, a._isUTC, wholeMonthDiff - 1))
-            : sub / (anchorMs(aYear, aMonth, aDayOf, a.$H, a.$m, a.$s, a.$ms, a._isUTC, wholeMonthDiff + 1) - anchorVal);
-          result = -(wholeMonthDiff + adjust);
-          if (swap) {result = -result;}
+          if (code === YEAR) {result /= 12;}
+          else if (code === QUARTER) {result /= 3;}
+          const t = result < 0 ? -Math.floor(-result) : Math.floor(result);
+          return Object.is(t, -0) ? 0 : t;
         }
+
+        const anchorVal = anchorMs(aYear, aMonth, aDayOf, a.$H, a.$m, a.$s, a.$ms, a._isUTC, wholeMonthDiff);
+        const bVal = b.valueOf();
+        const sub = bVal - anchorVal;
+
+        let adjust: number;
+        if (sub < 0) {
+          adjust = sub / (anchorVal - anchorMs(aYear, aMonth, aDayOf, a.$H, a.$m, a.$s, a.$ms, a._isUTC, wholeMonthDiff - 1));
+        } else {
+          adjust = sub / (anchorMs(aYear, aMonth, aDayOf, a.$H, a.$m, a.$s, a.$ms, a._isUTC, wholeMonthDiff + 1) - anchorVal);
+        }
+
+        let result = -(wholeMonthDiff + adjust);
+        if (swap) {result = -result;}
 
         if (code === YEAR) {result /= 12;}
         else if (code === QUARTER) {result /= 3;}
