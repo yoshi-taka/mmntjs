@@ -23,7 +23,19 @@ clone                                 73ns       36ns   48.4%
 
 moment2 is **5-12x faster** than original moment.js for parsing, formatting, and getters.
 
-### moment2 vs date-fns
+### moment2 vs date-fns (including Intl.DateTimeFormat)
+
+```text
+Operation                           moment2    date-fns     %
+format YYYY-MM-DD                        43ns     1.15μs 2702.0%
+lightFormat YYYY-MM-DD                   32ns      579ns 1829.7%
+Intl.DateTimeFormat YYYY-MM-DD          38ns      607ns 1608.7%
+format HH:mm:ss                          49ns      930ns 1910.6%
+lightFormat HH:mm:ss                     40ns      456ns 1142.4%
+Intl.DateTimeFormat HH:mm:ss            58ns      548ns  948.5%
+```
+
+moment2's `format()` is **9-16x faster** than `Intl.DateTimeFormat`, the native browser/Node.js API. This is because moment2 formats by concatenating cached numeric fields directly, while Intl.DateTimeFormat requires locale resolution and ICU data lookup.
 
 ```text
 Operation                           moment2    date-fns   %

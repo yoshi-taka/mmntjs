@@ -2,12 +2,13 @@ import type { Moment } from "./moment_fixed";
 import { isFunction, isString, isMoment, escapeRegex } from "./utils";
 import type { LocaleSpec } from "./locale/en";
 import { enLocale } from "./locale/en";
+import { buildRenderFns, lowerVariant, type RenderFn } from "./format-tokens";
 
 let currentLocaleName = "en";
 const locales: Record<string, LocaleSpec> = {
   en: enLocale,
 };
-const _localeCache = new Map<string, Locale>();
+export const _localeCache = new Map<string, Locale>();
 const originalLocales: Record<string, LocaleSpec> = {};
 
 function hasOwn(obj: object, key: string): boolean {
@@ -565,8 +566,31 @@ export function getLocale(locale?: string | { _locale?: { _abbr?: string }; _l?:
   if (cached) {return cached;}
   const config = resolveLocaleConfig(key);
   const loc = new Locale(config, key);
+  precompileLocaleFormats(loc);
   _localeCache.set(key, loc);
   return loc;
+}
+
+function precompileLocaleFormats(loc: Locale): void {
+  const ldf = (loc._config as Record<string, unknown>).longDateFormat as Record<string, string> | undefined;
+  if (!ldf) return;
+  const cache: Record<string, RenderFn[]> = {};
+  for (const key of Object.keys(ldf)) {
+    cache[key] = buildRenderFns(ldf[key]);
+  }
+  for (const upper of ["L", "LL", "LLL", "LLLL"]) {
+    const lower = upper.toLowerCase();
+    if (ldf[upper] && !cache[lower]) {
+      cache[lower] = buildRenderFns(lowerVariant(ldf[upper]));
+    }
+  }
+  if (ldf.LT && !cache.lt) {
+    cache.lt = buildRenderFns(lowerVariant(ldf.LT));
+  }
+  if (ldf.LTS && !cache.lts) {
+    cache.lts = buildRenderFns(lowerVariant(ldf.LTS));
+  }
+  (loc._config as Record<string, unknown>)._localeRenderFns = cache;
 }
 
 export function setLocale(locale: string): void {
