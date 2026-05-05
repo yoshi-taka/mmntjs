@@ -593,7 +593,7 @@ function createFromString(
       if (weekOverflow >= 0) {
         return new Moment({ _dClone: false, _d: new Date(NaN), _i: str, _isValid: false, _overflow: weekOverflow });
       }
-      return createMomentFromParsed(parsed, str, undefined, undefined, undefined);
+      return createMomentFromParsed(parsed, str);
     }
     const { year, month, day, hour, minute, second, millisecond, offset, dayOfYear } = parsed;
     let y = year;
@@ -1214,7 +1214,7 @@ Object.defineProperty(moment, "parseTwoDigitYear", {
     return m;
   }
   if (!m._isUTC && isString(input)) {
-    const utcDate = new Date((input as string) + " UTC");
+    const utcDate = new Date(`${input as string} UTC`);
     if (!isNaN(utcDate.getTime())) {
       m._d = utcDate;
     } else {

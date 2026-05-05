@@ -57,7 +57,7 @@ export function toTemporal(m: Moment): Temporal.PlainDate | Temporal.ZonedDateTi
   return getT().PlainDate.from({ year, month, day });
 }
 
-export function fromTemporal(t: any): Moment {
+export function fromTemporal(t: unknown): Moment {
   const { default: moment } = require("./index");
   const T = getT();
 

@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-expect-error Benchmark setup requires loose types
 import moment2 from "../moment";
 import moment from "../moment/moment.js";
 

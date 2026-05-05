@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 function processRelativeTime(number, withoutSuffix, key, _isFuture) {

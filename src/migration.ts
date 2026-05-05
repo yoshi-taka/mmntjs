@@ -53,7 +53,7 @@ export function configure(opts: Moment2Config): void {
   config = { ...config, ...opts };
 }
 
-export function track(apiName: string, _args?: any[]): void {
+export function track(apiName: string, _args?: unknown[]): void {
   if (config.trackUsage) {
     usageTracker.add(apiName);
   }

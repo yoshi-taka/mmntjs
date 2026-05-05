@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-expect-error Locale property shapes are intentionally loose
 import type { Moment } from "../moment_fixed";
 import type { LocaleSpec } from "./en";
 
@@ -8,7 +8,7 @@ const jaWeekdays = '日曜日_月曜日_火曜日_水曜日_木曜日_金曜日_
 const jaWeekdaysShort = '日_月_火_水_木_金_土'.split('_');
 
 function _jaFormatFastPath(m: Moment, format: string): string | undefined {
-  const raw = m as any;
+  const raw = m as unknown;
   if (!raw._isValid) {return undefined;}
   const y = raw.$y;
   if (y < 0 || y > 9999) {return undefined;}

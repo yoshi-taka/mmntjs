@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 export const thLocale: LocaleSpec = {

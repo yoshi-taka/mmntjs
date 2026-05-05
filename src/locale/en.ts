@@ -49,7 +49,7 @@ export interface LocaleSpec {
   calendar?: Record<string, string | ((this: Moment, ref: Moment) => string)>;
   dayOfMonthOrdinalParse?: RegExp;
   invalidDate?: string;
-  eras?: any[];
+  eras?: unknown[];
   eraYearOrdinalRegex?: RegExp;
   eraYearOrdinalParse?: (input: string, match: RegExpExecArray) => number;
   week?: { dow: number; doy: number };

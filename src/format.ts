@@ -14,7 +14,7 @@ function year(m: Moment): number {
 }
 
 function getEraInfo(m: Moment, loc: Locale): { era: unknown; eraYear: number } | null {
-  const eras = (loc._config as Record<string, unknown>).eras as Array<Record<string, unknown>> | undefined;
+  const eras = (loc._config as Record<string, unknown>).eras as Record<string, unknown>[] | undefined;
   if (!eras || !Array.isArray(eras) || eras.length === 0) {return null;}
   const y = year(m);
   const month1 = (m.month() as number) + 1;
