@@ -1370,30 +1370,32 @@ export class Moment {
 
     switch (code) {
       case YEAR:
-        if (utc) { d.setUTCFullYear(d.getUTCFullYear(), 11, 31); d.setUTCHours(23, 59, 59, 999); }
-        else { d.setFullYear(d.getFullYear(), 11, 31); d.setHours(23, 59, 59, 999); }
-        this.$y = utc ? d.getUTCFullYear() : d.getFullYear();
+        if (utc) { d.setTime(Date.UTC(this.$y, 11, 31, 23, 59, 59, 999)); }
+        else { d.setFullYear(this.$y, 11, 31); d.setHours(23, 59, 59, 999); }
         this.$M = 11; this.$D = 31;
         this.$H = 23; this.$m = 59; this.$s = 59; this.$ms = 999;
         this.$W = _dayOfWeek(this.$y, 11, 31);
         break;
       case QUARTER: {
         const _qEndM = Math.floor(this.$M / 3) * 3 + 2;
-        if (utc) { d.setUTCMonth(_qEndM + 1, 0); d.setUTCHours(23, 59, 59, 999); }
-        else { d.setMonth(_qEndM + 1, 0); d.setHours(23, 59, 59, 999); }
+        const _qEndD = daysInMonth(this.$y, _qEndM);
+        if (utc) { d.setTime(Date.UTC(this.$y, _qEndM, _qEndD, 23, 59, 59, 999)); }
+        else { d.setFullYear(this.$y, _qEndM, _qEndD); d.setHours(23, 59, 59, 999); }
         this.$M = _qEndM;
-        this.$D = daysInMonth(this.$y, _qEndM);
+        this.$D = _qEndD;
         this.$H = 23; this.$m = 59; this.$s = 59; this.$ms = 999;
-        this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
+        this.$W = _dayOfWeek(this.$y, _qEndM, _qEndD);
         break;
       }
-      case MONTH:
-        if (utc) { d.setUTCMonth(d.getUTCMonth() + 1, 0); d.setUTCHours(23, 59, 59, 999); }
-        else { d.setMonth(d.getMonth() + 1, 0); d.setHours(23, 59, 59, 999); }
-        this.$D = daysInMonth(this.$y, this.$M);
+      case MONTH: {
+        const _eomMaxDay = daysInMonth(this.$y, this.$M);
+        if (utc) { d.setTime(Date.UTC(this.$y, this.$M, _eomMaxDay, 23, 59, 59, 999)); }
+        else { d.setFullYear(this.$y, this.$M, _eomMaxDay); d.setHours(23, 59, 59, 999); }
+        this.$D = _eomMaxDay;
         this.$H = 23; this.$m = 59; this.$s = 59; this.$ms = 999;
-        this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
+        this.$W = _dayOfWeek(this.$y, this.$M, _eomMaxDay);
         break;
+      }
       case WEEK: {
         const _locWeek = this._getLocale();
         const _weekCfg = (_locWeek._config as Record<string, unknown>).week || { dow: 0 };
