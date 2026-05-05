@@ -704,33 +704,12 @@ function timedMatch(
 
 const expandedFormatCache = new LruMap<string, string>(500);
 
-function isDigit(ch: string): boolean {
-  const c = ch.charCodeAt(0);
-  return c >= 48 && c <= 57;
-}
-
-function isAlphaNum(ch: string): boolean {
-  const c = ch.charCodeAt(0);
-  return (c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122);
-}
-
-function isWs(ch: string): boolean {
-  const c = ch.charCodeAt(0);
-  return c === 0x20 || c === 0x09 || c === 0x0A || c === 0x0D || c === 0x0C;
-}
-
-function charEqCI(ch: string, ch2: string): boolean {
-  return (ch.charCodeAt(0) | 32) === (ch2.charCodeAt(0) | 32);
-}
-
-function skipToNext(
-  str: string,
-  test: (ch: string) => boolean,
-): number {
-  for (let i = 0; i < str.length; i++) {
-    if (test(str[i])) {return i;}
-  }
-  return -1;
+function parseTwo(str: string, idx: number): { v: number; len: number } | null {
+  const c1 = str.charCodeAt(idx);
+  if (c1 < 48 || c1 > 57) return null;
+  const c2 = str.charCodeAt(idx + 1);
+  if (c2 >= 48 && c2 <= 57) return { v: (c1 - 48) * 10 + (c2 - 48), len: 2 };
+  return { v: c1 - 48, len: 1 };
 }
 
 function parseWithFormat(
@@ -803,7 +782,9 @@ function parseWithFormat(
 
       const trimmedVal = val.trim();
       if (!trimmedVal) {
-        while (strIdx < str.length && isWs(str[strIdx])) {
+        while (strIdx < str.length) {
+          const c = str.charCodeAt(strIdx);
+          if (c !== 0x20 && c !== 0x09 && c !== 0x0A && c !== 0x0D && c !== 0x0C) {break;}
           strIdx++;
         }
         continue;
@@ -818,19 +799,32 @@ function parseWithFormat(
       } else {
         let isSep = trimmedVal.length > 0;
         for (let ci = 0; ci < trimmedVal.length; ci++) {
-          if (isAlphaNum(trimmedVal[ci])) {isSep = false; break;}
+          const cc = trimmedVal.charCodeAt(ci);
+          if ((cc >= 48 && cc <= 57) || (cc >= 65 && cc <= 90) || (cc >= 97 && cc <= 122)) {isSep = false; break;}
         }
         if (str.startsWith(trimmedVal, strIdx)) {
           strIdx += trimmedVal.length;
         } else if (isSep) {
-          // silently absorb non-matching separator chars
+          const sepIdx = str.indexOf(trimmedVal, strIdx);
+          if (sepIdx !== -1) {
+            if (sepIdx > strIdx) {
+              let hasAlphaNum = false;
+              for (let ci = strIdx; ci < sepIdx; ci++) {
+                const cc = str.charCodeAt(ci);
+                if ((cc >= 48 && cc <= 57) || (cc >= 65 && cc <= 90) || (cc >= 97 && cc <= 122)) {hasAlphaNum = true; break;}
+              }
+              if (hasAlphaNum) {result._unusedInput.push(str.substring(strIdx, sepIdx));}
+            }
+            strIdx = sepIdx + trimmedVal.length;
+          }
         } else {
           // trimmedVal is alphanumeric — use indexOf (native) to find it
           const matchIdx = str.indexOf(trimmedVal, strIdx);
           if (matchIdx !== -1) {
             let hasAlphaBefore = false;
             for (let check = strIdx; check < matchIdx; check++) {
-              if (isAlphaNum(str[check])) {
+              const cc = str.charCodeAt(check);
+              if ((cc >= 48 && cc <= 57) || (cc >= 65 && cc <= 90) || (cc >= 97 && cc <= 122)) {
                 hasAlphaBefore = true;
                 break;
               }
@@ -858,8 +852,6 @@ function parseWithFormat(
       break;
     }
 
-    let remaining = str.substring(strIdx);
-
     if (token.type === "token" && token.name) {
         const nameToken =
           token.name === "MMMM" ||
@@ -877,21 +869,29 @@ function parseWithFormat(
             token.name === "yyyy" ||
             token.name === "Y") &&
           strIdx === 0;
-        if (!isDigit(remaining[0]) && !canHandleSign) {
-          const skipIdx = skipToNext(remaining, isDigit);
-          if (skipIdx > 0) {
-            result._unusedInput.push(remaining.substring(0, skipIdx));
-            strIdx += skipIdx;
-            remaining = str.substring(strIdx);
+        const ch0 = str.charCodeAt(strIdx);
+        if ((ch0 < 48 || ch0 > 57) && !canHandleSign) {
+          let skipIdx = 0;
+          while (strIdx + skipIdx < str.length) {
+            const c = str.charCodeAt(strIdx + skipIdx);
+            if (c >= 48 && c <= 57) {break;}
+            skipIdx++;
           }
-        } else if (!isDigit(remaining[0]) && canHandleSign) {
-          const rc0 = remaining.charCodeAt(0);
-          if (rc0 !== 43 && rc0 !== 45) {
-            const skipIdx = skipToNext(remaining, isDigit);
+          if (skipIdx > 0) {
+            result._unusedInput.push(str.substring(strIdx, strIdx + skipIdx));
+            strIdx += skipIdx;
+          }
+        } else if ((ch0 < 48 || ch0 > 57) && canHandleSign) {
+          if (ch0 !== 43 && ch0 !== 45) {
+            let skipIdx = 0;
+            while (strIdx + skipIdx < str.length) {
+              const c = str.charCodeAt(strIdx + skipIdx);
+              if (c >= 48 && c <= 57) {break;}
+              skipIdx++;
+            }
             if (skipIdx > 0) {
-              result._unusedInput.push(remaining.substring(0, skipIdx));
+              result._unusedInput.push(str.substring(strIdx, strIdx + skipIdx));
               strIdx += skipIdx;
-              remaining = str.substring(strIdx);
             }
           }
         }
@@ -902,32 +902,38 @@ function parseWithFormat(
         token.name === "ddd" ||
         token.name === "dd"
       ) {
-        if (!/^[\p{L}\d~ʼ']/u.test(remaining)) {
-          const skipIdx = skipToNext(remaining, (ch) => /^[\p{L}\d~ʼ']$/u.test(ch));
+        const ch0 = str.charCodeAt(strIdx);
+        const isLetterOrDigit = (ch0 >= 65 && ch0 <= 90) || (ch0 >= 97 && ch0 <= 122) || (ch0 >= 48 && ch0 <= 57) || ch0 === 126 || ch0 === 700 || ch0 === 39;
+        if (!isLetterOrDigit) {
+          let skipIdx = 1;
+          while (strIdx + skipIdx < str.length) {
+            const c = str.charCodeAt(strIdx + skipIdx);
+            if ((c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 126 || c === 700 || c === 39) {break;}
+            skipIdx++;
+          }
           if (skipIdx > 0) {
-            result._unusedInput.push(remaining.substring(0, skipIdx));
+            result._unusedInput.push(str.substring(strIdx, strIdx + skipIdx));
             strIdx += skipIdx;
-            remaining = str.substring(strIdx);
           }
         }
       } else if (token.name === "A" || token.name === "a") {
-        if (!/[ap]/i.test(remaining)) {
-          let skipIdx = -1;
-          for (let si = 0; si < remaining.length; si++) {
-            const rc = remaining.charCodeAt(si);
-            if (rc === 65 || rc === 97 || rc === 80 || rc === 112) {
-              skipIdx = si;
-              break;
-            }
+        const ch0 = str.charCodeAt(strIdx);
+        if (ch0 !== 65 && ch0 !== 97 && ch0 !== 80 && ch0 !== 112) {
+          let skipIdx = 1;
+          while (strIdx + skipIdx < str.length) {
+            const c = str.charCodeAt(strIdx + skipIdx);
+            if (c === 65 || c === 97 || c === 80 || c === 112) {break;}
+            skipIdx++;
           }
           if (skipIdx > 0) {
-            result._unusedInput.push(remaining.substring(0, skipIdx));
+            result._unusedInput.push(str.substring(strIdx, strIdx + skipIdx));
             strIdx += skipIdx;
-            remaining = str.substring(strIdx);
           }
         }
       }
     }
+
+    let remaining = str.substring(strIdx);
 
     switch (token.name) {
       case "YYYYYY": {
@@ -970,7 +976,13 @@ function parseWithFormat(
       }
       case "YYYY":
       case "yyyy": {
-        const yMatch = remaining.match(/^([+-]?\d{1,4})/);
+        let sign = '';
+        if ((remaining.charCodeAt(0) === 43 || remaining.charCodeAt(0) === 45) && !strict) {
+          sign = remaining[0];
+          strIdx++;
+          remaining = str.slice(strIdx);
+        }
+        const yMatch = remaining.match(/^(\d{1,4})/);
         if (!yMatch) {
           failed = true;
           break;
@@ -980,12 +992,13 @@ function parseWithFormat(
           break;
         }
         let y = parseInt(yMatch[1], 10);
-        if (yMatch[1].length === 2 && !yMatch[1].startsWith("+") && !yMatch[1].startsWith("-")) {
+        if (yMatch[1].length === 2 && !sign) {
           y = y > 68 ? 1900 + y : 2000 + y;
         }
-        result.year = y;
-        result._parsedDateParts[0] = y;
+        result.year = sign ? parseInt(sign + yMatch[1], 10) : y;
+        result._parsedDateParts[0] = result.year;
         strIdx += yMatch[1].length;
+        if (sign) {result._unusedInput.push(sign);}
         break;
       }
       case "YY": {
@@ -1258,57 +1271,55 @@ function parseWithFormat(
         break;
       }
       case "MM": {
-        const match = timedMatch(remaining, /^(\d{1,2})/, 2, strict);
-        if (!match) {
+        const p = parseTwo(str, strIdx);
+        if (!p || (strict && p.len !== 2)) {
           failed = true;
           break;
         }
-        result.month = parseInt(match[1], 10) - 1;
+        result.month = p.v - 1;
         result._parsedDateParts[1] = result.month;
-        strIdx += match[1].length;
+        strIdx += p.len;
         break;
       }
       case "M": {
-        const match = remaining.match(/^(\d{1,2})/);
-        if (!match) {
+        const p = parseTwo(str, strIdx);
+        if (!p) {
           failed = true;
           break;
         }
-        const mVal = parseInt(match[1], 10) - 1;
-        if (strict && match[1].length === 2 && match[1][0] === "0") {
+        if (strict && p.len === 2 && str.charCodeAt(strIdx) === 48) {
           failed = true;
           break;
         }
-        result.month = mVal;
-        result._parsedDateParts[1] = mVal;
-        strIdx += match[1].length;
+        result.month = p.v - 1;
+        result._parsedDateParts[1] = result.month;
+        strIdx += p.len;
         break;
       }
       case "DD": {
-        const match = timedMatch(remaining, /^(\d{1,2})/, 2, strict);
-        if (!match) {
+        const p = parseTwo(str, strIdx);
+        if (!p || (strict && p.len !== 2)) {
           failed = true;
           break;
         }
-        result.day = parseInt(match[1], 10);
+        result.day = p.v;
         result._parsedDateParts[2] = result.day;
-        strIdx += match[1].length;
+        strIdx += p.len;
         break;
       }
       case "D": {
-        const match = remaining.match(/^(\d{1,2})/);
-        if (!match) {
+        const p = parseTwo(str, strIdx);
+        if (!p) {
           failed = true;
           break;
         }
-        const dVal = parseInt(match[1], 10);
-        if (strict && match[1].length === 2 && match[1][0] === "0") {
+        if (strict && p.len === 2 && str.charCodeAt(strIdx) === 48) {
           failed = true;
           break;
         }
-        result.day = dVal;
-        result._parsedDateParts[2] = dVal;
-        strIdx += match[1].length;
+        result.day = p.v;
+        result._parsedDateParts[2] = result.day;
+        strIdx += p.len;
         break;
       }
       case "Do": {
@@ -1478,174 +1489,167 @@ function parseWithFormat(
         break;
       }
       case "HH": {
-        const match = timedMatch(remaining, /^(\d{1,2})/, 2, strict);
-        if (!match) {
+        const p = parseTwo(str, strIdx);
+        if (!p || (strict && p.len !== 2)) {
           failed = true;
           break;
         }
-        result.hour = parseInt(match[1], 10);
+        result.hour = p.v;
         result._parsedDateParts[3] = result.hour;
-        strIdx += match[1].length;
+        strIdx += p.len;
         break;
       }
       case "H": {
-        const match = remaining.match(/^(\d{1,2})/);
-        if (!match) {
+        const p = parseTwo(str, strIdx);
+        if (!p) {
           failed = true;
           break;
         }
-        const hVal = parseInt(match[1], 10);
-        if (strict && match[1].length === 2 && match[1][0] === "0") {
+        if (strict && p.len === 2 && str.charCodeAt(strIdx) === 48) {
           failed = true;
           break;
         }
-        result.hour = hVal;
-        result._parsedDateParts[3] = hVal;
-        strIdx += match[1].length;
+        result.hour = p.v;
+        result._parsedDateParts[3] = result.hour;
+        strIdx += p.len;
         break;
       }
       case "kk": {
-        const match = timedMatch(remaining, /^(\d{1,2})/, strict ? 2 : undefined, strict);
-        if (!match) {
+        const p = parseTwo(str, strIdx);
+        if (!p || (strict && p.len !== 2)) {
           failed = true;
           break;
         }
-        const k = parseInt(match[1], 10);
-        if (k === 24) {
+        if (p.v === 24) {
           result.hour = 0;
           result._parsedDateParts[3] = 24;
         } else {
-          result.hour = k;
-          result._parsedDateParts[3] = k;
+          result.hour = p.v;
+          result._parsedDateParts[3] = p.v;
         }
-        strIdx += match[1].length;
+        strIdx += p.len;
         break;
       }
       case "k": {
-        const match = remaining.match(/^(\d{1,2})/);
-        if (!match) {
+        const p = parseTwo(str, strIdx);
+        if (!p) {
           failed = true;
           break;
         }
-        const kVal = parseInt(match[1], 10);
-        if (strict && match[1].length === 2 && match[1][0] === "0") {
+        if (strict && p.len === 2 && str.charCodeAt(strIdx) === 48) {
           failed = true;
           break;
         }
-        if (kVal === 24) {
+        if (p.v === 24) {
           result.hour = 0;
           result._parsedDateParts[3] = 24;
         } else {
-          result.hour = kVal;
-          result._parsedDateParts[3] = kVal;
+          result.hour = p.v;
+          result._parsedDateParts[3] = p.v;
         }
-        strIdx += match[1].length;
+        strIdx += p.len;
         break;
       }
       case "hh": {
-        const match = timedMatch(remaining, /^(\d{1,2})/, 2, strict);
-        if (!match) {
+        const p = parseTwo(str, strIdx);
+        if (!p || (strict && p.len !== 2)) {
           failed = true;
           break;
         }
-        const hhVal = parseInt(match[1], 10);
-        if (strict && hhVal === 0) {
+        if (strict && p.v === 0) {
           failed = true;
           break;
         }
-        result.hour = hhVal;
-        result._parsedDateParts[3] = hhVal;
-        if (hhVal > 12) {
+        result.hour = p.v;
+        result._parsedDateParts[3] = p.v;
+        if (p.v > 12) {
           result.bigHour = true;
           if (strict) {
             failed = true;
             break;
           }
         }
-        strIdx += match[1].length;
+        strIdx += p.len;
         break;
       }
       case "h": {
-        const match = remaining.match(/^(\d{1,2})/);
-        if (!match) {
+        const p = parseTwo(str, strIdx);
+        if (!p) {
           failed = true;
           break;
         }
-        const hVal = parseInt(match[1], 10);
         if (strict) {
-          if (match[1].length === 2 && match[1][0] === "0") {
+          if (p.len === 2 && str.charCodeAt(strIdx) === 48) {
             failed = true;
             break;
           }
-          if (hVal === 0) {
+          if (p.v === 0) {
             failed = true;
             break;
           }
         }
-        result.hour = hVal;
-        result._parsedDateParts[3] = hVal;
-        if (hVal > 12) {
+        result.hour = p.v;
+        result._parsedDateParts[3] = p.v;
+        if (p.v > 12) {
           result.bigHour = true;
           if (strict) {
             failed = true;
             break;
           }
         }
-        strIdx += match[1].length;
+        strIdx += p.len;
         break;
       }
       case "mm": {
-        const match = timedMatch(remaining, /^(\d{1,2})/, 2, strict);
-        if (!match) {
+        const p = parseTwo(str, strIdx);
+        if (!p || (strict && p.len !== 2)) {
           failed = true;
           break;
         }
-        result.minute = parseInt(match[1], 10);
+        result.minute = p.v;
         result._parsedDateParts[4] = result.minute;
-        strIdx += match[1].length;
+        strIdx += p.len;
         break;
       }
       case "m": {
-        const match = remaining.match(/^(\d{1,2})/);
-        if (!match) {
+        const p = parseTwo(str, strIdx);
+        if (!p) {
           failed = true;
           break;
         }
-        const mVal = parseInt(match[1], 10);
-        if (strict && match[1].length === 2 && match[1][0] === "0") {
+        if (strict && p.len === 2 && str.charCodeAt(strIdx) === 48) {
           failed = true;
           break;
         }
-        result.minute = mVal;
-        result._parsedDateParts[4] = mVal;
-        strIdx += match[1].length;
+        result.minute = p.v;
+        result._parsedDateParts[4] = result.minute;
+        strIdx += p.len;
         break;
       }
       case "ss": {
-        const match = timedMatch(remaining, /^(\d{1,2})/, 2, strict);
-        if (!match) {
+        const p = parseTwo(str, strIdx);
+        if (!p || (strict && p.len !== 2)) {
           failed = true;
           break;
         }
-        result.second = parseInt(match[1], 10);
+        result.second = p.v;
         result._parsedDateParts[5] = result.second;
-        strIdx += match[1].length;
+        strIdx += p.len;
         break;
       }
       case "s": {
-        const match = remaining.match(/^(\d{1,2})/);
-        if (!match) {
+        const p = parseTwo(str, strIdx);
+        if (!p) {
           failed = true;
           break;
         }
-        const sVal = parseInt(match[1], 10);
-        if (strict && match[1].length === 2 && match[1][0] === "0") {
+        if (strict && p.len === 2 && str.charCodeAt(strIdx) === 48) {
           failed = true;
           break;
         }
-        result.second = sVal;
-        result._parsedDateParts[5] = sVal;
-        strIdx += match[1].length;
+        result.second = p.v;
+        result._parsedDateParts[5] = result.second;
+        strIdx += p.len;
         break;
       }
       case "SSSSSSSSS":

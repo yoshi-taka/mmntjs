@@ -149,6 +149,30 @@ const CASES: BenchCase[] = [
     name: "daysInMonth / isLeapYear",
     run: () => { const a = moment("2024-06-15"), b = moment2("2024-06-15"); return [() => { a.daysInMonth(); a.isLeapYear(); }, () => { b.daysInMonth(); b.isLeapYear(); }]; },
   },
+  {
+    name: "startOf('year')",
+    run: () => { const a = moment("2024-06-15"), b = moment2("2024-06-15"); return [() => a.startOf("year"), () => b.startOf("year")]; },
+  },
+  {
+    name: "endOf('year')",
+    run: () => { const a = moment("2024-06-15"), b = moment2("2024-06-15"); return [() => a.endOf("year"), () => b.endOf("year")]; },
+  },
+  {
+    name: "moment('ISO string') with format",
+    run: () => [() => moment("2024-01-15T10:30:45.123Z", "YYYY-MM-DDTHH:mm:ss.SSSZ"), () => moment2("2024-01-15T10:30:45.123Z", "YYYY-MM-DDTHH:mm:ss.SSSZ")],
+  },
+  {
+    name: "moment.utc('ISO string')",
+    run: () => [() => moment.utc("2024-01-15"), () => moment2.utc("2024-01-15")],
+  },
+  {
+    name: "format('HH:mm:ss')",
+    run: () => { const a = moment("2024-06-15 10:30:45"), b = moment2("2024-06-15 10:30:45"); return [() => a.format("HH:mm:ss"), () => b.format("HH:mm:ss")]; },
+  },
+  {
+    name: "add(1,'year')",
+    run: () => { const a = moment("2024-06-15"), b = moment2("2024-06-15"); return [() => a.add(1, "year"), () => b.add(1, "year")]; },
+  },
 ];
 
 const ITER = 5000;

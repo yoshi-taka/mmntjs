@@ -293,14 +293,14 @@ export class Moment {
       } else {
         const t = this._t;
         const totalDays = Math.floor(t / 86400000);
-        this.$W = ((totalDays + 4) % 7 + 7) % 7;
         const totalSec = Math.floor(t / 1000);
+        this.$W = ((totalDays + 4) % 7 + 7) % 7;
+        const [y, M, D] = Moment._epochDaysToYMD(totalDays);
+        this.$y = y; this.$M = M; this.$D = D;
         this.$H = ((Math.floor(totalSec / 3600) % 24) + 24) % 24;
         this.$m = ((Math.floor(totalSec / 60) % 60) + 60) % 60;
         this.$s = ((totalSec % 60) + 60) % 60;
         this.$ms = ((t % 1000) + 1000) % 1000;
-        const [y, M, D] = Moment._epochDaysToYMD(totalDays);
-        this.$y = y; this.$M = M; this.$D = D;
       }
     } else {
       const d = this._getD();
@@ -337,14 +337,27 @@ export class Moment {
     if (c._i !== undefined) {this._i = c._i;}
     if (c._f !== undefined) {this._f = c._f;}
     if (c._strict !== undefined) {this._strict = c._strict;}
-    const hasErrorCold = c._overflow !== undefined || c._empty !== undefined ||
-      c._nullInput !== undefined || c._invalidMonth !== undefined || c._invalidFormat !== undefined ||
-      c._weekdayMismatch !== undefined || c._userInvalidated !== undefined;
-    const hasInfoCold = hasErrorCold || c._unusedTokens !== undefined || c._unusedInput !== undefined ||
-      c._charsLeftOver !== undefined || c._invalidEra !== undefined || c._iso !== undefined ||
-      c._rfc2822 !== undefined || c._bigHour !== undefined || c._meridiem !== undefined ||
-      c._isParseZone !== undefined || c._tooBusyWith !== undefined || c._parsedDateParts !== undefined;
-    if (hasInfoCold) {
+    if (c._overflow !== undefined || c._empty !== undefined || c._nullInput !== undefined ||
+        c._invalidMonth !== undefined || c._invalidFormat !== undefined ||
+        c._weekdayMismatch !== undefined || c._userInvalidated !== undefined ||
+        c._parsedDateParts !== undefined) {
+      this._initCold(c);
+    }
+  }
+
+  private _initCold(c: MomentConfig): void {
+    const hasErrorCold =
+      (c._overflow !== undefined && c._overflow >= 0) ||
+      c._empty === true ||
+      c._nullInput === true ||
+      (c._invalidMonth !== undefined && c._invalidMonth !== null) ||
+      c._invalidFormat === true ||
+      c._weekdayMismatch === true ||
+      c._userInvalidated === true;
+    if (hasErrorCold || c._unusedTokens !== undefined || c._unusedInput !== undefined ||
+        c._charsLeftOver !== undefined || c._invalidEra !== undefined || c._iso !== undefined ||
+        c._rfc2822 !== undefined || c._bigHour !== undefined || c._meridiem !== undefined ||
+        c._isParseZone !== undefined || c._tooBusyWith !== undefined || c._parsedDateParts !== undefined) {
       const cold: Record<string, unknown> = {};
       if (c._overflow !== undefined) cold._overflow = c._overflow;
       if (c._parsedDateParts !== undefined) cold._parsedDateParts = c._parsedDateParts;
@@ -489,7 +502,7 @@ export class Moment {
       this.$y = this._isUTC ? dt.getUTCFullYear() : dt.getFullYear();
       this.$M = this._isUTC ? dt.getUTCMonth() : dt.getMonth();
       this.$D = this._isUTC ? dt.getUTCDate() : dt.getDate();
-      this.$W = this._isUTC ? dt.getUTCDay() : dt.getDay();
+      this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
       // $H, $m, $s, $ms unchanged
       this._t = dt.getTime();
       this._updateOffset(true);
@@ -503,6 +516,7 @@ export class Moment {
   month(): number;
   month(m: unknown): Moment;
   month(m?: unknown): number | Moment {
+    this._ensureFields();
     if (m !== undefined) {
       if (m === null || m === undefined) {return this;}
       if (typeof m === "string" && !/^-?\d+$/.test(m)) {
@@ -531,7 +545,7 @@ export class Moment {
       this.$y = this._isUTC ? this._getD().getUTCFullYear() : this._getD().getFullYear();
       this.$M = this._isUTC ? this._getD().getUTCMonth() : this._getD().getMonth();
       this.$D = this._isUTC ? this._getD().getUTCDate() : this._getD().getDate();
-      this.$W = this._isUTC ? this._getD().getUTCDay() : this._getD().getDay();
+      this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
       this._t = this._getD().getTime();
       this._updateOffset(true);
       return this;
@@ -559,7 +573,7 @@ export class Moment {
       else {this._getD().setDate(num);}
       this.$D = this._isUTC ? this._getD().getUTCDate() : this._getD().getDate();
       this.$M = this._isUTC ? this._getD().getUTCMonth() : this._getD().getMonth();
-      this.$W = this._isUTC ? this._getD().getUTCDay() : this._getD().getDay();
+      this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
       this._t = this._getD().getTime();
       this._updateOffset(true);
       return this;
@@ -572,6 +586,7 @@ export class Moment {
   day(): number;
   day(d: unknown): Moment;
   day(d?: unknown): number | Moment {
+    this._ensureFields();
     if (d !== undefined) {
       if (d === null || d === undefined) {return this;}
       let dayNum = Number(d);
@@ -607,7 +622,7 @@ export class Moment {
       }
       this.$D = this._isUTC ? dt.getUTCDate() : dt.getDate();
       this.$M = this._isUTC ? dt.getUTCMonth() : dt.getMonth();
-      this.$W = this._isUTC ? dt.getUTCDay() : dt.getDay();
+      this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
       this._t = dt.getTime();
       this._updateOffset(true);
       return this;
@@ -620,6 +635,7 @@ export class Moment {
   weekday(): number;
   weekday(d: number): Moment;
   weekday(d?: number): number | Moment {
+    this._ensureFields();
     if (d !== undefined) {
       const current = this.$W;
       const weekConfig = (this._getLocale()._config as Record<string, unknown>).week || { dow: 0 };
@@ -635,7 +651,7 @@ export class Moment {
       this.$D = this._isUTC ? dt.getUTCDate() : dt.getDate();
       this.$M = this._isUTC ? dt.getUTCMonth() : dt.getMonth();
       this.$y = this._isUTC ? dt.getUTCFullYear() : dt.getFullYear();
-      this.$W = this._isUTC ? dt.getUTCDay() : dt.getDay();
+      this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
       this._t = dt.getTime();
       this._updateOffset(true);
       return this;
@@ -649,6 +665,7 @@ export class Moment {
   isoWeekday(): number;
   isoWeekday(d: unknown): Moment;
   isoWeekday(d?: unknown): number | Moment {
+    this._ensureFields();
     if (d !== undefined) {
       if (typeof d === "string") {
         const map: Record<string, number> = {
@@ -683,7 +700,7 @@ export class Moment {
       this.$D = this._isUTC ? dt.getUTCDate() : dt.getDate();
       this.$M = this._isUTC ? dt.getUTCMonth() : dt.getMonth();
       this.$y = this._isUTC ? dt.getUTCFullYear() : dt.getFullYear();
-      this.$W = this._isUTC ? dt.getUTCDay() : dt.getDay();
+      this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
       this._t = dt.getTime();
       this._updateOffset(true);
       return this;
@@ -705,7 +722,7 @@ export class Moment {
       }
       this.$D = this._isUTC ? this._getD().getUTCDate() : this._getD().getDate();
       this.$M = this._isUTC ? this._getD().getUTCMonth() : this._getD().getMonth();
-      this.$W = this._isUTC ? this._getD().getUTCDay() : this._getD().getDay();
+      this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
       this._t = this._getD().getTime();
       this._updateOffset(true);
       return this;
@@ -932,7 +949,7 @@ export class Moment {
           this.$y = tmp.getUTCFullYear();
           this.$M = tmp.getUTCMonth();
           this.$D = tmp.getUTCDate();
-          this.$W = tmp.getUTCDay();
+          this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
           this.$H = tmp.getUTCHours();
           this.$m = tmp.getUTCMinutes();
           this.$s = tmp.getUTCSeconds();
@@ -946,7 +963,7 @@ export class Moment {
           this.$y = tmp.getFullYear();
           this.$M = tmp.getMonth();
           this.$D = tmp.getDate();
-          this.$W = tmp.getDay();
+          this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
           this.$H = tmp.getHours();
           this.$m = tmp.getMinutes();
           this.$s = tmp.getSeconds();
@@ -1077,15 +1094,12 @@ export class Moment {
         const rounded = absRound((unit === WEEK || unit === ISO_WEEK) ? amount * 7 : amount);
         if (rounded !== 0) {
           this.$D += rounded;
-          const maxDay = daysInMonth(this.$y, this.$M);
-          if (this.$D > maxDay) {
-            this.$D -= maxDay;
-            this.$M++;
-            if (this.$M >= 12) { this.$M = 0; this.$y++; }
-            if (this.$D > daysInMonth(this.$y, this.$M)) { this.$D = daysInMonth(this.$y, this.$M); }
-          } else if (this.$D < 1) {
-            this.$M--;
-            if (this.$M < 0) { this.$M = 11; this.$y--; }
+          while (this.$D > daysInMonth(this.$y, this.$M)) {
+            this.$D -= daysInMonth(this.$y, this.$M);
+            if (++this.$M >= 12) { this.$M = 0; this.$y++; }
+          }
+          while (this.$D < 1) {
+            if (--this.$M < 0) { this.$M = 11; this.$y--; }
             this.$D += daysInMonth(this.$y, this.$M);
           }
           this.$W = ((this.$W + rounded) % 7 + 7) % 7;
@@ -1094,37 +1108,37 @@ export class Moment {
         if (this._isUTC) {
           this._t = Date.UTC(this.$y, this.$M, this.$D, this.$H, this.$m, this.$s, this.$ms);
         } else {
-          const dt = this._getD();
+          const dt = this._d || (this._d = new Date(this._t));
           dt.setFullYear(this.$y, this.$M, this.$D);
           this._t = dt.getTime();
-          this.$W = dt.getDay();
+          this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
           this._offset = -dt.getTimezoneOffset();
         }
         break;
       }
       case HOUR: {
-        const dt = this._getD();
+        const dt = this._d || (this._d = new Date(this._t));
         dt.setTime(dt.getTime() + Math.round(amount * 3600000));
         this._t = dt.getTime();
         this._refreshFields();
         break;
       }
       case MINUTE: {
-        const dt = this._getD();
+        const dt = this._d || (this._d = new Date(this._t));
         dt.setTime(dt.getTime() + Math.round(amount * 60000));
         this._t = dt.getTime();
         this._refreshFields();
         break;
       }
       case SECOND: {
-        const dt = this._getD();
+        const dt = this._d || (this._d = new Date(this._t));
         dt.setTime(dt.getTime() + Math.round(amount * 1000));
         this._t = dt.getTime();
         this._refreshFields();
         break;
       }
       case MILLISECOND: {
-        const dt = this._getD();
+        const dt = this._d || (this._d = new Date(this._t));
         dt.setTime(dt.getTime() + Math.round(amount));
         this._t = dt.getTime();
         this._refreshFields();
@@ -1255,6 +1269,7 @@ export class Moment {
   startOf(unit: string): Moment {
     const code = normalizeUnitCode(unit);
     if (code < 0) {return this;}
+    this._ensureFields();
     if (!updateOffsetCallback) {
       if (code === MONTH) {
         if (this.$D === 1 && this.$H === 0 && this.$m === 0 && this.$s === 0 && this.$ms === 0) {return this;}
@@ -1269,143 +1284,82 @@ export class Moment {
       }
     }
     const d = this._getD();
+    const utc = this._isUTC;
 
-    if (this._isUTC) {
-      switch (code) {
-        case YEAR:
-          d.setUTCMonth(0);
-          d.setUTCDate(1);
-          d.setUTCHours(0, 0, 0, 0);
-          this.$M = 0; this.$D = 1;
-          this.$H = 0; this.$m = 0; this.$s = 0; this.$ms = 0;
-          this.$W = d.getUTCDay();
-          break;
-        case QUARTER:
-          d.setUTCMonth(Math.floor(this.$M / 3) * 3);
-          d.setUTCDate(1);
-          d.setUTCHours(0, 0, 0, 0);
-          this.$M = Math.floor(this.$M / 3) * 3; this.$D = 1;
-          this.$H = 0; this.$m = 0; this.$s = 0; this.$ms = 0;
-          this.$W = d.getUTCDay();
-          break;
-        case MONTH:
-          d.setUTCDate(1);
-          d.setUTCHours(0, 0, 0, 0);
-          this.$D = 1;
-          this.$H = 0; this.$m = 0; this.$s = 0; this.$ms = 0;
-          this.$W = d.getUTCDay();
-          break;
-        case WEEK: {
-          const _locWeek = this._getLocale();
-          const _weekCfg = (_locWeek._config as Record<string, unknown>).week || { dow: 0 };
-          const dow = _weekCfg.dow;
-          const day = d.getUTCDay();
-          const diff = (day - dow + 7) % 7;
-          d.setUTCDate(d.getUTCDate() - diff);
-          d.setUTCHours(0, 0, 0, 0);
-          this.$D = d.getUTCDate(); this.$M = d.getUTCMonth(); this.$y = d.getUTCFullYear();
-          this.$H = 0; this.$m = 0; this.$s = 0; this.$ms = 0;
-          this.$W = dow;
-          break;
-        }
-        case ISO_WEEK: {
-          const day = d.getUTCDay();
-          const diff = day === 0 ? -6 : 1 - day;
-          d.setUTCDate(d.getUTCDate() + diff);
-          d.setUTCHours(0, 0, 0, 0);
-          this.$D = d.getUTCDate(); this.$M = d.getUTCMonth(); this.$y = d.getUTCFullYear();
-          this.$H = 0; this.$m = 0; this.$s = 0; this.$ms = 0;
-          this.$W = 1;
-          break;
-        }
-        case DATE:
-        case DAY:
-          d.setUTCHours(0, 0, 0, 0);
-          this.$H = 0; this.$m = 0; this.$s = 0; this.$ms = 0;
-          break;
-        case HOUR:
-          d.setUTCMinutes(0, 0, 0);
-          this.$m = 0; this.$s = 0; this.$ms = 0;
-          break;
-        case MINUTE:
-          d.setUTCSeconds(0, 0);
-          this.$s = 0; this.$ms = 0;
-          break;
-        case SECOND:
-          d.setUTCMilliseconds(0);
-          this.$ms = 0;
-          break;
+    switch (code) {
+      case YEAR:
+        if (utc) { d.setUTCMonth(0); d.setUTCDate(1); d.setUTCHours(0, 0, 0, 0); }
+        else { d.setDate(1); d.setMonth(0); d.setHours(0, 0, 0, 0); }
+        this.$M = 0; this.$D = 1;
+        this.$H = 0; this.$m = 0; this.$s = 0; this.$ms = 0;
+        this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
+        break;
+      case QUARTER:
+        if (utc) { d.setUTCMonth(Math.floor(this.$M / 3) * 3); d.setUTCDate(1); d.setUTCHours(0, 0, 0, 0); }
+        else { d.setDate(1); d.setMonth(Math.floor(this.$M / 3) * 3); d.setHours(0, 0, 0, 0); }
+        this.$M = Math.floor(this.$M / 3) * 3; this.$D = 1;
+        this.$H = 0; this.$m = 0; this.$s = 0; this.$ms = 0;
+        this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
+        break;
+      case MONTH:
+        if (utc) { d.setUTCDate(1); d.setUTCHours(0, 0, 0, 0); }
+        else { d.setDate(1); d.setHours(0, 0, 0, 0); }
+        this.$D = 1;
+        this.$H = 0; this.$m = 0; this.$s = 0; this.$ms = 0;
+        this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
+        break;
+      case WEEK: {
+        const _locWeek = this._getLocale();
+        const _weekCfg = (_locWeek._config as Record<string, unknown>).week || { dow: 0 };
+        const dow = _weekCfg.dow;
+        const day = utc ? d.getUTCDay() : d.getDay();
+        const diff = (day - dow + 7) % 7;
+        if (utc) { d.setUTCDate(d.getUTCDate() - diff); d.setUTCHours(0, 0, 0, 0); }
+        else { d.setDate(d.getDate() - diff); d.setHours(0, 0, 0, 0); }
+        this.$D = utc ? d.getUTCDate() : d.getDate();
+        this.$M = utc ? d.getUTCMonth() : d.getMonth();
+        this.$y = utc ? d.getUTCFullYear() : d.getFullYear();
+        this.$H = 0; this.$m = 0; this.$s = 0; this.$ms = 0;
+        this.$W = dow;
+        break;
       }
-    } else {
-      switch (code) {
-        case YEAR:
-          d.setDate(1);
-          d.setMonth(0);
-          d.setHours(0, 0, 0, 0);
-          this.$M = 0; this.$D = 1;
-          this.$H = 0; this.$m = 0; this.$s = 0; this.$ms = 0;
-          this.$W = d.getDay();
-          break;
-        case QUARTER:
-          d.setDate(1);
-          d.setMonth(Math.floor(this.$M / 3) * 3);
-          d.setHours(0, 0, 0, 0);
-          this.$M = Math.floor(this.$M / 3) * 3; this.$D = 1;
-          this.$H = 0; this.$m = 0; this.$s = 0; this.$ms = 0;
-          this.$W = d.getDay();
-          break;
-        case MONTH:
-          d.setDate(1);
-          d.setHours(0, 0, 0, 0);
-          this.$D = 1;
-          this.$H = 0; this.$m = 0; this.$s = 0; this.$ms = 0;
-          this.$W = d.getDay();
-          break;
-        case WEEK: {
-          const _locWeek = this._getLocale();
-          const _weekCfg = (_locWeek._config as Record<string, unknown>).week || { dow: 0 };
-          const dow = _weekCfg.dow;
-          const day = d.getDay();
-          const diff = (day - dow + 7) % 7;
-          d.setDate(d.getDate() - diff);
-          d.setHours(0, 0, 0, 0);
-          this.$D = d.getDate(); this.$M = d.getMonth(); this.$y = d.getFullYear();
-          this.$H = 0; this.$m = 0; this.$s = 0; this.$ms = 0;
-          this.$W = dow;
-          break;
-        }
-        case ISO_WEEK: {
-          const day = d.getDay();
-          const diff = day === 0 ? -6 : 1 - day;
-          d.setDate(d.getDate() + diff);
-          d.setHours(0, 0, 0, 0);
-          this.$D = d.getDate(); this.$M = d.getMonth(); this.$y = d.getFullYear();
-          this.$H = 0; this.$m = 0; this.$s = 0; this.$ms = 0;
-          this.$W = 1;
-          break;
-        }
-        case DATE:
-        case DAY:
-          d.setHours(0, 0, 0, 0);
-          this.$H = 0; this.$m = 0; this.$s = 0; this.$ms = 0;
-          break;
-        case HOUR:
-          d.setMinutes(0, 0, 0);
-          this.$m = 0; this.$s = 0; this.$ms = 0;
-          break;
-        case MINUTE:
-          d.setSeconds(0, 0);
-          this.$s = 0; this.$ms = 0;
-          break;
-        case SECOND:
-          d.setMilliseconds(0);
-          this.$ms = 0;
-          break;
+      case ISO_WEEK: {
+        const day = utc ? d.getUTCDay() : d.getDay();
+        const diff = day === 0 ? -6 : 1 - day;
+        if (utc) { d.setUTCDate(d.getUTCDate() + diff); d.setUTCHours(0, 0, 0, 0); }
+        else { d.setDate(d.getDate() + diff); d.setHours(0, 0, 0, 0); }
+        this.$D = utc ? d.getUTCDate() : d.getDate();
+        this.$M = utc ? d.getUTCMonth() : d.getMonth();
+        this.$y = utc ? d.getUTCFullYear() : d.getFullYear();
+        this.$H = 0; this.$m = 0; this.$s = 0; this.$ms = 0;
+        this.$W = 1;
+        break;
       }
+      case DATE:
+      case DAY:
+        if (utc) { d.setUTCHours(0, 0, 0, 0); }
+        else { d.setHours(0, 0, 0, 0); }
+        this.$H = 0; this.$m = 0; this.$s = 0; this.$ms = 0;
+        break;
+      case HOUR:
+        if (utc) { d.setUTCMinutes(0, 0, 0); }
+        else { d.setMinutes(0, 0, 0); }
+        this.$m = 0; this.$s = 0; this.$ms = 0;
+        break;
+      case MINUTE:
+        if (utc) { d.setUTCSeconds(0, 0); }
+        else { d.setSeconds(0, 0); }
+        this.$s = 0; this.$ms = 0;
+        break;
+      case SECOND:
+        if (utc) { d.setUTCMilliseconds(0); }
+        else { d.setMilliseconds(0); }
+        this.$ms = 0;
+        break;
     }
 
     this._t = d.getTime();
-    if (!this._isUTC) {this._offset = -d.getTimezoneOffset();}
+    if (!utc) {this._offset = -d.getTimezoneOffset();}
     this._updateOffset(true);
     return this;
   }
@@ -1413,143 +1367,108 @@ export class Moment {
   endOf(unit: string): Moment {
     const code = normalizeUnitCode(unit);
     if (code < 0) {return this;}
-    this.startOf(unit);
+    this._ensureFields();
     const d = this._getD();
+    const utc = this._isUTC;
 
-    if (this._isUTC) {
-      switch (code) {
-        case YEAR:
-          d.setUTCFullYear(d.getUTCFullYear() + 1);
-          d.setUTCMilliseconds(-1);
-          this.$y = d.getUTCFullYear();
-          this.$M = d.getUTCMonth(); this.$D = d.getUTCDate();
-          this.$H = d.getUTCHours(); this.$m = d.getUTCMinutes();
-          this.$s = d.getUTCSeconds(); this.$ms = d.getUTCMilliseconds();
-          this.$W = d.getUTCDay();
-          break;
-        case QUARTER:
-          d.setUTCMonth(d.getUTCMonth() + 3);
-          d.setUTCMilliseconds(-1);
-          this.$M = d.getUTCMonth(); this.$D = d.getUTCDate();
-          this.$H = d.getUTCHours(); this.$m = d.getUTCMinutes();
-          this.$s = d.getUTCSeconds(); this.$ms = d.getUTCMilliseconds();
-          this.$W = d.getUTCDay();
-          break;
-        case MONTH:
-          d.setUTCMonth(d.getUTCMonth() + 1);
-          d.setUTCMilliseconds(-1);
-          this.$M = d.getUTCMonth(); this.$D = d.getUTCDate();
-          this.$H = d.getUTCHours(); this.$m = d.getUTCMinutes();
-          this.$s = d.getUTCSeconds(); this.$ms = d.getUTCMilliseconds();
-          this.$W = d.getUTCDay();
-          break;
-        case WEEK:
-          d.setUTCDate(d.getUTCDate() + 6);
-          d.setUTCHours(23, 59, 59, 999);
-          this.$D = d.getUTCDate(); this.$M = d.getUTCMonth(); this.$y = d.getUTCFullYear();
-          this.$H = 23; this.$m = 59; this.$s = 59; this.$ms = 999;
-          this.$W = d.getUTCDay();
-          break;
-        case ISO_WEEK:
-          d.setUTCDate(d.getUTCDate() + 6);
-          d.setUTCHours(23, 59, 59, 999);
-          this.$D = d.getUTCDate(); this.$M = d.getUTCMonth(); this.$y = d.getUTCFullYear();
-          this.$H = 23; this.$m = 59; this.$s = 59; this.$ms = 999;
-          this.$W = d.getUTCDay();
-          break;
-        case DATE:
-        case DAY:
-          d.setUTCDate(d.getUTCDate() + 1);
-          d.setUTCMilliseconds(-1);
-          this.$D = d.getUTCDate();
-          this.$H = d.getUTCHours(); this.$m = d.getUTCMinutes();
-          this.$s = d.getUTCSeconds(); this.$ms = d.getUTCMilliseconds();
-          this.$W = d.getUTCDay();
-          break;
-        case HOUR:
-          d.setUTCHours(d.getUTCHours() + 1);
-          d.setUTCMilliseconds(-1);
-          this.$H = d.getUTCHours(); this.$m = d.getUTCMinutes();
-          this.$s = d.getUTCSeconds(); this.$ms = d.getUTCMilliseconds();
-          break;
-        case MINUTE:
-          d.setUTCMinutes(d.getUTCMinutes() + 1);
-          d.setUTCMilliseconds(-1);
-          this.$m = d.getUTCMinutes();
-          this.$s = d.getUTCSeconds(); this.$ms = d.getUTCMilliseconds();
-          break;
-        case SECOND:
-          d.setUTCSeconds(d.getUTCSeconds() + 1);
-          d.setUTCMilliseconds(-1);
-          this.$s = d.getUTCSeconds(); this.$ms = d.getUTCMilliseconds();
-          break;
+    switch (code) {
+      case YEAR:
+        if (utc) { d.setUTCMonth(0); d.setUTCDate(1); d.setUTCHours(0,0,0,0); d.setUTCFullYear(d.getUTCFullYear()+1); d.setUTCMilliseconds(-1); }
+        else { d.setMonth(0); d.setDate(1); d.setHours(0,0,0,0); d.setFullYear(d.getFullYear()+1); d.setMilliseconds(-1); }
+        this.$y = utc ? d.getUTCFullYear() : d.getFullYear();
+        this.$M = utc ? d.getUTCMonth() : d.getMonth();
+        this.$D = utc ? d.getUTCDate() : d.getDate();
+        this.$H = utc ? d.getUTCHours() : d.getHours();
+        this.$m = utc ? d.getUTCMinutes() : d.getMinutes();
+        this.$s = utc ? d.getUTCSeconds() : d.getSeconds();
+        this.$ms = utc ? d.getUTCMilliseconds() : d.getMilliseconds();
+        this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
+        break;
+      case QUARTER:
+        if (utc) { d.setUTCMonth(Math.floor(this.$M / 3) * 3); d.setUTCDate(1); d.setUTCHours(0,0,0,0); d.setUTCMonth(d.getUTCMonth()+3); d.setUTCMilliseconds(-1); }
+        else { d.setMonth(Math.floor(this.$M / 3) * 3); d.setDate(1); d.setHours(0,0,0,0); d.setMonth(d.getMonth()+3); d.setMilliseconds(-1); }
+        this.$M = utc ? d.getUTCMonth() : d.getMonth();
+        this.$D = utc ? d.getUTCDate() : d.getDate();
+        this.$H = utc ? d.getUTCHours() : d.getHours();
+        this.$m = utc ? d.getUTCMinutes() : d.getMinutes();
+        this.$s = utc ? d.getUTCSeconds() : d.getSeconds();
+        this.$ms = utc ? d.getUTCMilliseconds() : d.getMilliseconds();
+        this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
+        break;
+      case MONTH:
+        if (utc) { d.setUTCDate(1); d.setUTCHours(0,0,0,0); d.setUTCMonth(d.getUTCMonth()+1); d.setUTCMilliseconds(-1); }
+        else { d.setDate(1); d.setHours(0,0,0,0); d.setMonth(d.getMonth()+1); d.setMilliseconds(-1); }
+        this.$M = utc ? d.getUTCMonth() : d.getMonth();
+        this.$D = utc ? d.getUTCDate() : d.getDate();
+        this.$H = utc ? d.getUTCHours() : d.getHours();
+        this.$m = utc ? d.getUTCMinutes() : d.getMinutes();
+        this.$s = utc ? d.getUTCSeconds() : d.getSeconds();
+        this.$ms = utc ? d.getUTCMilliseconds() : d.getMilliseconds();
+        this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
+        break;
+      case WEEK: {
+        const _locWeek = this._getLocale();
+        const _weekCfg = (_locWeek._config as Record<string, unknown>).week || { dow: 0 };
+        const dow = _weekCfg.dow;
+        const wDay = utc ? d.getUTCDay() : d.getDay();
+        const diff = (wDay - dow + 7) % 7;
+        if (utc) { d.setUTCDate(d.getUTCDate() - diff + 6); d.setUTCHours(23, 59, 59, 999); }
+        else { d.setDate(d.getDate() - diff + 6); d.setHours(23, 59, 59, 999); }
+        this.$D = utc ? d.getUTCDate() : d.getDate();
+        this.$M = utc ? d.getUTCMonth() : d.getMonth();
+        this.$y = utc ? d.getUTCFullYear() : d.getFullYear();
+        this.$H = 23; this.$m = 59; this.$s = 59; this.$ms = 999;
+        this.$W = dow;
+        break;
       }
-    } else {
-      switch (code) {
-        case YEAR:
-          d.setFullYear(d.getFullYear() + 1);
-          d.setMilliseconds(-1);
-          this.$y = d.getFullYear();
-          this.$M = d.getMonth(); this.$D = d.getDate();
-          this.$H = d.getHours(); this.$m = d.getMinutes();
-          this.$s = d.getSeconds(); this.$ms = d.getMilliseconds();
-          this.$W = d.getDay();
-          break;
-        case QUARTER:
-          d.setMonth(d.getMonth() + 3);
-          d.setMilliseconds(-1);
-          this.$M = d.getMonth(); this.$D = d.getDate();
-          this.$H = d.getHours(); this.$m = d.getMinutes();
-          this.$s = d.getSeconds(); this.$ms = d.getMilliseconds();
-          this.$W = d.getDay();
-          break;
-        case MONTH:
-          d.setMonth(d.getMonth() + 1);
-          d.setMilliseconds(-1);
-          this.$M = d.getMonth(); this.$D = d.getDate();
-          this.$H = d.getHours(); this.$m = d.getMinutes();
-          this.$s = d.getSeconds(); this.$ms = d.getMilliseconds();
-          this.$W = d.getDay();
-          break;
-        case WEEK:
-        case ISO_WEEK:
-          d.setDate(d.getDate() + 6);
-          d.setHours(23, 59, 59, 999);
-          this.$D = d.getDate(); this.$M = d.getMonth(); this.$y = d.getFullYear();
-          this.$H = 23; this.$m = 59; this.$s = 59; this.$ms = 999;
-          this.$W = d.getDay();
-          break;
-        case DATE:
-        case DAY:
-          d.setDate(d.getDate() + 1);
-          d.setMilliseconds(-1);
-          this.$D = d.getDate();
-          this.$H = d.getHours(); this.$m = d.getMinutes();
-          this.$s = d.getSeconds(); this.$ms = d.getMilliseconds();
-          this.$W = d.getDay();
-          break;
-        case HOUR:
-          d.setHours(d.getHours() + 1);
-          d.setMilliseconds(-1);
-          this.$H = d.getHours(); this.$m = d.getMinutes();
-          this.$s = d.getSeconds(); this.$ms = d.getMilliseconds();
-          break;
-        case MINUTE:
-          d.setMinutes(d.getMinutes() + 1);
-          d.setMilliseconds(-1);
-          this.$m = d.getMinutes();
-          this.$s = d.getSeconds(); this.$ms = d.getMilliseconds();
-          break;
-        case SECOND:
-          d.setSeconds(d.getSeconds() + 1);
-          d.setMilliseconds(-1);
-          this.$s = d.getSeconds(); this.$ms = d.getMilliseconds();
-          break;
+      case ISO_WEEK: {
+        const wDay = utc ? d.getUTCDay() : d.getDay();
+        const diff = wDay === 0 ? -6 : 1 - wDay;
+        if (utc) { d.setUTCDate(d.getUTCDate() + diff + 6); d.setUTCHours(23, 59, 59, 999); }
+        else { d.setDate(d.getDate() + diff + 6); d.setHours(23, 59, 59, 999); }
+        this.$D = utc ? d.getUTCDate() : d.getDate();
+        this.$M = utc ? d.getUTCMonth() : d.getMonth();
+        this.$y = utc ? d.getUTCFullYear() : d.getFullYear();
+        this.$H = 23; this.$m = 59; this.$s = 59; this.$ms = 999;
+        this.$W = 1;
+        break;
       }
+      case DATE:
+      case DAY:
+        if (utc) { d.setUTCHours(0,0,0,0); d.setUTCDate(d.getUTCDate()+1); d.setUTCMilliseconds(-1); }
+        else { d.setHours(0,0,0,0); d.setDate(d.getDate()+1); d.setMilliseconds(-1); }
+        this.$D = utc ? d.getUTCDate() : d.getDate();
+        this.$H = utc ? d.getUTCHours() : d.getHours();
+        this.$m = utc ? d.getUTCMinutes() : d.getMinutes();
+        this.$s = utc ? d.getUTCSeconds() : d.getSeconds();
+        this.$ms = utc ? d.getUTCMilliseconds() : d.getMilliseconds();
+        this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
+        break;
+      case HOUR:
+        if (utc) { d.setUTCMinutes(0,0,0); d.setUTCHours(d.getUTCHours()+1,0,0,-1); }
+        else { d.setMinutes(0,0,0); d.setHours(d.getHours()+1,0,0,-1); }
+        this.$H = utc ? d.getUTCHours() : d.getHours();
+        this.$m = utc ? d.getUTCMinutes() : d.getMinutes();
+        this.$s = utc ? d.getUTCSeconds() : d.getSeconds();
+        this.$ms = utc ? d.getUTCMilliseconds() : d.getMilliseconds();
+        break;
+      case MINUTE:
+        if (utc) { d.setUTCSeconds(0,0); d.setUTCMinutes(d.getUTCMinutes()+1,0,-1); }
+        else { d.setSeconds(0,0); d.setMinutes(d.getMinutes()+1,0,-1); }
+        this.$m = utc ? d.getUTCMinutes() : d.getMinutes();
+        this.$s = utc ? d.getUTCSeconds() : d.getSeconds();
+        this.$ms = utc ? d.getUTCMilliseconds() : d.getMilliseconds();
+        break;
+      case SECOND:
+        if (utc) { d.setUTCSeconds(d.getUTCSeconds()+1,-1); }
+        else { d.setSeconds(d.getSeconds()+1,-1); }
+        this.$s = utc ? d.getUTCSeconds() : d.getSeconds();
+        this.$ms = utc ? d.getUTCMilliseconds() : d.getMilliseconds();
+        break;
     }
 
-    this._t = this._getD().getTime();
-    if (!this._isUTC) {this._offset = -this._getD().getTimezoneOffset();}
+    this._t = d.getTime();
+    if (!utc) {this._offset = -d.getTimezoneOffset();}
     this._updateOffset(true);
     return this;
   }
@@ -1576,7 +1495,7 @@ export class Moment {
     this.$y = this._getD().getFullYear();
     this.$M = this._getD().getMonth();
     this.$D = this._getD().getDate();
-    this.$W = this._getD().getDay();
+    this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
     this.$H = this._getD().getHours();
     this.$m = this._getD().getMinutes();
     this.$s = this._getD().getSeconds();
@@ -1607,7 +1526,7 @@ export class Moment {
     this.$y = this._getD().getUTCFullYear();
     this.$M = this._getD().getUTCMonth();
     this.$D = this._getD().getUTCDate();
-    this.$W = this._getD().getUTCDay();
+    this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
     this.$H = this._getD().getUTCHours();
     this.$m = this._getD().getUTCMinutes();
     this.$s = this._getD().getUTCSeconds();
@@ -1619,6 +1538,7 @@ export class Moment {
   utcOffset(offset: number | string, keepLocalTime?: boolean): Moment;
   utcOffset(offset?: number | string, keepLocalTime?: boolean): number | Moment {
     if (offset === undefined) {
+      this._ensureFields();
       return this._offset;
     }
 
@@ -1648,7 +1568,7 @@ export class Moment {
     this.$y = this._getD().getUTCFullYear();
     this.$M = this._getD().getUTCMonth();
     this.$D = this._getD().getUTCDate();
-    this.$W = this._getD().getUTCDay();
+    this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
     this.$H = this._getD().getUTCHours();
     this.$m = this._getD().getUTCMinutes();
     this.$s = this._getD().getUTCSeconds();

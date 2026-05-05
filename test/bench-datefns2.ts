@@ -1,6 +1,11 @@
 // @ts-expect-error TypeScript errors are intentional for compatibility
 import moment2 from "../moment2";
-import { parseISO, getDayOfYear, addDays, format, isAfter, startOfMonth, differenceInCalendarDays } from "date-fns";
+import {
+  parseISO, getDayOfYear, addDays, addMonths, subDays, format, isAfter, isBefore,
+  startOfMonth, startOfYear, endOfMonth, endOfYear,
+  differenceInCalendarDays, differenceInCalendarMonths,
+  getDaysInMonth, isLeapYear, setYear, startOfWeek,
+} from "date-fns";
 
 function micros(ns) {
   if (ns < 1000) {return `${ns.toFixed(0)  }ns`;}
@@ -76,6 +81,90 @@ const CASES = [
     name: "moment() / new Date()",
     run: () => [() => moment2(), () => new Date()],
   },
+  {
+    name: "startOf year",
+    run: () => {
+      const a = moment2("2024-06-15");
+      const b = new Date(2024, 5, 15);
+      return [() => a.startOf("year"), () => startOfYear(b)];
+    },
+  },
+  {
+    name: "endOf month",
+    run: () => {
+      const a = moment2("2024-06-15");
+      const b = new Date(2024, 5, 15);
+      return [() => a.endOf("month"), () => endOfMonth(b)];
+    },
+  },
+  {
+    name: "add 1 month",
+    run: () => {
+      const a = moment2("2024-06-15");
+      const b = new Date(2024, 5, 15);
+      return [() => a.add(1, "month"), () => addMonths(b, 1)];
+    },
+  },
+  {
+    name: "sub 1 day",
+    run: () => {
+      const a = moment2("2024-06-15");
+      const b = new Date(2024, 5, 15);
+      return [() => a.add(-1, "day"), () => subDays(b, 1)];
+    },
+  },
+  {
+    name: "diff in months",
+    run: () => {
+      const a = moment2("2024-01-15");
+      const b = moment2("2024-12-01");
+      const c = new Date(2024, 0, 15);
+      const d = new Date(2024, 11, 1);
+      return [() => a.diff(b, "months"), () => differenceInCalendarMonths(d, c)];
+    },
+  },
+  {
+    name: "format HH:mm:ss",
+    run: () => {
+      const a = moment2("2024-06-15 10:30:45");
+      const b = new Date(2024, 5, 15, 10, 30, 45);
+      return [() => a.format("HH:mm:ss"), () => format(b, "HH:mm:ss")];
+    },
+  },
+  {
+    name: "isBefore",
+    run: () => {
+      const a = moment2("2024-06-15");
+      const b = moment2("2024-07-01");
+      const c = new Date(2024, 5, 15);
+      const d = new Date(2024, 6, 1);
+      return [() => a.isBefore(b), () => isBefore(c, d)];
+    },
+  },
+  {
+    name: "daysInMonth",
+    run: () => {
+      const a = moment2("2024-06-15");
+      const b = new Date(2024, 5, 15);
+      return [() => a.daysInMonth(), () => getDaysInMonth(b)];
+    },
+  },
+  {
+    name: "isLeapYear",
+    run: () => {
+      const a = moment2("2024-06-15");
+      const b = new Date(2024, 5, 15);
+      return [() => a.isLeapYear(), () => isLeapYear(b)];
+    },
+  },
+  {
+    name: "set year",
+    run: () => {
+      const a = moment2("2024-06-15");
+      const b = new Date(2024, 5, 15);
+      return [() => a.year(2020), () => setYear(b, 2020)];
+    },
+  },
 ];
 
 const ITER = 5000;
@@ -87,7 +176,7 @@ for (const c of CASES) {
   for (let i = 0; i < 500; i++) { f1(); f2(); }
 }
 
-console.log("Operation                           moment2    date-fns   %");
+console.log("Operation                           moment2    date-fns     %");
 for (const c of CASES) {
   const [fnM2, fnDF] = c.run();
   const tm = [], td = [];

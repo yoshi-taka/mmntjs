@@ -597,13 +597,13 @@ function createFromString(
       const ms = millisecond ?? 0;
       if (offset !== undefined) {
         return new Moment({
-          _d: new Date(Date.UTC(y, mo, d, h, min, s, ms)),
+          _d: createDateSafe(y, mo, d, h, min, s, ms, true),
           _offset: offset, _isUTC: true, _i: str,
           _f: parsed._hasTime ? "YYYY-MM-DDTHH:mm:ss.SSSSZ" : "YYYY-MM-DD",
         });
       }
       return new Moment({
-        _d: new Date(y, mo, d, h, min, s, ms), _i: str,
+        _d: createDateSafe(y, mo, d, h, min, s, ms, false), _i: str,
         _f: parsed._hasTime ? "YYYY-MM-DDTHH:mm:ss.SSSS" : "YYYY-MM-DD",
       });
     }
@@ -765,204 +765,161 @@ function createMomentFromParsed(
   const baseConfig: Record<string, unknown> = strict !== undefined ? { _strict: strict } : {};
   if (parsed.bigHour) {baseConfig._bigHour = true;}
 
-  if (
-    parsed._weekYear !== undefined &&
-    parsed._week !== undefined &&
-    parsed.year === undefined &&
-    parsed.month === undefined &&
-    parsed.day === undefined
-  ) {
-    const loc = getLocale(locale);
-    const weekCfg = (loc._config as Record<string, unknown>).week || { dow: 0, doy: 6 };
-    let weekdayOffset: number;
-    if (parsed._localeWeekday !== undefined) {
-      weekdayOffset = parsed._localeWeekday;
-    } else if (parsed._weekdayNum !== undefined) {
-      weekdayOffset = (parsed._weekdayNum - weekCfg.dow + 7) % 7;
-    } else {
-      weekdayOffset = 0;
+  const noDate = parsed.year === undefined && parsed.month === undefined && parsed.day === undefined;
+  let tag = 0;
+  if (noDate) {
+    if (parsed._weekYear !== undefined && parsed._week !== undefined) {
+      tag = 1;
+    } else if (parsed.isoWeekYear !== undefined && parsed.isoWeek !== undefined) {
+      tag = 2;
+    } else if (parsed._weekYear !== undefined) {
+      tag = 3;
+    } else if (parsed._week !== undefined) {
+      tag = 4;
+    } else if (parsed.isoWeekYear !== undefined) {
+      tag = 5;
+    } else if (parsed.isoWeek !== undefined) {
+      tag = 6;
+    } else if (parsed.dayOfYear !== undefined) {
+      tag = 7;
+    } else if (parsed._weekdayNum !== undefined &&
+               parsed.hour === undefined && parsed.minute === undefined &&
+               parsed.second === undefined && parsed.millisecond === undefined &&
+               parsed.offset === undefined) {
+      tag = 8;
+    } else if (parsed.hour !== undefined && parsed.offset === undefined) {
+      tag = 9;
     }
-    const d = localeWeekToDate(
-      parsed._weekYear,
-      parsed._week,
-      weekdayOffset,
-      weekCfg.dow,
-      weekCfg.doy,
-    );
-    if (parsed.hour !== undefined)
-      {d.setUTCHours(parsed.hour, parsed.minute || 0, parsed.second || 0, parsed.millisecond || 0);}
-    return new Moment(buildMomentConfig(d, str, format, locale, parsed, baseConfig));
   }
 
-  if (
-    parsed.isoWeekYear !== undefined &&
-    parsed.isoWeek !== undefined &&
-    parsed.year === undefined &&
-    parsed.month === undefined &&
-    parsed.day === undefined
-  ) {
-    const isoWeekday = parsed._weekdayNum !== undefined ? parsed._weekdayNum : 1;
-    const d = weekYearToDate(parsed.isoWeekYear, parsed.isoWeek, isoWeekday);
-    if (parsed.hour !== undefined)
-      {d.setUTCHours(parsed.hour, parsed.minute || 0, parsed.second || 0, parsed.millisecond || 0);}
-    return new Moment(buildMomentConfig(d, str, format, locale, parsed, baseConfig));
-  }
-
-  if (
-    parsed._weekYear !== undefined &&
-    parsed._week === undefined &&
-    parsed.year === undefined &&
-    parsed.month === undefined &&
-    parsed.day === undefined
-  ) {
-    const year = parsed._weekYear;
-    const nowTs = momentNowFn ? momentNowFn() : Date.now();
-    const nowDate = new Date(nowTs);
-    const nowYearStart = new Date(nowDate.getFullYear(), 0, 1);
-    const dayOfYear = Math.floor((nowTs - nowYearStart.getTime()) / 86400000);
-    const currentWeekOfYear = Math.ceil((dayOfYear + nowYearStart.getDay() + 1) / 7);
-    const loc = getLocale(locale);
-    const weekCfg = (loc._config as Record<string, unknown>).week || { dow: 0, doy: 6 };
-    const d = localeWeekToDate(year, Math.max(currentWeekOfYear, 1), 0, weekCfg.dow, weekCfg.doy);
-    return new Moment(buildMomentConfig(d, str, format, locale, parsed, { _strict: strict }));
-  }
-
-  if (
-    parsed._week !== undefined &&
-    parsed._weekYear === undefined &&
-    parsed.year === undefined &&
-    parsed.month === undefined &&
-    parsed.day === undefined
-  ) {
-    const nowTs = momentNowFn ? momentNowFn() : Date.now();
-    const year = new Date(nowTs).getFullYear();
-    const loc = getLocale(locale);
-    const weekCfg = (loc._config as Record<string, unknown>).week || { dow: 0, doy: 6 };
-    const d = localeWeekToDate(year, parsed._week, 0, weekCfg.dow, weekCfg.doy);
-    return new Moment(buildMomentConfig(d, str, format, locale, parsed, { _strict: strict }));
-  }
-
-  if (
-    parsed.isoWeek !== undefined &&
-    parsed.isoWeekYear === undefined &&
-    parsed.year === undefined &&
-    parsed.month === undefined &&
-    parsed.day === undefined
-  ) {
-    const nowTs = momentNowFn ? momentNowFn() : Date.now();
-    const nowYear = new Date(nowTs).getUTCFullYear();
-    const jan4 = new Date(Date.UTC(nowYear, 0, 4));
-    const dayOfJan4 = jan4.getUTCDay() || 7;
-    const offset = dayOfJan4 - 1;
-    const week1Start = new Date(Date.UTC(nowYear, 0, 4 - offset));
-    const d = new Date(week1Start.getTime() + (parsed.isoWeek - 1) * 7 * 86400000);
-    return new Moment(buildMomentConfig(d, str, format, locale, parsed, { _strict: strict }));
-  }
-
-  if (
-    parsed.isoWeekYear !== undefined &&
-    parsed.isoWeek === undefined &&
-    parsed.year === undefined &&
-    parsed.month === undefined &&
-    parsed.day === undefined
-  ) {
-    const year = parsed.isoWeekYear;
-    const jan4 = new Date(Date.UTC(year, 0, 4));
-    const dayOfJan4 = jan4.getUTCDay() || 7;
-    const offset = dayOfJan4 - 1;
-    const d = new Date(Date.UTC(year, 0, 4 - offset));
-    return new Moment(buildMomentConfig(d, str, format, locale, parsed, baseConfig));
-  }
-
-  if (parsed.dayOfYear !== undefined && parsed.day === undefined && parsed.month === undefined) {
-    const year = parsed.year !== undefined ? parsed.year : new Date().getFullYear();
-    const maxDayOfYear = isLeapYear(year) ? 366 : 365;
-    if (parsed.dayOfYear > maxDayOfYear) {
-      return new Moment({
-        _dClone: false,
-        _d: new Date(NaN),
-        _i: str,
-        _f: format,
-        _l: locale,
-        _isValid: false,
-        _overflow: 2,
-      });
+  switch (tag) {
+    case 1: {
+      const loc = getLocale(locale);
+      const weekCfg = (loc._config as Record<string, unknown>).week || { dow: 0, doy: 6 };
+      let weekdayOffset: number;
+      if (parsed._localeWeekday !== undefined) {
+        weekdayOffset = parsed._localeWeekday;
+      } else if (parsed._weekdayNum !== undefined) {
+        weekdayOffset = (parsed._weekdayNum - weekCfg.dow + 7) % 7;
+      } else {
+        weekdayOffset = 0;
+      }
+      const d = localeWeekToDate(parsed._weekYear, parsed._week, weekdayOffset, weekCfg.dow, weekCfg.doy);
+      if (parsed.hour !== undefined)
+        {d.setUTCHours(parsed.hour, parsed.minute || 0, parsed.second || 0, parsed.millisecond || 0);
+        return new Moment(buildMomentConfig(d, str, format, locale, parsed, baseConfig));}
+      const ld = new Date(0);
+      ld.setFullYear(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+      ld.setHours(0, 0, 0, 0);
+      return new Moment(buildMomentConfig(ld, str, format, locale, parsed, baseConfig));
     }
-    const d = new Date(Date.UTC(year, 0, parsed.dayOfYear));
-    return new Moment(buildMomentConfig(d, str, format, locale, parsed, baseConfig));
-  }
-
-  const isWeekdayOnly =
-    parsed._weekdayNum !== undefined &&
-    parsed.year === undefined &&
-    parsed.month === undefined &&
-    parsed.day === undefined &&
-    parsed.hour === undefined &&
-    parsed.minute === undefined &&
-    parsed.second === undefined &&
-    parsed.millisecond === undefined &&
-    parsed.offset === undefined;
-
-  if (isWeekdayOnly) {
-    const d = new Date();
-    const currentDay = d.getDay();
-    const diff = parsed._weekdayNum - currentDay;
-    d.setDate(d.getDate() + diff);
-    d.setHours(0, 0, 0, 0);
-    return new Moment(buildMomentConfig(d, str, format, locale, parsed, baseConfig));
-  }
-
-  const isTimeOnly =
-    parsed.hour !== undefined &&
-    parsed.year === undefined &&
-    parsed.month === undefined &&
-    parsed.day === undefined &&
-    parsed.offset === undefined;
-
-  if (isTimeOnly) {
-    const d = new Date();
-    if (parsed._weekdayNum !== undefined) {
+    case 2: {
+      const isoWeekday = parsed._weekdayNum !== undefined ? parsed._weekdayNum : 1;
+      const d = weekYearToDate(parsed.isoWeekYear, parsed.isoWeek, isoWeekday);
+      if (parsed.hour !== undefined)
+        {d.setUTCHours(parsed.hour, parsed.minute || 0, parsed.second || 0, parsed.millisecond || 0);
+        return new Moment(buildMomentConfig(d, str, format, locale, parsed, baseConfig));}
+      const ld = new Date(0);
+      ld.setFullYear(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+      ld.setHours(0, 0, 0, 0);
+      return new Moment(buildMomentConfig(ld, str, format, locale, parsed, baseConfig));
+    }
+    case 3: {
+      const year = parsed._weekYear;
+      const nowTs = momentNowFn ? momentNowFn() : Date.now();
+      const nowDate = new Date(nowTs);
+      const nowYearStart = new Date(nowDate.getFullYear(), 0, 1);
+      const dayOfYear = Math.floor((nowTs - nowYearStart.getTime()) / 86400000);
+      const currentWeekOfYear = Math.ceil((dayOfYear + nowYearStart.getDay() + 1) / 7);
+      const loc = getLocale(locale);
+      const weekCfg = (loc._config as Record<string, unknown>).week || { dow: 0, doy: 6 };
+      const d = localeWeekToDate(year, Math.max(currentWeekOfYear, 1), 0, weekCfg.dow, weekCfg.doy);
+      return new Moment(buildMomentConfig(d, str, format, locale, parsed, { _strict: strict }));
+    }
+    case 4: {
+      const nowTs = momentNowFn ? momentNowFn() : Date.now();
+      const year = new Date(nowTs).getFullYear();
+      const loc = getLocale(locale);
+      const weekCfg = (loc._config as Record<string, unknown>).week || { dow: 0, doy: 6 };
+      const d = localeWeekToDate(year, parsed._week, 0, weekCfg.dow, weekCfg.doy);
+      return new Moment(buildMomentConfig(d, str, format, locale, parsed, { _strict: strict }));
+    }
+    case 5: {
+      const nowTs = momentNowFn ? momentNowFn() : Date.now();
+      const nowYear = new Date(nowTs).getUTCFullYear();
+      const jan4 = new Date(Date.UTC(nowYear, 0, 4));
+      const dayOfJan4 = jan4.getUTCDay() || 7;
+      const offset = dayOfJan4 - 1;
+      const week1Start = new Date(Date.UTC(nowYear, 0, 4 - offset));
+      const d = new Date(week1Start.getTime() + (parsed.isoWeek - 1) * 7 * 86400000);
+      return new Moment(buildMomentConfig(d, str, format, locale, parsed, { _strict: strict }));
+    }
+    case 6: {
+      const year = parsed.isoWeekYear;
+      const jan4 = new Date(Date.UTC(year, 0, 4));
+      const dayOfJan4 = jan4.getUTCDay() || 7;
+      const offset = dayOfJan4 - 1;
+      const d = new Date(Date.UTC(year, 0, 4 - offset));
+      return new Moment(buildMomentConfig(d, str, format, locale, parsed, baseConfig));
+    }
+    case 7: {
+      const year = parsed.year !== undefined ? parsed.year : new Date().getFullYear();
+      const maxDayOfYear = isLeapYear(year) ? 366 : 365;
+      if (parsed.dayOfYear > maxDayOfYear) {
+        return new Moment({
+          _dClone: false, _d: new Date(NaN), _i: str, _f: format, _l: locale,
+          _isValid: false, _overflow: 2,
+        });
+      }
+      const d = new Date(Date.UTC(year, 0, parsed.dayOfYear));
+      return new Moment(buildMomentConfig(d, str, format, locale, parsed, baseConfig));
+    }
+    case 8: {
+      const d = new Date();
       const currentDay = d.getDay();
       const diff = parsed._weekdayNum - currentDay;
       d.setDate(d.getDate() + diff);
+      d.setHours(0, 0, 0, 0);
+      return new Moment(buildMomentConfig(d, str, format, locale, parsed, baseConfig));
     }
-    d.setHours(parsed.hour || 0, parsed.minute || 0, parsed.second || 0, parsed.millisecond || 0);
-    return new Moment(buildMomentConfig(d, str, format, locale, parsed, {
-      ...baseConfig,
-      _meridiem: parsed._meridiem as string | undefined,
-    }));
+    case 9: {
+      const d = new Date();
+      if (parsed._weekdayNum !== undefined) {
+        const currentDay = d.getDay();
+        const diff = parsed._weekdayNum - currentDay;
+        d.setDate(d.getDate() + diff);
+      }
+      d.setHours(parsed.hour || 0, parsed.minute || 0, parsed.second || 0, parsed.millisecond || 0);
+      return new Moment(buildMomentConfig(d, str, format, locale, parsed, {
+        ...baseConfig, _meridiem: parsed._meridiem as string | undefined,
+      }));
+    }
+    default: {
+      const hasYear = parsed.year !== undefined;
+      const hasMonth = parsed.month !== undefined;
+      let year = parsed.year !== undefined ? parsed.year : new Date().getFullYear();
+      let month = parsed.month !== undefined ? parsed.month : hasYear ? 0 : new Date().getMonth();
+      const day = parsed.day !== undefined ? parsed.day : hasYear || hasMonth ? 1 : new Date().getDate();
+      let hour = parsed.hour !== undefined ? parsed.hour : 0;
+      const minute = parsed.minute !== undefined ? parsed.minute : 0;
+      const second = parsed.second !== undefined ? parsed.second : 0;
+      const ms = parsed.millisecond !== undefined ? parsed.millisecond : 0;
+      if (parsed.quarter !== undefined && month === 0 && !parsed.month) {
+        month = (parsed.quarter - 1) * 3;
+      }
+      if (parsed.offset !== undefined) {
+        let dd = createDateSafe(year, month, day, hour, minute, second, ms, true);
+        dd = new Date(dd.getTime() - parsed.offset * 60000);
+        return new Moment(buildMomentConfig(dd, str, format, locale, parsed, {
+          ...baseConfig, _meridiem: parsed._meridiem as string | undefined,
+        }));
+      }
+      const dd = createDateSafe(year, month, day, hour, minute, second, ms, false);
+      return new Moment(buildMomentConfig(dd, str, format, locale, parsed, {
+        ...baseConfig, _meridiem: parsed._meridiem as string | undefined,
+      }));
+    }
   }
-
-  const hasYear = parsed.year !== undefined;
-  const hasMonth = parsed.month !== undefined;
-
-  let year = parsed.year !== undefined ? parsed.year : new Date().getFullYear();
-  let month = parsed.month !== undefined ? parsed.month : hasYear ? 0 : new Date().getMonth();
-  const day =
-    parsed.day !== undefined ? parsed.day : hasYear || hasMonth ? 1 : new Date().getDate();
-  let hour = parsed.hour !== undefined ? parsed.hour : 0;
-  const minute = parsed.minute !== undefined ? parsed.minute : 0;
-  const second = parsed.second !== undefined ? parsed.second : 0;
-  const ms = parsed.millisecond !== undefined ? parsed.millisecond : 0;
-
-  if (parsed.quarter !== undefined && month === 0 && !parsed.month) {
-    month = (parsed.quarter - 1) * 3;
-  }
-
-  let d: Date;
-  if (parsed.offset !== undefined) {
-    d = createDateSafe(year, month, day, hour, minute, second, ms, true);
-    d = new Date(d.getTime() - parsed.offset * 60000);
-    return new Moment(buildMomentConfig(d, str, format, locale, parsed, {
-      ...baseConfig,
-      _meridiem: parsed._meridiem as string | undefined,
-    }));
-  }
-  d = createDateSafe(year, month, day, hour, minute, second, ms, false);
-  return new Moment(buildMomentConfig(d, str, format, locale, parsed, {
-    ...baseConfig,
-    _meridiem: parsed._meridiem as string | undefined,
-  }));
 }
 
 function createFromArray(arr: unknown[], isUTC?: boolean): Moment {
