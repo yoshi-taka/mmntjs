@@ -2107,6 +2107,16 @@ const FORMAT_TOKENS = [
 
 const tokenizeCache = new LruMap<string, FormatToken[]>(1000);
 
+const tokenizeByChar: Record<string, string[]> = {};
+for (const token of FORMAT_TOKENS) {
+  const c = token[0];
+  if (!tokenizeByChar[c]) {tokenizeByChar[c] = [];}
+  tokenizeByChar[c].push(token);
+}
+for (const c in tokenizeByChar) {
+  tokenizeByChar[c].sort((a, b) => b.length - a.length);
+}
+
 function tokenizeFormat(format: string): FormatToken[] {
   const cached = tokenizeCache.get(format);
   if (cached) {return cached;}
@@ -2136,12 +2146,15 @@ function tokenizeFormat(format: string): FormatToken[] {
     }
 
     let matched = false;
-    for (const token of FORMAT_TOKENS) {
-      if (format.startsWith(token, i)) {
-        tokens.push({ type: "token", name: token });
-        i += token.length;
-        matched = true;
-        break;
+    const candidates = tokenizeByChar[format[i]];
+    if (candidates) {
+      for (const token of candidates) {
+        if (format.startsWith(token, i)) {
+          tokens.push({ type: "token", name: token });
+          i += token.length;
+          matched = true;
+          break;
+        }
       }
     }
 
