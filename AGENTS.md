@@ -2,9 +2,10 @@
 
 ## 開発環境
 
-- `npm` は使わない。`bun` を使う（`bun install`, `bun test`, `bun run build` etc.）
+- `npm` は使わない。`bun` を使う（`bun install`, `bun run build` etc.）
 - `npx` 禁止。`bun x` を使う（例: `bun x jazzer`）
 - ただし jazzer は `bun run fuzz` で実行可能（package.json に定義済み）
+- **テスト実行は `bun test` 直ではなく `bun run test` / `bun run test:hard` を使う**（mutation test の分離実行、grammar fuzz の後処理を含む）
 
 ## 変更内容（テーブルベースISOパース書き換え）
 
@@ -83,5 +84,60 @@
 ### 2. fuzz継続
 ファザーは永遠に新しいエッジケースを発見し続ける。今回の修正でだいぶ改善したが、根本的には moment.js の format parsing を完全に再現する必要がある（moment.js の `configFromStringAndFormat` 相当の実装）。
 
-### 3. 速度改善（任意）
-今回 `parseCommonISOExtended` を追加したので、以前よりは改善している。さらなる最適化が必要ならプロファイルを取ってから。
+### 3. 速度改善
+- `src/parse.ts`: `parseCommonISO` の digit extraction をインライン化（`four()`/`two()` 関数呼び出しを直接 charCodeAt に置き換え）
+- `src/index.ts`: `createFromString` に `parseCommonISO` 結果の高速パス追加（format 検出 regex / checkOverflow / createUTCDate をバイパス）
+- `src/moment_fixed.ts`: コンストラクタの cold field コピーを条件付きに（cold data がない時は配列イテレーションをスキップ）
+- `src/moment_fixed.ts`: `_refreshFields` UTC パス改善（`_d` がある時は `getUTCFullYear()` 等を直接呼び出し、`_epochDaysToYMD` 算術を回避）
+- `src/moment_fixed.ts`: `_addSimple` DAY の while ループを if-else 分岐に最適化（小さい値の場合はループオーバーヘッド排除）
+
+**ベンチマーク修正**: 全ベンチマークファイル（`test/bench*.ts`）の `import moment2 from "../moment"` を `"../moment2"` に修正。元のインポートは moment.js v2.30.1（オリジナル）を参照していた。
+
+**moment2 vs date-fns: 6/8 勝利**
+- parse ISO string: 499ns vs 973ns (1.95x)
+- format YYYY-MM-DD: 35ns vs 1.13μs (32x)
+- diff in days: 20ns vs 789ns (40x)
+- isAfter: 20ns vs 137ns (7x)
+- startOf month: 13ns vs 98ns (7.5x)
+- get day of year: 10ns vs 1.20μs (120x、キャッシュフィールド)
+- add 1 day: LOSE (92ns vs 58ns、ラッパーオーバーヘッド)
+- moment()/new Date(): LOSE (133ns vs 38ns、ラッパーオーバーヘッド)
+
+**moment2 vs 元の moment.js**: ISOパース 12倍、フォーマット 11倍、getter 10倍高速化。
+
+### 4. Delta Debugging 導入
+- `test/fuzz/ddmin.ts`: ddmin アルゴリズム汎用実装（文字列・配列対応）
+- `test/fuzz/delta-debug.mjs`: post-hoc 最小化スクリプト（`bun run fuzz:ddmin -- crash-xxx`）
+- `-minimize_crash=1` を jazzer の fuzz 実行に追加済み
+- ddmin で既存 crash ファイルを検証済み（1-3 B 削減できたが、既に libFuzzer がほぼ最小化済みだった）
+- 操作列の削減（operations fuzz）への ddmin 適用は未着手（各操作が独立した try/catch なので現状の恩恵は小さい）
+
+## 注意: 作業ツリー破壊の反省
+
+### 発生日
+2026-05-05、clone()最適化の実験中。
+
+### 何が起きたか
+- `src/moment_fixed.ts`, `src/format.ts` に未コミットの作業中変更があった（`_ensureFields()` lazy init 機構の追加）
+- `git checkout -- src/moment_fixed.ts` を実行し、moment_fixed.ts の未コミット変更だけをHEADに戻した
+- しかし format.ts は変更されたまま残り、`_ensureFields()` を参照していて実行時エラーになった
+- 復旧しようと `git checkout -- src/format.ts src/index.ts src/parse.ts` を実行し、全未コミット変更を失った
+
+### 原因
+1. **作業開始前に `git status` / `git diff` を確認しなかった** — 未コミット変更がある状態で作業を始めたことに気づかなかった
+2. **`git checkout -- <file>` で部分戻しをした** — 関連ファイル間で不整合が起きるリスクを無視した
+3. **退避手段を使わなかった** — `git stash` / `git stash push -m "msg"` すれば全変更を安全に退避できた
+
+### 対策（今後のルール）
+1. **作業開始時は必ず `git status` / `git diff --stat` を確認する**
+2. **実験や改変は必ずブランチを切って行う。絶対にカレントブランチで直接編集しない:**
+   ```
+   git checkout -b exp/clone-optimize
+   ```
+3. **未コミット変更がある状態で別の実験を始めたい場合:**
+   - 先にコミットしてからブランチを切る: `git add -A && git commit -m "wip: ..."`
+   - または `git stash push -m "msg"` で退避
+4. **`git checkout -- <file>` で未コミット変更を消さない。どうしても必要なら事前に:**
+   - `git diff HEAD -- <file>` で内容を確認
+   - 全関連ファイルの整合性を確認する
+5. **`git checkout --` で消える変更は二度と戻せない**（reflog に残らない）

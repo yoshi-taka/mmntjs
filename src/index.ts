@@ -586,6 +586,27 @@ function createFromString(
 
   const parsed = parseString(str);
   if (parsed && !parsed._claimed) {
+    if (parsed._hasDate !== undefined) {
+      const { year, month, day, hour, minute, second, millisecond, offset } = parsed;
+      const y = year!;
+      const mo = month!;
+      const d = day!;
+      const h = hour ?? 0;
+      const min = minute ?? 0;
+      const s = second ?? 0;
+      const ms = millisecond ?? 0;
+      if (offset !== undefined) {
+        return new Moment({
+          _d: new Date(Date.UTC(y, mo, d, h, min, s, ms)),
+          _offset: offset, _isUTC: true, _i: str,
+          _f: parsed._hasTime ? "YYYY-MM-DDTHH:mm:ss.SSSSZ" : "YYYY-MM-DD",
+        });
+      }
+      return new Moment({
+        _d: new Date(y, mo, d, h, min, s, ms), _i: str,
+        _f: parsed._hasTime ? "YYYY-MM-DDTHH:mm:ss.SSSS" : "YYYY-MM-DD",
+      });
+    }
     if (((parsed.isoWeekYear !== undefined || parsed.isoWeek !== undefined) ||
          (parsed._weekYear !== undefined || parsed._week !== undefined)) &&
         parsed.year === undefined && parsed.month === undefined && parsed.day === undefined) {
@@ -633,7 +654,7 @@ function createFromString(
     };
     const overflow = checkOverflow(parsedCheck);
     let detectedFmt: string | undefined;
-    const trimmedStr = str.trim();
+    const trimmedStr = str;
     const timeMatch = trimmedStr.match(/[T ](\d{2})(?::(\d{2})(?::(\d{2})(?:[.,](\d+))?)?)?/);
     const hasT = trimmedStr.indexOf("T") >= 0 || trimmedStr.indexOf("t") >= 0;
     if (/^\d{4}-\d{2}-\d{2}([T ]|$)/.test(trimmedStr)) {

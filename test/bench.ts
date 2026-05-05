@@ -1,5 +1,5 @@
 // @ts-expect-error TypeScript errors are intentional for compatibility
-import moment2 from "../moment";
+import moment2 from "../moment2";
 import moment from "../moment/moment.js";
 
 interface BenchCase {

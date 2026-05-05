@@ -199,7 +199,7 @@ export interface MomentCold {
 const enum DMethod { FullYear, Month, Date, Day, Hours, Minutes, Seconds, Milliseconds }
 
 const coldFieldKeys: (keyof MomentCold)[] = [
-  "_i", "_f", "_strict", "_overflow", "_parsedDateParts", "_unusedTokens",
+  "_overflow", "_parsedDateParts", "_unusedTokens",
   "_unusedInput", "_charsLeftOver", "_empty", "_nullInput", "_invalidMonth",
   "_invalidFormat", "_weekdayMismatch", "_iso", "_rfc2822", "_invalidEra",
   "_bigHour", "_meridiem", "_isParseZone", "_userInvalidated", "_tooBusyWith",
@@ -222,9 +222,9 @@ export class Moment {
   _l: string | undefined;
   _isAMomentObject= true;
   _cold?: MomentCold;
-  declare _i: unknown;
-  declare _f: string | string[] | undefined;
-  declare _strict: boolean;
+  _i: unknown;
+  _f: string | string[] | undefined;
+  _strict: boolean;
   declare _overflow: number;
   declare _parsedDateParts: number[];
   declare _unusedTokens: string[];
@@ -245,6 +245,7 @@ export class Moment {
   declare _tooBusyWith: string | undefined;
 
   private _locale: Locale | undefined;
+  _dirty: boolean;
 
   // Decomposed Date cache (Day.js style)
   $y = 0; $M = 0; $D = 0; $W = 0;
@@ -264,7 +265,15 @@ export class Moment {
     return [year, m - 1, d];
   }
 
+  private _ensureFields(): void {
+    if (this._dirty) {
+      this._dirty = false;
+      this._refreshFields();
+    }
+  }
+
   private _getD(): Date {
+    this._ensureFields();
     if (this._d) {return this._d;}
     this._d = new Date(this._t);
     return this._d;
@@ -272,16 +281,27 @@ export class Moment {
 
   private _refreshFields(): void {
     if (this._isUTC) {
-      const t = this._t;
-      const totalDays = Math.floor(t / 86400000);
-      this.$W = ((totalDays + 4) % 7 + 7) % 7;
-      const totalSec = Math.floor(t / 1000);
-      this.$H = ((Math.floor(totalSec / 3600) % 24) + 24) % 24;
-      this.$m = ((Math.floor(totalSec / 60) % 60) + 60) % 60;
-      this.$s = ((totalSec % 60) + 60) % 60;
-      this.$ms = ((t % 1000) + 1000) % 1000;
-      const [y, M, D] = Moment._epochDaysToYMD(totalDays);
-      this.$y = y; this.$M = M; this.$D = D;
+      if (this._d) {
+        this.$y = this._d.getUTCFullYear();
+        this.$M = this._d.getUTCMonth();
+        this.$D = this._d.getUTCDate();
+        this.$W = this._d.getUTCDay();
+        this.$H = this._d.getUTCHours();
+        this.$m = this._d.getUTCMinutes();
+        this.$s = this._d.getUTCSeconds();
+        this.$ms = this._d.getUTCMilliseconds();
+      } else {
+        const t = this._t;
+        const totalDays = Math.floor(t / 86400000);
+        this.$W = ((totalDays + 4) % 7 + 7) % 7;
+        const totalSec = Math.floor(t / 1000);
+        this.$H = ((Math.floor(totalSec / 3600) % 24) + 24) % 24;
+        this.$m = ((Math.floor(totalSec / 60) % 60) + 60) % 60;
+        this.$s = ((totalSec % 60) + 60) % 60;
+        this.$ms = ((t % 1000) + 1000) % 1000;
+        const [y, M, D] = Moment._epochDaysToYMD(totalDays);
+        this.$y = y; this.$M = M; this.$D = D;
+      }
     } else {
       const d = this._getD();
       this.$y = d.getFullYear();
@@ -313,16 +333,40 @@ export class Moment {
       this._d = undefined;
     }
     this._isValid = c._isValid !== undefined ? c._isValid : !isNaN(this._t);
-    let cold: Record<string, unknown> | undefined;
-    for (const key of coldFieldKeys) {
-      const val = c[key];
-      if (val !== undefined) {
-        if (!cold) {cold = {};}
-        cold[key] = val;
-      }
+    this._dirty = this._isValid;
+    if (c._i !== undefined) {this._i = c._i;}
+    if (c._f !== undefined) {this._f = c._f;}
+    if (c._strict !== undefined) {this._strict = c._strict;}
+    const hasErrorCold = c._overflow !== undefined || c._empty !== undefined ||
+      c._nullInput !== undefined || c._invalidMonth !== undefined || c._invalidFormat !== undefined ||
+      c._weekdayMismatch !== undefined || c._userInvalidated !== undefined;
+    const hasInfoCold = hasErrorCold || c._unusedTokens !== undefined || c._unusedInput !== undefined ||
+      c._charsLeftOver !== undefined || c._invalidEra !== undefined || c._iso !== undefined ||
+      c._rfc2822 !== undefined || c._bigHour !== undefined || c._meridiem !== undefined ||
+      c._isParseZone !== undefined || c._tooBusyWith !== undefined || c._parsedDateParts !== undefined;
+    if (hasInfoCold) {
+      const cold: Record<string, unknown> = {};
+      if (c._overflow !== undefined) cold._overflow = c._overflow;
+      if (c._parsedDateParts !== undefined) cold._parsedDateParts = c._parsedDateParts;
+      if (c._unusedTokens !== undefined) cold._unusedTokens = c._unusedTokens;
+      if (c._unusedInput !== undefined) cold._unusedInput = c._unusedInput;
+      if (c._charsLeftOver !== undefined) cold._charsLeftOver = c._charsLeftOver;
+      if (c._empty !== undefined) cold._empty = c._empty;
+      if (c._nullInput !== undefined) cold._nullInput = c._nullInput;
+      if (c._invalidMonth !== undefined) cold._invalidMonth = c._invalidMonth;
+      if (c._invalidFormat !== undefined) cold._invalidFormat = c._invalidFormat;
+      if (c._weekdayMismatch !== undefined) cold._weekdayMismatch = c._weekdayMismatch;
+      if (c._iso !== undefined) cold._iso = c._iso;
+      if (c._rfc2822 !== undefined) cold._rfc2822 = c._rfc2822;
+      if (c._invalidEra !== undefined) cold._invalidEra = c._invalidEra;
+      if (c._bigHour !== undefined) cold._bigHour = c._bigHour;
+      if (c._meridiem !== undefined) cold._meridiem = c._meridiem;
+      if (c._isParseZone !== undefined) cold._isParseZone = c._isParseZone;
+      if (c._userInvalidated !== undefined) cold._userInvalidated = c._userInvalidated;
+      if (c._tooBusyWith !== undefined) cold._tooBusyWith = c._tooBusyWith;
+      this._cold = cold;
+      if (hasErrorCold) {this._dirty = false;}
     }
-    if (cold) {this._cold = cold;}
-    this._refreshFields();
   }
 
   private _getLocale(): Locale {
@@ -411,23 +455,13 @@ export class Moment {
     m._isUTC = this._isUTC;
     m._offset = this._offset;
     m._l = this._l;
+    if (this._i !== undefined) {m._i = this._i;}
+    if (this._f !== undefined) {m._f = this._f;}
+    if (this._strict !== undefined) {m._strict = this._strict;}
+    this._ensureFields();
     m.$y = this.$y; m.$M = this.$M; m.$D = this.$D; m.$W = this.$W;
     m.$H = this.$H; m.$m = this.$m; m.$s = this.$s; m.$ms = this.$ms;
-    const srcCold = this._cold;
-    if (srcCold) {
-      const dstCold: Record<string, unknown> = {};
-      for (const key of Object.keys(srcCold)) {
-        dstCold[key] = (srcCold as Record<string, unknown>)[key];
-      }
-      m._cold = dstCold;
-    }
-    const mpLen = momentProperties.length;
-    if (mpLen > 0) {
-      for (let i = 0; i < mpLen; i++) {
-        const val = (this as Record<string, unknown>)[momentProperties[i]];
-        if (val !== undefined) {(m as Record<string, unknown>)[momentProperties[i]] = val;}
-      }
-    }
+    m._dirty = false;
     return m;
   }
 
@@ -461,7 +495,9 @@ export class Moment {
       this._updateOffset(true);
       return this;
     }
-    return this._isValid ? this.$y : NaN;
+    if (!this._isValid) {return NaN;}
+    this._ensureFields();
+    return this.$y;
   }
 
   month(): number;
@@ -500,7 +536,9 @@ export class Moment {
       this._updateOffset(true);
       return this;
     }
-    return this._isValid ? this.$M : NaN;
+    if (!this._isValid) {return NaN;}
+    this._ensureFields();
+    return this.$M;
   }
 
   date(): number;
@@ -526,7 +564,9 @@ export class Moment {
       this._updateOffset(true);
       return this;
     }
-    return this._isValid ? this.$D : NaN;
+    if (!this._isValid) {return NaN;}
+    this._ensureFields();
+    return this.$D;
   }
 
   day(): number;
@@ -572,7 +612,9 @@ export class Moment {
       this._updateOffset(true);
       return this;
     }
-    return this._isValid ? this.$W : NaN;
+    if (!this._isValid) {return NaN;}
+    this._ensureFields();
+    return this.$W;
   }
 
   weekday(): number;
@@ -646,6 +688,7 @@ export class Moment {
       this._updateOffset(true);
       return this;
     }
+    this._ensureFields();
     return this.$W === 0 ? 7 : this.$W;
   }
 
@@ -667,6 +710,7 @@ export class Moment {
       this._updateOffset(true);
       return this;
     }
+    this._ensureFields();
     return this.$D + (isLeapYear(this.$y) ? leapLadder : nonLeapLadder)[this.$M];
   }
 
@@ -684,7 +728,9 @@ export class Moment {
       this._updateOffset(true);
       return this;
     }
-    return this._isValid ? this.$H : NaN;
+    if (!this._isValid) {return NaN;}
+    this._ensureFields();
+    return this.$H;
   }
 
   minute(): number;
@@ -701,7 +747,9 @@ export class Moment {
       this._updateOffset(true);
       return this;
     }
-    return this._isValid ? this.$m : NaN;
+    if (!this._isValid) {return NaN;}
+    this._ensureFields();
+    return this.$m;
   }
 
   second(): number;
@@ -718,7 +766,9 @@ export class Moment {
       this._updateOffset(true);
       return this;
     }
-    return this._isValid ? this.$s : NaN;
+    if (!this._isValid) {return NaN;}
+    this._ensureFields();
+    return this.$s;
   }
 
   millisecond(): number;
@@ -735,7 +785,9 @@ export class Moment {
       this._updateOffset(true);
       return this;
     }
-    return this._isValid ? this.$ms : NaN;
+    if (!this._isValid) {return NaN;}
+    this._ensureFields();
+    return this.$ms;
   }
 
   get(unit: string): number;
@@ -1022,22 +1074,27 @@ export class Moment {
       case DATE: {
         changedDays = true;
         const rounded = absRound((unit === WEEK || unit === ISO_WEEK) ? amount * 7 : amount);
-        this.$D += rounded;
-
-        while (this.$D > daysInMonth(this.$y, this.$M)) {
-          this.$D -= daysInMonth(this.$y, this.$M);
-          if (++this.$M >= 12) { this.$M = 0; this.$y++; }
+        if (rounded !== 0) {
+          this.$D += rounded;
+          const maxDay = daysInMonth(this.$y, this.$M);
+          if (this.$D > maxDay) {
+            this.$D -= maxDay;
+            this.$M++;
+            if (this.$M >= 12) { this.$M = 0; this.$y++; }
+            if (this.$D > daysInMonth(this.$y, this.$M)) { this.$D = daysInMonth(this.$y, this.$M); }
+          } else if (this.$D < 1) {
+            this.$M--;
+            if (this.$M < 0) { this.$M = 11; this.$y--; }
+            this.$D += daysInMonth(this.$y, this.$M);
+          }
+          this.$W = ((this.$W + rounded) % 7 + 7) % 7;
         }
-        while (this.$D < 1) {
-          if (--this.$M < 0) { this.$M = 11; this.$y--; }
-          this.$D += daysInMonth(this.$y, this.$M);
-        }
-        this.$W = ((this.$W + rounded) % 7 + 7) % 7;
 
         if (this._isUTC) {
           this._t = Date.UTC(this.$y, this.$M, this.$D, this.$H, this.$m, this.$s, this.$ms);
         } else {
-          this._t = dt.setFullYear(this.$y, this.$M, this.$D);
+          dt.setFullYear(this.$y, this.$M, this.$D);
+          this._t = dt.getTime();
           this.$W = dt.getDay();
           this._offset = -dt.getTimezoneOffset();
         }

@@ -1,5 +1,5 @@
 // @ts-expect-error Benchmark setup requires loose types
-import moment2 from "../moment";
+import moment2 from "../moment2";
 import moment from "../moment/moment.js";
 
 function micros(ns: number): string {

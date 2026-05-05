@@ -244,20 +244,32 @@ function parseCommonISO(str: string): Record<string, unknown> | null {
     return null;
   }
   if (str.charCodeAt(4) !== 45 || str.charCodeAt(7) !== 45) {return null;}
-  const year = four(str, 0);
-  const month1 = two(str, 5);
-  const day = two(str, 8);
-  if (isNaN(year) || isNaN(month1) || isNaN(day)) {return null;}
+  const y0 = str.charCodeAt(0) - 48, y1 = str.charCodeAt(1) - 48;
+  const y2 = str.charCodeAt(2) - 48, y3 = str.charCodeAt(3) - 48;
+  if (y0 < 0 || y0 > 9 || y1 < 0 || y1 > 9 || y2 < 0 || y2 > 9 || y3 < 0 || y3 > 9) {return null;}
+  const year = y0 * 1000 + y1 * 100 + y2 * 10 + y3;
+  const m0 = str.charCodeAt(5) - 48, m1 = str.charCodeAt(6) - 48;
+  if (m0 < 0 || m0 > 9 || m1 < 0 || m1 > 9) {return null;}
+  const month1 = m0 * 10 + m1;
+  const d0 = str.charCodeAt(8) - 48, d1 = str.charCodeAt(9) - 48;
+  if (d0 < 0 || d0 > 9 || d1 < 0 || d1 > 9) {return null;}
+  const day = d0 * 10 + d1;
   if (len === 10) {
+    if (month1 < 1 || month1 > 12 || day < 1 || day > 31) {return null;}
     return { year, month: month1 - 1, day, _hasDate: true, _hasTime: false };
   }
   const sep = str.charCodeAt(10);
   if (sep !== 84 && sep !== 32) {return null;}
   if (str.charCodeAt(13) !== 58 || str.charCodeAt(16) !== 58) {return null;}
-  const hour = two(str, 11);
-  const minute = two(str, 14);
-  const second = two(str, 17);
-  if (isNaN(hour) || isNaN(minute) || isNaN(second)) {return null;}
+  const h0 = str.charCodeAt(11) - 48, h1 = str.charCodeAt(12) - 48;
+  if (h0 < 0 || h0 > 9 || h1 < 0 || h1 > 9) {return null;}
+  const hour = h0 * 10 + h1;
+  const min0 = str.charCodeAt(14) - 48, min1 = str.charCodeAt(15) - 48;
+  if (min0 < 0 || min0 > 9 || min1 < 0 || min1 > 9) {return null;}
+  const minute = min0 * 10 + min1;
+  const s0 = str.charCodeAt(17) - 48, s1 = str.charCodeAt(18) - 48;
+  if (s0 < 0 || s0 > 9 || s1 < 0 || s1 > 9) {return null;}
+  const second = s0 * 10 + s1;
 
   let millisecond: number | undefined;
   let pos = 19;

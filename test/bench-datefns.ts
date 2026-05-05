@@ -1,5 +1,5 @@
 // @ts-expect-error TypeScript errors are intentional for compatibility
-import moment2 from "../moment";
+import moment2 from "../moment2";
 import { parseISO, getDayOfYear, addDays, format, isAfter } from "date-fns";
 
 interface BenchCase {

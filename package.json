@@ -37,8 +37,8 @@
   ],
   "scripts": {
     "build": "tsup",
-    "test": "TZ=UTC bun test --parallel ./test/moment/*.js ./test/moment2.test.ts ./test/tree-shaking.test.ts ./packages/timezone/test/basic.test.ts ./test/mutation.test.ts",
-    "test:hard": "TZ=UTC bun test --parallel ./test/moment/*.js ./test/moment2.test.ts ./test/tree-shaking.test.ts ./packages/timezone/test/basic.test.ts ./test/mutation.test.ts ./test/properties/ ./test/locale/*.test.ts && bun run fuzz",
+    "test": "TZ=UTC bun test --parallel ./test/moment/*.js ./test/moment2.test.ts ./test/temporal.test.ts ./test/tree-shaking.test.ts ./packages/timezone/test/basic.test.ts && TZ=UTC bun test ./test/mutation.test.ts && bun run fuzz:grammar:quick",
+    "test:hard": "TZ=UTC bun test --parallel ./test/moment/*.js ./test/moment2.test.ts ./test/temporal.test.ts ./test/tree-shaking.test.ts ./packages/timezone/test/basic.test.ts ./test/properties/ ./test/locale/*.test.ts ./test/sbst-*.test.ts && TZ=UTC bun test ./test/mutation.test.ts && bun run fuzz:quick && bun run fuzz && bun run fuzz:grammar",
     "bench": "bun test/bench.ts",
     "bench:mem": "bun test/bench-mem.ts",
     "snapshot:save": "bash scripts/snapshot.sh save",
@@ -49,7 +49,10 @@
     "knip": "knip",
     "fallow": "fallow",
     "fuzz:quick": "bun run build && jazzer test/fuzz/parse.fuzz.js --sync -i dist/ -- -runs=500 -max_len=64 && jazzer test/fuzz/format.fuzz.js --sync -i dist/ -- -runs=500 -max_len=64 && jazzer test/fuzz/duration.fuzz.js --sync -i dist/ -- -runs=500 -max_len=32 && jazzer test/fuzz/operations.fuzz.js --sync -i dist/ -- -runs=500 -max_len=32 && jazzer test/fuzz/array-input.fuzz.js --sync -i dist/ -- -runs=500 -max_len=32 && jazzer test/fuzz/utc.fuzz.js --sync -i dist/ -- -runs=500 -max_len=64 && jazzer test/fuzz/object-input.fuzz.js --sync -i dist/ -- -runs=500 -max_len=32 && jazzer test/fuzz/reltime.fuzz.js --sync -i dist/ -- -runs=500",
-    "fuzz": "bun run build && jazzer test/fuzz/parse.fuzz.js --sync -i dist/ -- -max_total_time=60",
+    "fuzz": "bun run build && jazzer test/fuzz/parse.fuzz.js --sync -i dist/ -- -max_total_time=60 -minimize_crash=1",
+    "fuzz:grammar": "bun run build && jazzer test/fuzz/grammar.fuzz.js --sync -i dist/ -- -runs=10000 -max_len=48",
+    "fuzz:grammar:quick": "bun run build && jazzer test/fuzz/grammar.fuzz.js --sync -i dist/ -- -runs=500 -max_len=48",
+    "fuzz:ddmin": "bun test/fuzz/delta-debug.mjs",
     "ci": "bun run lint && bun run typecheck && TZ=UTC bun run test:hard && bun run build && bun run knip && bun run fallow"
   },
   "keywords": [

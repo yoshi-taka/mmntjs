@@ -6,8 +6,14 @@ import originalMoment from '../moment/moment'
 
 const ROOT = path.resolve(__dirname, '..')
 
+function clearCache(): void {
+  for (const key of Object.keys(require.cache)) {
+    if (key.includes('/moment2/')) {delete require.cache[key]}
+  }
+}
+
 function mutatedMoment(input: unknown): Moment {
-  const mod = require('../moment').default || require('../moment')
+  const mod = require('../src/index.ts').default
   return mod(input)
 }
 
@@ -40,14 +46,11 @@ function makeMutations(mutations: Mutation[]) {
 
       fs.writeFileSync(filePath, mutated, 'utf-8')
 
-      try {
-        // Clear require cache so we get the mutated version
-        delete require.cache[require.resolve('../moment')]
-        for (const key of Object.keys(require.cache)) {
-          if (key.includes('/moment2/src/')) {delete require.cache[key]}
-        }
+      let killedByOracle = false
+      let fcAssertThrew = false
 
-        let killedByOracle = false
+      try {
+        clearCache()
 
         fc.assert(
           fc.property(mutation.inputs, (input) => {
@@ -60,24 +63,21 @@ function makeMutations(mutations: Mutation[]) {
           }),
           { numRuns: 100 }
         )
-
-        if (killedByOracle) {
-          console.log(`  KILLED (oracle): ${mutation.name}`)
-        } else {
-          console.log(`  SURVIVED: ${mutation.name}`)
-        }
-        expect(killedByOracle).toBe(true)
       } catch {
-        // fc.assert threw because property returned false → counterexample found
-        // This means mutation was detected by oracle → KILLED
-        console.log(`  KILLED (oracle): ${mutation.name}`)
+        fcAssertThrew = true
+        killedByOracle = true
       } finally {
         fs.writeFileSync(filePath, original, 'utf-8')
-        delete require.cache[require.resolve('../moment')]
-        for (const key of Object.keys(require.cache)) {
-          if (key.includes('/moment2/src/')) {delete require.cache[key]}
-        }
+        clearCache()
       }
+
+      if (killedByOracle) {
+        console.log(`  ${fcAssertThrew ? 'KILLED (fc)' : killedByOracle ? 'KILLED (oracle)' : 'KILLED'}: ${mutation.name}`)
+      } else {
+        console.log(`  SURVIVED: ${mutation.name}`)
+      }
+
+      expect(killedByOracle).toBe(true)
     }, { timeout: 60000 })
   }
 }
@@ -85,9 +85,9 @@ function makeMutations(mutations: Mutation[]) {
 makeMutations([
   {
     name: 'valueOf: off by +1ms',
-    file: 'src/moment.ts',
+    file: 'src/moment_fixed.ts',
     patterns: [
-      [/return this\._d\.getTime\(\)\n/g, 'return this._d.getTime() + 1\n'],
+      [/    return this\._t;\n/g, '    return this._t + 1;\n'],
     ],
     inputs: fc.date({ noInvalidDate: true }),
     testFn: (input: unknown) => {
@@ -96,18 +96,30 @@ makeMutations([
   },
   {
     name: 'add days: wrong direction',
-    file: 'src/moment.ts',
+    file: 'src/moment_fixed.ts',
     patterns: [
-      [/d\.setDate\(d\.getDate\(\) \+ days\)/g, 'd.setDate(d.getDate() - days)'],
+      [/d\.setUTCDate\(d\.getUTCDate\(\) \+ sign \* days\)/g, 'd.setUTCDate(d.getUTCDate() - sign * days)'],
+      [/d\.setDate\(d\.getDate\(\) \+ sign \* days\)/g, 'd.setDate(d.getDate() - sign * days)'],
     ],
     inputs: fc.tuple(fc.date({ noInvalidDate: true }), fc.integer({ min: -100, max: 100 })),
     testFn: ([date, n]: [unknown, unknown]) => {
-      return mutatedMoment(date).add(n, 'days').format('YYYY-MM-DD') === originalMoment(date).add(n, 'days').format('YYYY-MM-DD')
+      return mutatedMoment(date).add({ days: n as number }).format('YYYY-MM-DD') === originalMoment(date).add({ days: n as number }).format('YYYY-MM-DD')
+    },
+  },
+  {
+    name: 'add days (simple path): wrong direction',
+    file: 'src/moment_fixed.ts',
+    patterns: [
+      [/        this\.\$D \+= rounded;/g, '        this.$D -= rounded;'],
+    ],
+    inputs: fc.tuple(fc.date({ noInvalidDate: true }), fc.integer({ min: -100, max: 100 })),
+    testFn: ([date, n]: [unknown, unknown]) => {
+      return mutatedMoment(date).add(n as number, 'days').format('YYYY-MM-DD') === originalMoment(date).add(n as number, 'days').format('YYYY-MM-DD')
     },
   },
   {
     name: 'diff: sign flipped',
-    file: 'src/moment.ts',
+    file: 'src/moment_fixed.ts',
     patterns: [
       [/const diff = this\.valueOf\(\) - other\.valueOf\(\)/g, 'const diff = other.valueOf() - this.valueOf()'],
     ],
@@ -118,7 +130,7 @@ makeMutations([
   },
   {
     name: 'isBefore: comparison flipped',
-    file: 'src/moment.ts',
+    file: 'src/moment_fixed.ts',
     patterns: [
       [/return this\.valueOf\(\) < other\.valueOf\(\)/g, 'return this.valueOf() > other.valueOf()'],
     ],
@@ -129,7 +141,7 @@ makeMutations([
   },
   {
     name: 'isAfter: comparison flipped',
-    file: 'src/moment.ts',
+    file: 'src/moment_fixed.ts',
     patterns: [
       [/return this\.valueOf\(\) > other\.valueOf\(\)/g, 'return this.valueOf() < other.valueOf()'],
     ],
@@ -140,20 +152,21 @@ makeMutations([
   },
   {
     name: 'add months: wrong direction',
-    file: 'src/moment.ts',
+    file: 'src/moment_fixed.ts',
     patterns: [
-      [/d\.setMonth\(newMonth\)/g, 'd.setMonth(curMonth - months)'],
+      [/d\.setUTCMonth\(curMonth \+ sign \* months\)/g, 'd.setUTCMonth(curMonth - sign * months)'],
+      [/d\.setMonth\(curMonth \+ sign \* months\)/g, 'd.setMonth(curMonth - sign * months)'],
     ],
     inputs: fc.tuple(fc.date({ noInvalidDate: true }), fc.integer({ min: -12, max: 12 })),
     testFn: ([date, n]: [unknown, unknown]) => {
-      return mutatedMoment(date).add(n, 'months').format('YYYY-MM-DD') === originalMoment(date).add(n, 'months').format('YYYY-MM-DD')
+      return mutatedMoment(date).add({ months: n as number }).format('YYYY-MM-DD') === originalMoment(date).add({ months: n as number }).format('YYYY-MM-DD')
     },
   },
   {
     name: 'startOf: hours set to noon',
-    file: 'src/moment.ts',
+    file: 'src/moment_fixed.ts',
     patterns: [
-      [/d\.setHours\(0, 0, 0, 0\)/g, 'd.setHours(12, 0, 0, 0)'],
+      [/this\.\$H = 0; this\.\$m = 0; this\.\$s = 0; this\.\$ms = 0;/g, 'this.$H = 12; this.$m = 0; this.$s = 0; this.$ms = 0;'],
     ],
     inputs: fc.date({ noInvalidDate: true }),
     testFn: (input: unknown) => {
@@ -162,9 +175,9 @@ makeMutations([
   },
   {
     name: 'isValid always returns true',
-    file: 'src/moment.ts',
+    file: 'src/moment_fixed.ts',
     patterns: [
-      [/    return this\._isValid\n/g, '    return true\n'],
+      [/if \(!this\._isValid\) {return false;}\n/g, ''],
     ],
     inputs: fc.constantFrom(null, undefined, '', 'invalid', NaN, Infinity, '2024-13-01'),
     testFn: (input: unknown) => {
@@ -172,28 +185,36 @@ makeMutations([
     },
   },
   {
-    name: 'clone: CoW protection removed',
-    file: 'src/moment.ts',
-    patterns: [
-      [/this\._shared = true;\n    m\._shared = true;/g, '// CoW disabled'],
-    ],
-    inputs: fc.date({ noInvalidDate: true }),
-    testFn: (input: unknown) => {
-      const a = mutatedMoment(input)
-      const b = a.clone()
-      b.add(1, 'day')
-      return a.format('YYYY-MM-DD') === originalMoment(input).format('YYYY-MM-DD')
-    },
-  },
-  {
     name: 'endOf: no -1ms',
-    file: 'src/moment.ts',
+    file: 'src/moment_fixed.ts',
     patterns: [
       [/d\.setMilliseconds\(-1\)/g, 'd.setMilliseconds(0)'],
     ],
     inputs: fc.date({ noInvalidDate: true }),
     testFn: (input: unknown) => {
       return mutatedMoment(input).endOf('day').format('HH:mm:ss.SSS') === originalMoment(input).endOf('day').format('HH:mm:ss.SSS')
+    },
+  },
+  {
+    name: 'subtract: wrong direction',
+    file: 'src/moment_fixed.ts',
+    patterns: [
+      [/this\._applyDuration\(parsed\.ms, parsed\.days, parsed\.months, -1\);/g, 'this._applyDuration(parsed.ms, parsed.days, parsed.months, 1);'],
+    ],
+    inputs: fc.tuple(fc.date({ noInvalidDate: true }), fc.integer({ min: -30, max: 30 })),
+    testFn: ([date, n]: [unknown, unknown]) => {
+      return mutatedMoment(date).subtract({ days: n as number }).format('YYYY-MM-DD') === originalMoment(date).subtract({ days: n as number }).format('YYYY-MM-DD')
+    },
+  },
+  {
+    name: 'year setter: wrong year stored',
+    file: 'src/moment_fixed.ts',
+    patterns: [
+      [/this\.\$y = this\._isUTC \? dt\.getUTCFullYear\(\) : dt\.getFullYear\(\);/g, 'this.$y = (this._isUTC ? dt.getUTCFullYear() : dt.getFullYear()) + 1;'],
+    ],
+    inputs: fc.date({ noInvalidDate: true }),
+    testFn: (input: unknown) => {
+      return mutatedMoment(input).year(2020).year() === originalMoment(input).year(2020).year()
     },
   },
 ])

@@ -492,8 +492,9 @@ function formatOffset(offset: number): string {
 }
 
 function formatCommonEn(m: Moment, format: string): string | undefined {
-  const raw = m as unknown as { _l: string; $y: number; $M: number; $D: number; _isValid: boolean };
+  const raw = m as unknown as { _l: string; $y: number; $M: number; $D: number; $H: number; $m: number; $s: number; $ms: number; _isValid: boolean };
   if (raw._l !== "en" || !raw._isValid) {return undefined;}
+  (m as unknown as { _ensureFields: () => void })._ensureFields();
   const y = raw.$y;
   if (y < 0 || y > 9999) {return undefined;}
   const datePart = `${padYear(y)  }-${  PAD2[raw.$M + 1]  }-${  PAD2[raw.$D]}`;
