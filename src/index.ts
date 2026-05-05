@@ -144,6 +144,12 @@ function moment(input?: unknown, format?: unknown, localeOrStrict?: unknown, fou
     if (arr.length === 0 && (format === "X" || format === "x")) {
       return new Moment({ _dClone: false, _d: new Date(NaN), _i: arr, _isValid: false, _f: format as string });
     }
+    if (arr.length >= 3 && typeof arr[0] === "number" && typeof arr[1] === "number" && typeof arr[2] === "number") {
+      const d = new Date(arr[0], arr[1], arr[2], (arr[3] as number) || 0, (arr[4] as number) || 0, (arr[5] as number) || 0, (arr[6] as number) || 0);
+      if (!isNaN(d.getTime())) {
+        return new Moment({ _d: d, _i: arr, _dClone: false });
+      }
+    }
     return createFromArray(arr);
   }
   if (isObject(input)) {return createFromObject(input as Record<string, unknown>);}
@@ -590,6 +596,20 @@ function createFromString(
   const trimmed = str.trim();
   if (trimmed === "") {
     return new Moment({ _dClone: false, _d: new Date(NaN), _i: str, _isValid: false, _empty: true });
+  }
+
+  if (trimmed.length === 10 && trimmed[4] === '-' && trimmed[7] === '-' && fmt === undefined) {
+    const y0 = trimmed.charCodeAt(0) - 48, y1 = trimmed.charCodeAt(1) - 48, y2 = trimmed.charCodeAt(2) - 48, y3 = trimmed.charCodeAt(3) - 48;
+    if (y0 >= 0 && y0 <= 9 && y1 >= 0 && y1 <= 9 && y2 >= 0 && y2 <= 9 && y3 >= 0 && y3 <= 9) {
+      const y = y0 * 1000 + y1 * 100 + y2 * 10 + y3;
+      const m = (trimmed.charCodeAt(5) - 48) * 10 + (trimmed.charCodeAt(6) - 48) - 1;
+      const d = (trimmed.charCodeAt(8) - 48) * 10 + (trimmed.charCodeAt(9) - 48);
+      if (m >= 0 && m <= 11 && d >= 1 && d <= 31) {
+        return new Moment({
+          _d: new Date(y, m, d), _i: str, _f: "YYYY-MM-DD", _dClone: false,
+        });
+      }
+    }
   }
 
   const parsed = parseString(str);
