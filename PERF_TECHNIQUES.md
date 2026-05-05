@@ -274,23 +274,23 @@ function _dayOfWeek(y: number, m: number, d: number): number {
 
 | Benchmark | moment2 | date-fns | 勝敗 | 主なテクニック |
 |-----------|---------|----------|------|----------------|
-| parse ISO string | **328ns** | 950ns | WIN | 1, 4, 5 |
-| get day of year | **11ns** | 1.23μs | WIN | 1 |
-| format YYYY-MM-DD | **38ns** | 1.13μs | WIN | 1, 8 |
-| diff in days | **19ns** | 788ns | WIN | 1, 12 |
-| isAfter | **16ns** | 131ns | WIN | 1 |
-| startOf month | **21ns** | 101ns | WIN | 2 |
-| add 1 day | 96ns | **60ns** | LOSE | ラッパーオーバーヘッド |
-| moment()/new Date() | 59ns | **33ns** | LOSE | ラッパーオーバーヘッド |
+| parse ISO string | **293ns** | 1.25μs | WIN | 1, 4, 5 |
+| get day of year | **10ns** | 1.32μs | WIN | 1 |
+| format YYYY-MM-DD | **40ns** | 1.13μs | WIN | 1, 8 |
+| diff in days | **21ns** | 802ns | WIN | 1, 12 |
+| isAfter | **22ns** | 144ns | WIN | 1 |
+| startOf month | **12ns** | 99ns | WIN | 2 |
+| add 1 day | 94ns | **60ns** | LOSE | ラッパーオーバーヘッド |
+| moment()/new Date() | 61ns | **36ns** | LOSE | ラッパーオーバーヘッド |
 
 ### moment2 vs original moment.js
 
 | Operation | moment.js | moment2 | 倍率 |
 |-----------|-----------|---------|------|
-| moment('ISO string') | 3.97μs | **209ns** | **19x** |
-| format('YYYY-MM-DD') | 386ns | **33ns** | **12x** |
-| getters (7 fields) | 202ns | **27ns** | **7.5x** |
-| moment() | 282ns | **86ns** | **3.3x** |
-| moment([y,M,d]) | 450ns | **255ns** | **1.8x** |
+| moment('ISO string') | 4.00μs | **221ns** | **18x** |
+| format('YYYY-MM-DD') | 377ns | **30ns** | **12x** |
+| getters (7 fields) | 206ns | **27ns** | **7.6x** |
+| moment() | 282ns | **93ns** | **3.0x** |
+| moment([y,M,d]) | 461ns | **259ns** | **1.8x** |
 | valueOf / unix | 20ns | 10ns | 2x |
-| clone | 65ns | 43ns | 1.5x |
+| clone | 73ns | 36ns | 2x |
