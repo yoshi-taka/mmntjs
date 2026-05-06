@@ -1,4 +1,4 @@
-// @ts-expect-error Locale property shapes are intentionally loose
+import type { Moment } from "../moment_fixed";
 import type { LocaleSpec } from "./en";
 
 const translator = {
@@ -16,7 +16,7 @@ const translator = {
         y: ['једну годину', 'једне године'],
         yy: ['годину', 'године', 'година'],
     },
-    correctGrammaticalCase: function (number, wordKey) {
+    correctGrammaticalCase: function (number: number, wordKey: string) {
         if (
             number % 10 >= 1 &&
             number % 10 <= 4 &&
@@ -26,8 +26,8 @@ const translator = {
         }
         return wordKey[2];
     },
-    translate: function (number, withoutSuffix, key, isFuture) {
-        let wordKey = translator.words[key],
+    translate: function (number: number, withoutSuffix: boolean, key: string, isFuture: boolean) {
+        let wordKey = (translator.words as Record<string, string[]>)[key],
             word;
 
         if (key.length === 1) {
@@ -67,7 +67,7 @@ export const sr_cyrlLocale: LocaleSpec = {
     calendar: {
       sameDay: "[данас у] LT",
       nextDay: "[сутра у] LT",
-      nextWeek: function () {
+      nextWeek: function (this: Moment) {
             switch (this.day()) {
                 case 0:
                     return '[у] [недељу] [у] LT';
@@ -81,9 +81,10 @@ export const sr_cyrlLocale: LocaleSpec = {
                 case 5:
                     return '[у] dddd [у] LT';
             }
+            return "";
         },
       lastDay: "[јуче у] LT",
-      lastWeek: function () {
+      lastWeek: function (this: Moment) {
             const lastWeekDays = [
                 '[прошле] [недеље] [у] LT',
                 '[прошлог] [понедељка] [у] LT',

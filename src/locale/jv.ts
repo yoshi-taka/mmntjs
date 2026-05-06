@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 export const jvLocale: LocaleSpec = {
@@ -29,6 +28,7 @@ export const jvLocale: LocaleSpec = {
         } else if (meridiem === 'sonten' || meridiem === 'ndalu') {
             return hour + 12;
         }
+        return 0;
     },
     meridiem: function (hours, _minutes, _isLower) {
         if (hours < 11) {

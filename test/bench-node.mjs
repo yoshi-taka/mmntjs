@@ -6,14 +6,14 @@ import {
 } from "date-fns";
 
 function micros(ns) {
-  if (ns < 1000) return `${ns.toFixed(0)}ns`;
+  if (ns < 1000) {return `${ns.toFixed(0)}ns`;}
   return `${(ns / 1000).toFixed(2)}μs`;
 }
 
 function run(fn, iter, warmup) {
-  for (let i = 0; i < warmup; i++) fn();
+  for (let i = 0; i < warmup; i++) { fn(); }
   const start = process.hrtime.bigint();
-  for (let i = 0; i < iter; i++) fn();
+  for (let i = 0; i < iter; i++) { fn(); }
   const end = process.hrtime.bigint();
   return Number(end - start) / iter;
 }

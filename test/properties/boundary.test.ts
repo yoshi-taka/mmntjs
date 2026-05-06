@@ -2,8 +2,9 @@ import { describe, test, expect } from 'bun:test'
 import fc from 'fast-check'
 import _moment from '../../src/index.ts'
 import _originalMoment from '../../moment/moment'
-const moment = _moment as unknown
-const originalMoment = _originalMoment as unknown
+import type { Moment } from '../../src/moment_fixed'
+const moment = _moment as (...args: unknown[]) => Moment
+const originalMoment = _originalMoment as (...args: unknown[]) => Moment
 
 describe('Property-based: boundary values', () => {
   test('boundary and degenerate inputs', () => {

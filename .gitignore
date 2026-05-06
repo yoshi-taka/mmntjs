@@ -3,3 +3,4 @@
 crash-*
 corpus/
 dist/
+node_modules/

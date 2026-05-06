@@ -68,25 +68,25 @@ function createAssert() {
     }
 
     function log(method, m) {
-        assertLog.push({ method: method, msg: m || '' });
-        summary[method] = (summary[method] || 0) + 1;
+        assertLog.push({ method: method, msg: m ?? '' });
+        summary[method] = (summary[method] ?? 0) + 1;
     }
 
     return {
         ok(val, msg) {
             count++;
             log('ok', msg);
-            if (!val) {throw new Error(msg || 'expected truthy');}
+            if (!val) {throw new Error(msg ?? 'expected truthy');}
         },
         equal(a, b, msg) {
             count++;
             log('equal', msg);
-            if (a != b) {throw new Error(`${msg || ''  } — actual: ${  JSON.stringify(a)  }, expected: ${  JSON.stringify(b)}`);}
+            if (a != b) {throw new Error(`${msg ?? ''  } — actual: ${  JSON.stringify(a)  }, expected: ${  JSON.stringify(b)}`);}
         },
         strictEqual(a, b, msg) {
             count++;
             log('strictEqual', msg);
-            if (a !== b) {throw new Error(msg || `expected ${  a  } === ${  b}`);}
+            if (a !== b) {throw new Error(msg ?? `expected ${  a  } === ${  b}`);}
         },
         deepEqual(a, b, msg) {
             count++;
@@ -94,13 +94,13 @@ function createAssert() {
             try {
                 expect(a).toEqual(b);
             } catch (error) {
-                throw new Error(msg || error.message);
+                throw new Error(msg ?? error.message);
             }
         },
         notEqual(a, b, msg) {
             count++;
             log('notEqual', msg);
-            if (a == b) {throw new Error(msg || `expected ${  a  } != ${  b}`);}
+            if (a == b) {throw new Error(msg ?? `expected ${  a  } != ${  b}`);}
         },
         throws(fn, msg) {
             count++;
@@ -111,7 +111,7 @@ function createAssert() {
             } catch {
                 threw = true;
             }
-            if (!threw) {throw new Error(msg || 'expected function to throw');}
+            if (!threw) {throw new Error(msg ?? 'expected function to throw');}
         },
         expect(n) {
             plan = n;
@@ -134,7 +134,7 @@ function runWithLifecycle(name, fn) {
         // suppressDeprecationWarnings / deprecationHandler yet
     }
 
-    if (currentLifecycle && currentLifecycle.setup) {
+    if (currentLifecycle?.setup) {
         currentLifecycle.setup();
     }
 
@@ -143,7 +143,7 @@ function runWithLifecycle(name, fn) {
         fn(assert);
         assert._verify();
     } finally {
-        if (currentLifecycle && currentLifecycle.teardown) {
+        if (currentLifecycle?.teardown) {
             currentLifecycle.teardown();
         }
         try {
@@ -174,5 +174,5 @@ export function only(name, fn) {
 }
 
 export function module(name, lifecycle) {
-    currentLifecycle = lifecycle || null;
+    currentLifecycle = lifecycle ?? null;
 }

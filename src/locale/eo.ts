@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 export const eoLocale: LocaleSpec = {
@@ -19,7 +18,7 @@ export const eoLocale: LocaleSpec = {
       llll: "ddd, [la] D[-an de] MMM, YYYY HH:mm"
     },
     meridiemParse: /[ap]\.t\.m/i,
-    isPM: function (input) {
+    isPM: function(input: string) {
         return input.charAt(0).toLowerCase() === 'p';
     },
     meridiem: function (hours, minutes, isLower) {

@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 export const sqLocale: LocaleSpec = {
@@ -13,7 +12,7 @@ export const sqLocale: LocaleSpec = {
     weekdaysMin: 'D_H_Ma_Më_E_P_Sh'.split('_'),
     weekdaysParseExact: true,
     meridiemParse: /PD|MD/,
-    isPM: function (input) {
+    isPM: function(input: string) {
         return input.charAt(0) === 'M';
     },
     meridiem: function (hours, _minutes, _isLower) {

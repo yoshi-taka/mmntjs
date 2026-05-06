@@ -1,4 +1,4 @@
-// @ts-expect-error Locale property shapes are intentionally loose
+import type { Moment } from "../moment_fixed";
 import type { LocaleSpec } from "./en";
 
 const months =
@@ -7,11 +7,11 @@ const months =
         ),
     monthsShort = 'jan_feb_mar_apr_máj_jún_júl_aug_sep_okt_nov_dec'.split('_');
 
-function plural(n) {
+function plural(n: number) {
     return n > 1 && n < 5;
 }
 
-function translate(number, withoutSuffix, key, isFuture) {
+function translate(number: number, withoutSuffix: boolean, key: string, isFuture: boolean) {
     const result = `${number  } `;
     switch (key) {
         case 's': // a few seconds / in a few seconds / a few seconds ago
@@ -63,6 +63,7 @@ function translate(number, withoutSuffix, key, isFuture) {
                 return `${result  }rokmi`;
             }
     }
+    return "";
 }
 
 export const skLocale: LocaleSpec = {
@@ -82,7 +83,7 @@ export const skLocale: LocaleSpec = {
     calendar: {
       sameDay: "[dnes o] LT",
       nextDay: "[zajtra o] LT",
-      nextWeek: function () {
+      nextWeek: function (this: Moment) {
             switch (this.day()) {
                 case 0:
                     return '[v nedeľu o] LT';
@@ -98,9 +99,10 @@ export const skLocale: LocaleSpec = {
                 case 6:
                     return '[v sobotu o] LT';
             }
+            return "";
         },
       lastDay: "[včera o] LT",
-      lastWeek: function () {
+      lastWeek: function (this: Moment) {
             switch (this.day()) {
                 case 0:
                     return '[minulú nedeľu o] LT';
@@ -115,6 +117,7 @@ export const skLocale: LocaleSpec = {
                 case 6:
                     return '[minulú sobotu o] LT';
             }
+            return "";
         },
       sameElse: "L"
     },

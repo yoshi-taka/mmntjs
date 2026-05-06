@@ -1,7 +1,7 @@
-// @ts-expect-error Locale property shapes are intentionally loose
+import type { Moment } from "../moment_fixed";
 import type { LocaleSpec } from "./en";
 
-function plural(word, num) {
+function plural(word: string, num: number) {
     const forms = word.split('_');
     return num % 10 === 1 && num % 100 !== 11
         ? forms[0]
@@ -10,7 +10,7 @@ function plural(word, num) {
           : forms[2];
 }
 
-function relativeTimeWithPlural(number, withoutSuffix, key) {
+function relativeTimeWithPlural(number: number, withoutSuffix: boolean, key: string) {
     const format = {
         ss: withoutSuffix ? 'секунда_секунды_секунд' : 'секунду_секунды_секунд',
         mm: withoutSuffix ? 'минута_минуты_минут' : 'минуту_минуты_минут',
@@ -23,7 +23,7 @@ function relativeTimeWithPlural(number, withoutSuffix, key) {
     if (key === 'm') {
         return withoutSuffix ? 'минута' : 'минуту';
     } else {
-        return `${number  } ${  plural(format[key], +number)}`;
+        return `${number  } ${  plural((format as Record<string, string>)[key], +number)}`;
     }
 }
 
@@ -89,7 +89,7 @@ export const ruLocale: LocaleSpec = {
       sameDay: "[Сегодня, в] LT",
       nextDay: "[Завтра, в] LT",
       lastDay: "[Вчера, в] LT",
-      nextWeek: function (now) {
+      nextWeek: function (this: Moment, now: Moment) {
             if (now.week() !== this.week()) {
                 switch (this.day()) {
                     case 0:
@@ -110,8 +110,9 @@ export const ruLocale: LocaleSpec = {
                     return '[В] dddd, [в] LT';
                 }
             }
+            return "";
         },
-      lastWeek: function (now) {
+      lastWeek: function (this: Moment, now: Moment) {
             if (now.week() !== this.week()) {
                 switch (this.day()) {
                     case 0:
@@ -132,6 +133,7 @@ export const ruLocale: LocaleSpec = {
                     return '[В] dddd, [в] LT';
                 }
             }
+            return "";
         },
       sameElse: "L"
     },
@@ -154,7 +156,7 @@ export const ruLocale: LocaleSpec = {
       yy: relativeTimeWithPlural
     },
     meridiemParse: /ночи|утра|дня|вечера/i,
-    isPM: function (input) {
+    isPM: function(input: string) {
         return /^(дня|вечера)$/.test(input);
     },
     meridiem: function (hour, _minute, _isLower) {
@@ -169,7 +171,7 @@ export const ruLocale: LocaleSpec = {
         }
     },
     dayOfMonthOrdinalParse: /\d{1,2}-(й|го|я)/,
-    ordinal: function (number, period) {
+    ordinal: function (number: number, period?: string) {
         switch (period) {
             case 'M':
             case 'd':
@@ -181,7 +183,7 @@ export const ruLocale: LocaleSpec = {
             case 'W':
                 return `${number  }-я`;
             default:
-                return number;
+                return `${number}`;
         }
     },
     week: {

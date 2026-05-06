@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 const months = [
@@ -32,7 +31,7 @@ export const sdLocale: LocaleSpec = {
       LLLL: "dddd، D MMMM YYYY HH:mm"
     },
     meridiemParse: /صبح|شام/,
-    isPM: function (input) {
+    isPM: function(input: string) {
         return 'شام' === input;
     },
     meridiem: function (hour, _minute, _isLower) {

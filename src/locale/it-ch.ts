@@ -1,4 +1,4 @@
-// @ts-expect-error Locale property shapes are intentionally loose
+import type { Moment } from "../moment_fixed";
 import type { LocaleSpec } from "./en";
 
 export const it_chLocale: LocaleSpec = {
@@ -24,7 +24,7 @@ export const it_chLocale: LocaleSpec = {
       nextDay: "[Domani alle] LT",
       nextWeek: "dddd [alle] LT",
       lastDay: "[Ieri alle] LT",
-      lastWeek: function () {
+      lastWeek: function (this: Moment) {
             switch (this.day()) {
                 case 0:
                     return '[la scorsa] dddd [alle] LT';
@@ -35,9 +35,9 @@ export const it_chLocale: LocaleSpec = {
       sameElse: "L"
     },
     relativeTime: {
-      future: function (s) {
+      future: function (s: string) {
             return `${/^[0-9].+$/.test(s) ? 'tra' : 'in'  } ${  s}`;
-        },
+        } as unknown as string,
       past: "%s fa",
       s: "alcuni secondi",
       ss: "%d secondi",

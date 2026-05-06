@@ -1,7 +1,6 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
-function plural(n) {
+function plural(n: number) {
     if (n % 100 === 11) {
         return true;
     } else if (n % 10 === 1) {
@@ -10,7 +9,7 @@ function plural(n) {
     return true;
 }
 
-function translate(number, withoutSuffix, key, isFuture) {
+function translate(number: number, withoutSuffix: boolean, key: string, isFuture: boolean) {
     const result = `${number  } `;
     switch (key) {
         case 's':
@@ -84,6 +83,7 @@ function translate(number, withoutSuffix, key, isFuture) {
             }
             return result + (withoutSuffix || isFuture ? 'ár' : 'ári');
     }
+    return "";
 }
 
 export const isLocale: LocaleSpec = {

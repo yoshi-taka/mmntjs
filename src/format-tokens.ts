@@ -70,18 +70,7 @@ function getEraInfo(m: Moment, loc: Locale): { era: unknown; eraYear: number } |
   return null;
 }
 
-function padYear(yv: number): string {
-  return yv < 10 ? `000${yv}` : yv < 100 ? `00${yv}` : yv < 1000 ? `0${yv}` : String(yv);
-}
 
-const PAD2 = [
-  "00","01","02","03","04","05","06","07","08","09",
-  "10","11","12","13","14","15","16","17","18","19",
-  "20","21","22","23","24","25","26","27","28","29",
-  "30","31","32","33","34","35","36","37","38","39",
-  "40","41","42","43","44","45","46","47","48","49",
-  "50","51","52","53","54","55","56","57","58","59",
-];
 
 export type RenderFn = (m: Moment) => string;
 export type TokenEntry = { token: string; fn: RenderFn };
@@ -288,7 +277,7 @@ for (const c in tokenByChar) {
 }
 
 export function buildRenderFns(format: string): RenderFn[] {
-  const fns: RenderFn[] = [];
+  const result: RenderFn[] = [];
   let i = 0;
   const len = format.length;
 
@@ -299,7 +288,7 @@ export function buildRenderFns(format: string): RenderFn[] {
       const close = format.indexOf("]", i);
       if (close !== -1) {
         const literal = format.slice(i + 1, close);
-        fns.push(() => literal);
+        result.push(() => literal);
         i = close + 1;
         continue;
       }
@@ -310,7 +299,7 @@ export function buildRenderFns(format: string): RenderFn[] {
       let matched = false;
       for (const t of entry.tokens) {
         if (format.startsWith(t.token, i)) {
-          fns.push(t.fn);
+          result.push(t.fn);
           i += t.token.length;
           matched = true;
           break;
@@ -329,17 +318,17 @@ export function buildRenderFns(format: string): RenderFn[] {
           j++;
         }
         const literal = format.slice(i, j);
-        fns.push(() => literal);
+        result.push(() => literal);
         i = j;
         continue;
       }
     }
     const literal = ch;
-    fns.push(() => literal);
+    result.push(() => literal);
     i++;
   }
 
-  return fns;
+  return result;
 }
 
 export const formatToken = tokenFnMap;

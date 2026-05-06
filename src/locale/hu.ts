@@ -1,10 +1,9 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 const weekEndings =
     'vasárnap hétfőn kedden szerdán csütörtökön pénteken szombaton'.split(' ');
 
-function translate(number, withoutSuffix, key, isFuture) {
+function translate(number: number, withoutSuffix: boolean, key: string, isFuture: boolean) {
     const num = number;
     switch (key) {
         case 's':
@@ -39,7 +38,7 @@ function translate(number, withoutSuffix, key, isFuture) {
     return '';
 }
 
-function week(isFuture) {
+function week(isFuture: boolean) {
     return (
         `${isFuture ? '' : '[múlt] ' 
         }[${ 
@@ -68,7 +67,7 @@ export const huLocale: LocaleSpec = {
       LLLL: "YYYY. MMMM D., dddd H:mm"
     },
     meridiemParse: /de|du/i,
-    isPM: function (input) {
+    isPM: function(input: string) {
         return input.charAt(1).toLowerCase() === 'u';
     },
     meridiem: function (hours, minutes, isLower) {

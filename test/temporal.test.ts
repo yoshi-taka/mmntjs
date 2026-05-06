@@ -24,9 +24,9 @@ describe('temporal bridge', () => {
       expect(t.year).toBe(2024)
       expect(t.month).toBe(6)
       expect(t.day).toBe(15)
-      expect((t as Record<string, unknown>).hour as number).toBe(10)
-      expect((t as Record<string, unknown>).minute as number).toBe(30)
-      expect((t as Record<string, unknown>).timeZoneId as string).toBe('UTC')
+      expect((t as unknown as Record<string, unknown>).hour as number).toBe(10)
+      expect((t as unknown as Record<string, unknown>).minute as number).toBe(30)
+      expect((t as unknown as Record<string, unknown>).timeZoneId as string).toBe('UTC')
     })
 
     test('moment with time but local (no offset) returns ZonedDateTime with local offset', () => {
@@ -36,7 +36,7 @@ describe('temporal bridge', () => {
       expect(t.year).toBe(2024)
       expect(t.month).toBe(6)
       expect(t.day).toBe(15)
-      expect((t as Record<string, unknown>).hour as number).toBe(10)
+      expect((t as unknown as Record<string, unknown>).hour as number).toBe(10)
     })
 
     test('moment with explicit offset returns ZonedDateTime with offset timezone', () => {
@@ -46,8 +46,8 @@ describe('temporal bridge', () => {
       expect(t.year).toBe(2024)
       expect(t.month).toBe(6)
       expect(t.day).toBe(15)
-      expect((t as Record<string, unknown>).hour as number).toBe(10)
-      expect((t as Record<string, unknown>).minute as number).toBe(30)
+      expect((t as unknown as Record<string, unknown>).hour as number).toBe(10)
+      expect((t as unknown as Record<string, unknown>).minute as number).toBe(30)
     })
 
     test('throws for invalid moment', () => {

@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 export const teLocale: LocaleSpec = {
@@ -62,6 +61,7 @@ export const teLocale: LocaleSpec = {
         } else if (meridiem === 'సాయంత్రం') {
             return hour + 12;
         }
+        return 0;
     },
     meridiem: function (hour, _minute, _isLower) {
         if (hour < 4) {

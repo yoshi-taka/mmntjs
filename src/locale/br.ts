@@ -1,16 +1,15 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
-function relativeTimeWithMutation(number, withoutSuffix, key) {
+function relativeTimeWithMutation(number: number, withoutSuffix: boolean, key: string) {
     const format = {
         mm: 'munutenn',
         MM: 'miz',
         dd: 'devezh',
     };
-    return `${number  } ${  mutation(format[key], number)}`;
+    return `${number  } ${  mutation((format as Record<string, string>)[key], number)}`;
 }
 
-function specialMutationForYears(number) {
+function specialMutationForYears(number: number) {
     switch (lastNumber(number)) {
         case 1:
         case 3:
@@ -23,22 +22,22 @@ function specialMutationForYears(number) {
     }
 }
 
-function lastNumber(number) {
+function lastNumber(number: number) {
     if (number > 9) {
         return lastNumber(number % 10);
     }
     return number;
 }
 
-function mutation(text, number) {
+function mutation(text: string, number: number) {
     if (number === 2) {
         return softMutation(text);
     }
     return text;
 }
 
-function softMutation(text) {
-    const mutationTable = {
+function softMutation(text: string) {
+    const mutationTable: Record<string, string> = {
         m: 'v',
         b: 'v',
         d: 'z',

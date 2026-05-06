@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 const numbersPast =
@@ -18,7 +17,7 @@ const numbersPast =
         numbersPast[9],
     ];
 
-function translate(number, withoutSuffix, key, isFuture) {
+function translate(number: number, withoutSuffix: boolean, key: string, isFuture: boolean) {
     let result = '';
     switch (key) {
         case 's':
@@ -56,7 +55,7 @@ function translate(number, withoutSuffix, key, isFuture) {
     return result;
 }
 
-function verbalNumber(number, isFuture) {
+function verbalNumber(number: number, isFuture: boolean) {
     return number < 10
         ? isFuture
             ? numbersFuture[number]

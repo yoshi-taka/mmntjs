@@ -1,7 +1,6 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
-function processRelativeTime(number, withoutSuffix, key, isFuture) {
+function processRelativeTime(number: number, withoutSuffix: boolean, key: string, isFuture: boolean) {
     const format = {
         s: ['viensas secunds', "'iensas secunds"],
         ss: [`${number  } secunds`, `${  number  } secunds`],
@@ -17,10 +16,10 @@ function processRelativeTime(number, withoutSuffix, key, isFuture) {
         yy: [`${number  } ars`, `${  number  } ars`],
     };
     return isFuture
-        ? format[key][0]
+        ? (format as Record<string, string[]>)[key][0]
         : withoutSuffix
-          ? format[key][0]
-          : format[key][1];
+          ? (format as Record<string, string[]>)[key][0]
+          : (format as Record<string, string[]>)[key][1];
 }
 
 export const tzlLocale: LocaleSpec = {
@@ -40,7 +39,7 @@ export const tzlLocale: LocaleSpec = {
       LLLL: "dddd, [li] D. MMMM [dallas] YYYY HH.mm"
     },
     meridiemParse: /d'o|d'a/i,
-    isPM: function (input) {
+    isPM: function(input: string) {
         return "d'o" === input.toLowerCase();
     },
     meridiem: function (hours, minutes, isLower) {

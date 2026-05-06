@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { Moment } from "../moment_fixed";
 import type { LocaleSpec } from "./en";
 
@@ -8,16 +7,16 @@ const jaWeekdays = '日曜日_月曜日_火曜日_水曜日_木曜日_金曜日_
 const jaWeekdaysShort = '日_月_火_水_木_金_土'.split('_');
 
 function _jaFormatFastPath(m: Moment, format: string): string | undefined {
-  const raw = m as unknown;
+  const raw = m as unknown as Record<string, number | boolean>;
   if (!raw._isValid) {return undefined;}
-  const y = raw.$y;
+  const y = raw.$y as number;
   if (y < 0 || y > 9999) {return undefined;}
   const Y = y < 10 ? `000${  y}` : y < 100 ? `00${  y}` : y < 1000 ? `0${  y}` : `${  y}`;
-  const M = raw.$M + 1;
-  const D = raw.$D;
-  const H = raw.$H;
-  const min = raw.$m;
-  const s = raw.$s;
+  const M = (raw.$M as number) + 1;
+  const D = raw.$D as number;
+  const H = raw.$H as number;
+  const min = raw.$m as number;
+  const s = raw.$s as number;
   switch (format) {
     case 'YYYY/MM/DD':
       return `${Y  }/${  M < 10 ? `0${  M}` : `${  M}`  }/${  D < 10 ? `0${  D}` : `${  D}`}`;
@@ -96,7 +95,7 @@ export const jaLocale: LocaleSpec = {
       }
     ],
     eraYearOrdinalRegex: /(元|\d+)年/,
-    eraYearOrdinalParse: function (input, match) {
+    eraYearOrdinalParse: function (input: string, match: RegExpMatchArray) {
         return match[1] === '元' ? 1 : parseInt(match[1] || input, 10);
     },
     months: jaMonths,
@@ -117,7 +116,7 @@ export const jaLocale: LocaleSpec = {
       llll: "YYYY年M月D日(ddd) HH:mm"
     },
     meridiemParse: /午前|午後/i,
-    isPM: function (input) {
+    isPM: function(input: string) {
         return input === '午後';
     },
     meridiem: function (hour, _minute, _isLower) {
@@ -130,7 +129,7 @@ export const jaLocale: LocaleSpec = {
     calendar: {
       sameDay: "[今日] LT",
       nextDay: "[明日] LT",
-      nextWeek: function (now) {
+      nextWeek: function (this: Moment, now: Moment) {
             if (now.week() !== this.week()) {
                 return '[来週]dddd LT';
             } else {
@@ -138,7 +137,7 @@ export const jaLocale: LocaleSpec = {
             }
         },
       lastDay: "[昨日] LT",
-      lastWeek: function (now) {
+      lastWeek: function (this: Moment, now: Moment) {
             if (this.week() !== now.week()) {
                 return '[先週]dddd LT';
             } else {
@@ -148,7 +147,7 @@ export const jaLocale: LocaleSpec = {
       sameElse: "L"
     },
     dayOfMonthOrdinalParse: /\d{1,2}日/,
-    ordinal: function (number, period) {
+    ordinal: function (number: number, period?: string) {
         switch (period) {
             case 'y':
                 return number === 1 ? '元年' : `${number  }年`;
@@ -157,7 +156,7 @@ export const jaLocale: LocaleSpec = {
             case 'DDD':
                 return `${number  }日`;
             default:
-                return number;
+                return `${number}`;
         }
     },
     relativeTime: {

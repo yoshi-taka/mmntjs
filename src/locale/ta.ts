@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 const symbolMap = {
@@ -77,13 +76,13 @@ export const taLocale: LocaleSpec = {
         return `${number  }வது`;
     },
     preparse: function (string) {
-        return string.replaceAll(/[௧௨௩௪௫௬௭௮௯௦]/g, function (match) {
-            return numberMap[match];
+        return string.replaceAll(/[௧௨௩௪௫௬௭௮௯௦]/g, function (match: string) {
+            return (numberMap as Record<string, string>)[match];
         });
     },
     postformat: function (string) {
-        return string.replaceAll(/\d/g, function (match) {
-            return symbolMap[match];
+        return string.replaceAll(/\d/g, function (match: string) {
+            return (symbolMap as Record<string, string>)[match];
         });
     },
     meridiemParse: /யாமம்|வைகறை|காலை|நண்பகல்|எற்பாடு|மாலை/,

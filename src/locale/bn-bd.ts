@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 const symbolMap = {
@@ -71,13 +70,13 @@ export const bn_bdLocale: LocaleSpec = {
       yy: "%d বছর"
     },
     preparse: function (string) {
-        return string.replaceAll(/[১২৩৪৫৬৭৮৯০]/g, function (match) {
-            return numberMap[match];
+        return string.replaceAll(/[১২৩৪৫৬৭৮৯০]/g, function (match: string) {
+            return (numberMap as Record<string, string>)[match];
         });
     },
     postformat: function (string) {
-        return string.replaceAll(/\d/g, function (match) {
-            return symbolMap[match];
+        return string.replaceAll(/\d/g, function (match: string) {
+            return (symbolMap as Record<string, string>)[match];
         });
     },
     meridiemParse: /রাত|ভোর|সকাল|দুপুর|বিকাল|সন্ধ্যা|রাত/,
@@ -98,6 +97,7 @@ export const bn_bdLocale: LocaleSpec = {
         } else if (meridiem === 'সন্ধ্যা') {
             return hour + 12;
         }
+        return 0;
     },
     meridiem: function (hour, _minute, _isLower) {
         if (hour < 4) {

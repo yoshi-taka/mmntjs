@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 export const heLocale: LocaleSpec = {
@@ -68,10 +67,10 @@ export const heLocale: LocaleSpec = {
         }
     },
     meridiemParse: /אחה"צ|לפנה"צ|אחרי הצהריים|לפני הצהריים|לפנות בוקר|בבוקר|בערב/i,
-    isPM: function (input) {
+    isPM: function(input: string) {
         return /^(אחה"צ|אחרי הצהריים|בערב)$/.test(input);
     },
-    meridiem: function (hour, minute, isLower) {
+    meridiem: function(hour: number, minute: number, isLower: boolean) {
         if (hour < 5) {
             return 'לפנות בוקר';
         } else if (hour < 10) {

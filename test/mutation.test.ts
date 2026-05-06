@@ -102,7 +102,8 @@ makeMutations([
       [/d\.setDate\(d\.getDate\(\) \+ sign \* days\)/g, 'd.setDate(d.getDate() - sign * days)'],
     ],
     inputs: fc.tuple(fc.date({ noInvalidDate: true }), fc.integer({ min: -100, max: 100 })),
-    testFn: ([date, n]: [unknown, unknown]) => {
+    testFn: (input: unknown) => {
+      const [date, n] = input as [unknown, unknown];
       return mutatedMoment(date).add({ days: n as number }).format('YYYY-MM-DD') === originalMoment(date).add({ days: n as number }).format('YYYY-MM-DD')
     },
   },
@@ -113,7 +114,8 @@ makeMutations([
       [/        this\.\$D \+= rounded;/g, '        this.$D -= rounded;'],
     ],
     inputs: fc.tuple(fc.date({ noInvalidDate: true }), fc.integer({ min: -100, max: 100 })),
-    testFn: ([date, n]: [unknown, unknown]) => {
+    testFn: (input: unknown) => {
+      const [date, n] = input as [unknown, unknown];
       return mutatedMoment(date).add(n as number, 'days').format('YYYY-MM-DD') === originalMoment(date).add(n as number, 'days').format('YYYY-MM-DD')
     },
   },
@@ -124,7 +126,8 @@ makeMutations([
       [/const diff = this\.valueOf\(\) - other\.valueOf\(\)/g, 'const diff = other.valueOf() - this.valueOf()'],
     ],
     inputs: fc.tuple(fc.date({ noInvalidDate: true }), fc.date({ noInvalidDate: true })),
-    testFn: ([a, b]: [unknown, unknown]) => {
+    testFn: (input: unknown) => {
+      const [a, b] = input as [unknown, unknown];
       return mutatedMoment(a).diff(mutatedMoment(b), 'days') === originalMoment(a).diff(originalMoment(b), 'days')
     },
   },
@@ -135,7 +138,8 @@ makeMutations([
       [/return this\.valueOf\(\) < other\.valueOf\(\)/g, 'return this.valueOf() > other.valueOf()'],
     ],
     inputs: fc.tuple(fc.date({ noInvalidDate: true }), fc.date({ noInvalidDate: true })),
-    testFn: ([a, b]: [unknown, unknown]) => {
+    testFn: (input: unknown) => {
+      const [a, b] = input as [unknown, unknown];
       return mutatedMoment(a).isBefore(b) === originalMoment(a).isBefore(b)
     },
   },
@@ -146,7 +150,8 @@ makeMutations([
       [/return this\.valueOf\(\) > other\.valueOf\(\)/g, 'return this.valueOf() < other.valueOf()'],
     ],
     inputs: fc.tuple(fc.date({ noInvalidDate: true }), fc.date({ noInvalidDate: true })),
-    testFn: ([a, b]: [unknown, unknown]) => {
+    testFn: (input: unknown) => {
+      const [a, b] = input as [unknown, unknown];
       return mutatedMoment(a).isAfter(b) === originalMoment(a).isAfter(b)
     },
   },
@@ -158,7 +163,8 @@ makeMutations([
       [/d\.setMonth\(curMonth \+ sign \* months\)/g, 'd.setMonth(curMonth - sign * months)'],
     ],
     inputs: fc.tuple(fc.date({ noInvalidDate: true }), fc.integer({ min: -12, max: 12 })),
-    testFn: ([date, n]: [unknown, unknown]) => {
+    testFn: (input: unknown) => {
+      const [date, n] = input as [unknown, unknown];
       return mutatedMoment(date).add({ months: n as number }).format('YYYY-MM-DD') === originalMoment(date).add({ months: n as number }).format('YYYY-MM-DD')
     },
   },
@@ -202,7 +208,8 @@ makeMutations([
       [/this\._applyDuration\(parsed\.ms, parsed\.days, parsed\.months, -1\);/g, 'this._applyDuration(parsed.ms, parsed.days, parsed.months, 1);'],
     ],
     inputs: fc.tuple(fc.date({ noInvalidDate: true }), fc.integer({ min: -30, max: 30 })),
-    testFn: ([date, n]: [unknown, unknown]) => {
+    testFn: (input: unknown) => {
+      const [date, n] = input as [unknown, unknown];
       return mutatedMoment(date).subtract({ days: n as number }).format('YYYY-MM-DD') === originalMoment(date).subtract({ days: n as number }).format('YYYY-MM-DD')
     },
   },

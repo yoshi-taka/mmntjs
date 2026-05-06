@@ -1,7 +1,6 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
-function processRelativeTime(num, withoutSuffix, key, _isFuture) {
+function processRelativeTime(num: number, withoutSuffix: boolean, key: string, _isFuture: boolean) {
     const format = {
         s: ['çend sanîye', 'çend sanîyeyan'],
         ss: [`${num  } sanîye`, `${num  } sanîyeyan`],
@@ -18,10 +17,10 @@ function processRelativeTime(num, withoutSuffix, key, _isFuture) {
         y: ['salek', 'salekê'],
         yy: [`${num  } sal`, `${num  } salan`],
     };
-    return withoutSuffix ? format[key][0] : format[key][1];
+    return withoutSuffix ? (format as Record<string, string[]>)[key][0] : (format as Record<string, string[]>)[key][1];
 }
 
-function ezafeNumSuffix(num) {
+function ezafeNumSuffix(num: number) {
     num = `${  num}`;
     const l = num.substring(num.length - 1),
         ll = num.length > 1 ? num.substring(num.length - 2) : '';

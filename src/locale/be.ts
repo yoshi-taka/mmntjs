@@ -1,7 +1,7 @@
-// @ts-expect-error Locale property shapes are intentionally loose
+import type { Moment } from "../moment_fixed";
 import type { LocaleSpec } from "./en";
 
-function plural(word, num) {
+function plural(word: string, num: number) {
     const forms = word.split('_');
     return num % 10 === 1 && num % 100 !== 11
         ? forms[0]
@@ -10,7 +10,7 @@ function plural(word, num) {
           : forms[2];
 }
 
-function relativeTimeWithPlural(number, withoutSuffix, key) {
+function relativeTimeWithPlural(number: number, withoutSuffix: boolean, key: string) {
     const format = {
         ss: withoutSuffix ? 'секунда_секунды_секунд' : 'секунду_секунды_секунд',
         mm: withoutSuffix ? 'хвіліна_хвіліны_хвілін' : 'хвіліну_хвіліны_хвілін',
@@ -24,7 +24,7 @@ function relativeTimeWithPlural(number, withoutSuffix, key) {
     } else if (key === 'h') {
         return withoutSuffix ? 'гадзіна' : 'гадзіну';
     } else {
-        return `${number  } ${  plural(format[key], +number)}`;
+        return `${number  } ${  plural((format as Record<string, string>)[key], +number)}`;
     }
 }
 
@@ -64,7 +64,7 @@ export const beLocale: LocaleSpec = {
       nextWeek: function () {
             return '[У] dddd [ў] LT';
         },
-      lastWeek: function () {
+      lastWeek: function (this: Moment) {
             switch (this.day()) {
                 case 0:
                 case 3:
@@ -76,6 +76,7 @@ export const beLocale: LocaleSpec = {
                 case 4:
                     return '[У мінулы] dddd [ў] LT';
             }
+            return "";
         },
       sameElse: "L"
     },
@@ -95,7 +96,7 @@ export const beLocale: LocaleSpec = {
       yy: relativeTimeWithPlural
     },
     meridiemParse: /ночы|раніцы|дня|вечара/,
-    isPM: function (input) {
+    isPM: function(input: string) {
         return /^(дня|вечара)$/.test(input);
     },
     meridiem: function (hour, _minute, _isLower) {
@@ -110,7 +111,7 @@ export const beLocale: LocaleSpec = {
         }
     },
     dayOfMonthOrdinalParse: /\d{1,2}-(і|ы|га)/,
-    ordinal: function (number, period) {
+    ordinal: function (number: number, period?: string) {
         switch (period) {
             case 'M':
             case 'd':
@@ -125,7 +126,7 @@ export const beLocale: LocaleSpec = {
             case 'D':
                 return `${number  }-га`;
             default:
-                return number;
+                return `${number}`;
         }
     },
     week: {

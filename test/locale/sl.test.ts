@@ -3,6 +3,7 @@ import { localeModule } from "../locale-helper";
 import moment from "../../moment";
 import { slLocale } from "../../src/locale/sl";
 import { defineLocale } from "../../src/locale";
+import type { Moment } from "../../src/moment_fixed"
 
 defineLocale("sl", slLocale);
 
@@ -14,7 +15,7 @@ test('parse', function (assert) {
                 '_'
             ),
         i;
-    function equalTest(input: unknown, mmm: unknown, monthIdx: unknown) {
+    function equalTest(input: string, mmm: string, monthIdx: number) {
         assert.equal(
             moment(input, mmm).month(),
             monthIdx,
@@ -22,7 +23,7 @@ test('parse', function (assert) {
         );
     }
 
-    function equalTestStrict(input: unknown, mmm: unknown, monthIndex: unknown) {
+    function equalTestStrict(input: string, mmm: string, monthIndex: number) {
         assert.equal(
             moment(input, mmm, true).month(),
             monthIndex,
@@ -694,7 +695,7 @@ test('calendar day', function (assert) {
 test('calendar next week', function (assert) {
     let i, m;
 
-    function makeFormat(d: unknown) {
+    function makeFormat(d: Moment) {
         switch (d.day()) {
             case 0:
                 return '[v] [nedeljo] [ob] LT';
@@ -735,7 +736,7 @@ test('calendar next week', function (assert) {
 test('calendar last week', function (assert) {
     let i, m;
 
-    function makeFormat(d: unknown) {
+    function makeFormat(d: Moment) {
         switch (d.day()) {
             case 0:
                 return '[prejšnjo] [nedeljo] [ob] LT';

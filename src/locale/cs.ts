@@ -1,4 +1,4 @@
-// @ts-expect-error Locale property shapes are intentionally loose
+import type { Moment } from "../moment_fixed";
 import type { LocaleSpec } from "./en";
 
 const months = {
@@ -31,11 +31,11 @@ const months = {
     monthsRegex =
         /^(leden|únor|březen|duben|květen|červenec|července|červen|června|srpen|září|říjen|listopad|prosinec|led|úno|bře|dub|kvě|čvn|čvc|srp|zář|říj|lis|pro)/i;
 
-function plural(n) {
+function plural(n: number) {
     return n > 1 && n < 5 && ~~(n / 10) !== 1;
 }
 
-function translate(number, withoutSuffix, key, isFuture) {
+function translate(number: number, withoutSuffix: boolean, key: string, isFuture: boolean) {
     const result = `${number  } `;
     switch (key) {
         case 's': // a few seconds / in a few seconds / a few seconds ago
@@ -87,6 +87,7 @@ function translate(number, withoutSuffix, key, isFuture) {
                 return `${result  }lety`;
             }
     }
+    return "";
 }
 
 export const csLocale: LocaleSpec = {
@@ -114,7 +115,7 @@ export const csLocale: LocaleSpec = {
     calendar: {
       sameDay: "[dnes v] LT",
       nextDay: "[zítra v] LT",
-      nextWeek: function () {
+      nextWeek: function (this: Moment) {
             switch (this.day()) {
                 case 0:
                     return '[v neděli v] LT';
@@ -130,9 +131,10 @@ export const csLocale: LocaleSpec = {
                 case 6:
                     return '[v sobotu v] LT';
             }
+            return "";
         },
       lastDay: "[včera v] LT",
-      lastWeek: function () {
+      lastWeek: function (this: Moment) {
             switch (this.day()) {
                 case 0:
                     return '[minulou neděli v] LT';
@@ -147,6 +149,7 @@ export const csLocale: LocaleSpec = {
                 case 6:
                     return '[minulou sobotu v] LT';
             }
+            return "";
         },
       sameElse: "L"
     },

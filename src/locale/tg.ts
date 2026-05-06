@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 const suffixes = {
@@ -86,6 +85,7 @@ export const tgLocale: LocaleSpec = {
         } else if (meridiem === 'бегоҳ') {
             return hour + 12;
         }
+        return 0;
     },
     meridiem: function (hour, _minute, _isLower) {
         if (hour < 4) {
@@ -101,10 +101,10 @@ export const tgLocale: LocaleSpec = {
         }
     },
     dayOfMonthOrdinalParse: /\d{1,2}-(ум|юм)/,
-    ordinal: function (number) {
+    ordinal: function (number: number) {
         const a = number % 10,
             b = number >= 100 ? 100 : null;
-        return number + (suffixes[number] ?? suffixes[a] ?? suffixes[b]);
+        return number + ((suffixes as Record<number, string>)[number] ?? (suffixes as Record<number, string>)[a] ?? (suffixes as Record<number, string>)[b]);
     },
     week: {
       dow: 1,

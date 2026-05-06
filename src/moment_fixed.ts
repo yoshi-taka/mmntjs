@@ -225,23 +225,23 @@ export class Moment {
   _i: unknown;
   _f: string | string[] | undefined;
   _strict: boolean;
-  declare _overflow: number;
-  declare _parsedDateParts: number[];
-  declare _unusedTokens: string[];
-  declare _unusedInput: string[];
-  declare _charsLeftOver: number;
-  declare _empty: boolean;
-  declare _nullInput: boolean;
-  declare _invalidMonth: string | null;
-  declare _invalidFormat: boolean;
-  declare _weekdayMismatch: boolean;
-  declare _iso: boolean;
-  declare _rfc2822: boolean;
+  declare _overflow: number | undefined;
+  declare _parsedDateParts: number[] | undefined;
+  declare _unusedTokens: string[] | undefined;
+  declare _unusedInput: string[] | undefined;
+  declare _charsLeftOver: number | undefined;
+  declare _empty: boolean | undefined;
+  declare _nullInput: boolean | undefined;
+  declare _invalidMonth: string | null | undefined;
+  declare _invalidFormat: boolean | undefined;
+  declare _weekdayMismatch: boolean | undefined;
+  declare _iso: boolean | undefined;
+  declare _rfc2822: boolean | undefined;
   declare _invalidEra: number | undefined;
-  declare _bigHour: boolean;
-  declare _meridiem: string;
-  declare _isParseZone: boolean;
-  declare _userInvalidated: boolean;
+  declare _bigHour: boolean | undefined;
+  declare _meridiem: string | undefined;
+  declare _isParseZone: boolean | undefined;
+  declare _userInvalidated: boolean | undefined;
   declare _tooBusyWith: string | undefined;
 
   private _locale: Locale | undefined;
@@ -457,7 +457,7 @@ export class Moment {
     return true;
   }
 
-  clone(): Moment {
+  clone(): this {
     const m = Object.create(Moment.prototype) as Moment;
     m._isAMomentObject = true;
     m._t = this._t;
@@ -473,12 +473,12 @@ export class Moment {
     m.$y = this.$y; m.$M = this.$M; m.$D = this.$D; m.$W = this.$W;
     m.$H = this.$H; m.$m = this.$m; m.$s = this.$s; m.$ms = this.$ms;
     m._dirty = false;
-    return m;
+    return m as this;
   }
 
   year(): number;
-  year(y: unknown): Moment;
-  year(y?: unknown): number | Moment {
+  year(y: unknown): this;
+  year(y?: unknown): number | this {
     if (y !== undefined) {
       if (
         y === null ||
@@ -512,11 +512,11 @@ export class Moment {
   }
 
   month(): number;
-  month(m: unknown): Moment;
-  month(m?: unknown): number | Moment {
+  month(m: unknown): this;
+  month(m?: unknown): number | this {
     this._ensureFields();
     if (m !== undefined) {
-      if (m === null || m === undefined) {return this;}
+      if (m === undefined) {return this;}
       if (typeof m === "string" && !/^-?\d+$/.test(m)) {
         const lower = m.toLowerCase();
         const localeMonthsFull = this._getLocale().monthsArray();
@@ -554,8 +554,8 @@ export class Moment {
   }
 
   date(): number;
-  date(d: unknown): Moment;
-  date(d?: unknown): number | Moment {
+  date(d: unknown): this;
+  date(d?: unknown): number | this {
     if (d !== undefined) {
       if (
         d === null ||
@@ -582,11 +582,11 @@ export class Moment {
   }
 
   day(): number;
-  day(d: unknown): Moment;
-  day(d?: unknown): number | Moment {
+  day(d: unknown): this;
+  day(d?: unknown): number | this {
     this._ensureFields();
     if (d !== undefined) {
-      if (d === null || d === undefined) {return this;}
+      if (d === undefined) {return this;}
       let dayNum = Number(d);
       if (typeof d === "string") {
         const lower = d.toLowerCase();
@@ -631,8 +631,8 @@ export class Moment {
   }
 
   weekday(): number;
-  weekday(d: number): Moment;
-  weekday(d?: number): number | Moment {
+  weekday(d: number): this;
+  weekday(d?: number): number | this {
     this._ensureFields();
     if (d !== undefined) {
       const current = this.$W;
@@ -661,8 +661,8 @@ export class Moment {
   }
 
   isoWeekday(): number;
-  isoWeekday(d: unknown): Moment;
-  isoWeekday(d?: unknown): number | Moment {
+  isoWeekday(d: unknown): this;
+  isoWeekday(d?: unknown): number | this {
     this._ensureFields();
     if (d !== undefined) {
       if (typeof d === "string") {
@@ -708,8 +708,8 @@ export class Moment {
   }
 
   dayOfYear(): number;
-  dayOfYear(d: number): Moment;
-  dayOfYear(d?: number): number | Moment {
+  dayOfYear(d: number): this;
+  dayOfYear(d?: number): number | this {
     if (d !== undefined) {
       const year = this.$y;
       const day = Number(d);
@@ -730,8 +730,8 @@ export class Moment {
   }
 
   hour(): number;
-  hour(h: unknown): Moment;
-  hour(h?: unknown): number | Moment {
+  hour(h: unknown): this;
+  hour(h?: unknown): number | this {
     if (h !== undefined) {
       if (h === null) {return this;}
       const num = Number(h);
@@ -749,8 +749,8 @@ export class Moment {
   }
 
   minute(): number;
-  minute(m: unknown): Moment;
-  minute(m?: unknown): number | Moment {
+  minute(m: unknown): this;
+  minute(m?: unknown): number | this {
     if (m !== undefined) {
       if (m === null) {return this;}
       const num = Number(m);
@@ -768,8 +768,8 @@ export class Moment {
   }
 
   second(): number;
-  second(s: unknown): Moment;
-  second(s?: unknown): number | Moment {
+  second(s: unknown): this;
+  second(s?: unknown): number | this {
     if (s !== undefined) {
       if (s === null) {return this;}
       const num = Number(s);
@@ -787,8 +787,8 @@ export class Moment {
   }
 
   millisecond(): number;
-  millisecond(ms: unknown): Moment;
-  millisecond(ms?: unknown): number | Moment {
+  millisecond(ms: unknown): this;
+  millisecond(ms?: unknown): number | this {
     if (ms !== undefined) {
       if (ms === null) {return this;}
       const num = Number(ms);
@@ -806,8 +806,8 @@ export class Moment {
   }
 
   get(unit: string): number;
-  get(unit: object): Moment;
-  get(unit: string | object): number | Moment {
+  get(unit: object): this;
+  get(unit: string | object): number | this {
     if (isObject(unit)) {return this;}
     const u = normalizeUnits(unit as string);
     if (!u) {return NaN;}
@@ -843,7 +843,7 @@ export class Moment {
     }
   }
 
-  set(unit: string | object, value?: number): Moment {
+  set(unit: string | object, value?: number): this {
     if (isObject(unit)) {
       this._ensureFields();
       const obj = unit;
@@ -1240,7 +1240,7 @@ export class Moment {
     if (isNaN(d.getTime())) {this._isValid = false;}
   }
 
-  add(amount: number | string | Duration | object, unit?: string): Moment {
+  add(amount: number | string | Duration | object, unit?: string): this {
     if (!this._isValid) {return this;}
     if (typeof amount === "number" && typeof unit === "string") {
       if (unit === "month" || unit === "months") {this._addSimple(amount, MONTH); return this;}
@@ -1254,7 +1254,7 @@ export class Moment {
     return this;
   }
 
-  subtract(amount: number | string | Duration | object, unit?: string): Moment {
+  subtract(amount: number | string | Duration | object, unit?: string): this {
     if (!this._isValid) {return this;}
     if (typeof amount === "number" && typeof unit === "string") {
       if (unit === "month" || unit === "months") {this._addSimple(-amount, MONTH); return this;}
@@ -1268,7 +1268,7 @@ export class Moment {
     return this;
   }
 
-  startOf(unit: string): Moment {
+  startOf(unit: string): this {
     const code = normalizeUnitCode(unit);
     if (code < 0) {return this;}
     this._ensureFields();
@@ -1366,7 +1366,7 @@ export class Moment {
     return this;
   }
 
-  endOf(unit: string): Moment {
+  endOf(unit: string): this {
     const code = normalizeUnitCode(unit);
     if (code < 0) {return this;}
     this._ensureFields();
@@ -1468,7 +1468,7 @@ export class Moment {
     return this;
   }
 
-  local(keepLocalTime?: boolean): Moment {
+  local(keepLocalTime?: boolean): this {
     if (this._isUTC) {
       if (keepLocalTime) {
         this._d = new Date(
@@ -1499,7 +1499,7 @@ export class Moment {
     return this;
   }
 
-  utc(keepLocalTime?: boolean): Moment {
+  utc(keepLocalTime?: boolean): this {
     if (this._isUTC && this._offset !== 0) {
       if (!keepLocalTime) {
         this._d = new Date(this.valueOf());
@@ -1530,8 +1530,8 @@ export class Moment {
   }
 
   utcOffset(): number;
-  utcOffset(offset: number | string, keepLocalTime?: boolean): Moment;
-  utcOffset(offset?: number | string, keepLocalTime?: boolean): number | Moment {
+  utcOffset(offset: number | string, keepLocalTime?: boolean): this;
+  utcOffset(offset?: number | string, keepLocalTime?: boolean): number | this {
     if (offset === undefined) {
       this._ensureFields();
       return this._offset;
@@ -1540,7 +1540,7 @@ export class Moment {
     let numOffset: number;
     if (typeof offset === "string") {
       numOffset = parseOffsetString(offset) as number;
-      if (numOffset === null || isNaN(numOffset)) {return this;}
+      if (isNaN(numOffset)) {return this;}
     } else {
       numOffset = Math.abs(offset) < 16 ? offset * 60 : offset;
     }
@@ -1692,7 +1692,7 @@ export class Moment {
     } else if (hasOwnProp(cal, key)) {
       formatString = cal[key];
     } else if (hasOwnProp(cal, "sameElse")) {
-      formatString = cal["sameElse"];
+      formatString = cal.sameElse;
     } else {
       formatString = "L";
     }
@@ -2024,49 +2024,49 @@ export class Moment {
   }
 
   years(): number;
-  years(y: number): Moment;
-  years(y?: number): number | Moment {
+  years(y: number): this;
+  years(y?: number): number | this {
     return this.year(y);
   }
   months(): number;
-  months(m: number): Moment;
-  months(m?: number): number | Moment {
+  months(m: number): this;
+  months(m?: number): number | this {
     return this.month(m);
   }
   dates(): number;
-  dates(d: number): Moment;
-  dates(d?: number): number | Moment {
+  dates(d: number): this;
+  dates(d?: number): number | this {
     return this.date(d);
   }
   days(): number;
-  days(d: number): Moment;
-  days(d?: number): number | Moment {
+  days(d: number): this;
+  days(d?: number): number | this {
     return this.day(d);
   }
   hours(): number;
-  hours(h: number): Moment;
-  hours(h?: number): number | Moment {
+  hours(h: number): this;
+  hours(h?: number): number | this {
     return this.hour(h);
   }
   minutes(): number;
-  minutes(m: number): Moment;
-  minutes(m?: number): number | Moment {
+  minutes(m: number): this;
+  minutes(m?: number): number | this {
     return this.minute(m);
   }
   seconds(): number;
-  seconds(s: number): Moment;
-  seconds(s?: number): number | Moment {
+  seconds(s: number): this;
+  seconds(s?: number): number | this {
     return this.second(s);
   }
   milliseconds(): number;
-  milliseconds(ms: number): Moment;
-  milliseconds(ms?: number): number | Moment {
+  milliseconds(ms: number): this;
+  milliseconds(ms?: number): number | this {
     return this.millisecond(ms);
   }
 
   quarter(): number;
-  quarter(q: number): Moment;
-  quarter(q?: number): number | Moment {
+  quarter(q: number): this;
+  quarter(q?: number): number | this {
     if (q !== undefined) {
       this.month((q - 1) * 3 + (this.month() % 3));
       return this;
@@ -2075,14 +2075,14 @@ export class Moment {
   }
 
   quarters(): number;
-  quarters(q: number): Moment;
-  quarters(q?: number): number | Moment {
+  quarters(q: number): this;
+  quarters(q?: number): number | this {
     return this.quarter(q as number);
   }
 
   week(): number;
-  week(w: number): Moment;
-  week(w?: number): number | Moment {
+  week(w: number): this;
+  week(w?: number): number | this {
     const weekConfig = (this._getLocale()._config as Record<string, unknown>).week ?? { dow: 0, doy: 6 };
     const dow = weekConfig.dow;
     const doy = weekConfig.doy;
@@ -2105,8 +2105,8 @@ export class Moment {
   }
 
   weeks(): number;
-  weeks(w: number): Moment;
-  weeks(w?: number): number | Moment {
+  weeks(w: number): this;
+  weeks(w?: number): number | this {
     return this.week(w as number);
   }
 
@@ -2129,8 +2129,8 @@ export class Moment {
   }
 
   weekYear(): number;
-  weekYear(y: number): Moment;
-  weekYear(y?: number): number | Moment {
+  weekYear(y: number): this;
+  weekYear(y?: number): number | this {
     const weekConfig = (this._getLocale()._config as Record<string, unknown>).week ?? { dow: 0, doy: 6 };
     const dow = weekConfig.dow;
     const doy = weekConfig.doy;
@@ -2164,8 +2164,8 @@ export class Moment {
   }
 
   isoWeek(): number;
-  isoWeek(w: number): Moment;
-  isoWeek(w?: number): number | Moment {
+  isoWeek(w: number): this;
+  isoWeek(w?: number): number | this {
     if (w !== undefined) {
       const current = getISOWeekNumber(this._getD(), this._isUTC);
       const diff = w - current;
@@ -2183,14 +2183,14 @@ export class Moment {
   }
 
   isoWeeks(): number;
-  isoWeeks(w: number): Moment;
-  isoWeeks(w?: number): number | Moment {
+  isoWeeks(w: number): this;
+  isoWeeks(w?: number): number | this {
     return this.isoWeek(w as number);
   }
 
   isoWeekYear(): number;
-  isoWeekYear(y: number): Moment;
-  isoWeekYear(y?: number): number | Moment {
+  isoWeekYear(y: number): this;
+  isoWeekYear(y?: number): number | this {
     if (y !== undefined) {
       let currentWeek = getISOWeekNumber(this._getD(), this._isUTC);
       const currentDay = this.isoWeekday();
@@ -2251,10 +2251,10 @@ export class Moment {
           fmt && fmt !== "RFC_2822" && fmt !== "ISO_8601"
             ? parseString(this._i, fmt)
             : parseString(this._i);
-        if (p && p.offset !== undefined) {
+        if (p?.offset !== undefined) {
           m._d = new Date(m.valueOf() + p.offset * 60000);
           m._t = m._d.getTime();
-          m._offset = p.offset;
+          m._offset = p.offset as number;
           m._isUTC = true;
           m._refreshFields();
         } else {
@@ -2275,27 +2275,27 @@ export class Moment {
     m._isParseZone = true;
     if (format && isString(input)) {
       const parsed = parseString(input, format);
-      if (parsed && parsed.offset !== undefined) {
+      if (parsed?.offset !== undefined) {
         const d = createDateSafe(
-          parsed.year !== undefined ? parsed.year : 0,
-          parsed.month !== undefined ? parsed.month : 0,
-          parsed.day !== undefined ? parsed.day : 1,
-          parsed.hour !== undefined ? parsed.hour : 0,
-          parsed.minute !== undefined ? parsed.minute : 0,
-          parsed.second !== undefined ? parsed.second : 0,
-          parsed.millisecond !== undefined ? parsed.millisecond : 0,
+          parsed.year ?? 0,
+          parsed.month ?? 0,
+          parsed.day ?? 1,
+          parsed.hour ?? 0,
+          parsed.minute ?? 0,
+          parsed.second ?? 0,
+          parsed.millisecond ?? 0,
           true,
         );
         m._d = d;
         m._t = d.getTime();
-        m._offset = parsed.offset;
+        m._offset = parsed.offset as number;
         m._isUTC = true;
         m._refreshFields();
       } else if (isString(input)) {
         const allInput =
           `${input 
           } ${ 
-          parsed && parsed._unusedInput ? parsed._unusedInput.join("") : ""}`;
+          parsed?._unusedInput?.join("") ?? ""}`;
         const tzMatch = allInput.match(/([+-]\d{2}):?(\d{2})\s*$/);
         if (tzMatch) {
           const sign = tzMatch[1][0] === "+" ? 1 : -1;
@@ -2310,8 +2310,8 @@ export class Moment {
   }
 
   zone(): number;
-  zone(offset: number | string, keepLocalTime?: boolean): Moment;
-  zone(offset?: number | string, keepLocalTime?: boolean): number | Moment {
+  zone(offset: number | string, keepLocalTime?: boolean): this;
+  zone(offset?: number | string, keepLocalTime?: boolean): number | this {
     if (offset === undefined) {
       const o = this.utcOffset();
       return -o;
@@ -2372,8 +2372,8 @@ export class Moment {
   }
 
   lang(): string;
-  lang(locale: string | string[] | false): Moment;
-  lang(locale?: string | string[] | false): string | Moment {
+  lang(locale: string | string[] | false): this;
+  lang(locale?: string | string[] | false): string | this {
     if (locale === undefined) {return this._l ?? getCurrentLocale();}
     if (locale === false) {
       this._l = undefined;
@@ -2404,8 +2404,8 @@ export class Moment {
   }
 
   locale(): string;
-  locale(locale: string | string[] | false): Moment;
-  locale(locale?: string | string[] | false): string | Moment {
+  locale(locale: string | string[] | false): this;
+  locale(locale?: string | string[] | false): string | this {
     if (locale === undefined || locale === false) {
       if (locale === false) {
         this._l = undefined;
@@ -2537,6 +2537,7 @@ for (const key of coldFieldKeys) {
 
 export let nowFn: (() => number) | undefined = Date.now;
 
+// eslint-disable-next-line max-params
 function anchorMs(year: number, month: number, day: number, hour: number, min: number, sec: number, ms: number, utc: boolean, n: number): number {
   const tm = year * 12 + month + n;
   const y = Math.floor(tm / 12);
@@ -2554,7 +2555,7 @@ export function checkOverflow(parsed: Record<string, unknown>): number {
   if (parsed.day !== undefined) {
     const maxDay = daysInMonth(
       parsed.year !== undefined ? parsed.year : 2000,
-      parsed.month !== undefined ? parsed.month : 0,
+      parsed.month ?? 0,
     );
     if (parsed.day < 1 || parsed.day > maxDay) {return 2;}
   }
@@ -2650,7 +2651,7 @@ export function momentFromAnything(input: unknown, isUTC?: boolean): Moment {
         parsed.second ?? 0,
         parsed.millisecond ?? 0,
       );
-      return new Moment({ _d: new Date(ts), _i: input, _parsedDateParts: input, _dClone: false });
+      return new Moment({ _d: new Date(ts), _i: input, _parsedDateParts: input as number[], _dClone: false });
     }
     return new Moment({ _d: new Date(NaN), _dClone: false, _isValid: false });
   }
@@ -2660,12 +2661,12 @@ export function momentFromAnything(input: unknown, isUTC?: boolean): Moment {
     if (parsed && (parsed.year !== undefined || parsed.month !== undefined || parsed.day !== undefined)) {
       const now = new Date();
       const y = parsed.year !== undefined ? parsed.year : now.getFullYear();
-      const mo = parsed.month !== undefined ? parsed.month : 0;
-      const d = parsed.day !== undefined ? parsed.day : 1;
-      const h = parsed.hour !== undefined ? parsed.hour : 0;
-      const min = parsed.minute !== undefined ? parsed.minute : 0;
-      const s = parsed.second !== undefined ? parsed.second : 0;
-      const ms = parsed.millisecond !== undefined ? parsed.millisecond : 0;
+      const mo = parsed.month ?? 0;
+      const d = parsed.day ?? 1;
+      const h = parsed.hour ?? 0;
+      const min = parsed.minute ?? 0;
+      const s = parsed.second ?? 0;
+      const ms = parsed.millisecond ?? 0;
       return new Moment({ _d: new Date(y, mo, d, h, min, s, ms), _i: input, _dClone: false });
     }
     const m = new Moment(input);

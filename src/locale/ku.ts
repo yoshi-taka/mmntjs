@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 const symbolMap = {
@@ -58,7 +57,7 @@ export const kuLocale: LocaleSpec = {
       LLLL: "dddd, D MMMM YYYY HH:mm"
     },
     meridiemParse: /ئێواره‌|به‌یانی/,
-    isPM: function (input) {
+    isPM: function(input: string) {
         return /ئێواره‌/.test(input);
     },
     meridiem: function (hour, _minute, _isLower) {
@@ -94,15 +93,15 @@ export const kuLocale: LocaleSpec = {
     },
     preparse: function (string) {
         return string
-            .replaceAll(/[١٢٣٤٥٦٧٨٩٠]/g, function (match) {
-                return numberMap[match];
+            .replaceAll(/[١٢٣٤٥٦٧٨٩٠]/g, function (match: string) {
+                return (numberMap as Record<string, string>)[match];
             })
             .replaceAll('،', ',');
     },
     postformat: function (string) {
         return string
-            .replaceAll(/\d/g, function (match) {
-                return symbolMap[match];
+            .replaceAll(/\d/g, function (match: string) {
+                return (symbolMap as Record<string, string>)[match];
             })
             .replaceAll(',', '،');
     },

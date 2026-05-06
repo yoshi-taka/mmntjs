@@ -14,14 +14,14 @@ test('parse', function (assert) {
                 '_'
             ),
         i;
-    function equalTest(input: unknown, mmm: unknown, monthIndex: unknown) {
+    function equalTest(input: string, mmm: string, monthIndex: number) {
         assert.equal(
             moment(input, mmm).month(),
             monthIndex,
             `${input  } ${  mmm  } should be month ${  monthIndex + 1}`
         );
     }
-    function equalTestStrict(input: unknown, mmm: unknown, monthIndex: unknown) {
+    function equalTestStrict(input: string, mmm: string, monthIndex: number) {
         assert.equal(
             moment(input, mmm, true).month(),
             monthIndex,

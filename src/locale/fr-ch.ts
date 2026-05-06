@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 export const fr_chLocale: LocaleSpec = {
@@ -46,7 +45,7 @@ export const fr_chLocale: LocaleSpec = {
       yy: "%d ans"
     },
     dayOfMonthOrdinalParse: /\d{1,2}(er|e)/,
-    ordinal: function (number, period) {
+    ordinal: function(number: number, period: string) {
         switch (period) {
             // Words with masculine grammatical gender: mois, trimestre, jour
             default:

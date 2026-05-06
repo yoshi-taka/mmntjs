@@ -1,25 +1,20 @@
-// @ts-expect-error
+// @ts-expect-error: no types for ../moment2
 import moment2 from "../moment2";
-// @ts-expect-error
 import { _localeCache, setLocale } from "../src/locale";
 import { format } from "date-fns";
 import { fr, enUS } from "date-fns/locale";
 
-function micros(ns) {
-  if (ns < 1000) return `${ns.toFixed(0)}ns`;
-  if (ns < 1_000_000) return `${(ns / 1000).toFixed(2)}μs`;
+function micros(ns: number) {
+  if (ns < 1000) {return `${ns.toFixed(0)}ns`;}
+  if (ns < 1_000_000) {return `${(ns / 1000).toFixed(2)}μs`;}
   return `${(ns / 1_000_000).toFixed(3)}ms`;
 }
 
-function run(fn, iter) {
-  for (let i = 0; i < 10; i++) fn(); // warmup JIT
+function run(fn: () => void, iter: number) {
+  for (let i = 0; i < 10; i++) { fn(); } // warmup JIT
   const start = process.hrtime.bigint();
-  for (let i = 0; i < iter; i++) fn();
+  for (let i = 0; i < iter; i++) { fn(); }
   return Number(process.hrtime.bigint() - start) / iter;
-}
-
-function formatFRLL() {
-  moment2(date).locale("fr").format("LL");
 }
 
 const date = new Date(2024, 5, 15, 10, 30, 45);
@@ -70,7 +65,7 @@ const cases = [
 console.log("Operation                moment2 cold   moment2 warm   date-fns      cold vs df  warm vs df");
 for (const c of cases) {
   // cold
-  if (c.setupCold) c.setupCold();
+  if (c.setupCold) { c.setupCold(); }
   const cold = run(c.m2, ITER);
   // warm
   c.setupWarm();

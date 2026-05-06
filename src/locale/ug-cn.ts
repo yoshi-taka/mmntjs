@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 export const ug_cnLocale: LocaleSpec = {
@@ -79,7 +78,7 @@ export const ug_cnLocale: LocaleSpec = {
       yy: "%d يىل"
     },
     dayOfMonthOrdinalParse: /\d{1,2}(-كۈنى|-ئاي|-ھەپتە)/,
-    ordinal: function (number, period) {
+    ordinal: function (number: number, period?: string) {
         switch (period) {
             case 'd':
             case 'D':
@@ -89,7 +88,7 @@ export const ug_cnLocale: LocaleSpec = {
             case 'W':
                 return `${number  }-ھەپتە`;
             default:
-                return number;
+                return `${number}`;
         }
     },
     preparse: function (string) {

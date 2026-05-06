@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 const symbolMap = {
@@ -44,7 +43,7 @@ export const ar_psLocale: LocaleSpec = {
       LLLL: "dddd D MMMM YYYY HH:mm"
     },
     meridiemParse: /ص|م/,
-    isPM: function (input) {
+    isPM: function(input: string) {
         return 'م' === input;
     },
     meridiem: function (hour, _minute, _isLower) {
@@ -80,14 +79,14 @@ export const ar_psLocale: LocaleSpec = {
     },
     preparse: function (string) {
         return string
-            .replaceAll(/[٣٤٥٦٧٨٩٠]/g, function (match) {
-                return numberMap[match];
+            .replaceAll(/[٣٤٥٦٧٨٩٠]/g, function (match: string) {
+                return (numberMap as Record<string, string>)[match];
             })
             .split('') // reversed since negative lookbehind not supported everywhere
             .reverse()
             .join('')
-            .replaceAll(/[١٢](?![\u062a\u0643])/g, function (match) {
-                return numberMap[match];
+            .replaceAll(/[١٢](?![\u062a\u0643])/g, function (match: string) {
+                return (numberMap as Record<string, string>)[match];
             })
             .split('')
             .reverse()
@@ -96,8 +95,8 @@ export const ar_psLocale: LocaleSpec = {
     },
     postformat: function (string) {
         return string
-            .replaceAll(/\d/g, function (match) {
-                return symbolMap[match];
+            .replaceAll(/\d/g, function (match: string) {
+                return (symbolMap as Record<string, string>)[match];
             })
             .replaceAll(',', '،');
     },

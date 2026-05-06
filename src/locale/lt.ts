@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 const units = {
@@ -15,7 +14,7 @@ const units = {
     yy: 'metai_metų_metus',
 };
 
-function translateSeconds(number, withoutSuffix, key, isFuture) {
+function translateSeconds(number: number, withoutSuffix: boolean, key: string, isFuture: boolean) {
     if (withoutSuffix) {
         return 'kelios sekundės';
     } else {
@@ -23,7 +22,7 @@ function translateSeconds(number, withoutSuffix, key, isFuture) {
     }
 }
 
-function translateSingular(number, withoutSuffix, key, isFuture) {
+function translateSingular(number: number, withoutSuffix: boolean, key: string, isFuture: boolean) {
     return withoutSuffix
         ? forms(key)[0]
         : isFuture
@@ -31,15 +30,15 @@ function translateSingular(number, withoutSuffix, key, isFuture) {
           : forms(key)[2];
 }
 
-function special(number) {
+function special(number: number) {
     return number % 10 === 0 || (number > 10 && number < 20);
 }
 
-function forms(key) {
-    return units[key].split('_');
+function forms(key: string) {
+    return (units as Record<string, string>)[key].split('_');
 }
 
-function translate(number, withoutSuffix, key, isFuture) {
+function translate(number: number, withoutSuffix: boolean, key: string, isFuture: boolean) {
     const result = `${number  } `;
     if (number === 1) {
         return (

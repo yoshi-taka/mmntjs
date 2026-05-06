@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 export const caLocale: LocaleSpec = {
@@ -71,7 +70,7 @@ export const caLocale: LocaleSpec = {
       yy: "%d anys"
     },
     dayOfMonthOrdinalParse: /\d{1,2}(r|n|t|è|a)/,
-    ordinal: function (number, period) {
+    ordinal: function(number: number, period: string) {
         let output =
             number === 1
                 ? 'r'

@@ -15,9 +15,9 @@ export function runInit(dir = ".") {
 
   console.log("Adding npm alias: moment → @compat/moment2");
   pkg.dependencies ??= {};
-  pkg.dependencies["moment"] = "npm:@compat/moment2@^1.0.0";
+  pkg.dependencies.moment = "npm:@compat/moment2@^1.0.0";
 
-  if (pkg.devDependencies && pkg.devDependencies["@types/moment"]) {
+  if (pkg.devDependencies?.["@types/moment"]) {
     console.log("Removing @types/moment");
     delete pkg.devDependencies["@types/moment"];
   }

@@ -1,7 +1,6 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
-function processRelativeTime(number, withoutSuffix, key, isFuture) {
+function processRelativeTime(number: number, withoutSuffix: boolean, key: string, isFuture: boolean) {
     const format = {
         s: ['थोडया सॅकंडांनी', 'थोडे सॅकंड'],
         ss: [`${number  } सॅकंडांनी`, `${number  } सॅकंड`],
@@ -16,7 +15,7 @@ function processRelativeTime(number, withoutSuffix, key, isFuture) {
         y: ['एका वर्सान', 'एक वर्स'],
         yy: [`${number  } वर्सांनी`, `${number  } वर्सां`],
     };
-    return isFuture ? format[key][0] : format[key][1];
+    return isFuture ? (format as Record<string, string[]>)[key][0] : (format as Record<string, string[]>)[key][1];
 }
 
 export const gom_devaLocale: LocaleSpec = {
@@ -71,7 +70,7 @@ export const gom_devaLocale: LocaleSpec = {
       yy: processRelativeTime
     },
     dayOfMonthOrdinalParse: /\d{1,2}(वेर)/,
-    ordinal: function (number, period) {
+    ordinal: function (number: number, period?: string) {
         switch (period) {
             // the ordinal 'वेर' only applies to day of the month
             case 'D':
@@ -83,7 +82,7 @@ export const gom_devaLocale: LocaleSpec = {
             case 'd':
             case 'w':
             case 'W':
-                return number;
+                return `${number}`;
         }
     },
     week: {
@@ -104,6 +103,7 @@ export const gom_devaLocale: LocaleSpec = {
         } else if (meridiem === 'सांजे') {
             return hour + 12;
         }
+        return 0;
     },
     meridiem: function (hour, _minute, _isLower) {
         if (hour < 4) {

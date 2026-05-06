@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 const suffixes = {
@@ -40,7 +39,7 @@ export const trLocale: LocaleSpec = {
         }
     },
     meridiemParse: /öö|ÖÖ|ös|ÖS/,
-    isPM: function (input) {
+    isPM: function(input: string) {
         return input === 'ös' || input === 'ÖS';
     },
     longDateFormat: {
@@ -77,13 +76,13 @@ export const trLocale: LocaleSpec = {
       y: "bir yıl",
       yy: "%d yıl"
     },
-    ordinal: function (number, period) {
+    ordinal: function (number: number, period?: string) {
         switch (period) {
             case 'd':
             case 'D':
             case 'Do':
             case 'DD':
-                return number;
+                return `${number}`;
             default:
                 if (number === 0) {
                     // special case for zero
@@ -92,7 +91,7 @@ export const trLocale: LocaleSpec = {
                 const a = number % 10,
                     b = (number % 100) - a,
                     c = number >= 100 ? 100 : null;
-                return number + (suffixes[a] ?? suffixes[b] ?? suffixes[c]);
+                return number + ((suffixes as Record<number, string>)[a] ?? (suffixes as Record<number, string>)[b] ?? (suffixes as Record<number, string>)[c]);
         }
     },
     week: {

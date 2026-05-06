@@ -18,6 +18,6 @@ export function initializeFullEntry(): void {
   initializeCoreEntry();
   initializeLocaleEntry();
   registerBuiltinTestLocales();
-  registerMigrationApi(moment as MigrationMoment);
-  registerTemporalBridge(moment as TemporalMoment);
+  registerMigrationApi(moment as unknown as MigrationMoment);
+  registerTemporalBridge(moment as unknown as TemporalMoment);
 }

@@ -1,4 +1,4 @@
-// @ts-expect-error
+// @ts-expect-error: no types for ../moment2
 import moment2 from "../moment2";
 import { defineLocale } from "../src/locale";
 import { frLocale } from "../src/locale/fr";
@@ -8,9 +8,10 @@ setLocale("en");
 
 import {
   parseISO, format, lightFormat, getDayOfYear, addDays, isAfter,
-  startOfDay, startOfMonth, setMonth, setYear, isBefore, differenceInCalendarDays,
+  startOfDay, setMonth, setYear, differenceInCalendarDays,
 } from "date-fns";
 import { fr, enUS } from "date-fns/locale";
+import type { Locale } from "date-fns";
 import Benchmark from "benchmark";
 
 const suite = new Benchmark.Suite({ minSamples: 20 });
@@ -21,9 +22,9 @@ const dateA = new Date(1989, 6, 10);
 const dateB = new Date(1987, 1, 11);
 
 const momentForLocale = (locale: string) => moment2(date).locale(locale);
-const dfLocalePP = (loc: any) => () => format(date, "PP", { locale: loc });
-const dfLocalep = (loc: any) => () => format(date, "p", { locale: loc });
-const dfLocalePPp = (loc: any) => () => format(date, "PPp", { locale: loc });
+const dfLocalePP = (loc: Locale) => () => format(date, "PP", { locale: loc });
+const dfLocalep = (loc: Locale) => () => format(date, "p", { locale: loc });
+const dfLocalePPp = (loc: Locale) => () => format(date, "PPp", { locale: loc });
 
 // pre-create date-fns format closures with locale baked in
 const dfFrPP = dfLocalePP(fr);
@@ -78,10 +79,11 @@ suite
   .add("moment2#diff days", () => { moment2(dateA).diff(dateB, "days"); })
   .add("date-fns#differenceInCalendarDays", () => { differenceInCalendarDays(dateA, dateB); })
 
-  .on("cycle", (event: any) => {
-    console.log(String(event.target));
+  .on("cycle", (event: unknown) => {
+    console.log(String((event as { target: { toString(): string } }).target));
   })
-  .on("complete", function (this: any) {
-    console.log("\nFastest is " + this.filter("fastest").map("name"));
+  .on("complete", function (this: Record<string, unknown>) {
+    const fastest = (this.filter as (s: string) => { map: (s: string) => unknown })("fastest");
+    console.log(`\nFastest is ${(fastest.map as (s: string) => string)("name")}`);
   })
   .run({ async: true });

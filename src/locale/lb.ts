@@ -1,7 +1,7 @@
-// @ts-expect-error Locale property shapes are intentionally loose
+import type { Moment } from "../moment_fixed";
 import type { LocaleSpec } from "./en";
 
-function processRelativeTime(number, withoutSuffix, key, _isFuture) {
+function processRelativeTime(number: number, withoutSuffix: boolean, key: string, _isFuture: boolean) {
     const format = {
         m: ['eng Minutt', 'enger Minutt'],
         h: ['eng Stonn', 'enger Stonn'],
@@ -9,10 +9,10 @@ function processRelativeTime(number, withoutSuffix, key, _isFuture) {
         M: ['ee Mount', 'engem Mount'],
         y: ['ee Joer', 'engem Joer'],
     };
-    return withoutSuffix ? format[key][0] : format[key][1];
+    return withoutSuffix ? (format as Record<string, string[]>)[key][0] : (format as Record<string, string[]>)[key][1];
 }
 
-function processFutureTime(string) {
+function processFutureTime(string: string) {
     const number = string.substr(0, string.indexOf(' '));
     if (eifelerRegelAppliesToNumber(number)) {
         return `a ${  string}`;
@@ -20,7 +20,7 @@ function processFutureTime(string) {
     return `an ${  string}`;
 }
 
-function processPastTime(string) {
+function processPastTime(string: string) {
     const number = string.substr(0, string.indexOf(' '));
     if (eifelerRegelAppliesToNumber(number)) {
         return `viru ${  string}`;
@@ -28,7 +28,7 @@ function processPastTime(string) {
     return `virun ${  string}`;
 }
 
-function eifelerRegelAppliesToNumber(number) {
+function eifelerRegelAppliesToNumber(number: number) {
     number = parseInt(number, 10);
     if (isNaN(number)) {
         return false;
@@ -91,7 +91,7 @@ export const lbLocale: LocaleSpec = {
       nextDay: "[Muer um] LT",
       nextWeek: "dddd [um] LT",
       lastDay: "[Gëschter um] LT",
-      lastWeek: function () {
+      lastWeek: function (this: Moment) {
             // Different date string for 'Dënschdeg' (Tuesday) and 'Donneschdeg' (Thursday) due to phonological rule
             switch (this.day()) {
                 case 2:
@@ -103,8 +103,8 @@ export const lbLocale: LocaleSpec = {
         }
     },
     relativeTime: {
-      future: processFutureTime,
-      past: processPastTime,
+      future: processFutureTime as unknown as string,
+      past: processPastTime as unknown as string,
       s: "e puer Sekonnen",
       ss: "%d Sekonnen",
       m: processRelativeTime,

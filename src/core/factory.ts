@@ -83,6 +83,7 @@ export function moment(
   }
   if (isMoment(input)) {return input.clone();}
   if (isObject(input) && input._isAMomentObject) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const obj = input as Record<string, any>;
     const cfg: MomentConfig = {
       _d: obj._d ? new Date(obj._d.getTime()) : new Date(NaN),
@@ -200,6 +201,7 @@ function createFromString(
 
   if (isArray(fmt)) {
     const formats = fmt;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let bestParsed: Record<string, any> | null = null;
     let bestScore = -99999;
     let bestFormat: string | undefined;
@@ -505,7 +507,7 @@ function createFromString(
   }
 
   if (fmtStr) {
-    const parsed = parseString(str, fmtStr, locale, strict);
+    const parsed = parseString(str, fmtStr, locale, strict) as ParsedRecord | null;
     const config: MomentConfig = {
       _d: undefined,
       _i: str,
@@ -601,7 +603,7 @@ function createFromString(
     }
   }
 
-  const parsed = parseString(str);
+  const parsed = parseString(str) as ParsedRecord | null;
   if (parsed && !parsed._claimed) {
     if (parsed._hasDate !== undefined) {
       const { year, month, day, hour, minute, second, millisecond, offset } = parsed;
@@ -746,6 +748,10 @@ function localeWeekToDate(
   return new Date(week1Start.getTime() + ((week - 1) * 7 + weekday) * 86400000);
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ParsedRecord = Record<string, any>;
+
+// eslint-disable-next-line max-params
 function buildMomentConfig(
   d: Date,
   str: string,
@@ -772,7 +778,7 @@ function buildMomentConfig(
 }
 
 function createMomentFromParsed(
-  parsed: Record<string, any>,
+  parsed: ParsedRecord,
   str: string,
   format?: string | string[],
   locale?: string,
@@ -811,7 +817,7 @@ function createMomentFromParsed(
   switch (tag) {
     case 1: {
       const loc = getLocale(locale);
-      const weekCfg = (loc._config as Record<string, any>).week ?? { dow: 0, doy: 6 };
+      const weekCfg = (loc._config as { week?: { dow: number; doy: number } }).week ?? { dow: 0, doy: 6 };
       let weekdayOffset: number;
       if (parsed._localeWeekday !== undefined) {
         weekdayOffset = parsed._localeWeekday;
@@ -820,7 +826,7 @@ function createMomentFromParsed(
       } else {
         weekdayOffset = 0;
       }
-      const d = localeWeekToDate(parsed._weekYear, parsed._week, weekdayOffset, weekCfg.dow, weekCfg.doy);
+      const d = localeWeekToDate(parsed._weekYear!, parsed._week!, weekdayOffset, weekCfg.dow, weekCfg.doy);
       if (parsed.hour !== undefined) {
         d.setUTCHours(parsed.hour, parsed.minute ?? 0, parsed.second ?? 0, parsed.millisecond ?? 0);
         return new Moment(buildMomentConfig(d, str, format, locale, parsed, baseConfig as MomentConfig));
@@ -850,14 +856,14 @@ function createMomentFromParsed(
       const dayOfYear = Math.floor((nowTs - nowYearStart.getTime()) / 86400000);
       const currentWeekOfYear = Math.ceil((dayOfYear + nowYearStart.getDay() + 1) / 7);
       const loc = getLocale(locale);
-      const weekCfg = (loc._config as Record<string, any>).week ?? { dow: 0, doy: 6 };
+      const weekCfg = (loc._config as { week?: { dow: number; doy: number } }).week ?? { dow: 0, doy: 6 };
       const d = localeWeekToDate(year, Math.max(currentWeekOfYear, 1), 0, weekCfg.dow, weekCfg.doy);
       return new Moment(buildMomentConfig(d, str, format, locale, parsed, { _strict: strict }));
     }
     case 4: {
       const year = new Date(nowFn()).getFullYear();
       const loc = getLocale(locale);
-      const weekCfg = (loc._config as Record<string, any>).week ?? { dow: 0, doy: 6 };
+      const weekCfg = (loc._config as { week?: { dow: number; doy: number } }).week ?? { dow: 0, doy: 6 };
       const d = localeWeekToDate(year, parsed._week, 0, weekCfg.dow, weekCfg.doy);
       return new Moment(buildMomentConfig(d, str, format, locale, parsed, { _strict: strict }));
     }
@@ -945,7 +951,7 @@ function createFromArray(arr: unknown[], isUTC?: boolean): Moment {
     if (v === null) {hasNull = true;}
   }
   if (hasNull) {return new Moment({ _dClone: false, _d: new Date(NaN), _i: arr, _isValid: false });}
-  const parsed = parseArray(arr);
+  const parsed = parseArray(arr) as ParsedRecord;
   if (!parsed) {
     return new Moment({ _dClone: false, _d: new Date(NaN), _i: arr, _isValid: false });
   }

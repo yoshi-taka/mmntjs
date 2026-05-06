@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 const symbolMap = {
@@ -26,7 +25,7 @@ const symbolMap = {
         '०': '0',
     };
 
-function relativeTimeMr(number, withoutSuffix, string, _isFuture) {
+function relativeTimeMr(number: number, withoutSuffix: boolean, string: string, _isFuture: boolean) {
     let output = '';
     if (withoutSuffix) {
         switch (string) {
@@ -154,13 +153,13 @@ export const mrLocale: LocaleSpec = {
       yy: relativeTimeMr
     },
     preparse: function (string) {
-        return string.replaceAll(/[१२३४५६७८९०]/g, function (match) {
-            return numberMap[match];
+        return string.replaceAll(/[१२३४५६७८९०]/g, function (match: string) {
+            return (numberMap as Record<string, string>)[match];
         });
     },
     postformat: function (string) {
-        return string.replaceAll(/\d/g, function (match) {
-            return symbolMap[match];
+        return string.replaceAll(/\d/g, function (match: string) {
+            return (symbolMap as Record<string, string>)[match];
         });
     },
     meridiemParse: /पहाटे|सकाळी|दुपारी|सायंकाळी|रात्री/,
@@ -177,6 +176,7 @@ export const mrLocale: LocaleSpec = {
         ) {
             return hour >= 12 ? hour : hour + 12;
         }
+        return 0;
     },
     meridiem: function (hour, _minute, _isLower) {
         if (hour >= 0 && hour < 6) {

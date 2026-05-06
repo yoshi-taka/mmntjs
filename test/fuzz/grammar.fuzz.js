@@ -11,26 +11,24 @@ function g(buf) {
   const r = (min, max) => min + (n() % (max - min + 1))
   const pk = (a) => a[n() % a.length]
   const d = () => r(0, 9)
-  const ds = (len) => { let s = ''; for (let i = 0; i < len; i++) s += d(); return s }
+  const ds = (len) => { let s = ''; for (let i = 0; i < len; i++) { s += d(); } return s }
   const pad = (v, len) => String(v).padStart(len, '0')
 
   const signRoll = n() % 10
   let year
   if (signRoll < 1) {
-    year = '+' + ds(6)
+    year = `+${ds(6)}`
   } else if (signRoll < 2) {
-    year = '-' + ds(6)
+    year = `-${ds(6)}`
   } else {
     year = ds(4)
   }
 
-  const yNum = parseInt(year.replace(/[+-]/g, '').slice(0, 4), 10) || 2024
   const sign = year[0] === '+' || year[0] === '-' ? year[0] : ''
 
   const dateType = n() % 14
   const isExt = n() % 2
   let datePart = ''
-  let dateFmt = ''
 
   const month = r(1, 12)
   const dayInMonth = r(1, 28)
@@ -71,18 +69,18 @@ function g(buf) {
     const fracDigits = r(1, 6)
 
     if (useExt) {
-      result += sep + pad(hour, 2) + ':' + pad(minute, 2)
+      result += `${sep}${pad(hour, 2)}:${pad(minute, 2)}`
       if (n() % 2) {
-        result += ':' + pad(second, 2)
-        if (frac < 3) result += '.' + ds(fracDigits)
-        else if (frac < 4) result += ',' + ds(fracDigits)
+        result += `:${pad(second, 2)}`
+        if (frac < 3) { result += `.${ds(fracDigits)}`; }
+        else if (frac < 4) { result += `,${ds(fracDigits)}`; }
       }
     } else {
-      result += sep + pad(hour, 2) + pad(minute, 2)
+      result += `${sep}${pad(hour, 2)}${pad(minute, 2)}`
       if (n() % 2) {
         result += pad(second, 2)
-        if (frac < 3) result += '.' + ds(fracDigits)
-        else if (frac < 4) result += ',' + ds(fracDigits)
+        if (frac < 3) { result += `.${ds(fracDigits)}`; }
+        else if (frac < 4) { result += `,${ds(fracDigits)}`; }
       }
     }
   }
@@ -95,9 +93,9 @@ function g(buf) {
     const tzHour = r(0, 23)
     const tzMin = r(0, 59)
     if (useExt) {
-      result += tzSign + pad(tzHour, 2) + ':' + pad(tzMin, 2)
+      result += `${tzSign}${pad(tzHour, 2)}:${pad(tzMin, 2)}`
     } else {
-      result += tzSign + pad(tzHour, 2) + pad(tzMin, 2)
+      result += `${tzSign}${pad(tzHour, 2)}${pad(tzMin, 2)}`
     }
   }
 

@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 const symbolMap = {
@@ -25,7 +24,7 @@ const symbolMap = {
         '٩': '9',
         '٠': '0',
     },
-    pluralForm = function (n) {
+    pluralForm = function (n: number) {
         return n === 0
             ? 0
             : n === 1
@@ -88,10 +87,10 @@ const symbolMap = {
             '%d عام',
         ],
     },
-    pluralize = function (u) {
-        return function (number, withoutSuffix, _string, _isFuture) {
+    pluralize = function (u: string) {
+        return function (number: number, withoutSuffix: boolean, _string: string, _isFuture: boolean) {
             let f = pluralForm(number),
-                str = plurals[u][pluralForm(number)];
+                str = (plurals as Record<string, string | string[] | string[][]>)[u][pluralForm(number)];
             if (f === 2) {
                 str = str[withoutSuffix ? 0 : 1];
             }
@@ -129,7 +128,7 @@ export const arLocale: LocaleSpec = {
       LLLL: "dddd D MMMM YYYY HH:mm"
     },
     meridiemParse: /ص|م/,
-    isPM: function (input) {
+    isPM: function(input: string) {
         return 'م' === input;
     },
     meridiem: function (hour, _minute, _isLower) {
@@ -165,15 +164,15 @@ export const arLocale: LocaleSpec = {
     },
     preparse: function (string) {
         return string
-            .replaceAll(/[١٢٣٤٥٦٧٨٩٠]/g, function (match) {
-                return numberMap[match];
+            .replaceAll(/[١٢٣٤٥٦٧٨٩٠]/g, function (match: string) {
+                return (numberMap as Record<string, string>)[match];
             })
             .replaceAll('،', ',');
     },
     postformat: function (string) {
         return string
-            .replaceAll(/\d/g, function (match) {
-                return symbolMap[match];
+            .replaceAll(/\d/g, function (match: string) {
+                return (symbolMap as Record<string, string>)[match];
             })
             .replaceAll(',', '،');
     },

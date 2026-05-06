@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 const months = [
@@ -40,7 +39,7 @@ export const dvLocale: LocaleSpec = {
       LLLL: "dddd D MMMM YYYY HH:mm"
     },
     meridiemParse: /މކ|މފ/,
-    isPM: function (input) {
+    isPM: function(input: string) {
         return 'މފ' === input;
     },
     meridiem: function (hour, _minute, _isLower) {

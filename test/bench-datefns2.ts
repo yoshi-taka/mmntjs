@@ -3,9 +3,9 @@ import moment2 from "../moment2";
 import {
   parseISO, getDayOfYear, addDays, addMonths, addSeconds, addMilliseconds,
   subDays, format, lightFormat, isAfter, isBefore,
-  startOfMonth, startOfYear, endOfMonth, endOfYear,
+  startOfMonth, startOfYear, endOfMonth,
   differenceInCalendarDays, differenceInCalendarMonths,
-  getDaysInMonth, isLeapYear, setYear, startOfWeek,
+  getDaysInMonth, isLeapYear, setYear,
 } from "date-fns";
 
 function micros(ns: number): string {

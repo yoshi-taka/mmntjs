@@ -1,35 +1,34 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 const numbersNouns = 'pagh_wa’_cha’_wej_loS_vagh_jav_Soch_chorgh_Hut'.split('_');
 
-function translateFuture(output) {
+function translateFuture(output: string) {
     let time = output;
     time =
-        output.indexOf('jaj') !== -1
+        output.includes('jaj')
             ? `${time.slice(0, -3)  }leS`
-            : output.indexOf('jar') !== -1
+            : output.includes('jar')
               ? `${time.slice(0, -3)  }waQ`
-              : output.indexOf('DIS') !== -1
+              : output.includes('DIS')
                 ? `${time.slice(0, -3)  }nem`
                 : `${time  } pIq`;
     return time;
 }
 
-function translatePast(output) {
+function translatePast(output: string) {
     let time = output;
     time =
-        output.indexOf('jaj') !== -1
+        output.includes('jaj')
             ? `${time.slice(0, -3)  }Hu’`
-            : output.indexOf('jar') !== -1
+            : output.includes('jar')
               ? `${time.slice(0, -3)  }wen`
-              : output.indexOf('DIS') !== -1
+              : output.includes('DIS')
                 ? `${time.slice(0, -3)  }ben`
                 : `${time  } ret`;
     return time;
 }
 
-function translate(number, withoutSuffix, string, _isFuture) {
+function translate(number: number, withoutSuffix: boolean, string: string, _isFuture: boolean) {
     const numberNoun = numberAsNoun(number);
     switch (string) {
         case 'ss':
@@ -45,9 +44,10 @@ function translate(number, withoutSuffix, string, _isFuture) {
         case 'yy':
             return `${numberNoun  } DIS`;
     }
+    return "";
 }
 
-function numberAsNoun(number) {
+function numberAsNoun(number: number) {
     let hundred = Math.floor((number % 1000) / 100),
         ten = Math.floor((number % 100) / 10),
         one = number % 10,
@@ -94,8 +94,8 @@ export const tlhLocale: LocaleSpec = {
       sameElse: "L"
     },
     relativeTime: {
-      future: translateFuture,
-      past: translatePast,
+      future: translateFuture as unknown as string,
+      past: translatePast as unknown as string,
       s: "puS lup",
       ss: translate,
       m: "wa’ tup",

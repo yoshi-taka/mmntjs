@@ -1,7 +1,6 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
-function relativeTimeWithPlural(number, withoutSuffix, key) {
+function relativeTimeWithPlural(number: number, withoutSuffix: boolean, key: string) {
     let format = {
             ss: 'secunde',
             mm: 'minute',
@@ -15,7 +14,7 @@ function relativeTimeWithPlural(number, withoutSuffix, key) {
     if (number % 100 >= 20 || (number >= 100 && number % 100 === 0)) {
         separator = ' de ';
     }
-    return number + separator + format[key];
+    return number + separator + (format as Record<string, string>)[key];
 }
 
 export const roLocale: LocaleSpec = {

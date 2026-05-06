@@ -1,7 +1,6 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
-function translate(number, withoutSuffix, key, _isFuture) {
+function translate(number: number, withoutSuffix: boolean, key: string, _isFuture: boolean) {
     switch (key) {
         case 's':
             return withoutSuffix ? 'хэдхэн секунд' : 'хэдхэн секундын';
@@ -23,7 +22,7 @@ function translate(number, withoutSuffix, key, _isFuture) {
         case 'yy':
             return number + (withoutSuffix ? ' жил' : ' жилийн');
         default:
-            return number;
+            return `${number}`;
     }
 }
 
@@ -48,7 +47,7 @@ export const mnLocale: LocaleSpec = {
       LLLL: "dddd, YYYY оны MMMMын D HH:mm"
     },
     meridiemParse: /ҮӨ|ҮХ/i,
-    isPM: function (input) {
+    isPM: function(input: string) {
         return input === 'ҮХ';
     },
     meridiem: function (hour, _minute, _isLower) {
@@ -83,14 +82,14 @@ export const mnLocale: LocaleSpec = {
       yy: translate
     },
     dayOfMonthOrdinalParse: /\d{1,2} өдөр/,
-    ordinal: function (number, period) {
+    ordinal: function (number: number, period?: string) {
         switch (period) {
             case 'd':
             case 'D':
             case 'DDD':
                 return `${number  } өдөр`;
             default:
-                return number;
+                return `${number}`;
         }
     }
   };

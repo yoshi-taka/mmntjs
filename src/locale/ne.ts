@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 const symbolMap = {
@@ -49,13 +48,13 @@ export const neLocale: LocaleSpec = {
       LLLL: "dddd, D MMMM YYYY, Aको h:mm बजे"
     },
     preparse: function (string) {
-        return string.replaceAll(/[१२३४५६७८९०]/g, function (match) {
-            return numberMap[match];
+        return string.replaceAll(/[१२३४५६७८९०]/g, function (match: string) {
+            return (numberMap as Record<string, string>)[match];
         });
     },
     postformat: function (string) {
-        return string.replaceAll(/\d/g, function (match) {
-            return symbolMap[match];
+        return string.replaceAll(/\d/g, function (match: string) {
+            return (symbolMap as Record<string, string>)[match];
         });
     },
     meridiemParse: /राति|बिहान|दिउँसो|साँझ/,
@@ -72,6 +71,7 @@ export const neLocale: LocaleSpec = {
         } else if (meridiem === 'साँझ') {
             return hour + 12;
         }
+        return 0;
     },
     meridiem: function (hour, _minute, _isLower) {
         if (hour < 3) {

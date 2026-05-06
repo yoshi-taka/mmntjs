@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 export const kaLocale: LocaleSpec = {
@@ -34,15 +33,15 @@ export const kaLocale: LocaleSpec = {
       sameElse: "L"
     },
     relativeTime: {
-      future: function (s) {
+      future: function (s: string) {
             return s.replace(
                 /(წამ|წუთ|საათ|წელ|დღ|თვ)(ი|ე)/,
-                function ($0, $1, $2) {
+                function ($0: string, $1: string, $2: string) {
                     return $2 === 'ი' ? `${$1  }ში` : `${$1 + $2  }ში`;
                 }
             );
-        },
-      past: function (s) {
+        } as unknown as string,
+      past: function (s: string) {
             if (/(წამი|წუთი|საათი|დღე|თვე)/.test(s)) {
                 return s.replace(/(ი|ე)$/, 'ის წინ');
             }
@@ -50,7 +49,7 @@ export const kaLocale: LocaleSpec = {
                 return s.replace(/წელი$/, 'წლის წინ');
             }
             return s;
-        },
+        } as unknown as string,
       s: "რამდენიმე წამი",
       ss: "%d წამი",
       m: "წუთი",
@@ -65,9 +64,9 @@ export const kaLocale: LocaleSpec = {
       yy: "%d წელი"
     },
     dayOfMonthOrdinalParse: /0|1-ლი|მე-\d{1,2}|\d{1,2}-ე/,
-    ordinal: function (number) {
+    ordinal: function (number: number, period?: string) {
         if (number === 0) {
-            return number;
+            return `${number}`;
         }
         if (number === 1) {
             return `${number  }-ლი`;

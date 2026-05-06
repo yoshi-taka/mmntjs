@@ -1,4 +1,4 @@
-// @ts-expect-error Locale property shapes are intentionally loose
+import type { Moment } from "../moment_fixed";
 import type { LocaleSpec } from "./en";
 
 export const zh_cnLocale: LocaleSpec = {
@@ -56,7 +56,7 @@ export const zh_cnLocale: LocaleSpec = {
     calendar: {
       sameDay: "[今天]LT",
       nextDay: "[明天]LT",
-      nextWeek: function (now) {
+      nextWeek: function (this: Moment, now: Moment) {
             if (now.week() !== this.week()) {
                 return '[下]dddLT';
             } else {
@@ -64,7 +64,7 @@ export const zh_cnLocale: LocaleSpec = {
             }
         },
       lastDay: "[昨天]LT",
-      lastWeek: function (now) {
+      lastWeek: function (this: Moment, now: Moment) {
             if (this.week() !== now.week()) {
                 return '[上]dddLT';
             } else {
@@ -74,7 +74,7 @@ export const zh_cnLocale: LocaleSpec = {
       sameElse: "L"
     },
     dayOfMonthOrdinalParse: /\d{1,2}(日|月|周)/,
-    ordinal: function (number, period) {
+    ordinal: function (number: number, period?: string) {
         switch (period) {
             case 'd':
             case 'D':
@@ -86,7 +86,7 @@ export const zh_cnLocale: LocaleSpec = {
             case 'W':
                 return `${number  }周`;
             default:
-                return number;
+                return `${number}`;
         }
     },
     relativeTime: {

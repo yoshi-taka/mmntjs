@@ -1,7 +1,7 @@
-// @ts-expect-error Locale property shapes are intentionally loose
+import type { Moment } from "../moment_fixed";
 import type { LocaleSpec } from "./en";
 
-function translate(number, withoutSuffix, key) {
+function translate(number: number, withoutSuffix: boolean, key: string) {
     let result = `${number  } `;
     switch (key) {
         case 'ss':
@@ -61,6 +61,7 @@ function translate(number, withoutSuffix, key) {
             }
             return result;
     }
+    return "";
 }
 
 export const hrLocale: LocaleSpec = {
@@ -93,7 +94,7 @@ export const hrLocale: LocaleSpec = {
     calendar: {
       sameDay: "[danas u] LT",
       nextDay: "[sutra u] LT",
-      nextWeek: function () {
+      nextWeek: function (this: Moment) {
             switch (this.day()) {
                 case 0:
                     return '[u] [nedjelju] [u] LT';
@@ -107,9 +108,10 @@ export const hrLocale: LocaleSpec = {
                 case 5:
                     return '[u] dddd [u] LT';
             }
+            return "";
         },
       lastDay: "[jučer u] LT",
-      lastWeek: function () {
+      lastWeek: function (this: Moment) {
             switch (this.day()) {
                 case 0:
                     return '[prošlu] [nedjelju] [u] LT';
@@ -123,6 +125,7 @@ export const hrLocale: LocaleSpec = {
                 case 5:
                     return '[prošli] dddd [u] LT';
             }
+            return "";
         },
       sameElse: "L"
     },

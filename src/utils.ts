@@ -23,7 +23,7 @@ export function isDate(input: unknown): input is Date {
 }
 
 export function isMoment(input: unknown): input is { _isAMomentObject: boolean } {
-  return input !== null && input !== undefined && input._isAMomentObject === true;
+  return input?._isAMomentObject === true;
 }
 
 export function isString(input: unknown): input is string {
@@ -55,7 +55,7 @@ export function hasOwnProp(obj: object, key: string): boolean {
 
 export function extend(a: Record<string, unknown>, b: Record<string, unknown>, ...others: Record<string, unknown>[]): Record<string, unknown> {
   for (const source of others) {
-    if (source != null) {
+    if (source) {
       for (const key in source) {
         if (hasOwnProp(source, key)) {
           a[key] = source[key];
@@ -63,7 +63,7 @@ export function extend(a: Record<string, unknown>, b: Record<string, unknown>, .
       }
     }
   }
-  if (b != null) {
+  if (b) {
     for (const key in b) {
       if (hasOwnProp(b, key)) {
         a[key] = b[key];

@@ -3,6 +3,7 @@ import { localeModule } from "../locale-helper";
 import moment from "../../moment";
 import { ruLocale } from "../../src/locale/ru";
 import { defineLocale } from "../../src/locale";
+import type { Moment } from "../../src/moment_fixed"
 
 defineLocale("ru", ruLocale);
 
@@ -14,14 +15,14 @@ test('parse', function (assert) {
                 '_'
             ),
         i;
-    function equalTest(input: unknown, mmm: unknown, monthIdx: unknown) {
+    function equalTest(input: string, mmm: string, monthIdx: number) {
         assert.equal(
             moment(input, mmm).month(),
             monthIdx,
             `${input  } should be month ${  monthIdx + 1}`
         );
     }
-    function equalTestStrict(input: unknown, mmm: unknown, monthIndex: unknown) {
+    function equalTestStrict(input: string, mmm: string, monthIndex: number) {
         assert.equal(
             moment(input, mmm, true).month(),
             monthIndex,
@@ -532,7 +533,7 @@ test('calendar day', function (assert) {
 test('calendar next week', function (assert) {
     let i, m, now;
 
-    function makeFormatNext(d: unknown) {
+    function makeFormatNext(d: Moment) {
         switch (d.day()) {
             case 0:
                 return '[В следующее] dddd, [в] LT';
@@ -547,7 +548,7 @@ test('calendar next week', function (assert) {
         }
     }
 
-    function makeFormatThis(d: unknown) {
+    function makeFormatThis(d: Moment) {
         if (d.day() === 2) {
             return '[Во] dddd, [в] LT';
         } else {
@@ -603,7 +604,7 @@ test('calendar next week', function (assert) {
 test('calendar last week', function (assert) {
     let i, m, now;
 
-    function makeFormatLast(d: unknown) {
+    function makeFormatLast(d: Moment) {
         switch (d.day()) {
             case 0:
                 return '[В прошлое] dddd, [в] LT';
@@ -618,7 +619,7 @@ test('calendar last week', function (assert) {
         }
     }
 
-    function makeFormatThis(d: unknown) {
+    function makeFormatThis(d: Moment) {
         if (d.day() === 2) {
             return '[Во] dddd, [в] LT';
         } else {

@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 const suffixes = {
@@ -66,7 +65,7 @@ export const azLocale: LocaleSpec = {
       yy: "%d il"
     },
     meridiemParse: /gecə|səhər|gündüz|axşam/,
-    isPM: function (input) {
+    isPM: function(input: string) {
         return /^(gündüz|axşam)$/.test(input);
     },
     meridiem: function (hour, _minute, _isLower) {
@@ -81,7 +80,7 @@ export const azLocale: LocaleSpec = {
         }
     },
     dayOfMonthOrdinalParse: /\d{1,2}-(ıncı|inci|nci|üncü|ncı|uncu)/,
-    ordinal: function (number) {
+    ordinal: function (number: number) {
         if (number === 0) {
             // special case for zero
             return `${number  }-ıncı`;
@@ -89,7 +88,7 @@ export const azLocale: LocaleSpec = {
         const a = number % 10,
             b = (number % 100) - a,
             c = number >= 100 ? 100 : null;
-        return number + (suffixes[a] ?? suffixes[b] ?? suffixes[c]);
+        return number + ((suffixes as Record<number, string>)[a] ?? (suffixes as Record<number, string>)[b] ?? (suffixes as Record<number, string>)[c]);
     },
     week: {
       dow: 1,

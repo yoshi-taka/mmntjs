@@ -10,6 +10,7 @@ export interface LocaleSpec {
   monthsShortStrictRegex?: RegExp;
   longMonthsParse?: RegExp[];
   shortMonthsParse?: RegExp[];
+  monthsParseExact?: boolean;
   weekdays?: string[] | ((m: Moment, format?: string) => string[] | string);
   weekdaysShort?: string[] | ((m: Moment, format?: string) => string[]);
   weekdaysMin?: string[] | ((m: Moment, format?: string) => string[]);
@@ -122,7 +123,7 @@ export const enLocale: LocaleSpec = {
   },
 
   isPM(input: string): boolean {
-    return (`${input  }`).toLowerCase().charAt(0) === "p";
+    return String(input).toLowerCase().charAt(0) === "p";
   },
 
   meridiemParse: /[ap]\.?m?\.?/i,

@@ -1,4 +1,4 @@
-// @ts-expect-error Locale property shapes are intentionally loose
+import type { Moment } from "../moment_fixed";
 import type { LocaleSpec } from "./en";
 
 export const mkLocale: LocaleSpec = {
@@ -24,7 +24,7 @@ export const mkLocale: LocaleSpec = {
       nextDay: "[Утре во] LT",
       nextWeek: "[Во] dddd [во] LT",
       lastDay: "[Вчера во] LT",
-      lastWeek: function () {
+      lastWeek: function (this: Moment) {
             switch (this.day()) {
                 case 0:
                 case 3:
@@ -36,6 +36,7 @@ export const mkLocale: LocaleSpec = {
                 case 5:
                     return '[Изминатиот] dddd [во] LT';
             }
+            return "";
         },
       sameElse: "L"
     },
@@ -56,7 +57,7 @@ export const mkLocale: LocaleSpec = {
       yy: "%d години"
     },
     dayOfMonthOrdinalParse: /\d{1,2}-(ев|ен|ти|ви|ри|ми)/,
-    ordinal: function (number) {
+    ordinal: function (number: number, period?: string) {
         const lastDigit = number % 10,
             last2Digits = number % 100;
         if (number === 0) {

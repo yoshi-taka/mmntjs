@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 const suffixes = {
@@ -69,10 +68,10 @@ export const kyLocale: LocaleSpec = {
       yy: "%d жыл"
     },
     dayOfMonthOrdinalParse: /\d{1,2}-(чи|чы|чү|чу)/,
-    ordinal: function (number) {
+    ordinal: function (number: number) {
         const a = number % 10,
             b = number >= 100 ? 100 : null;
-        return number + (suffixes[number] ?? suffixes[a] ?? suffixes[b]);
+        return number + ((suffixes as Record<number, string>)[number] ?? (suffixes as Record<number, string>)[a] ?? (suffixes as Record<number, string>)[b]);
     },
     week: {
       dow: 1,

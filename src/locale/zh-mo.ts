@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 export const zh_moLocale: LocaleSpec = {
@@ -35,6 +34,7 @@ export const zh_moLocale: LocaleSpec = {
         } else if (meridiem === '下午' || meridiem === '晚上') {
             return hour + 12;
         }
+        return 0;
     },
     meridiem: function (hour, minute, _isLower) {
         const hm = hour * 100 + minute;
@@ -61,7 +61,7 @@ export const zh_moLocale: LocaleSpec = {
       sameElse: "L"
     },
     dayOfMonthOrdinalParse: /\d{1,2}(日|月|週)/,
-    ordinal: function (number, period) {
+    ordinal: function (number: number, period?: string) {
         switch (period) {
             case 'd':
             case 'D':
@@ -73,7 +73,7 @@ export const zh_moLocale: LocaleSpec = {
             case 'W':
                 return `${number  }週`;
             default:
-                return number;
+                return `${number}`;
         }
     },
     relativeTime: {

@@ -1,7 +1,7 @@
-// @ts-expect-error Locale property shapes are intentionally loose
+import type { Moment } from "../moment_fixed";
 import type { LocaleSpec } from "./en";
 
-function isFunction(input) {
+function isFunction(input: unknown) {
     return (
         (typeof Function !== 'undefined' && typeof input === 'function') ||
         Object.prototype.toString.call(input) === '[object Function]'
@@ -41,8 +41,8 @@ export const elLocale: LocaleSpec = {
             return isLower ? 'πμ' : 'ΠΜ';
         }
     },
-    isPM: function (input) {
-        return (`${input  }`).toLowerCase()[0] === 'μ';
+    isPM: function(input: string) {
+        return String(input).toLowerCase()[0] === 'μ';
     },
     meridiemParse: /[ΠΜ]\.?Μ?\.?/i,
     longDateFormat: {
@@ -58,7 +58,7 @@ export const elLocale: LocaleSpec = {
       nextDay: "[Αύριο {}] LT",
       nextWeek: "dddd [{}] LT",
       lastDay: "[Χθες {}] LT",
-      lastWeek: function () {
+      lastWeek: function (this: Moment) {
             switch (this.day()) {
                 case 6:
                     return '[το προηγούμενο] dddd [{}] LT';
@@ -68,14 +68,14 @@ export const elLocale: LocaleSpec = {
         },
       sameElse: "L"
     },
-    calendar: function (key, mom) {
+    calendar: function (key: string, mom: Moment) {
         let output = this._calendarEl[key],
-            hours = mom && mom.hours();
+            hours = mom?.hours();
         if (isFunction(output)) {
             output = output.apply(mom);
         }
         return output.replace('{}', hours % 12 === 1 ? 'στη' : 'στις');
-    },
+    } as unknown as Record<string, string | ((this: Moment, ref: Moment) => string)>,
     relativeTime: {
       future: "σε %s",
       past: "%s πριν",

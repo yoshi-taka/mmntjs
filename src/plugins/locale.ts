@@ -15,7 +15,7 @@ import type { LocaleSpec } from "../locale/en";
 import { moment } from "../core/factory";
 
 export function registerLocaleApi(): void {
-  const momentRecord = moment as Record<string, unknown>;
+  const momentRecord = moment as unknown as Record<string, unknown>;
 
   momentRecord.locale = function (locale?: string | string[], ...args: unknown[]): string | Locale {
     if (locale === undefined) {return getCurrentLocale();}

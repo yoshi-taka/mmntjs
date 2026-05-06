@@ -5,11 +5,11 @@ import { enLocale } from "./locale/en";
 import { buildRenderFns, lowerVariant, type RenderFn } from "./format-tokens";
 
 let currentLocaleName = "en";
-const locales: Record<string, LocaleSpec> = {
+const locales: Record<string, LocaleSpec | undefined> = {
   en: enLocale,
 };
 export const _localeCache = new Map<string, Locale>();
-const originalLocales: Record<string, LocaleSpec> = {};
+const originalLocales: Record<string, LocaleSpec | undefined> = {};
 
 function hasOwn(obj: object, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(obj, key);
@@ -42,7 +42,7 @@ function resolveLocaleConfig(locale: string): LocaleSpec {
   const config = locales[locale];
   const baseEn = { ...enLocale };
   if (!config) {
-    if (locale === "en") {return { ...(locales["en"] || enLocale) };}
+    if (locale === "en") {return { ...(locales.en ?? enLocale) };}
     const parts = locale.split("-");
     if (parts.length > 1) {
       const parentKey = parts.slice(0, -1).join("-");
@@ -308,7 +308,7 @@ export class Locale {
     if (enLocale.isPM) {
       return enLocale.isPM(input);
     }
-    return (`${input  }`).toLowerCase().charAt(0) === "p";
+    return String(input).toLowerCase().charAt(0) === "p";
   }
 
   get _longDateFormat(): Record<string, string> {
@@ -399,7 +399,7 @@ export class Locale {
         return m.format(entry);
       }
     }
-    const sameElseEntry = cal["sameElse"];
+    const sameElseEntry = cal.sameElse;
     if (sameElseEntry !== undefined) {
       if (isFunction(sameElseEntry)) {
         const fmt = sameElseEntry.call(m, ref);
@@ -423,13 +423,13 @@ export class Locale {
 
   firstDayOfWeek(): number {
     const week = this._config.week;
-    if (week && week.dow !== undefined) {return week.dow;}
+    if (week?.dow !== undefined) {return week.dow;}
     return 0;
   }
 
   firstDayOfYear(): number {
     const week = this._config.week;
-    if (week && week.doy !== undefined) {return week.doy;}
+    if (week?.doy !== undefined) {return week.doy;}
     return 6;
   }
 
@@ -556,9 +556,9 @@ function findBestLocaleName(locale: string): string | null {
 export { findBestLocaleName as _findBestLocaleName };
 
 export function getLocale(locale?: string | { _locale?: { _abbr?: string }; _l?: string }): Locale {
-  if (locale && locale._locale && locale._locale._abbr) {
+  if (locale?._locale?._abbr) {
     locale = locale._locale._abbr;
-  } else if (locale && locale._l) {
+  } else if (locale?._l) {
     locale = locale._l;
   }
   const key = locale ?? currentLocaleName;

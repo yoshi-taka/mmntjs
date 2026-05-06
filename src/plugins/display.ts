@@ -2,7 +2,7 @@ import { Moment, setRelTimeRounding, setRelTimeThreshold } from "../moment_fixed
 import { moment } from "../core/factory";
 
 export function registerDisplayApi(): void {
-  const momentRecord = moment as Record<string, unknown>;
+  const momentRecord = moment as unknown as Record<string, unknown>;
 
   momentRecord.relativeTimeRounding = function (fn?: Function | boolean): Function | boolean {
     return setRelTimeRounding(fn as Function | boolean);

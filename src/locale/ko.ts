@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 export const koLocale: LocaleSpec = {
@@ -46,7 +45,7 @@ export const koLocale: LocaleSpec = {
       yy: "%d년"
     },
     dayOfMonthOrdinalParse: /\d{1,2}(일|월|주)/,
-    ordinal: function (number, period) {
+    ordinal: function (number: number, period?: string) {
         switch (period) {
             case 'd':
             case 'D':
@@ -58,7 +57,7 @@ export const koLocale: LocaleSpec = {
             case 'W':
                 return `${number  }주`;
             default:
-                return number;
+                return `${number}`;
         }
     },
     meridiemParse: /오전|오후/,

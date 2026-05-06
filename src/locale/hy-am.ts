@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 export const hy_amLocale: LocaleSpec = {
@@ -53,7 +52,7 @@ export const hy_amLocale: LocaleSpec = {
       yy: "%d տարի"
     },
     meridiemParse: /գիշերվա|առավոտվա|ցերեկվա|երեկոյան/,
-    isPM: function (input) {
+    isPM: function(input: string) {
         return /^(ցերեկվա|երեկոյան)$/.test(input);
     },
     meridiem: function (hour) {
@@ -68,7 +67,7 @@ export const hy_amLocale: LocaleSpec = {
         }
     },
     dayOfMonthOrdinalParse: /\d{1,2}|\d{1,2}-(ին|րդ)/,
-    ordinal: function (number, period) {
+    ordinal: function (number: number, period?: string) {
         switch (period) {
             case 'DDD':
             case 'w':
@@ -79,7 +78,7 @@ export const hy_amLocale: LocaleSpec = {
                 }
                 return `${number  }-րդ`;
             default:
-                return number;
+                return `${number}`;
         }
     },
     week: {

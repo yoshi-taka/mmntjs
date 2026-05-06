@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 export const tl_phLocale: LocaleSpec = {
@@ -44,8 +43,8 @@ export const tl_phLocale: LocaleSpec = {
       yy: "%d taon"
     },
     dayOfMonthOrdinalParse: /\d{1,2}/,
-    ordinal: function (number) {
-        return number;
+    ordinal: function (number: number, period?: string) {
+        return `${number}`;
     },
     week: {
       dow: 1,

@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 export const thLocale: LocaleSpec = {
@@ -22,7 +21,7 @@ export const thLocale: LocaleSpec = {
       LLLL: "วันddddที่ D MMMM YYYY เวลา H:mm"
     },
     meridiemParse: /ก่อนเที่ยง|หลังเที่ยง/,
-    isPM: function (input) {
+    isPM: function(input: string) {
         return input === 'หลังเที่ยง';
     },
     meridiem: function (hour, _minute, _isLower) {

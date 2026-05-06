@@ -1,4 +1,4 @@
-// @ts-expect-error Locale property shapes are intentionally loose
+import type { Moment } from "../moment_fixed";
 import type { LocaleSpec } from "./en";
 
 const translator = {
@@ -13,15 +13,15 @@ const translator = {
         MM: ['mjesec', 'mjeseca', 'mjeseci'],
         yy: ['godina', 'godine', 'godina'],
     },
-    correctGrammaticalCase: function (number, wordKey) {
+    correctGrammaticalCase: function (number: number, wordKey: string) {
         return number === 1
             ? wordKey[0]
             : number >= 2 && number <= 4
               ? wordKey[1]
               : wordKey[2];
     },
-    translate: function (number, withoutSuffix, key) {
-        const wordKey = translator.words[key];
+    translate: function (number: number, withoutSuffix: boolean, key: string) {
+        const wordKey = (translator.words as Record<string, string[]>)[key];
         if (key.length === 1) {
             return withoutSuffix ? wordKey[0] : wordKey[1];
         } else {
@@ -57,7 +57,7 @@ export const meLocale: LocaleSpec = {
     calendar: {
       sameDay: "[danas u] LT",
       nextDay: "[sjutra u] LT",
-      nextWeek: function () {
+      nextWeek: function (this: Moment) {
             switch (this.day()) {
                 case 0:
                     return '[u] [nedjelju] [u] LT';
@@ -71,9 +71,10 @@ export const meLocale: LocaleSpec = {
                 case 5:
                     return '[u] dddd [u] LT';
             }
+            return "";
         },
       lastDay: "[juče u] LT",
-      lastWeek: function () {
+      lastWeek: function (this: Moment) {
             const lastWeekDays = [
                 '[prošle] [nedjelje] [u] LT',
                 '[prošlog] [ponedjeljka] [u] LT',

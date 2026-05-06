@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 export const cvLocale: LocaleSpec = {
@@ -28,14 +27,14 @@ export const cvLocale: LocaleSpec = {
       sameElse: "L"
     },
     relativeTime: {
-      future: function (output) {
+      future: function (output: string) {
             const affix = /сехет$/i.exec(output)
                 ? 'рен'
                 : /ҫул$/i.exec(output)
                   ? 'тан'
                   : 'ран';
             return output + affix;
-        },
+        } as unknown as string,
       past: "%s каялла",
       s: "пӗр-ик ҫеккунт",
       ss: "%d ҫеккунт",

@@ -13,9 +13,6 @@ import {
   isArray,
 } from "../utils";
 import {
-  Locale,
-} from "../locale";
-import {
   parseTwoDigitYear as parseTwoDigitYearInternal,
   setParseTwoDigitYear,
 } from "../parse";
@@ -28,15 +25,15 @@ import {
 import { normalizeUnits as normUnits } from "../units";
 
 export function registerCoreApi(): void {
-  const momentRecord = moment as Record<string, unknown>;
+  const momentRecord = moment as unknown as Record<string, unknown>;
 
   momentRecord.duration = function (input?: unknown, unit?: string): Duration {
     return new Duration(input, unit);
   };
-  (momentRecord.duration as Record<string, unknown>).invalid = function (): Duration {
+  (momentRecord.duration as unknown as Record<string, unknown>).invalid = function (): Duration {
     return Duration.invalid();
   };
-  (momentRecord.duration as Record<string, unknown>).fn = Duration.prototype;
+  (momentRecord.duration as unknown as Record<string, unknown>).fn = Duration.prototype;
   momentRecord.fn = Moment.prototype;
   momentRecord.prototype = Moment.prototype;
 
@@ -131,7 +128,7 @@ export function registerCoreApi(): void {
     m._t = m._d.getTime();
     m._isUTC = true;
     m._offset = 0;
-    (m as Record<string, unknown>)._refreshFields();
+    (m as unknown as Record<string, unknown>)._refreshFields();
     return m;
   };
   momentRecord.parseZone = function (input?: unknown, format?: unknown, strict?: boolean): Moment {

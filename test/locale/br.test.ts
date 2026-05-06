@@ -16,7 +16,7 @@ test('parse', function (assert) {
         i,
         monthsWithRegularQuoteMark = ["C'hwevrer", "C'hwe"];
 
-    function equalTest(input: unknown, mmm: unknown, monthIdx: unknown) {
+    function equalTest(input: string, mmm: string, monthIdx: number) {
         assert.equal(
             moment(input, mmm).month(),
             monthIdx,
@@ -24,7 +24,7 @@ test('parse', function (assert) {
         );
     }
 
-    function equalTestStrict(input: unknown, mmm: unknown, monthIndex: unknown) {
+    function equalTestStrict(input: string, mmm: string, monthIndex: number) {
         assert.equal(
             moment(input, mmm, true).month(),
             monthIndex,

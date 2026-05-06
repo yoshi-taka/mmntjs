@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 export const viLocale: LocaleSpec = {
@@ -16,7 +15,7 @@ export const viLocale: LocaleSpec = {
     weekdaysMin: 'CN_T2_T3_T4_T5_T6_T7'.split('_'),
     weekdaysParseExact: true,
     meridiemParse: /sa|ch/i,
-    isPM: function (input) {
+    isPM: function(input: string) {
         return /^ch$/i.test(input);
     },
     meridiem: function (hours, minutes, isLower) {
@@ -65,8 +64,8 @@ export const viLocale: LocaleSpec = {
       yy: "%d năm"
     },
     dayOfMonthOrdinalParse: /\d{1,2}/,
-    ordinal: function (number) {
-        return number;
+    ordinal: function (number: number, period?: string) {
+        return `${number}`;
     },
     week: {
       dow: 1,

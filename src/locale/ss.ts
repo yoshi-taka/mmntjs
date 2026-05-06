@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 export const ssLocale: LocaleSpec = {
@@ -70,6 +69,7 @@ export const ssLocale: LocaleSpec = {
             }
             return hour + 12;
         }
+        return 0;
     },
     dayOfMonthOrdinalParse: /\d{1,2}/,
     ordinal: "%d",

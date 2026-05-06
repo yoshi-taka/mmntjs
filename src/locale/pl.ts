@@ -1,4 +1,4 @@
-// @ts-expect-error Locale property shapes are intentionally loose
+import type { Moment } from "../moment_fixed";
 import type { LocaleSpec } from "./en";
 
 const monthsNominative =
@@ -24,11 +24,11 @@ const monthsNominative =
         /^gru/i,
     ];
 
-function plural(n) {
+function plural(n: number) {
     return n % 10 < 5 && n % 10 > 1 && ~~(n / 10) % 10 !== 1;
 }
 
-function translate(number, withoutSuffix, key) {
+function translate(number: number, withoutSuffix: boolean, key: string) {
     const result = `${number  } `;
     switch (key) {
         case 'ss':
@@ -48,6 +48,7 @@ function translate(number, withoutSuffix, key) {
         case 'yy':
             return result + (plural(number) ? 'lata' : 'lat');
     }
+    return "";
 }
 
 export const plLocale: LocaleSpec = {
@@ -78,7 +79,7 @@ export const plLocale: LocaleSpec = {
     calendar: {
       sameDay: "[Dziś o] LT",
       nextDay: "[Jutro o] LT",
-      nextWeek: function () {
+      nextWeek: function (this: Moment) {
             switch (this.day()) {
                 case 0:
                     return '[W niedzielę o] LT';
@@ -97,7 +98,7 @@ export const plLocale: LocaleSpec = {
             }
         },
       lastDay: "[Wczoraj o] LT",
-      lastWeek: function () {
+      lastWeek: function (this: Moment) {
             switch (this.day()) {
                 case 0:
                     return '[W zeszłą niedzielę o] LT';

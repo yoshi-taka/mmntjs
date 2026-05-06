@@ -82,7 +82,7 @@ describe('moment2 specific', () => {
     moment.now = () => fixed
     const m = moment() as Moment
     expect(m.valueOf()).toBe(fixed)
-    moment.now = undefined as unknown
+    moment.now = undefined as unknown as typeof moment.now
     const after = moment() as Moment
     expect(Math.abs(Date.now() - after.valueOf())).toBeLessThan(100)
   })
@@ -96,7 +96,7 @@ describe('moment2 specific', () => {
     calls.length = 0
     m.year(2025)
     expect(calls.length).toBeGreaterThanOrEqual(1)
-    moment.updateOffset = undefined as unknown
+    moment.updateOffset = undefined as unknown as typeof moment.updateOffset
   })
 
   test('ISO string without timezone is parsed as local time (matching moment.js)', () => {

@@ -1,7 +1,7 @@
 // @ts-expect-error TypeScript errors are intentional for compatibility
 const gc = globalThis.Bun?.gc ?? globalThis.gc;
 
-async function measure(label, importPath) {
+async function measure(label: string, importPath: string) {
   gc(true); gc(true);
   const before = process.memoryUsage();
   await import(importPath);
@@ -25,9 +25,11 @@ console.log("│ Metric              │ moment   │ moment2  │ %      │");
 console.log("├─────────────────────┼──────────┼──────────┼────────┤");
 
 for (const [label, key] of [["heapUsed", "heap"], ["rss", "rss"], ["external", "external"]]) {
-  const v1 = `${((f1[key]) / 1024).toFixed(0).padStart(6)  }KB`;
-  const v2 = `${((f2[key]) / 1024).toFixed(0).padStart(6)  }KB`;
-  const pct = `${(f2[key] / f1[key] * 100).toFixed(0).padStart(5)  }%`;
+  const f1r = f1 as Record<string, number>;
+  const f2r = f2 as Record<string, number>;
+  const v1 = `${((f1r[key]) / 1024).toFixed(0).padStart(6)  }KB`;
+  const v2 = `${((f2r[key]) / 1024).toFixed(0).padStart(6)  }KB`;
+  const pct = `${(f2r[key] / f1r[key] * 100).toFixed(0).padStart(5)  }%`;
   console.log(`│ ${label.padEnd(19)} │ ${v1} │ ${v2} │ ${pct} │`);
 }
 console.log("└─────────────────────┴──────────┴──────────┴────────┘");

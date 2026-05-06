@@ -1,7 +1,7 @@
-// @ts-expect-error Locale property shapes are intentionally loose
+import type { Moment } from "../moment_fixed";
 import type { LocaleSpec } from "./en";
 
-function processRelativeTime(number, withoutSuffix, key, isFuture) {
+function processRelativeTime(number: number, withoutSuffix: boolean, key: string, isFuture: boolean) {
     switch (key) {
         case 'm':
             return withoutSuffix
@@ -10,9 +10,10 @@ function processRelativeTime(number, withoutSuffix, key, isFuture) {
                   ? 'jednu minutu'
                   : 'jedne minute';
     }
+    return "";
 }
 
-function translate(number, withoutSuffix, key) {
+function translate(number: number, withoutSuffix: boolean, key: string) {
     let result = `${number  } `;
     switch (key) {
         case 'ss':
@@ -70,6 +71,7 @@ function translate(number, withoutSuffix, key) {
             }
             return result;
     }
+    return "";
 }
 
 export const bsLocale: LocaleSpec = {
@@ -97,7 +99,7 @@ export const bsLocale: LocaleSpec = {
     calendar: {
       sameDay: "[danas u] LT",
       nextDay: "[sutra u] LT",
-      nextWeek: function () {
+      nextWeek: function (this: Moment) {
             switch (this.day()) {
                 case 0:
                     return '[u] [nedjelju] [u] LT';
@@ -111,9 +113,10 @@ export const bsLocale: LocaleSpec = {
                 case 5:
                     return '[u] dddd [u] LT';
             }
+            return "";
         },
       lastDay: "[jučer u] LT",
-      lastWeek: function () {
+      lastWeek: function (this: Moment) {
             switch (this.day()) {
                 case 0:
                 case 3:
@@ -126,6 +129,7 @@ export const bsLocale: LocaleSpec = {
                 case 5:
                     return '[prošli] dddd [u] LT';
             }
+            return "";
         },
       sameElse: "L"
     },

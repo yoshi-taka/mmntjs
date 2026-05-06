@@ -1,4 +1,3 @@
-// @ts-expect-error Locale property shapes are intentionally loose
 import type { LocaleSpec } from "./en";
 
 const units = {
@@ -15,7 +14,7 @@ const units = {
     yy: 'gada_gadiem_gads_gadi'.split('_'),
 };
 
-function format(forms, number, withoutSuffix) {
+function format(forms: string[], number: number, withoutSuffix: boolean) {
     if (withoutSuffix) {
         // E.g. "21 minūte", "3 minūtes".
         return number % 10 === 1 && number % 100 !== 11 ? forms[2] : forms[3];
@@ -26,15 +25,15 @@ function format(forms, number, withoutSuffix) {
     }
 }
 
-function relativeTimeWithPlural(number, withoutSuffix, key) {
-    return `${number  } ${  format(units[key], number, withoutSuffix)}`;
+function relativeTimeWithPlural(number: number, withoutSuffix: boolean, key: string) {
+    return `${number  } ${  format((units as Record<string, string[]>)[key], number, withoutSuffix)}`;
 }
 
-function relativeTimeWithSingular(number, withoutSuffix, key) {
-    return format(units[key], number, withoutSuffix);
+function relativeTimeWithSingular(number: number, withoutSuffix: boolean, key: string) {
+    return format((units as Record<string, string[]>)[key], number, withoutSuffix);
 }
 
-function relativeSeconds(number, withoutSuffix) {
+function relativeSeconds(number: number, withoutSuffix: boolean) {
     return withoutSuffix ? 'dažas sekundes' : 'dažām sekundēm';
 }
 

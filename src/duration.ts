@@ -141,10 +141,10 @@ export class Duration {
 
     // If called from moment(), override with the moment's locale
     if (input && typeof input === "object" && (input as Record<string, unknown>)._isAMomentObject) {
-      this._locale = (input as Record<string, unknown>)._l ?? this._locale;
+      this._locale = ((input as Record<string, unknown>)._l as string) ?? this._locale;
     }
 
-    if (input === undefined || input === null) {
+    if (input == null) {
       this._milliseconds = 0;
       this._days = 0;
       this._months = 0;
@@ -287,7 +287,7 @@ export class Duration {
     if (hhmmMatch) {
       const hours = parseInt(hhmmMatch[1], 10);
       const minutes = parseInt(hhmmMatch[2], 10);
-      const seconds = hhmmMatch[3] !== undefined ? parseFloat(hhmmMatch[3]) : 0;
+      const seconds = parseFloat(hhmmMatch[3] || "0");
       this._milliseconds = Math.round(hours * 3600000 + minutes * 60000 + seconds * 1000);
       return;
     }
@@ -304,7 +304,7 @@ export class Duration {
     this._isValid = false;
   }
 
-  static invalid(): Duration {
+  static invalid(): this {
     const d = new Duration(0);
     d._isValid = false;
     d._milliseconds = NaN;
@@ -362,7 +362,7 @@ export class Duration {
     for (const key in obj) {
       if (hasOwnProp(obj, key)) {
         const aliased = unitAliasToKey[key];
-        if (aliased && unitIndexMap[aliased] !== undefined) {
+        if (unitIndexMap[aliased] !== undefined) {
           const idx = unitIndexMap[aliased];
           if (smallestSeen < 0 || idx > smallestSeen) {smallestSeen = idx;}
         }
@@ -554,7 +554,7 @@ export class Duration {
     return this.as("years");
   }
 
-  milliseconds(n?: number): number | Duration {
+  milliseconds(n?: number): number | this {
     if (!this._isValid) {return NaN;}
     if (n !== undefined) {
       this._milliseconds = n;
@@ -564,7 +564,7 @@ export class Duration {
     return this._data.milliseconds;
   }
 
-  seconds(n?: number): number | Duration {
+  seconds(n?: number): number | this {
     if (!this._isValid) {return NaN;}
     if (n !== undefined) {
       const diff = n - this._data.seconds;
@@ -575,7 +575,7 @@ export class Duration {
     return this._data.seconds;
   }
 
-  minutes(n?: number): number | Duration {
+  minutes(n?: number): number | this {
     if (!this._isValid) {return NaN;}
     if (n !== undefined) {
       const diff = n - this._data.minutes;
@@ -586,7 +586,7 @@ export class Duration {
     return this._data.minutes;
   }
 
-  hours(n?: number): number | Duration {
+  hours(n?: number): number | this {
     if (!this._isValid) {return NaN;}
     if (n !== undefined) {
       const diff = n - this._data.hours;
@@ -597,7 +597,7 @@ export class Duration {
     return this._data.hours;
   }
 
-  days(n?: number): number | Duration {
+  days(n?: number): number | this {
     if (!this._isValid) {return NaN;}
     if (n !== undefined) {
       const diff = n - this._data.days;
@@ -608,7 +608,7 @@ export class Duration {
     return this._data.days;
   }
 
-  months(n?: number): number | Duration {
+  months(n?: number): number | this {
     if (!this._isValid) {return NaN;}
     if (n !== undefined) {
       const diff = n - this._data.months;
@@ -619,7 +619,7 @@ export class Duration {
     return this._data.months;
   }
 
-  years(n?: number): number | Duration {
+  years(n?: number): number | this {
     if (!this._isValid) {return NaN;}
     if (n !== undefined) {
       const diff = n - this._data.years;
@@ -630,7 +630,7 @@ export class Duration {
     return this._data.years;
   }
 
-  weeks(n?: number): number | Duration {
+  weeks(n?: number): number | this {
     if (!this._isValid) {return NaN;}
     if (n !== undefined) {
       const diff = n - absFloor(this._data.days / 7);
@@ -641,7 +641,7 @@ export class Duration {
     return absFloor(this._data.days / 7);
   }
 
-  add(duration: Duration | number | string | DurationInput, unit?: string): Duration {
+  add(duration: Duration | number | string | DurationInput, unit?: string): this {
     let other: Duration;
     if (duration instanceof Duration) {
       other = duration;
@@ -664,7 +664,7 @@ export class Duration {
     return this;
   }
 
-  subtract(duration: Duration | number | string | DurationInput, unit?: string): Duration {
+  subtract(duration: Duration | number | string | DurationInput, unit?: string): this {
     let other: Duration;
     if (duration instanceof Duration) {
       other = duration;
@@ -687,7 +687,7 @@ export class Duration {
     return this;
   }
 
-  abs(): Duration {
+  abs(): this {
     this._milliseconds = Math.abs(this._milliseconds);
     this._days = Math.abs(this._days);
     this._months = Math.abs(this._months);
@@ -695,7 +695,7 @@ export class Duration {
     return this;
   }
 
-  clone(): Duration {
+  clone(): this {
     const d = new Duration();
     d._milliseconds = this._milliseconds;
     d._days = this._days;
@@ -703,19 +703,19 @@ export class Duration {
     d._locale = this._locale;
     d._isValid = this._isValid;
     d._bubble();
-    return d;
+    return d as this;
   }
 
   humanize(
-    withSuffix?: boolean | Record<string, number>,
-    thresholdsArg?: Record<string, number>,
+    withSuffix?: boolean | Partial<Record<string, number>>,
+    thresholdsArg?: Partial<Record<string, number>>,
   ): string {
     if (!this._isValid) {
       const locale = getLocale(this._locale);
       return locale.invalidDate();
     }
 
-    let thresholds: Record<string, number> | undefined;
+    let thresholds: Partial<Record<string, number>> | undefined;
 
     if (typeof withSuffix === "object") {
       thresholds = withSuffix;
@@ -730,13 +730,13 @@ export class Duration {
     const ms = this.valueOf();
 
     const thresh = thresholds ?? {};
-    const sThresh = thresh.s ?? (getRelTimeThreshold("s") as number) ?? 45;
-    const ssThresh = thresh.ss ?? (getRelTimeThreshold("ss") as number) ?? 44;
-    const mThresh = thresh.m ?? (getRelTimeThreshold("m") as number) ?? 45;
-    const hThresh = thresh.h ?? (getRelTimeThreshold("h") as number) ?? 22;
-    const dThresh = thresh.d ?? (getRelTimeThreshold("d") as number) ?? 26;
-    const wThresh = thresh.w ?? (getRelTimeThreshold("w") as number) ?? 0;
-    const MThresh = thresh.M ?? (getRelTimeThreshold("M") as number) ?? 11;
+    const sThresh = thresh.s ?? getRelTimeThreshold("s") ?? 45;
+    const ssThresh = thresh.ss ?? getRelTimeThreshold("ss") ?? 44;
+    const mThresh = thresh.m ?? getRelTimeThreshold("m") ?? 45;
+    const hThresh = thresh.h ?? getRelTimeThreshold("h") ?? 22;
+    const dThresh = thresh.d ?? getRelTimeThreshold("d") ?? 26;
+    const wThresh = thresh.w ?? getRelTimeThreshold("w") ?? 0;
+    const MThresh = thresh.M ?? getRelTimeThreshold("M") ?? 11;
 
     const roundFn =
       getRelTimeRounding() === true || !getRelTimeRounding()
@@ -897,7 +897,7 @@ export class Duration {
     return this.as("quarters");
   }
 
-  locale(locale?: string): string | Duration {
+  locale(locale?: string): string | this {
     if (locale) {
       this._locale = locale;
       return this;
@@ -905,7 +905,7 @@ export class Duration {
     return this._locale;
   }
 
-  lang(locale?: string): string | Locale | Duration {
+  lang(locale?: string): string | Locale | this {
     if (locale) {
       this._locale = locale;
       return this;

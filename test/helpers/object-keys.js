@@ -1,17 +1,5 @@
 import hasOwnProp from './has-own-prop';
 
 export default function objectKeys(obj) {
-    if (Object.keys) {
-        return Object.keys(obj);
-    } else {
-        // IE8
-        let res = [],
-            i;
-        for (i in obj) {
-            if (hasOwnProp(obj, i)) {
-                res.push(i);
-            }
-        }
-        return res;
-    }
+    return Object.keys(obj);
 }

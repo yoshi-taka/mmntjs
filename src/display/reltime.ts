@@ -34,11 +34,11 @@ export function setRelTimeThreshold(threshold: string, limit?: number): number |
     return undefined;
   }
   if (limit === undefined) {
-    return relTimeThreshold[threshold];
+    return (relTimeThreshold as Record<string, number | undefined>)[threshold];
   }
-  relTimeThreshold[threshold] = limit;
+  (relTimeThreshold as Record<string, number | undefined>)[threshold] = limit;
   if (threshold === "s") {
     relTimeThreshold.ss = limit - 1;
   }
-  return relTimeThreshold[threshold];
+  return (relTimeThreshold as Record<string, number | undefined>)[threshold];
 }

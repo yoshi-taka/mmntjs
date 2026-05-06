@@ -1,7 +1,7 @@
-// @ts-expect-error Locale property shapes are intentionally loose
+import type { Moment } from "../moment_fixed";
 import type { LocaleSpec } from "./en";
 
-function plural(word, num) {
+function plural(word: string, num: number) {
     const forms = word.split('_');
     return num % 10 === 1 && num % 100 !== 11
         ? forms[0]
@@ -10,7 +10,7 @@ function plural(word, num) {
           : forms[2];
 }
 
-function relativeTimeWithPlural(number, withoutSuffix, key) {
+function relativeTimeWithPlural(number: number, withoutSuffix: boolean, key: string) {
     const format = {
         ss: withoutSuffix ? 'секунда_секунди_секунд' : 'секунду_секунди_секунд',
         mm: withoutSuffix ? 'хвилина_хвилини_хвилин' : 'хвилину_хвилини_хвилин',
@@ -24,12 +24,12 @@ function relativeTimeWithPlural(number, withoutSuffix, key) {
     } else if (key === 'h') {
         return withoutSuffix ? 'година' : 'годину';
     } else {
-        return `${number  } ${  plural(format[key], +number)}`;
+        return `${number  } ${  plural((format as Record<string, string>)[key], +number)}`;
     }
 }
 
-function weekdaysCaseReplace(m, format) {
-    let weekdays = {
+function weekdaysCaseReplace(m: Moment, format: string) {
+    let weekdays: Record<string, string[]> = {
             nominative:
                 'неділя_понеділок_вівторок_середа_четвер_п’ятниця_субота'.split(
                     '_'
@@ -39,19 +39,19 @@ function weekdaysCaseReplace(m, format) {
                     '_'
                 ),
             genitive:
-                'неділі_понеділка_вівторка_середи_четверга_п’ятниці_суботи'.split(
+                'неділі_поне ділка_вівторка_середи_четверга_п’ятниці_суботи'.split(
                     '_'
                 ),
         },
         nounCase;
 
     if (m === true) {
-        return weekdays['nominative']
+        return weekdays.nominative
             .slice(1, 7)
-            .concat(weekdays['nominative'].slice(0, 1));
+            .concat(weekdays.nominative.slice(0, 1));
     }
     if (!m) {
-        return weekdays['nominative'];
+        return weekdays.nominative;
     }
 
     nounCase = /(\[[ВвУу]\]) ?dddd/.test(format)
@@ -62,7 +62,7 @@ function weekdaysCaseReplace(m, format) {
     return weekdays[nounCase][m.day()];
 }
 
-function processHoursFunction(str) {
+function processHoursFunction(str: string) {
     return function () {
         return `${str  }о${  this.hours() === 11 ? 'б' : ''  }] LT`;
     };
@@ -96,7 +96,7 @@ export const ukLocale: LocaleSpec = {
       nextDay: processHoursFunction('[Завтра '),
       lastDay: processHoursFunction('[Вчора '),
       nextWeek: processHoursFunction('[У] dddd ['),
-      lastWeek: function () {
+      lastWeek: function (this: Moment) {
             switch (this.day()) {
                 case 0:
                 case 3:
@@ -108,6 +108,7 @@ export const ukLocale: LocaleSpec = {
                 case 4:
                     return processHoursFunction('[Минулого] dddd [').call(this);
             }
+            return "";
         },
       sameElse: "L"
     },
@@ -128,7 +129,7 @@ export const ukLocale: LocaleSpec = {
       yy: relativeTimeWithPlural
     },
     meridiemParse: /ночі|ранку|дня|вечора/,
-    isPM: function (input) {
+    isPM: function(input: string) {
         return /^(дня|вечора)$/.test(input);
     },
     meridiem: function (hour, _minute, _isLower) {
@@ -143,7 +144,7 @@ export const ukLocale: LocaleSpec = {
         }
     },
     dayOfMonthOrdinalParse: /\d{1,2}-(й|го)/,
-    ordinal: function (number, period) {
+    ordinal: function (number: number, period?: string) {
         switch (period) {
             case 'M':
             case 'd':
@@ -154,7 +155,7 @@ export const ukLocale: LocaleSpec = {
             case 'D':
                 return `${number  }-го`;
             default:
-                return number;
+                return `${number}`;
         }
     },
     week: {

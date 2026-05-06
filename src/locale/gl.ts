@@ -1,4 +1,4 @@
-// @ts-expect-error Locale property shapes are intentionally loose
+import type { Moment } from "../moment_fixed";
 import type { LocaleSpec } from "./en";
 
 export const glLocale: LocaleSpec = {
@@ -22,19 +22,19 @@ export const glLocale: LocaleSpec = {
       LLLL: "dddd, D [de] MMMM [de] YYYY H:mm"
     },
     calendar: {
-      sameDay: function () {
+      sameDay: function (this: Moment) {
             return `[hoxe ${  this.hours() !== 1 ? 'ás' : 'á'  }] LT`;
         },
-      nextDay: function () {
+      nextDay: function (this: Moment) {
             return `[mañá ${  this.hours() !== 1 ? 'ás' : 'á'  }] LT`;
         },
-      nextWeek: function () {
+      nextWeek: function (this: Moment) {
             return `dddd [${  this.hours() !== 1 ? 'ás' : 'a'  }] LT`;
         },
-      lastDay: function () {
+      lastDay: function (this: Moment) {
             return `[onte ${  this.hours() !== 1 ? 'á' : 'a'  }] LT`;
         },
-      lastWeek: function () {
+      lastWeek: function (this: Moment) {
             return (
                 `[o] dddd [pasado ${  this.hours() !== 1 ? 'ás' : 'a'  }] LT`
             );
@@ -42,12 +42,12 @@ export const glLocale: LocaleSpec = {
       sameElse: "L"
     },
     relativeTime: {
-      future: function (str) {
+      future: function (str: string) {
             if (str.indexOf('un') === 0) {
                 return `n${  str}`;
             }
             return `en ${  str}`;
-        },
+        } as unknown as string,
       past: "hai %s",
       s: "uns segundos",
       ss: "%d segundos",
