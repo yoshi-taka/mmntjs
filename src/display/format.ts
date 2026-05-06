@@ -1,4 +1,4 @@
-import type { Moment } from "../moment_fixed";
+import type { FormattableMoment } from "./types";
 import { LruMap } from "../utils";
 import { setCurrentLocale, currentFormat, setCurrentFormat, buildRenderFns, type RenderFn } from "../format-tokens";
 
@@ -8,7 +8,7 @@ const expandLocaleCache = new LruMap<string, string>(500);
 
 const hasLocaleToken = /[Ll]/;
 
-function expandLocaleTokens(m: Moment, format: string): string {
+function expandLocaleTokens(m: FormattableMoment, format: string): string {
   if (!hasLocaleToken.test(format)) {return format;}
 
   const loc = m.localeData();
@@ -74,7 +74,7 @@ function formatOffset(offset: number): string {
   return `${sign + PAD2[Math.floor(abs / 60)]  }:${  PAD2[abs % 60]}`;
 }
 
-function formatCommonEn(m: Moment, format: string): string | undefined {
+function formatCommonEn(m: FormattableMoment, format: string): string | undefined {
   const raw = m as unknown as { _l: string; $y: number; $M: number; $D: number; $H: number; $m: number; $s: number; $ms: number; _isValid: boolean };
   if (raw._l !== "en" || !raw._isValid) {return undefined;}
   if (m._dirty) {(m as unknown as { _ensureFields: () => void })._ensureFields();}
@@ -100,7 +100,7 @@ function formatCommonEn(m: Moment, format: string): string | undefined {
 
 const formatRenderCache = new LruMap<string, RenderFn[]>(500);
 
-export function formatMoment(m: Moment, format: string): string {
+export function formatMoment(m: FormattableMoment, format: string): string {
   const common = formatCommonEn(m, format);
   if (common !== undefined) {return common;}
 

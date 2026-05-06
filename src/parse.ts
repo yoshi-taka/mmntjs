@@ -4,8 +4,7 @@ import {
   escapeRegex,
   LruMap,
 } from "./utils";
-import type { Locale } from "./locale";
-import { getCurrentLocale, getLocale } from "./locale";
+import type { ParseLocale } from "./parse-locale";
 
 export let parseTwoDigitYearFn: ((input: string) => number) | undefined;
 
@@ -75,17 +74,18 @@ const WEEKDAY_NAMES_MAP: Record<string, number> = {
 export function parseString(
   str: string,
   format?: string | string[],
-  locale?: string,
+  locale?: ParseLocale,
   strict?: boolean,
 ): ParsedData | null {
   if (typeof str !== "string") {return null;}
 
-  if (!format && (locale === "en" || (locale === undefined && getCurrentLocale() === "en"))) {
+  if (!format && (locale?._abbr ?? "en") === "en") {
     const fast = parseCommonISO(str);
     if (fast) {return fast as unknown as ParsedData;}
   }
 
-  const locObj = getLocale(locale);
+  const locObj = locale;
+  if (!locObj) {return null;}
 
   if (format) {
     const preparsed = locObj.preparse(str);
@@ -529,7 +529,7 @@ function addCharVariants(names: string[]): string[] {
   return result;
 }
 
-function getMonthExtraNames(loc: Locale): string[] {
+function getMonthExtraNames(loc: ParseLocale): string[] {
   const cfg = (loc as unknown as Record<string, unknown>)._config as Record<string, unknown>;
   const monthsConfig = cfg.months;
   const extra: string[] = [];
@@ -553,7 +553,7 @@ function getMonthExtraNames(loc: Locale): string[] {
   return extra;
 }
 
-function getLocaleMonthsFull(loc: Locale): string[] {
+function getLocaleMonthsFull(loc: ParseLocale): string[] {
   if ((loc as unknown as Record<string, unknown>)._monthsCache !== undefined) {return (loc as unknown as Record<string, unknown>)._monthsCache as string[];}
   const months = loc.months();
   const monthsArr = Array.isArray(months) ? months : [];
@@ -572,7 +572,7 @@ function getLocaleMonthsFull(loc: Locale): string[] {
   return lower;
 }
 
-function getLocaleMonthsFullRegex(loc: Locale, strict?: boolean): RegExp {
+function getLocaleMonthsFullRegex(loc: ParseLocale, strict?: boolean): RegExp {
   if (strict) {
     if ((loc as unknown as Record<string, unknown>)._monthsStrictRegex !== undefined) {return (loc as unknown as Record<string, unknown>)._monthsStrictRegex as RegExp;}
     getLocaleMonthsFull(loc);
@@ -583,7 +583,7 @@ function getLocaleMonthsFullRegex(loc: Locale, strict?: boolean): RegExp {
   return (loc as unknown as Record<string, unknown>)._monthsRegex as RegExp;
 }
 
-function getLocaleMonthsShort(loc: Locale): string[] {
+function getLocaleMonthsShort(loc: ParseLocale): string[] {
   if ((loc as unknown as Record<string, unknown>)._monthsShortCache !== undefined) {return (loc as unknown as Record<string, unknown>)._monthsShortCache as string[];}
   const monthsShort = loc.monthsShort();
   let shortArr = Array.isArray(monthsShort) ? monthsShort : [];
@@ -596,7 +596,7 @@ function getLocaleMonthsShort(loc: Locale): string[] {
   return lower;
 }
 
-function getLocaleMonthsShortRegex(loc: Locale, strict?: boolean): RegExp {
+function getLocaleMonthsShortRegex(loc: ParseLocale, strict?: boolean): RegExp {
   if (strict) {
     if ((loc as unknown as Record<string, unknown>)._monthsShortStrictRegex !== undefined) {return (loc as unknown as Record<string, unknown>)._monthsShortStrictRegex as RegExp;}
     getLocaleMonthsShort(loc);
@@ -616,7 +616,7 @@ function sortByLengthDesc(arr: string[]): string[] {
   return [...arr].sort((a, b) => b.length - a.length);
 }
 
-function getLocaleWeekdaysFull(loc: Locale): string[] {
+function getLocaleWeekdaysFull(loc: ParseLocale): string[] {
   if ((loc as unknown as Record<string, unknown>)._weekdaysCache !== undefined) {return (loc as unknown as Record<string, unknown>)._weekdaysCache as string[];}
   const cfg = (loc as unknown as Record<string, unknown>)._config as Record<string, unknown>;
   let names: string[] = [];
@@ -641,13 +641,13 @@ function getLocaleWeekdaysFull(loc: Locale): string[] {
   return lower;
 }
 
-function getLocaleWeekdaysFullRegex(loc: Locale): RegExp {
+function getLocaleWeekdaysFullRegex(loc: ParseLocale): RegExp {
   if ((loc as unknown as Record<string, unknown>)._weekdaysRegex !== undefined) {return (loc as unknown as Record<string, unknown>)._weekdaysRegex as RegExp;}
   getLocaleWeekdaysFull(loc);
   return (loc as unknown as Record<string, unknown>)._weekdaysRegex as RegExp;
 }
 
-function getLocaleWeekdaysShort(loc: Locale): string[] {
+function getLocaleWeekdaysShort(loc: ParseLocale): string[] {
   if ((loc as unknown as Record<string, unknown>)._weekdaysShortCache !== undefined) {return (loc as unknown as Record<string, unknown>)._weekdaysShortCache as string[];}
   const cfg = (loc as unknown as Record<string, unknown>)._config as Record<string, unknown>;
   let names: string[] = [];
@@ -667,13 +667,13 @@ function getLocaleWeekdaysShort(loc: Locale): string[] {
   return lower;
 }
 
-function getLocaleWeekdaysShortRegex(loc: Locale): RegExp {
+function getLocaleWeekdaysShortRegex(loc: ParseLocale): RegExp {
   if ((loc as unknown as Record<string, unknown>)._weekdaysShortRegex !== undefined) {return (loc as unknown as Record<string, unknown>)._weekdaysShortRegex as RegExp;}
   getLocaleWeekdaysShort(loc);
   return (loc as unknown as Record<string, unknown>)._weekdaysShortRegex as RegExp;
 }
 
-function getLocaleWeekdaysMin(loc: Locale): string[] {
+function getLocaleWeekdaysMin(loc: ParseLocale): string[] {
   if ((loc as unknown as Record<string, unknown>)._weekdaysMinCache !== undefined) {return (loc as unknown as Record<string, unknown>)._weekdaysMinCache as string[];}
   const cfg = (loc as unknown as Record<string, unknown>)._config as Record<string, unknown>;
   let names: string[] = [];
@@ -693,7 +693,7 @@ function getLocaleWeekdaysMin(loc: Locale): string[] {
   return lower;
 }
 
-function getLocaleWeekdaysMinRegex(loc: Locale): RegExp {
+function getLocaleWeekdaysMinRegex(loc: ParseLocale): RegExp {
   if ((loc as unknown as Record<string, unknown>)._weekdaysMinRegex !== undefined) {return (loc as unknown as Record<string, unknown>)._weekdaysMinRegex as RegExp;}
   getLocaleWeekdaysMin(loc);
   return (loc as unknown as Record<string, unknown>)._weekdaysMinRegex as RegExp;
@@ -795,7 +795,7 @@ interface ParseCtx {
   str: string;
   strIdx: number;
   strict: boolean;
-  loc: Locale;
+  loc: ParseLocale;
   result: ParsedData;
   _seenUnusedTokens: Set<string>;
   failed: boolean;
@@ -988,7 +988,7 @@ function hD(ctx: ParseCtx): void {
 
 function hDo(ctx: ParseCtx): void {
   const remaining = ctx.str.slice(ctx.strIdx);
-  const ordinalParse = (ctx.loc._config as Record<string, unknown>).dayOfMonthOrdinalParse;
+  const ordinalParse = (ctx.loc._config).dayOfMonthOrdinalParse;
   let match: RegExpMatchArray | null = null;
   if (ordinalParse instanceof RegExp) {
     match = remaining.match(new RegExp(`^(?:${ordinalParse.source})`));
@@ -1412,13 +1412,13 @@ function hEraYear(ctx: ParseCtx): void {
 
 function hYo(ctx: ParseCtx): void {
   const remaining = ctx.str.slice(ctx.strIdx);
-  const eras = (ctx.loc._config as Record<string, unknown>).eras;
-  const eraOrdinalRegex = eras && (ctx.loc._config as Record<string, unknown>).eraYearOrdinalParse
-    ? (ctx.loc._config as Record<string, unknown>).eraYearOrdinalRegex ?? /(\d+)/
+  const eras = (ctx.loc._config).eras;
+  const eraOrdinalRegex = eras && (ctx.loc._config).eraYearOrdinalParse
+    ? (ctx.loc._config).eraYearOrdinalRegex ?? /(\d+)/
     : /(\d+)/;
   const yoMatch = remaining.match(eraOrdinalRegex as RegExp);
   if (!yoMatch) { ctx.failed = true; return; }
-  const eraParseFn = (ctx.loc._config as Record<string, unknown>).eraYearOrdinalParse;
+  const eraParseFn = (ctx.loc._config).eraYearOrdinalParse;
   if (eraParseFn) {
     ctx.result._eraYear = (eraParseFn as (input: string, match: RegExpExecArray) => number)(remaining, yoMatch as unknown as RegExpExecArray);
   } else {
@@ -1432,7 +1432,7 @@ function hYo(ctx: ParseCtx): void {
 
 function hN(ctx: ParseCtx): void {
   const remaining = ctx.str.slice(ctx.strIdx);
-  const erasList = (ctx.loc._config as Record<string, unknown>).eras;
+  const erasList = (ctx.loc._config).eras;
   if (erasList && Array.isArray(erasList)) {
     const names = (ctx.strict
       ? erasList.map((e: Record<string, unknown>) => e.abbr).filter(Boolean)
@@ -1454,7 +1454,7 @@ function hN(ctx: ParseCtx): void {
 
 function hNNNN(ctx: ParseCtx): void {
   const remaining = ctx.str.slice(ctx.strIdx);
-  const erasWide = (ctx.loc._config as Record<string, unknown>).eras;
+  const erasWide = (ctx.loc._config).eras;
   if (erasWide && Array.isArray(erasWide)) {
     const names = erasWide.map((e: Record<string, unknown>) => e.name).filter(Boolean) as string[];
     const regex = new RegExp(`^(${names.map(escapeRegex).join("|")})`);
@@ -1472,7 +1472,7 @@ function hNNNN(ctx: ParseCtx): void {
 
 function hNNNNN(ctx: ParseCtx): void {
   const remaining = ctx.str.slice(ctx.strIdx);
-  const erasNarrow = (ctx.loc._config as Record<string, unknown>).eras;
+  const erasNarrow = (ctx.loc._config).eras;
   if (erasNarrow && Array.isArray(erasNarrow)) {
     const names = erasNarrow.map((e: Record<string, unknown>) => e.narrow).filter(Boolean) as string[];
     const regex = new RegExp(`^(${names.map(escapeRegex).join("|")})`);
@@ -1612,7 +1612,7 @@ function hMMMM(ctx: ParseCtx): void {
       let idx = monthList.indexOf(matched);
       if (!ctx.strict && idx < 0) { idx = monthListShort.indexOf(matched); }
       if (idx < 0) {
-        const cfgMonths = (ctx.loc._config as Record<string, unknown>).months;
+        const cfgMonths = (ctx.loc._config).months;
         if (typeof cfgMonths === 'object' && !Array.isArray(cfgMonths)) {
           const fmt = (cfgMonths as Record<string, unknown>).format;
           if (Array.isArray(fmt)) { idx = fmt.map((m: string) => m.toLowerCase()).indexOf(matched); }
@@ -1682,7 +1682,7 @@ function hMMM(ctx: ParseCtx): void {
       let idx = monthListShort.indexOf(matched);
       if (!ctx.strict && idx < 0) { idx = monthListFull.indexOf(matched); }
       if (idx < 0) {
-        const cfgMonths = (ctx.loc._config as Record<string, unknown>).months;
+        const cfgMonths = (ctx.loc._config).months;
         if (typeof cfgMonths === 'object' && !Array.isArray(cfgMonths)) {
           const fmt = (cfgMonths as Record<string, unknown>).format;
           if (Array.isArray(fmt)) { idx = fmt.map((m: string) => m.toLowerCase()).indexOf(matched); }
@@ -1976,12 +1976,12 @@ function tokenizeFormat(format: string): FormatToken[] {
 function parseWithFormat(
   str: string,
   format: string,
-  locale?: string,
+  locale?: ParseLocale,
   strict?: boolean,
 ): ParsedData | null {
-
-  const loc = getLocale(locale);
-  const expandedCacheKey = `${locale ?? "en"  }:${  format}`;
+  if (!locale) {return null;}
+  const loc = locale;
+  const expandedCacheKey = `${loc._abbr ?? "en"  }:${  format}`;
   let expandedFormat = expandedFormatCache.get(expandedCacheKey);
   if (!expandedFormat) {
     expandedFormat = format.replaceAll(/LTS|LT|llll|LLLL|lll|LLL|ll|LL|l|L/g, (match) => {
@@ -2277,7 +2277,7 @@ function parseWithFormat(
   }
 
   if (result.amp !== undefined && result.hour !== undefined) {
-    const mHourFn = (loc._config as Record<string, unknown>).meridiemHour;
+    const mHourFn = (loc._config).meridiemHour;
     if (typeof mHourFn === "function") {
       result.hour = mHourFn(result.hour, result._meridiem);
     } else {
@@ -2353,7 +2353,7 @@ function parseWithFormat(
 function parseWithFormats(
   str: string,
   formats: string[],
-  locale?: string,
+  locale?: ParseLocale,
   strict?: boolean,
 ): ParsedData | null {
   let best: ParsedData | null = null;

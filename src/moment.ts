@@ -1842,8 +1842,8 @@ export class Moment {
         const fmt = this._f as string | undefined;
         const p =
           fmt && fmt !== "RFC_2822" && fmt !== "ISO_8601"
-            ? parseString(this._i, fmt)
-            : parseString(this._i);
+            ? parseString(this._i, fmt, this._getLocale())
+            : parseString(this._i, undefined, this._getLocale());
         if (p?.offset !== undefined) {
           m._d = new Date(m.valueOf() + p.offset * 60000);
           m._shared = false;
@@ -1866,7 +1866,7 @@ export class Moment {
     const m = momentFromAnything(input);
     m._isParseZone = true;
     if (format && isString(input)) {
-      const parsed = parseString(input, format as string | string[]);
+      const parsed = parseString(input, format as string | string[], m._getLocale());
       if (parsed?.offset !== undefined) {
         const d = createDateSafe(
           parsed.year ?? 0,
@@ -2176,7 +2176,7 @@ export function momentFromAnything(input: unknown, isUTC?: boolean): Moment {
     return m;
   }
   if (typeof input === "string") {
-    const parsed = parseString(input);
+    const parsed = parseString(input, undefined, getLocale(getCurrentLocale()));
     if (parsed && hasAnyValue(parsed)) {
       const m = new Moment({ _d: createDateSafe(parsed.year ?? 0, parsed.month ?? 0, parsed.day ?? 1, parsed.hour ?? 0, parsed.minute ?? 0, parsed.second ?? 0, parsed.millisecond ?? 0, false), _i: input, _dClone: false });
       if (isUTC) {m.utc();}

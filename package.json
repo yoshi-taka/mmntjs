@@ -62,7 +62,7 @@
     "fuzz:grammar": "bun run build && jazzer test/fuzz/grammar.fuzz.js --sync -i dist/ -- -runs=10000 -max_len=48",
     "fuzz:grammar:quick": "bun run build && jazzer test/fuzz/grammar.fuzz.js --sync -i dist/ -- -runs=500 -max_len=48",
     "fuzz:ddmin": "bun test/fuzz/delta-debug.mjs",
-    "audit:static": "bun run knip && bun run fallow",
+    "audit:static": "bun run knip",
     "ci": "bun run lint && TZ=UTC bun run test:hard && bun run build && bun run knip && bun run fallow"
   },
   "simple-git-hooks": {

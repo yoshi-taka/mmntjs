@@ -2,6 +2,24 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": ["src/index.ts", "src/bin/cli.ts", "src/temporal-entry.ts", "test/properties/basic.test.ts", "test/properties/boundary.test.ts"],
   "project": ["src/**", "test/**"],
-  "ignore": ["test/moment/**", "test/helpers/**", "test/qunit.js", "test/oracle.ts", "test/debug_calendar.js", "test/locale/**", "test/bench-datefns.ts", "test/locale-helper.ts", "test/properties/equivalence.test.ts", "test/temporal.test.ts", "test/tree-shaking.test.ts"],
+  "ignore": [
+    "test/moment/**",
+    "test/helpers/**",
+    "test/qunit.js",
+    "test/oracle.ts",
+    "test/debug_calendar.js",
+    "test/locale/**",
+    "test/bench-datefns.ts",
+    "test/locale-helper.ts",
+    "test/properties/equivalence.test.ts",
+    "test/bench-*",
+    "test/bench*.ts",
+    "test/bench*.mjs",
+    "test/debug_*",
+    "test/fuzz/**",
+    "test/sbst-*",
+    "test/properties/metamorphic.test.ts",
+    "moment/**"
+  ],
   "ignoreDependencies": ["date-fns", "dayjs", "luxon"]
 }

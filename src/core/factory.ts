@@ -18,6 +18,7 @@ import {
 import { isLeapYear } from "../units";
 import {
   getLocale,
+  getCurrentLocale,
   localeHasMissingParent,
 } from "../locale";
 import {
@@ -202,6 +203,7 @@ function createFromString(
 
   if (isArray(fmt)) {
     const formats = fmt;
+    const parseLocale = getLocale(locale ?? getCurrentLocale());
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let bestParsed: Record<string, any> | null = null;
     let bestScore = -99999;
@@ -209,7 +211,7 @@ function createFromString(
 
     for (const singleFmt of formats) {
       if (singleFmt === "ISO_8601" || singleFmt === "RFC_2822") {
-        const parsed = parseString(str);
+        const parsed = parseString(str, undefined, parseLocale);
         if (parsed && hasAnyValue(parsed)) {
           const overflow = checkOverflow(parsed);
           let score = scoreParsedResult(parsed);
@@ -224,7 +226,7 @@ function createFromString(
         }
         continue;
       }
-      const parsed = parseString(str, singleFmt, locale, strict);
+      const parsed = parseString(str, singleFmt, parseLocale, strict);
       if (parsed) {
         const hasValue = hasAnyValue(parsed);
         const overflow = checkOverflow(parsed);
@@ -388,7 +390,7 @@ function createFromString(
         });
       }
     }
-    const parsed = parseString(str);
+        const parsed = parseString(str, undefined, getLocale(getCurrentLocale()));
     if (parsed && hasAnyValue(parsed)) {
       const overflow = checkOverflow(parsed);
       if (overflow >= 0) {
@@ -451,7 +453,7 @@ function createFromString(
   }
 
   if (fmtStr === "RFC_2822") {
-    const rfcParsed = parseString(str);
+    const rfcParsed = parseString(str, undefined, getLocale(getCurrentLocale()));
     if (rfcParsed && hasAnyValue(rfcParsed)) {
       let weekdayMismatch = false;
       if (rfcParsed._weekdayName !== undefined && rfcParsed.day !== undefined) {
@@ -506,7 +508,7 @@ function createFromString(
   }
 
   if (fmtStr) {
-    const parsed = parseString(str, fmtStr, locale, strict) as ParsedRecord | null;
+      const parsed = parseString(str, fmtStr, getLocale(locale ?? getCurrentLocale()), strict) as ParsedRecord | null;
     const config: MomentConfig = {
       _d: undefined,
       _i: str,
@@ -602,7 +604,7 @@ function createFromString(
     }
   }
 
-  const parsed = parseString(str) as ParsedRecord | null;
+  const parsed = parseString(str, undefined, getLocale(getCurrentLocale())) as ParsedRecord | null;
   if (parsed && !parsed._claimed) {
     if (parsed._hasDate !== undefined) {
       const { year, month, day, hour, minute, second, millisecond, offset } = parsed;
