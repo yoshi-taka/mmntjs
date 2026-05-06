@@ -92,5 +92,5 @@ export function fromTemporal(t: unknown): Moment {
     ]);
   }
 
-  throw new Error(`Unsupported Temporal type: ${  (t as object)?.constructor?.name ?? t}`);
+  throw new Error(`Unsupported Temporal type: ${  (t as object).constructor?.name ?? t}`);
 }

@@ -10,9 +10,7 @@ export const fyLocale: LocaleSpec = {
         '_'
     ),
     monthsShort: function (m, format) {
-        if (m == null) {
-            return monthsShortWithDots;
-        } else if (/-MMM-/.test(format)) {
+        if (/-MMM-/.test(format)) {
             return monthsShortWithoutDots[m.month()];
         } else {
             return monthsShortWithDots[m.month()];
