@@ -2254,7 +2254,7 @@ export class Moment {
         if (p?.offset !== undefined) {
           m._d = new Date(m.valueOf() + p.offset * 60000);
           m._t = m._d.getTime();
-          m._offset = p.offset as number;
+          m._offset = p.offset;
           m._isUTC = true;
           m._refreshFields();
         } else {
@@ -2288,7 +2288,7 @@ export class Moment {
         );
         m._d = d;
         m._t = d.getTime();
-        m._offset = parsed.offset as number;
+        m._offset = parsed.offset;
         m._isUTC = true;
         m._refreshFields();
       } else if (isString(input)) {

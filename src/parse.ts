@@ -1130,7 +1130,7 @@ function hZ(ctx: ParseCtx): void {
   if (!ctx.strict) {
     const zTrimMatch = remaining.match(/^\s+/);
     if (zTrimMatch) {
-      ctx.result._unusedInput!.push(zTrimMatch[0]);
+      ctx.result._unusedInput.push(zTrimMatch[0]);
       ctx.strIdx += zTrimMatch[0].length;
       remaining = ctx.str.slice(ctx.strIdx);
     }

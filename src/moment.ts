@@ -575,7 +575,7 @@ export class Moment {
 
   set(unit: string | object, value?: number): this {
     if (isObject(unit)) {
-      const obj: Record<string, unknown> = unit as Record<string, unknown>;
+      const obj = unit;
 
       const d = new Date(this._d);
 
@@ -790,7 +790,7 @@ export class Moment {
         dur = new Duration(amount);
       }
     } else if (isString(amount)) {
-      dur = new Duration(amount as string);
+      dur = new Duration(amount);
     } else if (isObject(amount)) {
       dur = new Duration(amount as object);
     } else if (typeof amount === "number") {
@@ -861,7 +861,7 @@ export class Moment {
         dur = new Duration(amount);
       }
     } else if (isString(amount)) {
-      dur = new Duration(amount as string);
+      dur = new Duration(amount);
     } else if (isObject(amount)) {
       dur = new Duration(amount as object);
     } else if (typeof amount === "number") {
@@ -1264,7 +1264,7 @@ export class Moment {
       if (!ref) {
         reference = new Moment({ _d: new Date(), _dClone: false });
       } else if (isObject(ref)) {
-        const obj = ref as Record<string, unknown>;
+        const obj: Record<string, unknown> = ref;
         if (isCalendarFormatObject(obj)) {
           formatOpts = obj;
           reference = new Moment({ _d: new Date(), _dClone: false });
@@ -1320,10 +1320,10 @@ export class Moment {
       formatString = (cal as Function).call(locale._config, key, this);
     } else if (formatOpts && hasOwnProp(formatOpts, key)) {
       formatString = formatOpts[key];
-    } else if (hasOwnProp(cal as Record<string, unknown>, key)) {
-      formatString = (cal as Record<string, unknown>)[key];
-    } else if (hasOwnProp(cal as Record<string, unknown>, "sameElse")) {
-      formatString = (cal as Record<string, unknown>).sameElse;
+    } else if (hasOwnProp(cal, key)) {
+      formatString = (cal)[key];
+    } else if (hasOwnProp(cal, "sameElse")) {
+      formatString = (cal).sameElse;
     } else {
       formatString = "L";
     }
@@ -1847,15 +1847,15 @@ export class Moment {
         const fmt = this._f as string | undefined;
         const p =
           fmt && fmt !== "RFC_2822" && fmt !== "ISO_8601"
-            ? parseString(this._i as string, fmt)
-            : parseString(this._i as string);
+            ? parseString(this._i, fmt)
+            : parseString(this._i);
         if (p?.offset !== undefined) {
           m._d = new Date(m.valueOf() + p.offset * 60000);
           m._shared = false;
-          m._offset = p.offset as number;
+          m._offset = p.offset;
           m._isUTC = true;
         } else {
-          const allInput = `${this._i as string  } ${  this._unusedInput.join("")}`;
+          const allInput = `${this._i  } ${  this._unusedInput.join("")}`;
           const tzMatch = allInput.match(/([+-]\d{2}):?(\d{2})\s*$/);
           if (tzMatch) {
             const sign = tzMatch[1][0] === "+" ? 1 : -1;
@@ -1871,7 +1871,7 @@ export class Moment {
     const m = momentFromAnything(input);
     m._isParseZone = true;
     if (format && isString(input)) {
-      const parsed = parseString(input as string, format);
+      const parsed = parseString(input, format);
       if (parsed?.offset !== undefined) {
         const d = createDateSafe(
           parsed.year ?? 0,
@@ -1889,7 +1889,7 @@ export class Moment {
         m._isUTC = true;
       } else if (isString(input)) {
         const allInput =
-          `${input as string 
+          `${input 
           } ${ 
           parsed?._unusedInput?.join("") ?? ""}`;
         const tzMatch = allInput.match(/([+-]\d{2}):?(\d{2})\s*$/);
@@ -1933,7 +1933,7 @@ export class Moment {
       }
       return this;
     }
-    const numOffset = offset as number;
+    const numOffset = offset;
     if (Math.abs(numOffset) < 16) {
       this.utcOffset(-numOffset * 60, keepLocalTime);
     } else {

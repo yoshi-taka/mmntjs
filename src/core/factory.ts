@@ -826,7 +826,7 @@ function createMomentFromParsed(
       } else {
         weekdayOffset = 0;
       }
-      const d = localeWeekToDate(parsed._weekYear!, parsed._week!, weekdayOffset, weekCfg.dow, weekCfg.doy);
+      const d = localeWeekToDate(parsed._weekYear as number, parsed._week as number, weekdayOffset, weekCfg.dow, weekCfg.doy);
       if (parsed.hour !== undefined) {
         d.setUTCHours(parsed.hour, parsed.minute ?? 0, parsed.second ?? 0, parsed.millisecond ?? 0);
         return new Moment(buildMomentConfig(d, str, format, locale, parsed, baseConfig as MomentConfig));

@@ -30,10 +30,10 @@ export function registerCoreApi(): void {
   momentRecord.duration = function (input?: unknown, unit?: string): Duration {
     return new Duration(input, unit);
   };
-  (momentRecord.duration as unknown as Record<string, unknown>).invalid = function (): Duration {
+  (momentRecord.duration as Record<string, unknown>).invalid = function (): Duration {
     return Duration.invalid();
   };
-  (momentRecord.duration as unknown as Record<string, unknown>).fn = Duration.prototype;
+  (momentRecord.duration as Record<string, unknown>).fn = Duration.prototype;
   momentRecord.fn = Moment.prototype;
   momentRecord.prototype = Moment.prototype;
 
