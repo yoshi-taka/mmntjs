@@ -1508,7 +1508,7 @@ function hdddd(ctx: ParseCtx): void {
     const looseMatch = remaining.match(/^\w+/);
     if (looseMatch) { ctx.strIdx += looseMatch[0].length; return; }
   }
-  if (!matched) { ctx.failed = true; }
+  if (matched !== true) { ctx.failed = true; }
 }
 
 function hddd(ctx: ParseCtx): void {
@@ -1549,7 +1549,7 @@ function hddd(ctx: ParseCtx): void {
     const looseMatch = remaining.match(/^\w+/);
     if (looseMatch) { ctx.strIdx += looseMatch[0].length; return; }
   }
-  if (!matched) { ctx.failed = true; }
+  if (matched !== true) { ctx.failed = true; }
 }
 
 function hdd(ctx: ParseCtx): void {
@@ -1581,7 +1581,7 @@ function hdd(ctx: ParseCtx): void {
     const looseMatch = enLoose ?? remaining.match(/^\w+/);
     if (looseMatch) { ctx.strIdx += looseMatch[0].length; return; }
   }
-  if (!matched) { ctx.failed = true; }
+  if (matched !== true) { ctx.failed = true; }
 }
 
 function hMMMM(ctx: ParseCtx): void {
@@ -2072,7 +2072,7 @@ function parseWithFormat(
     }
 
     // Dispatch to token handler
-    const handler = token.type === "token" ? PARSE_DISPATCH[token.name] : undefined;
+    const handler = token.type === "token" && token.name ? PARSE_DISPATCH[token.name] : undefined;
     if (handler) {
       ctx.strIdx = strIdx;
       handler(ctx);
@@ -2273,7 +2273,7 @@ const tokenizeCache = new LruMap<string, FormatToken[]>(1000);
 const tokenizeByChar: Record<string, string[]> = {};
 for (const token of FORMAT_TOKENS) {
   const c = token[0];
-  if (!tokenizeByChar[c]) {tokenizeByChar[c] = [];}
+  tokenizeByChar[c] ??= [];
   tokenizeByChar[c].push(token);
 }
 for (const c in tokenizeByChar) {
@@ -2310,7 +2310,7 @@ function tokenizeFormat(format: string): FormatToken[] {
 
     let matched = false;
     const candidates = tokenizeByChar[format[i]];
-    if (candidates) {
+    if (candidates !== undefined) {
       for (const token of candidates) {
         if (format.startsWith(token, i)) {
           tokens.push({ type: "token", name: token });
@@ -2364,7 +2364,7 @@ function parseWithFormats(
     if (result.millisecond !== undefined) {score += 3;}
     if (result.isoWeek !== undefined) {score += 16;}
     if (result.isoWeekYear !== undefined) {score += 10;}
-    if (result._unusedTokens) {score -= result._unusedTokens.length * 10;}
+    score -= result._unusedTokens.length * 10;
     if (result._unusedInput)
       {score -= result._unusedInput.reduce((a: number, s: string) => a + s.length, 0) * 2;}
     if (result._charsLeftOver) {score -= result._charsLeftOver * 3;}

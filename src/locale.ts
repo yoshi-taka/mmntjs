@@ -88,8 +88,7 @@ export class Locale {
       return [];
     }
     if (Array.isArray(months)) {return months;}
-    if (typeof months === "object") {return months.standalone ?? months.format ?? [];}
-    return months as string[];
+    return months.standalone ?? months.format ?? [];
   }
 
   get _monthsShort(): string[] {
@@ -104,8 +103,7 @@ export class Locale {
       return result;
     }
     if (Array.isArray(ms)) {return ms;}
-    if (typeof ms === "object") {return ms.standalone ?? ms.format ?? this._months;}
-    return ms as string[];
+    return ms.standalone ?? ms.format ?? this._months;
   }
 
   get _weekdays(): string[] {
@@ -120,8 +118,8 @@ export class Locale {
       return result;
     }
     if (Array.isArray(wd)) {return wd;}
-    if (typeof wd === "object" && wd !== null) {
-      return (wd as Record<string, string[]>).standalone || (wd as Record<string, string[]>).format || [];
+    if (wd !== null) {
+      return (wd as Record<string, string[]>).standalone ?? (wd as Record<string, string[]>).format ?? [];
     }
     return wd as string[];
   }
@@ -187,7 +185,7 @@ export class Locale {
       const isFmt = months.isFormat;
       const monthsInFormat = /D[oD]?(\[[^[\]]*\]|\s)+MMMM?/;
       const useFormat = format && (isFmt instanceof RegExp ? isFmt : monthsInFormat).test(format);
-      const list: string[] = useFormat ? months.format || months.standalone : months.standalone || months.format;
+      const list: string[] = useFormat ? (months.format ?? months.standalone) : (months.standalone ?? months.format);
       const month = m.month();
       return list[month] || "";
     }
@@ -214,7 +212,7 @@ export class Locale {
     if (typeof ms === "object") {
       const monthsInFormat = /D[oD]?(\[[^[\]]*\]|\s)+MMMM?/;
       const useFormat = format && monthsInFormat.test(format);
-      const list: string[] = useFormat ? ms.format || ms.standalone : ms.standalone || ms.format;
+      const list: string[] = useFormat ? (ms.format ?? ms.standalone) : (ms.standalone ?? ms.format);
       const month = m.month();
       return list[month] || "";
     }
@@ -229,7 +227,7 @@ export class Locale {
   private _resolveWeekdays(wd: string[] | Function | Record<string, unknown>, m: Moment, format?: string): string {
     if (isFunction(wd)) {return wd(m, format) as string;}
     if (Array.isArray(wd)) {return wd[m.day()] || "";}
-    if (typeof wd === "object" && wd !== null) {
+    if (wd !== null) {
       const isFmt = wd.isFormat;
       const useFormat = format && isFmt instanceof RegExp && isFmt.test(format);
       const list = useFormat ? wd.format : wd.standalone ?? wd.format;
@@ -389,7 +387,7 @@ export class Locale {
       return fmt;
     }
     const entry = (cal as Record<string, string | Function>)[key];
-    if (entry !== undefined) {
+    if (entry) {
       if (isFunction(entry)) {
         const fmt = entry.call(m, ref);
         if (isString(fmt)) {return fmt;}
@@ -400,7 +398,7 @@ export class Locale {
       }
     }
     const sameElseEntry = cal.sameElse;
-    if (sameElseEntry !== undefined) {
+    if (sameElseEntry) {
       if (isFunction(sameElseEntry)) {
         const fmt = sameElseEntry.call(m, ref);
         if (isString(fmt)) {return fmt;}
@@ -580,14 +578,14 @@ function precompileLocaleFormats(loc: Locale): void {
   }
   for (const upper of ["L", "LL", "LLL", "LLLL"]) {
     const lower = upper.toLowerCase();
-    if (ldf[upper] && !cache[lower]) {
+    if (ldf[upper] !== undefined && !cache[lower]) {
       cache[lower] = buildRenderFns(lowerVariant(ldf[upper]));
     }
   }
-  if (ldf.LT && !cache.lt) {
+  if (ldf.LT !== undefined && !cache.lt) {
     cache.lt = buildRenderFns(lowerVariant(ldf.LT));
   }
-  if (ldf.LTS && !cache.lts) {
+  if (ldf.LTS !== undefined && !cache.lts) {
     cache.lts = buildRenderFns(lowerVariant(ldf.LTS));
   }
   (loc._config as Record<string, unknown>)._localeRenderFns = cache;
@@ -704,7 +702,7 @@ export function getMonths(format?: string | number, index?: number): string | st
     const ms = loc._months;
     return ms[format];
   }
-  const isShort = format === "short" || (typeof format === "string" && format !== undefined);
+  const isShort = format === "short" || format !== undefined;
   if (isShort) {
     const cfgShort = loc._config.monthsShort ?? enLocale.monthsShort;
     if (isFunction(cfgShort)) {

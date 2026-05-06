@@ -11,6 +11,7 @@ export interface LocaleSpec {
   longMonthsParse?: RegExp[];
   shortMonthsParse?: RegExp[];
   monthsParseExact?: boolean;
+  fullWeekdaysParse?: boolean;
   weekdays?: string[] | ((m: Moment, format?: string) => string[] | string);
   weekdaysShort?: string[] | ((m: Moment, format?: string) => string[]);
   weekdaysMin?: string[] | ((m: Moment, format?: string) => string[]);

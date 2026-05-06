@@ -468,7 +468,7 @@ export class Moment {
     m._l = this._l;
     if (this._i !== undefined) {m._i = this._i;}
     if (this._f !== undefined) {m._f = this._f;}
-    if (this._strict !== undefined) {m._strict = this._strict;}
+    m._strict = this._strict;
     this._ensureFields();
     m.$y = this.$y; m.$M = this.$M; m.$D = this.$D; m.$W = this.$W;
     m.$H = this.$H; m.$m = this.$m; m.$s = this.$s; m.$ms = this.$ms;
@@ -481,7 +481,7 @@ export class Moment {
   year(y?: unknown): number | this {
     if (y !== undefined) {
       if (
-        y === null ||
+        y === undefined ||
         y === undefined ||
         y === "" ||
         (typeof y === "object" && !(y instanceof Date))
@@ -558,7 +558,7 @@ export class Moment {
   date(d?: unknown): number | this {
     if (d !== undefined) {
       if (
-        d === null ||
+        d === undefined ||
         d === undefined ||
         d === "" ||
         (typeof d === "object" && !(d instanceof Date))
@@ -2658,7 +2658,7 @@ export function momentFromAnything(input: unknown, isUTC?: boolean): Moment {
   if (typeof input === "object" && !isMoment(input)) {
     const obj = input as Record<string, unknown>;
     const parsed = parseObject(obj);
-    if (parsed && (parsed.year !== undefined || parsed.month !== undefined || parsed.day !== undefined)) {
+    if (parsed !== null && (parsed.year !== undefined || parsed.month !== undefined || parsed.day !== undefined)) {
       const now = new Date();
       const y = parsed.year !== undefined ? parsed.year : now.getFullYear();
       const mo = parsed.month ?? 0;

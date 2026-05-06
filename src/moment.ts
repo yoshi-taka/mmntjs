@@ -296,7 +296,7 @@ export class Moment {
   year(y?: unknown): number | this {
     if (y !== undefined) {
       if (
-        y === null ||
+        y === undefined ||
         y === undefined ||
         y === "" ||
         (typeof y === "object" && !(y instanceof Date))
@@ -348,7 +348,7 @@ export class Moment {
   date(d?: unknown): number | this {
     if (d !== undefined) {
       if (
-        d === null ||
+        d === undefined ||
         d === undefined ||
         d === "" ||
         (typeof d === "object" && !(d instanceof Date))
@@ -2026,7 +2026,7 @@ export class Moment {
   }
 
   parsingFlags(): object {
-    const overflow = this._overflow ?? (!this._isValid ? -2 : -1);
+    const overflow = !this._isValid ? -2 : this._overflow;
     const result: Record<string, unknown> = {
       overflow: !this._isValid && overflow < 0 ? -2 : overflow,
       unusedTokens: this._unusedTokens,
@@ -2063,7 +2063,7 @@ export class Moment {
 
   invalidAt(): number {
     let overflow = this._overflow;
-    if (overflow === undefined || overflow < 0) {return -1;}
+    if (overflow < 0) {return -1;}
     return overflow;
   }
 

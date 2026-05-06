@@ -231,11 +231,11 @@ function createFromString(
         score += 30;
         if (overflow >= 0) {score -= 100;}
         if (parsed._empty === true) {score -= 50;}
-        if (parsed._unusedTokens && parsed._unusedTokens.length > 0) {
+        if (parsed._unusedTokens.length > 0) {
           score -= 10 * parsed._unusedTokens.length;
         }
         if (parsed._charsLeftOver > 0) {score -= parsed._charsLeftOver * 3;}
-        if (parsed._unusedInput) {
+        if (parsed._unusedInput.length > 0) {
           score -= parsed._unusedInput.reduce((a: number, s: string) => a + s.length, 0) * 2;
         }
         if (
@@ -309,7 +309,7 @@ function createFromString(
         _isValid: false,
         _overflow: overflow,
       };
-      if (bestParsed) {
+      if (bestParsed !== null) {
         config._unusedTokens = bestParsed._unusedTokens;
         config._unusedInput = bestParsed._unusedInput;
         config._charsLeftOver = bestParsed._charsLeftOver;
@@ -332,7 +332,7 @@ function createFromString(
       _isValid: false,
       _invalidFormat: emptyFormats,
     };
-    if (bestParsed) {
+    if (bestParsed !== null) {
       config._unusedTokens = bestParsed._unusedTokens;
       config._unusedInput = bestParsed._unusedInput;
       config._charsLeftOver = bestParsed._charsLeftOver;
@@ -640,7 +640,7 @@ function createFromString(
     let mo = month;
     let d = day;
     if (dayOfYear !== undefined && mo === undefined && d === undefined) {
-      const maxDay = (y !== undefined && ((y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)) ? 366 : 365)) || 366;
+      const maxDay = ((y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)) ? 366 : 365);
       if (dayOfYear === 0 || dayOfYear > maxDay) {
         return new Moment({ _dClone: false, _d: new Date(NaN), _i: str, _isValid: false, _overflow: 2 });
       }
@@ -770,7 +770,7 @@ function buildMomentConfig(
   };
   const c = config as Record<string, unknown>;
   if (parsed._unusedTokens) {c._unusedTokens = parsed._unusedTokens;}
-  if (parsed._unusedInput) {c._unusedInput = parsed._unusedInput;}
+  if (parsed._unusedInput && parsed._unusedInput.length > 0) {c._unusedInput = parsed._unusedInput;}
   if (parsed._charsLeftOver !== undefined) {c._charsLeftOver = parsed._charsLeftOver;}
   if (parsed._empty !== undefined) {c._empty = parsed._empty;}
   if (parsed._invalidMonth !== undefined) {c._invalidMonth = parsed._invalidMonth;}

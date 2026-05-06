@@ -268,7 +268,7 @@ export const tokenByChar: Record<string, { tokens: TokenEntry[]; maxLen: number 
 for (const key of Object.keys(tokenFnMap)) {
   const c = key[0];
   let entry = tokenByChar[c];
-  if (!entry) { entry = { tokens: [], maxLen: 0 }; tokenByChar[c] = entry; }
+  if (entry === undefined) { entry = { tokens: [], maxLen: 0 }; tokenByChar[c] = entry; }
   entry.tokens.push({ token: key, fn: tokenFnMap[key] });
   if (key.length > entry.maxLen) {entry.maxLen = key.length;}
 }
@@ -310,11 +310,11 @@ export function buildRenderFns(format: string): RenderFn[] {
 
     if (i + 1 < len) {
       const next = format[i + 1];
-      if (next !== "[" && !tokenByChar[next]) {
+      if (next !== "[" && tokenByChar[next] === undefined) {
         let j = i + 2;
         while (j < len) {
           const c = format[j];
-          if (c === "[" || tokenByChar[c]) {break;}
+          if (c === "[" || tokenByChar[c] !== undefined) {break;}
           j++;
         }
         const literal = format.slice(i, j);
