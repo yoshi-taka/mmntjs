@@ -62,8 +62,7 @@
     "fuzz:grammar": "bun run build && jazzer test/fuzz/grammar.fuzz.js --sync -i dist/ -- -runs=10000 -max_len=48",
     "fuzz:grammar:quick": "bun run build && jazzer test/fuzz/grammar.fuzz.js --sync -i dist/ -- -runs=500 -max_len=48",
     "fuzz:ddmin": "bun test/fuzz/delta-debug.mjs",
-    "audit:static": "bun run knip",
-    "audit:deep": "bun run fallow dead-code",
+    "audit:static": "bun run knip && bun run fallow dead-code",
     "ci": "bun run lint && TZ=UTC bun run test:hard && bun run build && bun run knip && bun run fallow"
   },
   "simple-git-hooks": {
@@ -72,9 +71,9 @@
   "nano-staged": {
     "{src,test}/*.ts": [
       "oxlint --type-aware --fix",
-      "sh -c 'bun run audit:static; s=$?; bun run audit:deep; exit $s'"
+      "sh -c 'bun run audit:static'"
     ],
-    "{knip.json,.fallowrc.json}": "sh -c 'bun run audit:static; s=$?; bun run audit:deep; exit $s'"
+    "{knip.json,.fallowrc.json}": "sh -c 'bun run audit:static'"
   },
   "keywords": [
     "moment",
