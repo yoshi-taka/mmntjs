@@ -37,7 +37,7 @@ import coreMoment from "@compat/moment2/core";
 
 - `@compat/moment2` keeps the compatibility entry
 - `@compat/moment2/full` is the explicit full runtime entry
-- `@compat/moment2/core` is the lighter entry without migration/Temporal registration
+- `@compat/moment2/core` is the lighter entry without locale registry, migration, or Temporal registration
 
 ### Node (CJS)
 

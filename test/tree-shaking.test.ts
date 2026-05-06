@@ -67,6 +67,14 @@ describe("tree-shaking", () => {
 
       expect(code).not.toMatch(/fromTemporal|toTemporal|js-temporal\/polyfill/);
     });
+
+    test("core entry does not contain locale registry registration", async () => {
+      const code = await bundleAndGetCode(
+        `import { moment } from '${join(projectRoot, "dist/core-entry.js").replaceAll("\\", "\\\\")}';\nconsole.log(moment().format());`,
+      );
+
+      expect(code).not.toMatch(/defineLocale|updateLocale|listLocales/);
+    });
   });
 
   describe("locale", () => {

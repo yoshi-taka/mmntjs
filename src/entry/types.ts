@@ -5,10 +5,6 @@ import type { Moment } from "../moment_fixed";
 export interface CoreMomentStatic {
   (input?: unknown, format?: unknown, localeOrStrict?: unknown, fourthArg?: unknown): Moment;
   duration(input?: unknown, unit?: string): Duration;
-  locale(locale?: string | string[], ...args: unknown[]): string | Locale;
-  localeData(locale?: string): Locale;
-  defineLocale(locale: string, config: Record<string, unknown>): Locale | void;
-  updateLocale(locale: string, config: Record<string, unknown>): Locale | void;
   utc(input?: unknown, format?: unknown, localeOrStrict?: unknown, fourthArg?: unknown): Moment;
   isMoment(obj: unknown): boolean;
   isDate(obj: unknown): boolean;
@@ -17,11 +13,6 @@ export interface CoreMomentStatic {
   unix(ts: number): Moment;
   invalid(input?: unknown): Moment;
   parseZone(input?: unknown, format?: unknown, strict?: boolean): Moment;
-  months(format?: string, index?: number): string | string[];
-  monthsShort(format?: string | number, index?: number): string | string[];
-  weekdays(format?: string | boolean | number, index?: number): string | string[];
-  weekdaysShort(format?: string | boolean | number, index?: number): string | string[];
-  weekdaysMin(format?: string | boolean | number, index?: number): string | string[];
   min(...args: unknown[]): Moment;
   max(...args: unknown[]): Moment;
   relativeTimeRounding(fn?: Function | boolean): Function | boolean;
@@ -51,6 +42,15 @@ export interface CoreMomentStatic {
 }
 
 export interface MomentStatic extends CoreMomentStatic {
+  locale(locale?: string | string[], ...args: unknown[]): string | Locale;
+  localeData(locale?: string): Locale;
+  defineLocale(locale: string, config: Record<string, unknown>): Locale | void;
+  updateLocale(locale: string, config: Record<string, unknown>): Locale | void;
+  months(format?: string, index?: number): string | string[];
+  monthsShort(format?: string | number, index?: number): string | string[];
+  weekdays(format?: string | boolean | number, index?: number): string | string[];
+  weekdaysShort(format?: string | boolean | number, index?: number): string | string[];
+  weekdaysMin(format?: string | boolean | number, index?: number): string | string[];
   config(key: string, value?: unknown): void;
   report(type?: string): void;
   fromTemporal(t: unknown): unknown;

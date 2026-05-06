@@ -196,7 +196,7 @@ src/
 
 - `@compat/moment2` -> compatibility wrapper
 - `@compat/moment2/full` -> full runtime
-- `@compat/moment2/core` -> 軽量 runtime
+- `@compat/moment2/core` -> locale registry を含まない軽量 runtime
 - `@compat/moment2/temporal` -> Temporal helper
 
 例:
