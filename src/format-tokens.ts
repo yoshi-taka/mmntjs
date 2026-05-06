@@ -264,7 +264,7 @@ const tokenFnMap: Record<string, RenderFn> = {
   X: fnX, x: fnx,
 };
 
-export const tokenByChar: Record<string, { tokens: TokenEntry[]; maxLen: number }> = {};
+export const tokenByChar: Record<string, { tokens: TokenEntry[]; maxLen: number } | undefined> = {};
 for (const key of Object.keys(tokenFnMap)) {
   const c = key[0];
   let entry = tokenByChar[c];
@@ -273,7 +273,7 @@ for (const key of Object.keys(tokenFnMap)) {
   if (key.length > entry.maxLen) {entry.maxLen = key.length;}
 }
 for (const c in tokenByChar) {
-  tokenByChar[c].tokens.sort((a, b) => b.token.length - a.token.length);
+  tokenByChar[c]!.tokens.sort((a, b) => b.token.length - a.token.length);
 }
 
 export function buildRenderFns(format: string): RenderFn[] {

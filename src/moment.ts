@@ -1855,7 +1855,7 @@ export class Moment {
           m._offset = p.offset as number;
           m._isUTC = true;
         } else {
-          const allInput = `${this._i as string  } ${  (this._unusedInput ?? []).join("")}`;
+          const allInput = `${this._i as string  } ${  this._unusedInput.join("")}`;
           const tzMatch = allInput.match(/([+-]\d{2}):?(\d{2})\s*$/);
           if (tzMatch) {
             const sign = tzMatch[1][0] === "+" ? 1 : -1;

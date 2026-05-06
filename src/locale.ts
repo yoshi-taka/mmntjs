@@ -185,7 +185,7 @@ export class Locale {
       const isFmt = months.isFormat;
       const monthsInFormat = /D[oD]?(\[[^[\]]*\]|\s)+MMMM?/;
       const useFormat = format && (isFmt instanceof RegExp ? isFmt : monthsInFormat).test(format);
-      const list: string[] = useFormat ? (months.format ?? months.standalone) : (months.standalone ?? months.format);
+      const list: string[] = useFormat ? months.format : months.standalone;
       const month = m.month();
       return list[month] || "";
     }
@@ -212,7 +212,7 @@ export class Locale {
     if (typeof ms === "object") {
       const monthsInFormat = /D[oD]?(\[[^[\]]*\]|\s)+MMMM?/;
       const useFormat = format && monthsInFormat.test(format);
-      const list: string[] = useFormat ? (ms.format ?? ms.standalone) : (ms.standalone ?? ms.format);
+      const list: string[] = useFormat ? ms.format : ms.standalone;
       const month = m.month();
       return list[month] || "";
     }
@@ -578,14 +578,14 @@ function precompileLocaleFormats(loc: Locale): void {
   }
   for (const upper of ["L", "LL", "LLL", "LLLL"]) {
     const lower = upper.toLowerCase();
-    if (ldf[upper] !== undefined && !cache[lower]) {
+    if (ldf[upper] && !cache[lower]) {
       cache[lower] = buildRenderFns(lowerVariant(ldf[upper]));
     }
   }
-  if (ldf.LT !== undefined && !cache.lt) {
+  if (ldf.LT && !cache.lt) {
     cache.lt = buildRenderFns(lowerVariant(ldf.LT));
   }
-  if (ldf.LTS !== undefined && !cache.lts) {
+  if (ldf.LTS && !cache.lts) {
     cache.lts = buildRenderFns(lowerVariant(ldf.LTS));
   }
   (loc._config as Record<string, unknown>)._localeRenderFns = cache;
@@ -712,7 +712,7 @@ export function getMonths(format?: string | number, index?: number): string | st
         return r;
       }
       const all: string[] = [];
-      for (let i = 0; i < (loc._months || []).length; i++) {
+      for (let i = 0; i < (loc._months).length; i++) {
         const r = (cfgShort as Function)({ month: () => i } as { month: () => number }, fmt);
         if (Array.isArray(r)) {return r;}
         all.push(r);

@@ -1634,7 +1634,7 @@ function hMMMM(ctx: ParseCtx): void {
   const enMatch = remaining.match(/^(January|February|March|April|May|June|July|August|September|October|November|December)/i);
   if (enMatch) {
     const monthVal = monthNames[enMatch[1].toLowerCase()];
-    if (monthVal !== undefined) {
+    if (monthVal >= 0) {
       ctx.result.month = monthVal;
       ctx.result._parsedDateParts[1] = monthVal;
       ctx.strIdx += enMatch[1].length;
@@ -1645,7 +1645,7 @@ function hMMMM(ctx: ParseCtx): void {
     const wordMatch = remaining.match(/^\w+/);
     if (wordMatch) {
       const monthVal = monthNames[wordMatch[0].toLowerCase()];
-      if (monthVal !== undefined) {
+      if (monthVal >= 0) {
         ctx.result.month = monthVal;
         ctx.result._parsedDateParts[1] = monthVal;
         ctx.strIdx += wordMatch[0].length;
@@ -1707,7 +1707,7 @@ function hMMM(ctx: ParseCtx): void {
   const enMatch = remaining.match(/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i);
   if (enMatch) {
     const monthVal = monthNames[enMatch[1].toLowerCase()];
-    if (monthVal !== undefined) {
+    if (monthVal >= 0) {
       ctx.result.month = monthVal;
       ctx.result._parsedDateParts[1] = monthVal;
       ctx.strIdx += enMatch[1].length;
@@ -1718,7 +1718,7 @@ function hMMM(ctx: ParseCtx): void {
     const wordMatch = remaining.match(/^\w+/);
     if (wordMatch) {
       const monthVal = monthNames[wordMatch[0].toLowerCase()];
-      if (monthVal !== undefined) {
+      if (monthVal >= 0) {
         ctx.result.month = monthVal;
         ctx.result._parsedDateParts[1] = monthVal;
         ctx.strIdx += wordMatch[0].length;
@@ -2080,7 +2080,7 @@ function parseWithFormat(
       failed = ctx.failed;
     }
 
-    if (failed) {
+    if (failed === true) {
       if (strict) {
         for (let j = tokenIndex; j < tokens.length; j++) {
           const t = tokens[j];
@@ -2174,7 +2174,7 @@ function parseWithFormat(
     result._weekYear === undefined &&
     result._weekdayNum === undefined;
 
-  if (failed) {
+  if (failed === true) {
     if (strict) {
       if (result.bigHour) {return result;}
       for (let j = tokenIndex; j < tokens.length; j++) {
