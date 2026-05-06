@@ -1,11 +1,20 @@
 import { describe, test, expect } from 'bun:test'
 import fc from 'fast-check'
 import _moment from '../../src/index.ts'
-import _originalMoment from '../../moment/moment.js'
+import type { MomentStatic } from '../../src/entry/types'
 import type { Moment } from '../../src/moment_fixed'
-
-const moment = _moment as (...args: unknown[]) => Moment
-const originalMoment = _originalMoment as (...args: unknown[]) => Moment
+import type { Duration } from '../../src/duration_fixed'
+import _originalMoment from '../../moment/moment.js'
+type MomentFn = ((...args: unknown[]) => Moment) & {
+  min(...args: unknown[]): Moment;
+  max(...args: unknown[]): Moment;
+  utc(...args: unknown[]): Moment;
+  parseZone(...args: unknown[]): Moment;
+  duration(...args: unknown[]): Duration;
+  normalizeUnits(unit: string): string;
+}
+const moment = _moment as unknown as MomentStatic
+const originalMoment = _originalMoment as unknown as MomentFn
 
 function normalizeZero(value: number): number {
   return Object.is(value, -0) ? 0 : value
@@ -443,8 +452,8 @@ describe('Metamorphic properties', () => {
         const after = left.isAfter(right, unit)
 
         expect(Number(same) + Number(before) + Number(after)).toBe(1)
-        expect(left.isSameOrBefore(right, unit)).toBe(same ?? before)
-        expect(left.isSameOrAfter(right, unit)).toBe(same ?? after)
+        expect(left.isSameOrBefore(right, unit)).toBe(same || before)
+        expect(left.isSameOrAfter(right, unit)).toBe(same || after)
       }),
       { numRuns: 200 }
     )

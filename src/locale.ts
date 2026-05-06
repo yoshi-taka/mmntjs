@@ -29,7 +29,7 @@ function mergeConfig(base: LocaleSpec, override: Partial<LocaleSpec>): LocaleSpe
         !Array.isArray(base[key as keyof LocaleSpec]) &&
         !(base[key as keyof LocaleSpec] instanceof RegExp)
       ) {
-        result[key] = Object.assign({}, (base as Record<string, unknown>)[key], val);
+        result[key] = { ...(base as Record<string, unknown>)[key] as Record<string, unknown>, ...val as Record<string, unknown> };
       } else {
         result[key] = val;
       }
@@ -118,7 +118,7 @@ export class Locale {
       return result;
     }
     if (Array.isArray(wd)) {return wd;}
-    return (wd as Record<string, string[]>).standalone;
+    return (wd as unknown as Record<string, string[]>).standalone;
   }
 
   monthsArray(): string[] {
@@ -548,9 +548,9 @@ function findBestLocaleName(locale: string): string | null {
 export { findBestLocaleName as _findBestLocaleName };
 
 export function getLocale(locale?: string | { _locale?: { _abbr?: string }; _l?: string }): Locale {
-  if (locale?._locale?._abbr) {
+  if (typeof locale === "object" && locale._locale?._abbr) {
     locale = locale._locale._abbr;
-  } else if (locale?._l) {
+  } else if (typeof locale === "object" && locale._l) {
     locale = locale._l;
   }
   const key = (locale as string | undefined) ?? currentLocaleName;

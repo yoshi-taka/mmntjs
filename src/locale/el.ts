@@ -9,14 +9,15 @@ function isFunction(input: unknown) {
 }
 
 export const elLocale: LocaleSpec = {
-    monthsNominativeEl: 'Ιανουάριος_Φεβρουάριος_Μάρτιος_Απρίλιος_Μάιος_Ιούνιος_Ιούλιος_Αύγουστος_Σεπτέμβριος_Οκτώβριος_Νοέμβριος_Δεκέμβριος'.split(
+    _monthsNominativeEl: 'Ιανουάριος_Φεβρουάριος_Μάρτιος_Απρίλιος_Μάιος_Ιούνιος_Ιούλιος_Αύγουστος_Σεπτέμβριος_Οκτώβριος_Νοέμβριος_Δεκέμβριος'.split(
             '_'
         ),
-    monthsGenitiveEl: 'Ιανουαρίου_Φεβρουαρίου_Μαρτίου_Απριλίου_Μαΐου_Ιουνίου_Ιουλίου_Αυγούστου_Σεπτεμβρίου_Οκτωβρίου_Νοεμβρίου_Δεκεμβρίου'.split(
+    _monthsGenitiveEl: 'Ιανουαρίου_Φεβρουαρίου_Μαρτίου_Απριλίου_Μαΐου_Ιουνίου_Ιουλίου_Αυγούστου_Σεπτεμβρίου_Οκτωβρίου_Νοεμβρίου_Δεκεμβρίου'.split(
             '_'
         ),
     months: function (momentToFormat, format) {
-        if (momentToFormat === undefined) {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        if (!momentToFormat) {
             return this._monthsNominativeEl!;
         } else if (
             typeof format === 'string' &&
@@ -68,12 +69,12 @@ export const elLocale: LocaleSpec = {
       sameElse: "L"
     },
     calendar: function (this: LocaleSpec, key: string, mom: Moment) {
-        let output = (this as unknown as Record<string, unknown>).calendarEl[key],
+        let output = ((this as unknown as LocaleSpec & { calendarEl: Record<string, string | Function> }).calendarEl)[key],
             hours = mom.hours();
         if (isFunction(output)) {
-            output = output.apply(mom);
+            output = (output as Function).apply(mom);
         }
-        return output.replace('{}', hours % 12 === 1 ? 'στη' : 'στις');
+        return (output as string).replace('{}', hours % 12 === 1 ? 'στη' : 'στις');
     } as unknown as Record<string, string | ((this: Moment, ref: Moment) => string)>,
     relativeTime: {
       future: "σε %s",

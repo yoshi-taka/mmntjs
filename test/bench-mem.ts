@@ -1,13 +1,12 @@
-// @ts-expect-error TypeScript errors are intentional for compatibility
-const gc = globalThis.gc;
+const gc = globalThis.gc as (() => void) | undefined;
 
 async function measure(label: string, importPath: string) {
-  gc(true); gc(true);
+  gc?.(); gc?.();
   const before = process.memoryUsage();
   await import(importPath);
-  gc(true); gc(true);
+  gc?.(); gc?.();
   await new Promise(r => setTimeout(r, 50));
-  gc(true);
+  gc?.();
   const after = process.memoryUsage();
   return {
     heap: after.heapUsed - before.heapUsed,
@@ -33,3 +32,4 @@ for (const [label, key] of [["heapUsed", "heap"], ["rss", "rss"], ["external", "
   console.log(`│ ${label.padEnd(19)} │ ${v1} │ ${v2} │ ${pct} │`);
 }
 console.log("└─────────────────────┴──────────┴──────────┴────────┘");
+export {};

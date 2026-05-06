@@ -50,9 +50,9 @@ function weekdaysCaseReplace(m: Moment, format?: string) {
             .slice(1, 7)
             .concat(weekdays.nominative.slice(0, 1));
     }
-    nounCase = /(\[[ВвУу]\]) ?dddd/.test(format)
+    nounCase = /(\[[ВвУу]\]) ?dddd/.test(format ?? "")
         ? 'accusative'
-        : /\[?(?:минулої|наступної)? ?\] ?dddd/.test(format)
+        : /\[?(?:минулої|наступної)? ?\] ?dddd/.test(format ?? "")
           ? 'genitive'
           : 'nominative';
     return weekdays[nounCase][m.day()];

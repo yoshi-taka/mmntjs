@@ -149,7 +149,7 @@ describe('moment2 specific', () => {
   test('_dClone: false skips defensive clone in constructor', () => {
     const MomentCtor = Object.getPrototypeOf(moment()).constructor
     const d = new Date('2024-06-15T12:00:00Z')
-    const m = new MomentCtor({ _d: d, _dClone: false }) as (m: Moment, keepTime?: boolean) => void
+    const m = new MomentCtor({ _d: d, _dClone: false }) as Moment
     expect(m._d).toBe(d) // 同じ参照 → cloneされていない
     m.add(1, 'day')
     expect(d.getDate()).toBe(16) // 外部Dateも変わってしまう
@@ -158,7 +158,7 @@ describe('moment2 specific', () => {
   test('_dClone無指定なら防御的にcloneされる', () => {
     const MomentCtor = Object.getPrototypeOf(moment()).constructor
     const external = new Date('2024-06-15T12:00:00Z')
-    const m = new MomentCtor({ _d: external }) as (m: Moment, keepTime?: boolean) => void
+    const m = new MomentCtor({ _d: external }) as Moment
     expect(m._d).not.toBe(external) // cloneされた → 別参照
     m.add(1, 'day')
     expect(external.getDate()).toBe(15) // 外部は不変

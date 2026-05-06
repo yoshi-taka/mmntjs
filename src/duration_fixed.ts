@@ -34,7 +34,7 @@ export interface DurationInput {
   to?: unknown;
 }
 
-type DurationLike = number | DurationInput | string | Duration;
+export type DurationLike = number | DurationInput | string | Duration;
 
 function absCeil(number: number): number {
   if (number < 0) {
@@ -293,7 +293,7 @@ export class Duration {
     this._isValid = false;
   }
 
-  static invalid(): this {
+  static invalid(): Duration {
     const d = new Duration(0);
     d._isValid = false;
     d._milliseconds = NaN;
@@ -367,8 +367,7 @@ export class Duration {
         if (
       smallestSeen >= 0 &&
       idx < smallestSeen &&
-      rawVal !== undefined &&
-      rawVal !== null &&
+      typeof rawVal === "number" &&
       rawVal % 1 !== 0
         ) {
           this._isValid = false;

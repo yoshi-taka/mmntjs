@@ -82,7 +82,7 @@ export function moment(
     m._dirty = true;
     return m;
   }
-  if (isMoment(input)) {return input.clone();}
+  if (isMoment(input)) {return (input as Moment).clone();}
   if (isObject(input) && input._isAMomentObject) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const obj = input as Record<string, any>;
@@ -768,7 +768,7 @@ function buildMomentConfig(
   };
   const c = config as Record<string, unknown>;
   if (parsed._unusedTokens) {c._unusedTokens = parsed._unusedTokens;}
-  if (parsed._unusedInput && parsed._unusedInput.length > 0) {c._unusedInput = parsed._unusedInput;}
+  if (parsed._unusedInput && (parsed._unusedInput as string[]).length > 0) {c._unusedInput = parsed._unusedInput;}
   if (parsed._charsLeftOver !== undefined) {c._charsLeftOver = parsed._charsLeftOver;}
   if (parsed._empty !== undefined) {c._empty = parsed._empty;}
   if (parsed._invalidMonth !== undefined) {c._invalidMonth = parsed._invalidMonth;}

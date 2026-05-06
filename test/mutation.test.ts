@@ -188,7 +188,7 @@ makeMutations([
     ],
     inputs: fc.constantFrom(null, undefined, '', 'invalid', NaN, Infinity, '2024-13-01'),
     testFn: (input: unknown) => {
-      return mutatedMoment(input).isValid() === originalMoment(input as string | number | Date | null | undefined).isValid()
+      return mutatedMoment(input).isValid() === (originalMoment as unknown as (x: unknown) => Moment)(input).isValid()
     },
   },
   {

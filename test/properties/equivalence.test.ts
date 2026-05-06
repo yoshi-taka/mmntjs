@@ -1,10 +1,20 @@
 import { describe, test, expect } from 'bun:test'
 import fc from 'fast-check'
 import _moment from '../../src/index.ts'
-import _originalMoment from '../../moment/moment'
+import type { MomentStatic } from '../../src/entry/types'
 import type { Moment } from '../../src/moment_fixed'
-const moment = _moment as (...args: unknown[]) => Moment
-const originalMoment = _originalMoment as (...args: unknown[]) => Moment
+import type { Duration } from '../../src/duration_fixed'
+import _originalMoment from '../../moment/moment'
+type MomentFn = ((...args: unknown[]) => Moment) & {
+  min(...args: unknown[]): Moment;
+  max(...args: unknown[]): Moment;
+  utc(...args: unknown[]): Moment;
+  parseZone(...args: unknown[]): Moment;
+  duration(...args: unknown[]): Duration;
+  normalizeUnits(unit: string): string;
+}
+const moment = _moment as unknown as MomentStatic
+const originalMoment = _originalMoment as unknown as MomentFn
 
 describe('Equivalence partitioning: month', () => {
   const validMonths = fc.constantFrom(0, 1, 6, 11)

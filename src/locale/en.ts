@@ -16,6 +16,8 @@ export interface LocaleSpec {
   weekdaysShort?: string[] | ((m: Moment, format?: string) => string[]) | { format: string[]; standalone: string[]; isFormat?: RegExp };
   weekdaysMin?: string[] | ((m: Moment, format?: string) => string[]) | { format: string[]; standalone: string[]; isFormat?: RegExp };
   weekdaysParse?: RegExp[];
+  shortWeekdaysParse?: RegExp[];
+  minWeekdaysParse?: RegExp[];
   weekdaysParseExact?: boolean;
   weekdaysRegex?: RegExp;
   weekdaysShortRegex?: RegExp;
@@ -33,7 +35,7 @@ export interface LocaleSpec {
     future: string;
     past: string;
     s: string | ((n: number, withoutSuffix: boolean, key: string, isFuture: boolean) => string);
-    ss: string | ((n: number, withoutSuffix: boolean, key: string, isFuture: boolean) => string);
+    ss?: string | ((n: number, withoutSuffix: boolean, key: string, isFuture: boolean) => string);
     m: string | ((n: number, withoutSuffix: boolean, key: string, isFuture: boolean) => string);
     mm: string | ((n: number, withoutSuffix: boolean, key: string, isFuture: boolean) => string);
     h: string | ((n: number, withoutSuffix: boolean, key: string, isFuture: boolean) => string);
@@ -49,6 +51,7 @@ export interface LocaleSpec {
   };
   relativeTimeFn?: (n: number, key: string, isFuture: boolean) => string;
   calendar?: Record<string, string | ((this: Moment, ref: Moment) => string)>;
+  calendarEl?: Record<string, string | Function>;
   dayOfMonthOrdinalParse?: RegExp;
   invalidDate?: string;
   eras?: unknown[];

@@ -126,7 +126,7 @@ export function registerCoreApi(): void {
     m._t = m._d.getTime();
     m._isUTC = true;
     m._offset = 0;
-    (m as unknown as Record<string, unknown>)._refreshFields();
+    (m as unknown as { _refreshFields: () => void })._refreshFields();
     return m;
   };
   momentRecord.parseZone = function (input?: unknown, format?: unknown, strict?: boolean): Moment {

@@ -82,6 +82,9 @@ export interface MomentConfig {
   _bigHour?: boolean;
   _isParseZone?: boolean;
   _userInvalidated?: boolean;
+  _t?: number;
+  _invalidEra?: number;
+  _tooBusyWith?: string;
 }
 
 const calendarKeys = ["sameDay", "nextDay", "nextWeek", "lastDay", "lastWeek", "sameElse"];
@@ -630,7 +633,7 @@ export class Moment {
     this._ensureFields();
     if (d !== undefined) {
       const current = this.$W;
-      const weekConfig = (this._getLocale()._config as Record<string, unknown>).week ?? { dow: 0 };
+      const weekConfig = (this._getLocale()._config as Record<string, unknown>).week as { dow: number; doy?: number } | undefined ?? { dow: 0 };
       const dow = weekConfig.dow;
       const weekday = (current - dow + 7) % 7;
       const diff = d - weekday;
@@ -649,7 +652,7 @@ export class Moment {
       return this;
     }
     const day = this.$W;
-    const weekConfig = (this._getLocale()._config as Record<string, unknown>).week ?? { dow: 0 };
+    const weekConfig = (this._getLocale()._config as Record<string, unknown>).week as { dow: number; doy?: number } | undefined ?? { dow: 0 };
     const dow = weekConfig.dow;
     return (day - dow + 7) % 7;
   }
@@ -1306,7 +1309,7 @@ export class Moment {
         break;
       case WEEK: {
         const _locWeek = this._getLocale();
-        const _weekCfg = (_locWeek._config as Record<string, unknown>).week ?? { dow: 0 };
+        const _weekCfg = (_locWeek._config as Record<string, unknown>).week as { dow: number; doy?: number } | undefined ?? { dow: 0 };
         const dow = _weekCfg.dow;
         const day = utc ? d.getUTCDay() : d.getDay();
         const diff = (day - dow + 7) % 7;
@@ -1397,7 +1400,7 @@ export class Moment {
       }
       case WEEK: {
         const _locWeek = this._getLocale();
-        const _weekCfg = (_locWeek._config as Record<string, unknown>).week ?? { dow: 0 };
+        const _weekCfg = (_locWeek._config as Record<string, unknown>).week as { dow: number; doy?: number } | undefined ?? { dow: 0 };
         const dow = _weekCfg.dow;
         const wDay = utc ? d.getUTCDay() : d.getDay();
         const diff = (wDay - dow + 7) % 7;
@@ -1680,7 +1683,7 @@ export class Moment {
     let formatString: unknown;
 
     if (typeof cal === "function") {
-      formatString = cal.call(locale._config, key, this);
+      formatString = (cal as Function).call(locale._config, key, this);
     } else if (formatOpts && hasOwnProp(formatOpts, key)) {
       formatString = formatOpts[key];
     } else if (hasOwnProp(cal, key)) {
@@ -2077,7 +2080,7 @@ export class Moment {
   week(): number;
   week(w: number): this;
   week(w?: number): number | this {
-    const weekConfig = (this._getLocale()._config as Record<string, unknown>).week ?? { dow: 0, doy: 6 };
+    const weekConfig = (this._getLocale()._config as Record<string, unknown>).week as { dow: number; doy: number } | undefined ?? { dow: 0, doy: 6 };
     const dow = weekConfig.dow;
     const doy = weekConfig.doy;
 
@@ -2125,7 +2128,7 @@ export class Moment {
   weekYear(): number;
   weekYear(y: number): this;
   weekYear(y?: number): number | this {
-    const weekConfig = (this._getLocale()._config as Record<string, unknown>).week ?? { dow: 0, doy: 6 };
+    const weekConfig = (this._getLocale()._config as Record<string, unknown>).week as { dow: number; doy: number } | undefined ?? { dow: 0, doy: 6 };
     const dow = weekConfig.dow;
     const doy = weekConfig.doy;
 
@@ -2252,7 +2255,7 @@ export class Moment {
           m._isUTC = true;
           m._refreshFields();
         } else {
-          const allInput = `${this._i } ${  ((this as Record<string, unknown>)._unusedInput ?? []).join("")}`;
+          const allInput = `${this._i } ${  ((this as Record<string, unknown>)._unusedInput as string[] | undefined ?? []).join("")}`;
           const tzMatch = allInput.match(/([+-]\d{2}):?(\d{2})\s*$/);
           if (tzMatch) {
             const sign = tzMatch[1][0] === "+" ? 1 : -1;
@@ -2429,7 +2432,7 @@ export class Moment {
     return result;
   }
 
-  parsingFlags(): object {
+  parsingFlags(): Record<string, unknown> {
     const result: Record<string, unknown> = {
       overflow: this._overflow ?? -1,
       unusedTokens: this._unusedTokens ?? [],
@@ -2545,35 +2548,35 @@ function anchorMs(year: number, month: number, day: number, hour: number, min: n
 }
 
 export function checkOverflow(parsed: Record<string, unknown> | ParsedData): number {
-  if (parsed.month != null && (parsed.month < 0 || parsed.month > 11)) {return 1;}
+  if (parsed.month != null && ((parsed.month as number) < 0 || (parsed.month as number) > 11)) {return 1;}
   if (parsed.day != null) {
     const maxDay = daysInMonth(
       parsed.year != null ? (parsed.year as number) : 2000,
-      parsed.month ?? 0,
+      parsed.month != null ? (parsed.month as number) : 0,
     );
-    if (parsed.day < 1 || parsed.day > maxDay) {return 2;}
+    if ((parsed.day as number) < 1 || (parsed.day as number) > maxDay) {return 2;}
   }
-  if (parsed.hour != null && (parsed.hour < 0 || parsed.hour > 24)) {return 3;}
-  if (parsed.hour === 24 && (parsed.minute || parsed.second || parsed.millisecond)) {return 3;}
-  if (parsed.minute != null && (parsed.minute < 0 || parsed.minute > 59)) {return 4;}
-  if (parsed.second != null && (parsed.second < 0 || parsed.second > 59)) {return 5;}
-  if (parsed.millisecond != null && (parsed.millisecond < 0 || parsed.millisecond > 999))
+  if (parsed.hour != null && ((parsed.hour as number) < 0 || (parsed.hour as number) > 24)) {return 3;}
+  if ((parsed.hour as number) === 24 && (parsed.minute || parsed.second || parsed.millisecond)) {return 3;}
+  if (parsed.minute != null && ((parsed.minute as number) < 0 || (parsed.minute as number) > 59)) {return 4;}
+  if (parsed.second != null && ((parsed.second as number) < 0 || (parsed.second as number) > 59)) {return 5;}
+  if (parsed.millisecond != null && ((parsed.millisecond as number) < 0 || (parsed.millisecond as number) > 999))
     {return 6;}
   if (parsed.isoWeek != null && parsed.isoWeekYear != null) {
-    const maxWeek = weeksInYear(parsed.isoWeekYear, 1, 4, true);
+    const maxWeek = weeksInYear(parsed.isoWeekYear as number, 1, 4, true);
     if ((parsed.isoWeek as number) < 1 || (parsed.isoWeek as number) > maxWeek) {return 7;}
   }
   if (parsed._weekYear != null && parsed._week != null && parsed.month === undefined) {
-    if (parsed._week < 1) {return 7;}
+    if ((parsed._week as number) < 1) {return 7;}
   }
   if (parsed._localeWeekday != null) {
-    if (parsed._localeWeekday < 0 || parsed._localeWeekday > 6) {return 8;}
+    if ((parsed._localeWeekday as number) < 0 || (parsed._localeWeekday as number) > 6) {return 8;}
   }
   if (parsed._weekdayNum != null) {
     if (parsed.isoWeek != null) {
-      if (parsed._weekdayNum < 1 || parsed._weekdayNum > 7) {return 8;}
+      if ((parsed._weekdayNum as number) < 1 || (parsed._weekdayNum as number) > 7) {return 8;}
     } else if (parsed._localeWeekday === undefined) {
-      if (parsed._weekdayNum < 0 || parsed._weekdayNum > 6) {return 8;}
+      if ((parsed._weekdayNum as number) < 0 || (parsed._weekdayNum as number) > 6) {return 8;}
     }
   }
   return -1;
