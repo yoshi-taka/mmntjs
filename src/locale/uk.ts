@@ -28,7 +28,7 @@ function relativeTimeWithPlural(number: number, withoutSuffix: boolean, key: str
     }
 }
 
-function weekdaysCaseReplace(m: Moment, format: string) {
+function weekdaysCaseReplace(m: Moment, format?: string) {
     let weekdays: Record<string, string[]> = {
             nominative:
                 'неділя_понеділок_вівторок_середа_четвер_п’ятниця_субота'.split(
@@ -45,7 +45,7 @@ function weekdaysCaseReplace(m: Moment, format: string) {
         },
         nounCase;
 
-    if (m === true) {
+    if ((m as unknown) === true) {
         return weekdays.nominative
             .slice(1, 7)
             .concat(weekdays.nominative.slice(0, 1));
@@ -59,7 +59,7 @@ function weekdaysCaseReplace(m: Moment, format: string) {
 }
 
 function processHoursFunction(str: string) {
-    return function () {
+    return function (this: Moment) {
         return `${str  }о${  this.hours() === 11 ? 'б' : ''  }] LT`;
     };
 }

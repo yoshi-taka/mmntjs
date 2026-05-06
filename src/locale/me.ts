@@ -13,7 +13,7 @@ const translator = {
         MM: ['mjesec', 'mjeseca', 'mjeseci'],
         yy: ['godina', 'godine', 'godina'],
     },
-    correctGrammaticalCase: function (number: number, wordKey: string) {
+    correctGrammaticalCase: function (number: number, wordKey: string[]) {
         return number === 1
             ? wordKey[0]
             : number >= 2 && number <= 4

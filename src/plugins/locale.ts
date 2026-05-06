@@ -45,8 +45,8 @@ export function registerLocaleApi(): void {
   momentRecord.defineLocale = function (locale: string, config: Record<string, unknown>): Locale | void {
     return defineLocale(locale, config);
   };
-  momentRecord.updateLocale = function (locale: string, config: Record<string, unknown>): Locale | void {
-    return updateLocale(locale, config);
+  momentRecord.updateLocale = function (locale: string, config: Record<string, unknown> | null): Locale | void {
+    return updateLocale(locale, config as unknown as Partial<LocaleSpec>);
   };
   momentRecord.locales = listLocales;
   momentRecord.months = function (format?: string, index?: number): string | string[] {

@@ -26,8 +26,8 @@ export const esLocale: LocaleSpec = {
     months: 'enero_febrero_marzo_abril_mayo_junio_julio_agosto_septiembre_octubre_noviembre_diciembre'.split(
         '_'
     ),
-    monthsShort: function (m, format) {
-        if (/-MMM-/.test(format)) {
+    monthsShort: function (m, format?) {
+        if (format?.includes("-MMM-")) {
             return monthsShort[m.month()];
         } else {
             return monthsShortDot[m.month()];

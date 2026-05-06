@@ -54,7 +54,7 @@ export const afLocale: LocaleSpec = {
       yy: "%d jaar"
     },
     dayOfMonthOrdinalParse: /\d{1,2}(ste|de)/,
-    ordinal: function (number: number, period?: string) {
+    ordinal: function (number: number, _period?: string) {
         return (
             number +
             (number === 1 || number === 8 || number >= 20 ? 'ste' : 'de')

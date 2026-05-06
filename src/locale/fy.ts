@@ -9,8 +9,8 @@ export const fyLocale: LocaleSpec = {
     months: 'jannewaris_febrewaris_maart_april_maaie_juny_july_augustus_septimber_oktober_novimber_desimber'.split(
         '_'
     ),
-    monthsShort: function (m, format) {
-        if (/-MMM-/.test(format)) {
+    monthsShort: function (m, format?) {
+        if (format?.includes("-MMM-")) {
             return monthsShortWithoutDots[m.month()];
         } else {
             return monthsShortWithDots[m.month()];

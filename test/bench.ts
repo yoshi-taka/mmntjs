@@ -110,8 +110,8 @@ const CASES: BenchCase[] = [
       const c = moment("2024-01-01"), d = moment2("2024-01-01");
       const e = moment("2024-12-31"), f = moment2("2024-12-31");
       return [
-        () => { a.isBetween(c, e); a.isBetween(c, e, "month"); a.isBetween(c, e, null, "()"); },
-        () => { b.isBetween(d, f); b.isBetween(d, f, "month"); b.isBetween(d, f, null, "()"); },
+        () => { a.isBetween(c, e); a.isBetween(c, e, "month"); a.isBetween(c, e, undefined, "()"); },
+        () => { b.isBetween(d, f); b.isBetween(d, f, "month"); b.isBetween(d, f, undefined, "()"); },
       ];
     },
   },

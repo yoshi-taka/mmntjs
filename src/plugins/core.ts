@@ -5,7 +5,7 @@ import {
   setUpdateOffsetCallback,
   getUpdateOffsetCallback,
 } from "../moment_fixed";
-import { Duration, isDuration as checkIsDuration } from "../duration_fixed";
+import { Duration, isDuration as checkIsDuration, type DurationLike } from "../duration_fixed";
 import {
   isMoment,
   isDate,
@@ -28,7 +28,7 @@ export function registerCoreApi(): void {
   const momentRecord = moment as unknown as Record<string, unknown>;
 
   momentRecord.duration = function (input?: unknown, unit?: string): Duration {
-    return new Duration(input, unit);
+    return new Duration(input as DurationLike, unit);
   };
   (momentRecord.duration as Record<string, unknown>).invalid = function (): Duration {
     return Duration.invalid();
@@ -69,8 +69,6 @@ export function registerCoreApi(): void {
       return (str: string) => {
         const fn = parseTwoDigitYearInternal;
         return fn(str);
-        const num = parseInt(str, 10);
-        return num > 68 ? 1900 + num : 2000 + num;
       };
     },
     set(v: ((str: string) => number) | undefined) {

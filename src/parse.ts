@@ -82,7 +82,7 @@ export function parseString(
 
   if (!format && (locale === "en" || (locale === undefined && getCurrentLocale() === "en"))) {
     const fast = parseCommonISO(str);
-    if (fast) {return fast;}
+    if (fast) {return fast as unknown as ParsedData;}
   }
 
   const locObj = getLocale(locale);
@@ -90,9 +90,9 @@ export function parseString(
   if (format) {
     const preparsed = locObj.preparse(str);
     if (isArray(format)) {
-      return parseWithFormats(preparsed, format, locale, strict);
+      return parseWithFormats(preparsed, format, locale, strict) as unknown as ParsedData;
     }
-    return parseWithFormat(preparsed, format, locale, strict);
+    return parseWithFormat(preparsed, format, locale, strict) as unknown as ParsedData;
   }
 
   str = locObj.preparse(str);
@@ -113,23 +113,29 @@ export function parseString(
       second: d.getUTCSeconds(),
       millisecond: d.getUTCMilliseconds(),
       offset: 0,
-    };
+      _unusedTokens: [],
+      _unusedInput: [],
+      _charsLeftOver: 0,
+      _empty: false,
+      _invalidMonth: null,
+      _parsedDateParts: [],
+    } as unknown as ParsedData;
   }
 
   const fastResult = parseCommonISOExtended(trimmed);
-  if (fastResult) {return fastResult;}
+  if (fastResult) {return fastResult as unknown as ParsedData;}
 
   const isoResult = parseISOWithTable(trimmed);
   if (isoResult) {
-    if (isoResult._claimed) {return { _claimed: true };}
-    return isoResult;
+    if (isoResult._claimed) {return { _claimed: true } as unknown as ParsedData;}
+    return isoResult as unknown as ParsedData;
   }
 
   let rfcStr = stripRFC2822Comments(trimmed);
   let rfcMatch = rfcStr.match(RFC_2822_REGEX);
   rfcMatch ??= trimmed.match(RFC_2822_REGEX);
   if (rfcMatch) {
-    return parseRFC2822(rfcMatch);
+    return parseRFC2822(rfcMatch) as unknown as ParsedData;
   }
 
   return null;
@@ -353,7 +359,7 @@ function parseRFC2822(match: RegExpMatchArray): Record<string, unknown> | null {
   const second = match[7] ? parseInt(match[7], 10) : 0;
   const tzStr = match[8] || match[9];
 
-  const monthMap: Record<string, number> = {
+  const monthMap: Record<string, number | undefined> = {
     Jan: 0,
     Feb: 1,
     Mar: 2,
@@ -378,7 +384,7 @@ function parseRFC2822(match: RegExpMatchArray): Record<string, unknown> | null {
 
   let offset = 0;
   if (tzStr) {
-    const tzMap: Record<string, number> = {
+    const tzMap: Record<string, number | undefined> = {
       UTC: 0,
       GMT: 0,
       EST: -300,
@@ -426,10 +432,10 @@ function parseISOWithTable(str: string): Record<string, unknown> | null {
   let dateFormat: string | undefined;
   let allowTime = true;
 
-  const dateHasDash = datePart.indexOf("-", datePart.charCodeAt(0) === 45 ? 1 : 0) >= 0;
+  const dateHasDash = datePart.includes("-", datePart.charCodeAt(0) === 45 ? 1 : 0);
 
   for (const [fmt, regex, allowT] of isoDates) {
-    if (dateHasDash !== (fmt.indexOf("-") >= 0)) {continue;}
+    if (dateHasDash !== fmt.includes("-")) {continue;}
     if (regex.exec(datePart)) {
       dateFormat = fmt;
       if (allowT === false) {allowTime = false;}
@@ -481,7 +487,7 @@ function parseISOWithTable(str: string): Record<string, unknown> | null {
   if (dateFormat.includes("DDD") && result.year !== undefined && result.dayOfYear === undefined) {
     return { _claimed: true };
   }
-  return result;
+  return result as unknown as Record<string, unknown>;
 }
 
 const monthNames: Record<string, number> = {
@@ -1038,7 +1044,7 @@ function hhh(ctx: ParseCtx): void {
   ctx.result.hour = p.v;
   ctx.result._parsedDateParts[3] = p.v;
   if (p.v > 12) {
-    ctx.result.bigHour = true;
+    ctx.result._bigHour = true;
     if (ctx.strict) { ctx.failed = true; return; }
   }
   ctx.strIdx += p.len;
@@ -1054,7 +1060,7 @@ function hh(ctx: ParseCtx): void {
   ctx.result.hour = p.v;
   ctx.result._parsedDateParts[3] = p.v;
   if (p.v > 12) {
-    ctx.result.bigHour = true;
+    ctx.result._bigHour = true;
     if (ctx.strict) { ctx.failed = true; return; }
   }
   ctx.strIdx += p.len;
@@ -1236,7 +1242,7 @@ function hw(ctx: ParseCtx): void {
 function hGGGG(ctx: ParseCtx): void {
   const p = p4(ctx.str, ctx.strIdx);
   if (p === null) { ctx.failed = true; return; }
-  ctx.result.isoWeekYear = p;
+    ctx.result._weekYear = p;
   ctx.strIdx += 4;
 }
 
@@ -1250,7 +1256,7 @@ function hgggg(ctx: ParseCtx): void {
 function hGG(ctx: ParseCtx): void {
   const p = p2(ctx.str, ctx.strIdx);
   if (p === null) { ctx.failed = true; return; }
-  ctx.result.isoWeekYear = p > 68 ? 1900 + p : 2000 + p;
+  ctx.result._weekYear = p > 68 ? 1900 + p : 2000 + p;
   ctx.strIdx += 2;
 }
 
@@ -1310,7 +1316,7 @@ function hhmm(ctx: ParseCtx): void {
   const c2 = s.charCodeAt(i + 2), c3 = s.charCodeAt(i + 3);
   if (c0 < 48 || c0 > 57 || c1 < 48 || c1 > 57 || c2 < 48 || c2 > 57 || c3 < 48 || c3 > 57) { ctx.failed = true; return; }
   const hVal = (c0 - 48) * 10 + (c1 - 48);
-  if (hVal > 12) { ctx.result.bigHour = true; }
+  if (hVal > 12) { ctx.result._bigHour = true; }
   ctx.result.hour = hVal;
   ctx.result._parsedDateParts[3] = hVal;
   ctx.result.minute = (c2 - 48) * 10 + (c3 - 48);
@@ -1326,7 +1332,7 @@ function hhmmss(ctx: ParseCtx): void {
     if (c < 48 || c > 57) { ctx.failed = true; return; }
   }
   const hVal = (s.charCodeAt(i) - 48) * 10 + (s.charCodeAt(i + 1) - 48);
-  if (hVal > 12) { ctx.result.bigHour = true; }
+  if (hVal > 12) { ctx.result._bigHour = true; }
   ctx.result.hour = hVal;
   ctx.result._parsedDateParts[3] = hVal;
   ctx.result.minute = (s.charCodeAt(i + 2) - 48) * 10 + (s.charCodeAt(i + 3) - 48);
@@ -1399,11 +1405,11 @@ function hYo(ctx: ParseCtx): void {
   const eraOrdinalRegex = eras && (ctx.loc._config as Record<string, unknown>).eraYearOrdinalParse
     ? (ctx.loc._config as Record<string, unknown>).eraYearOrdinalRegex ?? /(\d+)/
     : /(\d+)/;
-  const yoMatch = remaining.match(eraOrdinalRegex);
+  const yoMatch = remaining.match(eraOrdinalRegex as RegExp);
   if (!yoMatch) { ctx.failed = true; return; }
   const eraParseFn = (ctx.loc._config as Record<string, unknown>).eraYearOrdinalParse;
   if (eraParseFn) {
-    ctx.result._eraYear = eraParseFn(remaining, yoMatch);
+    ctx.result._eraYear = (eraParseFn as (input: string, match: RegExpExecArray) => number)(remaining, yoMatch as unknown as RegExpExecArray);
   } else {
     ctx.result._eraYear = parseInt(yoMatch[1] || yoMatch[0], 10);
   }
@@ -1417,9 +1423,9 @@ function hN(ctx: ParseCtx): void {
   const remaining = ctx.str.slice(ctx.strIdx);
   const erasList = (ctx.loc._config as Record<string, unknown>).eras;
   if (erasList && Array.isArray(erasList)) {
-    const names = ctx.strict
+    const names = (ctx.strict
       ? erasList.map((e: Record<string, unknown>) => e.abbr).filter(Boolean)
-      : [...new Set(erasList.flatMap((e: Record<string, unknown>) => [e.abbr, e.name, e.narrow].filter(Boolean)))];
+      : [...new Set(erasList.flatMap((e: Record<string, unknown>) => [e.abbr, e.name, e.narrow].filter(Boolean)))]) as string[];
     const regex = new RegExp(`^(${names.map(escapeRegex).join("|")})`);
     const nMatch = remaining.match(regex);
     if (nMatch) {
@@ -1439,7 +1445,7 @@ function hNNNN(ctx: ParseCtx): void {
   const remaining = ctx.str.slice(ctx.strIdx);
   const erasWide = (ctx.loc._config as Record<string, unknown>).eras;
   if (erasWide && Array.isArray(erasWide)) {
-    const names = erasWide.map((e: Record<string, unknown>) => e.name).filter(Boolean);
+    const names = erasWide.map((e: Record<string, unknown>) => e.name).filter(Boolean) as string[];
     const regex = new RegExp(`^(${names.map(escapeRegex).join("|")})`);
     const nMatch = remaining.match(regex);
     if (nMatch) {
@@ -1457,7 +1463,7 @@ function hNNNNN(ctx: ParseCtx): void {
   const remaining = ctx.str.slice(ctx.strIdx);
   const erasNarrow = (ctx.loc._config as Record<string, unknown>).eras;
   if (erasNarrow && Array.isArray(erasNarrow)) {
-    const names = erasNarrow.map((e: Record<string, unknown>) => e.narrow).filter(Boolean);
+    const names = erasNarrow.map((e: Record<string, unknown>) => e.narrow).filter(Boolean) as string[];
     const regex = new RegExp(`^(${names.map(escapeRegex).join("|")})`);
     const nMatch = remaining.match(regex);
     if (nMatch) {
@@ -1508,7 +1514,7 @@ function hdddd(ctx: ParseCtx): void {
     const looseMatch = remaining.match(/^\w+/);
     if (looseMatch) { ctx.strIdx += looseMatch[0].length; return; }
   }
-  if (matched !== true) { ctx.failed = true; }
+  ctx.failed = true;
 }
 
 function hddd(ctx: ParseCtx): void {
@@ -1549,7 +1555,7 @@ function hddd(ctx: ParseCtx): void {
     const looseMatch = remaining.match(/^\w+/);
     if (looseMatch) { ctx.strIdx += looseMatch[0].length; return; }
   }
-  if (matched !== true) { ctx.failed = true; }
+  ctx.failed = true;
 }
 
 function hdd(ctx: ParseCtx): void {
@@ -1581,7 +1587,7 @@ function hdd(ctx: ParseCtx): void {
     const looseMatch = enLoose ?? remaining.match(/^\w+/);
     if (looseMatch) { ctx.strIdx += looseMatch[0].length; return; }
   }
-  if (matched !== true) { ctx.failed = true; }
+  ctx.failed = true;
 }
 
 function hMMMM(ctx: ParseCtx): void {
@@ -1645,13 +1651,10 @@ function hMMMM(ctx: ParseCtx): void {
     const wordMatch = remaining.match(/^\w+/);
     if (wordMatch) {
       const monthVal = monthNames[wordMatch[0].toLowerCase()];
-      {
-        ctx.result.month = monthVal;
-        ctx.result._parsedDateParts[1] = monthVal;
-        ctx.strIdx += wordMatch[0].length;
-        return;
-      }
-      ctx.result._invalidMonth = wordMatch[0];
+      ctx.result.month = monthVal;
+      ctx.result._parsedDateParts[1] = monthVal;
+      ctx.strIdx += wordMatch[0].length;
+      return;
     }
   }
   ctx.failed = true;
@@ -1707,24 +1710,19 @@ function hMMM(ctx: ParseCtx): void {
   const enMatch = remaining.match(/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i);
   if (enMatch) {
     const monthVal = monthNames[enMatch[1].toLowerCase()];
-    {
-      ctx.result.month = monthVal;
-      ctx.result._parsedDateParts[1] = monthVal;
-      ctx.strIdx += enMatch[1].length;
-      return;
-    }
+    ctx.result.month = monthVal;
+    ctx.result._parsedDateParts[1] = monthVal;
+    ctx.strIdx += enMatch[1].length;
+    return;
   }
   if (!ctx.strict) {
     const wordMatch = remaining.match(/^\w+/);
     if (wordMatch) {
       const monthVal = monthNames[wordMatch[0].toLowerCase()];
-      {
-        ctx.result.month = monthVal;
-        ctx.result._parsedDateParts[1] = monthVal;
-        ctx.strIdx += wordMatch[0].length;
-        return;
-      }
-      ctx.result._invalidMonth = wordMatch[0];
+      ctx.result.month = monthVal;
+      ctx.result._parsedDateParts[1] = monthVal;
+      ctx.strIdx += wordMatch[0].length;
+      return;
     }
   }
   ctx.failed = true;
@@ -1821,6 +1819,148 @@ const PARSE_DISPATCH: Record<string, TokenHandler> = {
   Hmm: hHmm,
   Hmmss: hHmmss,
 };
+
+
+
+
+interface FormatToken {
+  type: "token" | "literal";
+  name?: string;
+  value?: string;
+}
+
+const FORMAT_TOKENS = [
+  "SSSSSSSSS",
+  "SSSSSSSS",
+  "SSSSSSS",
+  "SSSSSS",
+  "SSSSS",
+  "SSSS",
+  "Hmmss",
+  "Hmm",
+  "hmmss",
+  "hmm",
+  "YYYYYY",
+  "YYYYY",
+  "YYYY",
+  "yyyy",
+  "MMMM",
+  "NNNNN",
+  "NNNN",
+  "DDDD",
+  "dddd",
+  "MMM",
+  "NNN",
+  "DDD",
+  "SSS",
+  "NN",
+  "HH",
+  "hh",
+  "mm",
+  "ss",
+  "SS",
+  "ZZ",
+  "YY",
+  "DD",
+  "MM",
+  "ddd",
+  "dd",
+  "Do",
+  "yo",
+  "GGGG",
+  "gggg",
+  "GG",
+  "gg",
+  "WW",
+  "ww",
+  "W",
+  "w",
+  "M",
+  "D",
+  "H",
+  "h",
+  "m",
+  "s",
+  "S",
+  "Z",
+  "A",
+  "a",
+  "Y",
+  "y",
+  "N",
+  "d",
+  "E",
+  "e",
+  "Q",
+  "kk",
+  "k",
+  "X",
+  "x",
+];
+
+const tokenizeCache = new LruMap<string, FormatToken[]>(1000);
+
+const tokenizeByChar: Record<string, string[]> = {};
+for (const token of FORMAT_TOKENS) {
+  const c = token[0];
+  tokenizeByChar[c] ??= [];
+  tokenizeByChar[c].push(token);
+}
+for (const c in tokenizeByChar) {
+  tokenizeByChar[c].sort((a, b) => b.length - a.length);
+}
+
+function tokenizeFormat(format: string): FormatToken[] {
+  const cached = tokenizeCache.get(format);
+  if (cached) {return cached;}
+
+  const tokens: FormatToken[] = [];
+  let i = 0;
+
+  while (i < format.length) {
+    if (format[i] === "[") {
+      const close = format.indexOf("]", i);
+      if (close !== -1) {
+        tokens.push({ type: "literal", value: format.slice(i + 1, close) });
+        i = close + 1;
+        continue;
+      }
+    }
+
+    if (format[i] === "S") {
+      let j = i;
+      while (j < format.length && format[j] === "S") {
+        j++;
+      }
+      const name = "S".repeat(j - i);
+      tokens.push({ type: "token", name });
+      i = j;
+      continue;
+    }
+
+    let matched = false;
+    const candidates = tokenizeByChar[format[i]];
+    if (candidates) {
+      for (const token of candidates) {
+        if (format.startsWith(token, i)) {
+          tokens.push({ type: "token", name: token });
+          i += token.length;
+          matched = true;
+          break;
+        }
+      }
+    }
+
+    if (!matched) {
+      tokens.push({ type: "literal", value: format[i] });
+      i++;
+    }
+  }
+
+  tokenizeCache.set(format, tokens);
+  return tokens;
+}
+
 
 function parseWithFormat(
   str: string,
@@ -2193,143 +2333,7 @@ function parseWithFormat(
   return result;
 }
 
-interface FormatToken {
-  type: "token" | "literal";
-  name?: string;
-  value?: string;
-}
 
-const FORMAT_TOKENS = [
-  "SSSSSSSSS",
-  "SSSSSSSS",
-  "SSSSSSS",
-  "SSSSSS",
-  "SSSSS",
-  "SSSS",
-  "Hmmss",
-  "Hmm",
-  "hmmss",
-  "hmm",
-  "YYYYYY",
-  "YYYYY",
-  "YYYY",
-  "yyyy",
-  "MMMM",
-  "NNNNN",
-  "NNNN",
-  "DDDD",
-  "dddd",
-  "MMM",
-  "NNN",
-  "DDD",
-  "SSS",
-  "NN",
-  "HH",
-  "hh",
-  "mm",
-  "ss",
-  "SS",
-  "ZZ",
-  "YY",
-  "DD",
-  "MM",
-  "ddd",
-  "dd",
-  "Do",
-  "yo",
-  "GGGG",
-  "gggg",
-  "GG",
-  "gg",
-  "WW",
-  "ww",
-  "W",
-  "w",
-  "M",
-  "D",
-  "H",
-  "h",
-  "m",
-  "s",
-  "S",
-  "Z",
-  "A",
-  "a",
-  "Y",
-  "y",
-  "N",
-  "d",
-  "E",
-  "e",
-  "Q",
-  "kk",
-  "k",
-  "X",
-  "x",
-];
-
-const tokenizeCache = new LruMap<string, FormatToken[]>(1000);
-
-const tokenizeByChar: Record<string, string[]> = {};
-for (const token of FORMAT_TOKENS) {
-  const c = token[0];
-  tokenizeByChar[c] ??= [];
-  tokenizeByChar[c].push(token);
-}
-for (const c in tokenizeByChar) {
-  tokenizeByChar[c].sort((a, b) => b.length - a.length);
-}
-
-function tokenizeFormat(format: string): FormatToken[] {
-  const cached = tokenizeCache.get(format);
-  if (cached) {return cached;}
-
-  const tokens: FormatToken[] = [];
-  let i = 0;
-
-  while (i < format.length) {
-    if (format[i] === "[") {
-      const close = format.indexOf("]", i);
-      if (close !== -1) {
-        tokens.push({ type: "literal", value: format.slice(i + 1, close) });
-        i = close + 1;
-        continue;
-      }
-    }
-
-    if (format[i] === "S") {
-      let j = i;
-      while (j < format.length && format[j] === "S") {
-        j++;
-      }
-      const name = "S".repeat(j - i);
-      tokens.push({ type: "token", name });
-      i = j;
-      continue;
-    }
-
-    let matched = false;
-    const candidates = tokenizeByChar[format[i]];
-    if (candidates) {
-      for (const token of candidates) {
-        if (format.startsWith(token, i)) {
-          tokens.push({ type: "token", name: token });
-          i += token.length;
-          matched = true;
-          break;
-        }
-      }
-    }
-
-    if (!matched) {
-      tokens.push({ type: "literal", value: format[i] });
-      i++;
-    }
-  }
-
-  tokenizeCache.set(format, tokens);
-  return tokens;
-}
 
 function parseWithFormats(
   str: string,
@@ -2365,8 +2369,7 @@ function parseWithFormats(
     if (result.isoWeek !== undefined) {score += 16;}
     if (result.isoWeekYear !== undefined) {score += 10;}
     score -= result._unusedTokens.length * 10;
-    if (result._unusedInput)
-      {score -= result._unusedInput.reduce((a: number, s: string) => a + s.length, 0) * 2;}
+    score -= result._unusedInput.reduce((a: number, s: string) => a + s.length, 0) * 2;
     if (result._charsLeftOver) {score -= result._charsLeftOver * 3;}
 
     if (result.month !== undefined && (result.month < 0 || result.month > 11)) {score -= 100;}
@@ -2384,6 +2387,9 @@ function parseWithFormats(
   }
   return best;
 }
+
+
+
 
 export function parseArray(arr: unknown[]): ParsedData | null {
   if (arr.length === 0) {return null;}
@@ -2410,12 +2416,12 @@ export function parseArray(arr: unknown[]): ParsedData | null {
     millisecond: arr[6] !== undefined ? Number(arr[6]) : 0,
   };
 
-  if (isNaN(result.year)) {return null;}
+  if (isNaN(result.year!)) {return null;}
 
-  if (result.year < 0 || result.year > 9999) {
+  if ((result.year ?? 0) < 0 || (result.year ?? 0) > 9999) {
     const d = new Date(0);
-    d.setFullYear(result.year, result.month, result.day);
-    d.setHours(result.hour, result.minute, result.second, result.millisecond);
+    d.setFullYear(result.year ?? 0, result.month ?? 0, result.day ?? 1);
+    d.setHours(result.hour ?? 0, result.minute ?? 0, result.second ?? 0, result.millisecond ?? 0);
     if (isNaN(d.getTime())) {return null;}
     return { ...result, _useConstructor: true };
   }

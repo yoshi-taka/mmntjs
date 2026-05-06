@@ -43,7 +43,7 @@ export const filLocale: LocaleSpec = {
       yy: "%d taon"
     },
     dayOfMonthOrdinalParse: /\d{1,2}/,
-    ordinal: function (number: number, period?: string) {
+    ordinal: function (number: number, _period?: string) {
         return `${number}`;
     },
     week: {

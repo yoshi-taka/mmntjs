@@ -50,7 +50,7 @@ export const faLocale: LocaleSpec = {
     },
     meridiemParse: /قبل از ظهر|بعد از ظهر/,
     isPM: function(input: string) {
-        return /بعد از ظهر/.test(input);
+        return input.includes('بعد از ظهر');
     },
     meridiem: function (hour, _minute, _isLower) {
         if (hour < 12) {

@@ -88,7 +88,7 @@ export const azLocale: LocaleSpec = {
         const a = number % 10,
             b = (number % 100) - a,
             c = number >= 100 ? 100 : null;
-        return number + ((suffixes as Record<number, string>)[a] || (suffixes as Record<number, string>)[b] || (suffixes as Record<number, string>)[c]);
+        return number + ((suffixes as Record<number, string>)[a] || (suffixes as Record<number, string>)[b] || (suffixes as Record<number, string>)[c ?? -1]);
     },
     week: {
       dow: 1,

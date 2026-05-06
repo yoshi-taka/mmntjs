@@ -58,7 +58,7 @@ export const kuLocale: LocaleSpec = {
     },
     meridiemParse: /ئێواره‌|به‌یانی/,
     isPM: function(input: string) {
-        return /ئێواره‌/.test(input);
+        return input.includes('ئێواره‌');
     },
     meridiem: function (hour, _minute, _isLower) {
         if (hour < 12) {

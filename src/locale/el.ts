@@ -17,15 +17,14 @@ export const elLocale: LocaleSpec = {
         ),
     months: function (momentToFormat, format) {
         if (momentToFormat === undefined) {
-            return this._monthsNominativeEl;
+            return this._monthsNominativeEl!;
         } else if (
             typeof format === 'string' &&
-            /D/.test(format.substring(0, format.indexOf('MMMM')))
+            format.substring(0, format.indexOf('MMMM')).includes('D')
         ) {
-            // if there is a day number before 'MMMM'
-            return this._monthsGenitiveEl[momentToFormat.month()];
+            return (this._monthsGenitiveEl ?? [])[momentToFormat.month()];
         } else {
-            return this._monthsNominativeEl[momentToFormat.month()];
+            return (this._monthsNominativeEl ?? [])[momentToFormat.month()];
         }
     },
     monthsShort: 'Ιαν_Φεβ_Μαρ_Απρ_Μαϊ_Ιουν_Ιουλ_Αυγ_Σεπ_Οκτ_Νοε_Δεκ'.split('_'),
@@ -68,8 +67,8 @@ export const elLocale: LocaleSpec = {
         },
       sameElse: "L"
     },
-    calendar: function (key: string, mom: Moment) {
-        let output = this._calendarEl[key],
+    calendar: function (this: LocaleSpec, key: string, mom: Moment) {
+        let output = (this as unknown as Record<string, unknown>).calendarEl[key],
             hours = mom.hours();
         if (isFunction(output)) {
             output = output.apply(mom);

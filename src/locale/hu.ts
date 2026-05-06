@@ -1,3 +1,4 @@
+import type { Moment } from "../moment_fixed";
 import type { LocaleSpec } from "./en";
 
 const weekEndings =
@@ -11,9 +12,7 @@ function translate(number: number, withoutSuffix: boolean, key: string, isFuture
                 ? 'néhány másodperc'
                 : 'néhány másodperce';
         case 'ss':
-            return num + (isFuture)
-                ? ' másodperc'
-                : ' másodperce';
+            return num + (isFuture ? ' másodperc' : ' másodperce');
         case 'm':
             return `egy${  isFuture || withoutSuffix ? ' perc' : ' perce'}`;
         case 'mm':
@@ -38,7 +37,7 @@ function translate(number: number, withoutSuffix: boolean, key: string, isFuture
     return '';
 }
 
-function week(isFuture: boolean) {
+function week(this: Moment, isFuture: boolean) {
     return (
         `${isFuture ? '' : '[múlt] ' 
         }[${ 

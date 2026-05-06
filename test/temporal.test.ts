@@ -60,7 +60,7 @@ describe('temporal bridge', () => {
 
     test('PlainDate returns date-only moment', () => {
       const pd = Temporal.PlainDate.from({ year: 2024, month: 6, day: 15 })
-      const m = fromTemporal(pd) as Moment
+      const m = fromTemporal(pd)
       expect(m.isValid()).toBe(true)
       expect(m.year()).toBe(2024)
       expect(m.month()).toBe(5) // 0-indexed
@@ -94,7 +94,7 @@ describe('temporal bridge', () => {
         hour: 10,
         minute: 30,
       })
-      const m = fromTemporal(zdt) as Moment
+      const m = fromTemporal(zdt)
       const expected = moment.utc('2024-06-15T05:30:00')
       expect(m.valueOf()).toBe(expected.valueOf())
     })
@@ -108,7 +108,7 @@ describe('temporal bridge', () => {
         minute: 30,
         second: 45,
       })
-      const m = fromTemporal(pdt) as Moment
+      const m = fromTemporal(pdt)
       expect(m.year()).toBe(2024)
       expect(m.month()).toBe(5)
       expect(m.date()).toBe(15)
@@ -119,7 +119,7 @@ describe('temporal bridge', () => {
 
     test('PlainTime returns moment with today date and given time', () => {
       const pt = Temporal.PlainTime.from({ hour: 14, minute: 30, second: 15 })
-      const m = fromTemporal(pt) as Moment
+      const m = fromTemporal(pt)
       const now = new Date()
       expect(m.year()).toBe(now.getFullYear())
       expect(m.month()).toBe(now.getMonth())

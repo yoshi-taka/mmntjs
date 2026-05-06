@@ -167,7 +167,7 @@ test('format week on US calendar', function (assert) {
             expected[i]
         );
     }
-    moment.updateLocale('lt', null);
+    moment.updateLocale('lt', null as unknown as Record<string, unknown>);
 });
 
 test('from', function (assert) {

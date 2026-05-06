@@ -52,10 +52,10 @@ function translate(number: number, withoutSuffix: boolean, key: string) {
 }
 
 export const plLocale: LocaleSpec = {
-    months: function (momentToFormat, format) {
-        if (momentToFormat === undefined) {
+    months(momentToFormat: Moment, format?: string) {
+        if (arguments.length === 0) {
             return monthsNominative;
-        } else if (/D MMMM/.test(format)) {
+        } else if (format.includes("D MMMM")) {
             return monthsSubjective[momentToFormat.month()];
         } else {
             return monthsNominative[momentToFormat.month()];

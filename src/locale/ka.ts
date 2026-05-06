@@ -45,7 +45,7 @@ export const kaLocale: LocaleSpec = {
             if (/(წამი|წუთი|საათი|დღე|თვე)/.test(s)) {
                 return s.replace(/(ი|ე)$/, 'ის წინ');
             }
-            if (/წელი/.test(s)) {
+            if (s.includes('წელი')) {
                 return s.replace(/წელი$/, 'წლის წინ');
             }
             return s;
@@ -64,7 +64,7 @@ export const kaLocale: LocaleSpec = {
       yy: "%d წელი"
     },
     dayOfMonthOrdinalParse: /0|1-ლი|მე-\d{1,2}|\d{1,2}-ე/,
-    ordinal: function (number: number, period?: string) {
+    ordinal: function (number: number, _period?: string) {
         if (number === 0) {
             return `${number}`;
         }

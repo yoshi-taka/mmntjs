@@ -28,7 +28,7 @@ import {
   daysInMonth,
   isLeapYear,
 } from "./units";
-import { parseString, parseArray, parseObject } from "./parse";
+import { parseString, parseArray, parseObject, type ParsedData } from "./parse";
 import { formatMoment } from "./format";
 import { Duration, isDuration } from "./duration_fixed";
 
@@ -224,7 +224,7 @@ export class Moment {
   _cold?: MomentCold;
   _i: unknown;
   _f: string | string[] | undefined;
-  _strict: boolean;
+  declare _strict: boolean;
   declare _overflow: number | undefined;
   declare _parsedDateParts: number[] | undefined;
   declare _unusedTokens: string[] | undefined;
@@ -969,25 +969,25 @@ export class Moment {
         this.quarter(q);
       }
       if (hasOwnProp(obj, "weekYear")) {
-        this.weekYear(obj.weekYear);
+        this.weekYear(obj.weekYear as number);
       }
       if (hasOwnProp(obj, "week")) {
-        this.week(obj.week);
+        this.week(obj.week as number);
       }
       if (hasOwnProp(obj, "isoWeekYear")) {
-        this.isoWeekYear(obj.isoWeekYear);
+        this.isoWeekYear(obj.isoWeekYear as number);
       }
       if (hasOwnProp(obj, "isoWeek")) {
-        this.isoWeek(obj.isoWeek);
+        this.isoWeek(obj.isoWeek as number);
       }
       if (hasOwnProp(obj, "weekday")) {
-        this.weekday(obj.weekday);
+        this.weekday(obj.weekday as number);
       }
       if (hasOwnProp(obj, "isoWeekday")) {
-        this.isoWeekday(obj.isoWeekday);
+        this.isoWeekday(obj.isoWeekday as number);
       }
       if (hasOwnProp(obj, "dayOfYear")) {
-        this.dayOfYear(obj.dayOfYear);
+        this.dayOfYear(obj.dayOfYear as number);
       }
 
       return this;
@@ -1082,7 +1082,7 @@ export class Moment {
         this.$y = y;
         this.$M = m;
         this.$D = d_;
-        this.$W = this._isUTC ? _dayOfWeek(y, m, d_) : this._d.getDay();
+        this.$W = this._isUTC ? _dayOfWeek(y, m, d_) : this._d!.getDay();
         break;
       }
       case ISO_WEEK:
@@ -1892,7 +1892,7 @@ export class Moment {
 
   inspect(): string {
     if (!this._isValid) {
-      const inputStr = this._i !== undefined ? String(this._i) : "";
+      const inputStr = this._i !== undefined ? String(this._i as string | number) : "";
       return `moment.invalid(/* ${inputStr} */)`;
     }
     if (!this.isLocal()) {
@@ -2268,7 +2268,7 @@ export class Moment {
     const m = momentFromAnything(input);
     m._isParseZone = true;
     if (format && isString(input)) {
-      const parsed = parseString(input, format);
+      const parsed = parseString(input, format as string | string[]);
       if (parsed?.offset !== undefined) {
         const d = createDateSafe(
           parsed.year ?? 0,
@@ -2544,33 +2544,33 @@ function anchorMs(year: number, month: number, day: number, hour: number, min: n
   return new Date(y, m, d, hour, min, sec, ms).getTime();
 }
 
-export function checkOverflow(parsed: Record<string, unknown>): number {
-  if (parsed.month !== undefined && (parsed.month < 0 || parsed.month > 11)) {return 1;}
-  if (parsed.day !== undefined) {
+export function checkOverflow(parsed: Record<string, unknown> | ParsedData): number {
+  if (parsed.month != null && (parsed.month < 0 || parsed.month > 11)) {return 1;}
+  if (parsed.day != null) {
     const maxDay = daysInMonth(
-      parsed.year !== undefined ? parsed.year : 2000,
+      parsed.year != null ? (parsed.year as number) : 2000,
       parsed.month ?? 0,
     );
     if (parsed.day < 1 || parsed.day > maxDay) {return 2;}
   }
-  if (parsed.hour !== undefined && (parsed.hour < 0 || parsed.hour > 24)) {return 3;}
+  if (parsed.hour != null && (parsed.hour < 0 || parsed.hour > 24)) {return 3;}
   if (parsed.hour === 24 && (parsed.minute || parsed.second || parsed.millisecond)) {return 3;}
-  if (parsed.minute !== undefined && (parsed.minute < 0 || parsed.minute > 59)) {return 4;}
-  if (parsed.second !== undefined && (parsed.second < 0 || parsed.second > 59)) {return 5;}
-  if (parsed.millisecond !== undefined && (parsed.millisecond < 0 || parsed.millisecond > 999))
+  if (parsed.minute != null && (parsed.minute < 0 || parsed.minute > 59)) {return 4;}
+  if (parsed.second != null && (parsed.second < 0 || parsed.second > 59)) {return 5;}
+  if (parsed.millisecond != null && (parsed.millisecond < 0 || parsed.millisecond > 999))
     {return 6;}
-  if (parsed.isoWeek !== undefined && parsed.isoWeekYear !== undefined) {
+  if (parsed.isoWeek != null && parsed.isoWeekYear != null) {
     const maxWeek = weeksInYear(parsed.isoWeekYear, 1, 4, true);
-    if (parsed.isoWeek < 1 || parsed.isoWeek > maxWeek) {return 7;}
+    if ((parsed.isoWeek as number) < 1 || (parsed.isoWeek as number) > maxWeek) {return 7;}
   }
-  if (parsed._weekYear !== undefined && parsed._week !== undefined && parsed.month === undefined) {
+  if (parsed._weekYear != null && parsed._week != null && parsed.month === undefined) {
     if (parsed._week < 1) {return 7;}
   }
-  if (parsed._localeWeekday !== undefined) {
+  if (parsed._localeWeekday != null) {
     if (parsed._localeWeekday < 0 || parsed._localeWeekday > 6) {return 8;}
   }
-  if (parsed._weekdayNum !== undefined) {
-    if (parsed.isoWeek !== undefined) {
+  if (parsed._weekdayNum != null) {
+    if (parsed.isoWeek != null) {
       if (parsed._weekdayNum < 1 || parsed._weekdayNum > 7) {return 8;}
     } else if (parsed._localeWeekday === undefined) {
       if (parsed._weekdayNum < 0 || parsed._weekdayNum > 6) {return 8;}
@@ -2579,15 +2579,15 @@ export function checkOverflow(parsed: Record<string, unknown>): number {
   return -1;
 }
 
-function hasAnyValue(parsed: Record<string, unknown>): boolean {
+function hasAnyValue(parsed: Record<string, unknown> | ParsedData): boolean {
   return (
-    parsed.year !== undefined ||
-    parsed.month !== undefined ||
-    parsed.day !== undefined ||
-    parsed.hour !== undefined ||
-    parsed.minute !== undefined ||
-    parsed.second !== undefined ||
-    parsed.millisecond !== undefined
+    parsed.year != null ||
+    parsed.month != null ||
+    parsed.day != null ||
+    parsed.hour != null ||
+    parsed.minute != null ||
+    parsed.second != null ||
+    parsed.millisecond != null
   );
 }
 
@@ -2652,15 +2652,15 @@ export function momentFromAnything(input: unknown, isUTC?: boolean): Moment {
   if (typeof input === "object" && !isMoment(input)) {
     const obj = input as Record<string, unknown>;
     const parsed = parseObject(obj);
-    if (parsed.year !== undefined || parsed.month !== undefined || parsed.day !== undefined) {
+    if (parsed.year != null || parsed.month != null || parsed.day != null) {
       const now = new Date();
-      const y = parsed.year !== undefined ? parsed.year : now.getFullYear();
-      const mo = parsed.month ?? 0;
-      const d = parsed.day ?? 1;
-      const h = parsed.hour ?? 0;
-      const min = parsed.minute ?? 0;
-      const s = parsed.second ?? 0;
-      const ms = parsed.millisecond ?? 0;
+      const y = parsed.year != null ? (parsed.year as number) : now.getFullYear();
+      const mo = (parsed.month as number | undefined) ?? 0;
+      const d = (parsed.day as number | undefined) ?? 1;
+      const h = (parsed.hour as number | undefined) ?? 0;
+      const min = (parsed.minute as number | undefined) ?? 0;
+      const s = (parsed.second as number | undefined) ?? 0;
+      const ms = (parsed.millisecond as number | undefined) ?? 0;
       return new Moment({ _d: new Date(y, mo, d, h, min, s, ms), _i: input, _dClone: false });
     }
     const m = new Moment(input);

@@ -13,7 +13,7 @@ test('parse', function (assert) {
             'ژانویه_فوریه_مارس_آوریل_مه_ژوئن_ژوئیه_اوت_سپتامبر_اکتبر_نوامبر_دسامبر'.split(
                 '_'
             ),
-        i;
+        i: number;
     function equalTest(input: string, mmm: string, monthIdx: number) {
         assert.equal(
             moment(input, mmm).month(),
@@ -81,7 +81,7 @@ test('format', function (assert) {
             ['llll', 'یک\u200cشنبه، ۱۴ فوریه ۲۰۱۰ ۱۵:۲۵'],
         ],
         b = moment(new Date(2010, 1, 14, 15, 25, 50, 125)),
-        i;
+        i: number;
     for (i = 0; i < a.length; i++) {
         assert.equal(b.format(a[i][0]), a[i][1], `${a[i][0]  } ---> ${  a[i][1]}`);
     }
@@ -129,7 +129,7 @@ test('format month', function (assert) {
             'ژانویه ژانویه_فوریه فوریه_مارس مارس_آوریل آوریل_مه مه_ژوئن ژوئن_ژوئیه ژوئیه_اوت اوت_سپتامبر سپتامبر_اکتبر اکتبر_نوامبر نوامبر_دسامبر دسامبر'.split(
                 '_'
             ),
-        i;
+        i: number;
     for (i = 0; i < expected.length; i++) {
         assert.equal(
             moment([2011, i, 1]).format('MMMM MMM'),
@@ -144,7 +144,7 @@ test('format week', function (assert) {
             'یک\u200cشنبه یک\u200cشنبه ی_دوشنبه دوشنبه د_سه\u200cشنبه سه\u200cشنبه س_چهارشنبه چهارشنبه چ_پنج\u200cشنبه پنج\u200cشنبه پ_جمعه جمعه ج_شنبه شنبه ش'.split(
                 '_'
             ),
-        i;
+        i: number;
     for (i = 0; i < expected.length; i++) {
         assert.equal(
             moment([2011, 0, 2 + i]).format('dddd ddd dd'),

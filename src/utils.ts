@@ -23,7 +23,7 @@ export function isDate(input: unknown): input is Date {
 }
 
 export function isMoment(input: unknown): input is { _isAMomentObject: boolean } {
-  return input?._isAMomentObject === true;
+  return (input as { _isAMomentObject: boolean })._isAMomentObject === true;
 }
 
 export function isString(input: unknown): input is string {
@@ -86,7 +86,7 @@ export function absRound(number: number): number {
 export function createDate(
   year: number,
   month: number,
-  day: number = 1,
+  day = 1,
   ...args: [number?, number?, number?, number?]
 ): Date {
   const [hour, minute, second, ms] = args;
@@ -102,7 +102,7 @@ export function createDate(
 export function createUTCDate(
   year: number,
   month: number,
-  day: number = 1,
+  day = 1,
   ...args: [number?, number?, number?, number?]
 ): Date {
   const [hour, minute, second, ms] = args;
@@ -130,8 +130,8 @@ export function escapeRegex(str: string): string {
 }
 
 export class LruMap<K, V> {
-  private max: number;
-  private map: Map<K, V>;
+  private readonly max: number;
+  private readonly map: Map<K, V>;
 
   constructor(max: number) {
     this.max = max;

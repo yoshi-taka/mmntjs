@@ -106,7 +106,7 @@ function relativeTimeMr(number: number, withoutSuffix: boolean, string: string, 
                 break;
         }
     }
-    return output.replace(/%d/i, number);
+    return output.replace(/%d/i, String(number));
 }
 
 export const mrLocale: LocaleSpec = {

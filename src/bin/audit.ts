@@ -131,7 +131,7 @@ export function runAudit(dir = ".") {
           }
 
           // Object.freeze check
-          if (/Object\.freeze\(/.test(line)) {
+          if (line.includes("Object.freeze(")) {
             unrecognizedLines.push(`${p}:${i + 1} — Object.freeze() on moment instance`);
           }
         }

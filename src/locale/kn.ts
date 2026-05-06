@@ -110,7 +110,7 @@ export const knLocale: LocaleSpec = {
         }
     },
     dayOfMonthOrdinalParse: /\d{1,2}(ನೇ)/,
-    ordinal: function (number: number, period?: string) {
+    ordinal: function (number: number, _period?: string) {
         return `${number  }ನೇ`;
     },
     week: {

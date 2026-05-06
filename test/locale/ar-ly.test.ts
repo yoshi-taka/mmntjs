@@ -25,7 +25,7 @@ const months = [
 
 test('parse', function (assert) {
     let tests = months,
-        i;
+        i: number;
     function equalTest(input: string, mmm: string, monthIdx: number) {
         assert.equal(
             moment(input, mmm).month(),
@@ -97,7 +97,7 @@ test('format', function (assert) {
             ['llll', 'أحد 14 فبراير 2010 15:25'],
         ],
         b = moment(new Date(2010, 1, 14, 15, 25, 50, 125)),
-        i;
+        i: number;
     for (i = 0; i < a.length; i++) {
         assert.equal(b.format(a[i][0]), a[i][1], `${a[i][0]  } ---> ${  a[i][1]}`);
     }
@@ -142,7 +142,7 @@ test('format ordinal', function (assert) {
 
 test('format month', function (assert) {
     let expected = months,
-        i;
+        i: number;
     for (i = 0; i < expected.length; i++) {
         assert.equal(
             moment([2011, i, 1]).format('MMMM'),
@@ -162,7 +162,7 @@ test('format week', function (assert) {
             'الأحد أحد ح_الإثنين إثنين ن_الثلاثاء ثلاثاء ث_الأربعاء أربعاء ر_الخميس خميس خ_الجمعة جمعة ج_السبت سبت س'.split(
                 '_'
             ),
-        i;
+        i: number;
     for (i = 0; i < expected.length; i++) {
         assert.equal(
             moment([2011, 0, 2 + i]).format('dddd ddd dd'),

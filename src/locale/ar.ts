@@ -94,7 +94,7 @@ const symbolMap = {
             if (f === 2) {
                 str = str[withoutSuffix ? 0 : 1];
             }
-            return str.replace(/%d/i, number);
+            return (str as string).replace(/%d/i, String(number));
         };
     },
     months = [

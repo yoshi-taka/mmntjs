@@ -29,7 +29,7 @@ function mergeConfig(base: LocaleSpec, override: Partial<LocaleSpec>): LocaleSpe
         !Array.isArray(base[key as keyof LocaleSpec]) &&
         !(base[key as keyof LocaleSpec] instanceof RegExp)
       ) {
-        result[key] = { ...(base as Record<string, unknown>)[key], ...val };
+        result[key] = Object.assign({}, (base as Record<string, unknown>)[key], val);
       } else {
         result[key] = val;
       }
@@ -118,10 +118,7 @@ export class Locale {
       return result;
     }
     if (Array.isArray(wd)) {return wd;}
-    {
-      return (wd as Record<string, string[]>).standalone;
-    }
-    return wd as string[];
+    return (wd as Record<string, string[]>).standalone;
   }
 
   monthsArray(): string[] {
@@ -147,7 +144,7 @@ export class Locale {
       }
       return result;
     }
-    return ws;
+    return ws as string[];
   }
 
   weekdaysMinArray(): string[] {
@@ -161,7 +158,7 @@ export class Locale {
       }
       return result;
     }
-    return wm;
+    return wm as string[];
   }
 
   months(m?: Moment, format?: string): string[] | string {
@@ -227,13 +224,10 @@ export class Locale {
   private _resolveWeekdays(wd: string[] | Function | Record<string, unknown>, m: Moment, format?: string): string {
     if (isFunction(wd)) {return wd(m, format) as string;}
     if (Array.isArray(wd)) {return wd[m.day()] || "";}
-    {
-      const isFmt = wd.isFormat;
-      const useFormat = format && isFmt instanceof RegExp && isFmt.test(format);
-      const list = useFormat ? wd.format : wd.standalone ?? wd.format;
-      if (Array.isArray(list)) {return list[m.day()] ?? "";}
-      return "";
-    }
+    const isFmt = wd.isFormat;
+    const useFormat = format && isFmt instanceof RegExp && isFmt.test(format);
+    const list = useFormat ? wd.format : wd.standalone ?? wd.format;
+    if (Array.isArray(list)) {return list[m.day()] ?? "";}
     return "";
   }
 
@@ -259,14 +253,14 @@ export class Locale {
       ws ??= enLocale.weekdaysShort;
       if (!ws) {return this._weekdays;}
       if (isFunction(ws)) {return ws(null as unknown as Moment, format);}
-      return ws;
+      return ws as string[] | string;
     }
     let ws = this._config.weekdaysShort;
     ws ??= enLocale.weekdaysShort;
     if (!ws) {return this.weekdays(m) as string[];}
     if (isFunction(ws)) {return ws(m, format);}
     if (isString(ws)) {return ws;}
-    return ws[m.day()] || ws;
+    return (ws as unknown as Record<string, string[]>).standalone;
   }
 
   weekdaysMin(m?: Moment | boolean, format?: string): string[] | string {
@@ -278,14 +272,14 @@ export class Locale {
       wm ??= enLocale.weekdaysMin;
       if (!wm) {return this.weekdaysShortArray();}
       if (isFunction(wm)) {return wm(null as unknown as Moment, format);}
-      return wm;
+      return wm as string[] | string;
     }
     let wm = this._config.weekdaysMin;
     wm ??= enLocale.weekdaysMin;
     if (!wm) {return this.weekdaysShort(m) as string[];}
     if (isFunction(wm)) {return wm(m, format);}
     if (isString(wm)) {return wm;}
-    return wm[m.day()] || wm;
+    return (wm as unknown as Record<string, string[]>).standalone;
   }
 
   meridiem(hour: number, minute: number, isLower: boolean): string {
@@ -559,7 +553,7 @@ export function getLocale(locale?: string | { _locale?: { _abbr?: string }; _l?:
   } else if (locale?._l) {
     locale = locale._l;
   }
-  const key = locale ?? currentLocaleName;
+  const key = (locale as string | undefined) ?? currentLocaleName;
   const cached = _localeCache.get(key);
   if (cached) {return cached;}
   const config = resolveLocaleConfig(key);

@@ -13,7 +13,7 @@ function processRelativeTime(number: number, withoutSuffix: boolean, key: string
 }
 
 function processFutureTime(string: string) {
-    const number = string.substr(0, string.indexOf(' '));
+    const number = parseInt(string.substr(0, string.indexOf(' ')), 10);
     if (eifelerRegelAppliesToNumber(number)) {
         return `a ${  string}`;
     }
@@ -21,7 +21,7 @@ function processFutureTime(string: string) {
 }
 
 function processPastTime(string: string) {
-    const number = string.substr(0, string.indexOf(' '));
+    const number = parseInt(string.substr(0, string.indexOf(' ')), 10);
     if (eifelerRegelAppliesToNumber(number)) {
         return `viru ${  string}`;
     }
@@ -29,7 +29,6 @@ function processPastTime(string: string) {
 }
 
 function eifelerRegelAppliesToNumber(number: number) {
-    number = parseInt(number, 10);
     if (isNaN(number)) {
         return false;
     }

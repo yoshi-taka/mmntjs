@@ -1,8 +1,8 @@
 import type { Moment } from "../moment_fixed";
 
 export interface LocaleSpec {
-  months?: string[] | ((m: Moment, format?: string) => string[] | string) | { format: string[]; standalone: string[] };
-  monthsShort?: string[] | ((m: Moment, format?: string) => string[] | string) | { format: string[]; standalone: string[] };
+  months?: string[] | ((m: Moment, format?: string) => string[] | string) | { format: string[]; standalone: string[]; isFormat?: RegExp };
+  monthsShort?: string[] | ((m: Moment, format?: string) => string[] | string) | { format: string[]; standalone: string[]; isFormat?: RegExp };
   monthsParse?: RegExp[];
   monthsRegex?: RegExp;
   monthsShortRegex?: RegExp;
@@ -11,10 +11,10 @@ export interface LocaleSpec {
   longMonthsParse?: RegExp[];
   shortMonthsParse?: RegExp[];
   monthsParseExact?: boolean;
-  fullWeekdaysParse?: boolean;
-  weekdays?: string[] | ((m: Moment, format?: string) => string[] | string);
-  weekdaysShort?: string[] | ((m: Moment, format?: string) => string[]);
-  weekdaysMin?: string[] | ((m: Moment, format?: string) => string[]);
+  fullWeekdaysParse?: boolean | RegExp[];
+  weekdays?: string[] | ((m: Moment, format?: string) => string[] | string) | { format: string[]; standalone: string[]; isFormat?: RegExp };
+  weekdaysShort?: string[] | ((m: Moment, format?: string) => string[]) | { format: string[]; standalone: string[]; isFormat?: RegExp };
+  weekdaysMin?: string[] | ((m: Moment, format?: string) => string[]) | { format: string[]; standalone: string[]; isFormat?: RegExp };
   weekdaysParse?: RegExp[];
   weekdaysParseExact?: boolean;
   weekdaysRegex?: RegExp;
@@ -56,6 +56,8 @@ export interface LocaleSpec {
   eraYearOrdinalParse?: (input: string, match: RegExpExecArray) => number;
   week?: { dow: number; doy: number };
   parentLocale?: string;
+  _monthsNominativeEl?: string[];
+  _monthsGenitiveEl?: string[];
   preparse?: (str: string) => string;
   postformat?: (str: string) => string;
   _formatFastPath?: (m: Moment, format: string) => string | undefined;

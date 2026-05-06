@@ -25,9 +25,9 @@ function _jaFormatFastPath(m: Moment, format: string): string | undefined {
     case 'YYYY年M月D日 HH:mm':
       return `${Y  }年${  M  }月${  D  }日 ${  H < 10 ? `0${  H}` : `${  H}`  }:${  min < 10 ? `0${  min}` : `${  min}`}`;
     case 'YYYY年M月D日 dddd HH:mm':
-      return `${Y  }年${  M  }月${  D  }日 ${  jaWeekdays[raw.$W]  } ${  H < 10 ? `0${  H}` : `${  H}`  }:${  min < 10 ? `0${  min}` : `${  min}`}`;
+      return `${Y  }年${  M  }月${  D  }日 ${  jaWeekdays[raw.$W as number]  } ${  H < 10 ? `0${  H}` : `${  H}`  }:${  min < 10 ? `0${  min}` : `${  min}`}`;
     case 'YYYY年M月D日(ddd) HH:mm':
-      return `${Y  }年${  M  }月${  D  }日(${  jaWeekdaysShort[raw.$W]  }) ${  H < 10 ? `0${  H}` : `${  H}`  }:${  min < 10 ? `0${  min}` : `${  min}`}`;
+      return `${Y  }年${  M  }月${  D  }日(${  jaWeekdaysShort[raw.$W as number]  }) ${  H < 10 ? `0${  H}` : `${  H}`  }:${  min < 10 ? `0${  min}` : `${  min}`}`;
     case 'HH:mm':
       return `${H < 10 ? `0${  H}` : `${  H}`  }:${  min < 10 ? `0${  min}` : `${  min}`}`;
     case 'HH:mm:ss':

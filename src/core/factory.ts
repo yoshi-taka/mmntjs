@@ -24,6 +24,7 @@ import {
   parseString,
   parseArray,
   parseObject,
+  type ParsedData,
 } from "../parse";
 
 let momentNowFn: (() => number) | undefined;
@@ -141,7 +142,7 @@ export function moment(
   return new Moment({ _dClone: false, _d: new Date(NaN), _isValid: false, _i: input });
 }
 
-function hasAnyValue(parsed: Record<string, unknown>): boolean {
+function hasAnyValue(parsed: Record<string, unknown> | ParsedData): boolean {
   return (
     parsed.year !== undefined ||
     parsed.month !== undefined ||
@@ -160,7 +161,7 @@ function hasAnyValue(parsed: Record<string, unknown>): boolean {
   );
 }
 
-function scoreParsedResult(parsed: Record<string, unknown>): number {
+function scoreParsedResult(parsed: Record<string, unknown> | ParsedData): number {
   let score = 0;
   if (parsed.year !== undefined) {score += 10;}
   if (parsed.month !== undefined) {score += 10;}
@@ -309,16 +310,14 @@ function createFromString(
         _isValid: false,
         _overflow: overflow,
       };
-      if (bestParsed !== null) {
-        config._unusedTokens = bestParsed._unusedTokens;
-        config._unusedInput = bestParsed._unusedInput;
-        config._charsLeftOver = bestParsed._charsLeftOver;
-        config._empty = bestParsed._empty;
-        config._invalidMonth = bestParsed._invalidMonth;
-        config._weekdayMismatch = bestParsed._weekdayMismatch;
-        config._parsedDateParts = bestParsed._parsedDateParts;
-        config._meridiem = bestParsed._meridiem;
-      }
+      config._unusedTokens = bestParsed._unusedTokens;
+      config._unusedInput = bestParsed._unusedInput;
+      config._charsLeftOver = bestParsed._charsLeftOver;
+      config._empty = bestParsed._empty;
+      config._invalidMonth = bestParsed._invalidMonth;
+      config._weekdayMismatch = bestParsed._weekdayMismatch;
+      config._parsedDateParts = bestParsed._parsedDateParts;
+      config._meridiem = bestParsed._meridiem;
       return new Moment(config);
     }
 
@@ -406,7 +405,7 @@ function createFromString(
         });
       }
       if (strict) {
-        if (parsed._hasDate && !parsed._hasTime && str.indexOf("T") >= 0) {
+        if (parsed._hasDate && !parsed._hasTime && str.includes("T")) {
           return new Moment({
             _dClone: false,
             _d: new Date(NaN),
@@ -456,9 +455,9 @@ function createFromString(
     if (rfcParsed && hasAnyValue(rfcParsed)) {
       let weekdayMismatch = false;
       if (rfcParsed._weekdayName !== undefined && rfcParsed.day !== undefined) {
-        const d = new Date(rfcParsed.year, rfcParsed.month, rfcParsed.day);
+        const d = new Date(rfcParsed.year!, rfcParsed.month!, rfcParsed.day);
         const actualDay = d.getDay();
-        if (rfcParsed._weekdayName !== actualDay) {
+        if (rfcParsed._weekdayName !== String(actualDay)) {
           weekdayMismatch = true;
         }
       }
@@ -675,7 +674,7 @@ function createFromString(
     let detectedFmt: string | undefined;
     const trimmedStr = str;
     const timeMatch = trimmedStr.match(/[T ](\d{2})(?::(\d{2})(?::(\d{2})(?:[.,](\d+))?)?)?/);
-    const hasT = trimmedStr.indexOf("T") >= 0 || trimmedStr.indexOf("t") >= 0;
+    const hasT = trimmedStr.includes("T") || trimmedStr.includes("t");
     if (/^\d{4}-\d{2}-\d{2}([T ]|$)/.test(trimmedStr)) {
       detectedFmt = "YYYY-MM-DD";
       if (timeMatch) {
@@ -950,19 +949,19 @@ function createFromArray(arr: unknown[], isUTC?: boolean): Moment {
     if (v === null) {hasNull = true;}
   }
   if (hasNull) {return new Moment({ _dClone: false, _d: new Date(NaN), _i: arr, _isValid: false });}
-  const parsed = parseArray(arr) as ParsedRecord;
+  const parsed = parseArray(arr);
   if (!parsed) {
     return new Moment({ _dClone: false, _d: new Date(NaN), _i: arr, _isValid: false });
   }
   const overflow = checkOverflow(parsed);
   const d = createDateSafe(
-    parsed.year,
-    parsed.month,
-    parsed.day,
-    parsed.hour,
-    parsed.minute,
-    parsed.second,
-    parsed.millisecond,
+    parsed.year!,
+    parsed.month!,
+    parsed.day!,
+    parsed.hour!,
+    parsed.minute!,
+    parsed.second!,
+    parsed.millisecond!,
     isUTC,
   );
   if (overflow >= 0) {
@@ -973,13 +972,13 @@ function createFromArray(arr: unknown[], isUTC?: boolean): Moment {
       _isValid: false,
       _overflow: overflow,
       _parsedDateParts: [
-        parsed.year,
-        parsed.month,
-        parsed.day,
-        parsed.hour,
-        parsed.minute,
-        parsed.second,
-        parsed.millisecond,
+        parsed.year!,
+        parsed.month!,
+        parsed.day!,
+        parsed.hour!,
+        parsed.minute!,
+        parsed.second!,
+        parsed.millisecond!,
       ],
     });
   }
@@ -1005,7 +1004,7 @@ function createFromObject(obj: Record<string, unknown>): Moment {
   const second = parsed.second !== undefined ? parsed.second : 0;
   const ms = parsed.millisecond !== undefined ? parsed.millisecond : 0;
   const overflow = checkOverflow({ year, month, day, hour, minute, second, millisecond: ms });
-  const d = createDate(year, month, day, hour, minute, second, ms);
+  const d = createDate(year as number, month as number, day as number, hour as number, minute as number, second as number, ms as number);
   if (overflow >= 0) {
     return new Moment({ _dClone: false, _d: d, _i: obj, _isValid: false, _overflow: overflow });
   }

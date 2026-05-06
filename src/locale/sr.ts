@@ -16,15 +16,12 @@ const translator = {
         y: ['jednu godinu', 'jedne godine'],
         yy: ['godinu', 'godine', 'godina'],
     },
-    correctGrammaticalCase: function (number: number, wordKey: string) {
-        if (
-            number % 10 >= 1 &&
-            number % 10 <= 4 &&
-            (number % 100 < 10 || number % 100 >= 20)
-        ) {
-            return number % 10 === 1 ? wordKey[0] : wordKey[1];
-        }
-        return wordKey[2];
+    correctGrammaticalCase: function (number: number, wordKey: string[]) {
+        return number === 1
+            ? wordKey[0]
+            : number >= 2 && number <= 4
+              ? wordKey[1]
+              : wordKey[2];
     },
     translate: function (number: number, withoutSuffix: boolean, key: string, isFuture: boolean) {
         let wordKey = (translator.words as Record<string, string[]>)[key],
