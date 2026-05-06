@@ -296,7 +296,6 @@ export class Moment {
   year(y?: unknown): number | this {
     if (y !== undefined) {
     if (
-      y === undefined ||
       y === "" ||
       (typeof y === "object" && !(y instanceof Date))
     )

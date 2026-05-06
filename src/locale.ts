@@ -578,16 +578,10 @@ function precompileLocaleFormats(loc: Locale): void {
   }
   for (const upper of ["L", "LL", "LLL", "LLLL"]) {
     const lower = upper.toLowerCase();
-    if (!cache[lower]) {
-      cache[lower] = buildRenderFns(lowerVariant(ldf[upper]));
+    cache[lower] ??= buildRenderFns(lowerVariant(ldf[upper]));
     }
-  }
-  if (!cache.lt) {
-    cache.lt = buildRenderFns(lowerVariant(ldf.LT));
-  }
-  if (!cache.lts) {
-    cache.lts = buildRenderFns(lowerVariant(ldf.LTS));
-  }
+    cache.lt ??= buildRenderFns(lowerVariant(ldf.LT));
+    cache.lts ??= buildRenderFns(lowerVariant(ldf.LTS));
   (loc._config as Record<string, unknown>)._localeRenderFns = cache;
 }
 

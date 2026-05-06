@@ -480,12 +480,11 @@ export class Moment {
   year(y: unknown): this;
   year(y?: unknown): number | this {
     if (y !== undefined) {
-    if (
-      y === undefined ||
-      y === "" ||
-      (typeof y === "object" && !(y instanceof Date))
-    )
-    {return this;}
+      if (
+        y === "" ||
+        (typeof y === "object" && !(y instanceof Date))
+      )
+      {return this;}
       const num = Number(y);
       if (isNaN(num)) {return this;}
       const dt = this._getD();
@@ -556,12 +555,10 @@ export class Moment {
   date(d?: unknown): number | this {
     if (d !== undefined) {
       if (
-        d === undefined ||
-        d === undefined ||
         d === "" ||
         (typeof d === "object" && !(d instanceof Date))
       )
-        {return this;}
+      {return this;}
       const num = Number(d);
       if (isNaN(num)) {return this;}
       if (num <= 0) {return this;}
