@@ -130,7 +130,7 @@ export class Duration {
 
     // If called from moment(), override with the moment's locale
     if (input && typeof input === "object" && (input as Record<string, unknown>)._isAMomentObject) {
-      this._locale = (input as Record<string, unknown>)._l || this._locale;
+      this._locale = (input as Record<string, unknown>)._l ?? this._locale;
     }
 
     if (input === undefined || input === null) {
@@ -706,7 +706,7 @@ export class Duration {
     let thresholds: Record<string, number> | undefined;
 
     if (typeof withSuffix === "object") {
-      thresholds = withSuffix as Record<string, number>;
+      thresholds = withSuffix;
       withSuffix = undefined;
     } else {
       thresholds = thresholdsArg;
@@ -717,7 +717,7 @@ export class Duration {
     const locale = getLocale(this._locale);
     const ms = this.valueOf();
 
-    const thresh = thresholds || {};
+    const thresh = thresholds ?? {};
     const sThresh = thresh.s ?? getRelTimeThreshold("s") ?? 45;
     const ssThresh = thresh.ss ?? getRelTimeThreshold("ss") ?? 44;
     const mThresh = thresh.m ?? getRelTimeThreshold("m") ?? 45;

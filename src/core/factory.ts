@@ -61,7 +61,7 @@ export function moment(
     if (
       format !== undefined &&
       typeof format !== "boolean" &&
-      !(isArray(format) && (format as unknown[]).length === 0)
+      !(isArray(format) && format.length === 0)
     ) {
       return new Moment({
         _dClone: false,
@@ -72,7 +72,7 @@ export function moment(
         _nullInput: true,
       });
     }
-    const m = Object.create(Moment.prototype) as Moment;
+    const m = Object.create(Moment.prototype);
     m._isAMomentObject = true;
     m._isUTC = false;
     m._offset = 0;
@@ -81,20 +81,20 @@ export function moment(
     m._dirty = true;
     return m;
   }
-  if (isMoment(input)) {return (input as Moment).clone();}
-  if (isObject(input) && (input as Record<string, unknown>)._isAMomentObject) {
+  if (isMoment(input)) {return input.clone();}
+  if (isObject(input) && input._isAMomentObject) {
     const obj = input as Record<string, any>;
     const cfg: MomentConfig = {
       _d: obj._d ? new Date(obj._d.getTime()) : new Date(NaN),
-      _i: obj._i !== undefined ? obj._i : input,
+      _i: obj._i ?? input,
       _f: obj._f,
       _l: obj._l,
-      _isValid: obj._isValid !== undefined ? obj._isValid : true,
-      _isUTC: obj._isUTC || false,
-      _offset: obj._offset !== undefined ? obj._offset : 0,
-      _strict: obj._strict || false,
-      _overflow: obj._overflow !== undefined ? obj._overflow : -1,
-      _parsedDateParts: obj._parsedDateParts || [],
+      _isValid: obj._isValid ?? true,
+      _isUTC: obj._isUTC ?? false,
+      _offset: obj._offset ?? 0,
+      _strict: obj._strict ?? false,
+      _overflow: obj._overflow ?? -1,
+      _parsedDateParts: obj._parsedDateParts ?? [],
     };
     if (obj._unusedTokens) {cfg._unusedTokens = obj._unusedTokens;}
     if (obj._unusedInput) {cfg._unusedInput = obj._unusedInput;}
@@ -108,9 +108,9 @@ export function moment(
     if (obj._weekdayMismatch !== undefined) {cfg._weekdayMismatch = obj._weekdayMismatch;}
     return new Moment(cfg);
   }
-  if (isDate(input)) {return new Moment({ _dClone: false, _d: new Date((input as Date).getTime()), _i: input });}
+  if (isDate(input)) {return new Moment({ _dClone: false, _d: new Date(input.getTime()), _i: input });}
   if (isNumber(input)) {
-    const n = input as number;
+    const n = input;
     if (isNaN(n) || !isFinite(n)) {
       return new Moment({ _dClone: false, _d: new Date(NaN), _isValid: false, _i: input });
     }
@@ -128,15 +128,15 @@ export function moment(
     }
     return new Moment({ _dClone: false, _d: new Date(n), _i: input });
   }
-  if (isString(input)) {return createFromString(input as string, format, localeOrStrict, fourthArg);}
+  if (isString(input)) {return createFromString(input, format, localeOrStrict, fourthArg);}
   if (isArray(input)) {
-    const arr = input as unknown[];
+    const arr = input;
     if (arr.length === 0 && (format === "X" || format === "x")) {
       return new Moment({ _dClone: false, _d: new Date(NaN), _i: arr, _isValid: false, _f: format as string });
     }
     return createFromArray(arr);
   }
-  if (isObject(input)) {return createFromObject(input as Record<string, unknown>);}
+  if (isObject(input)) {return createFromObject(input);}
   return new Moment({ _dClone: false, _d: new Date(NaN), _isValid: false, _i: input });
 }
 
@@ -199,7 +199,7 @@ function createFromString(
   }
 
   if (isArray(fmt)) {
-    const formats = fmt as string[];
+    const formats = fmt;
     let bestParsed: Record<string, any> | null = null;
     let bestScore = -99999;
     let bestFormat: string | undefined;
@@ -289,12 +289,12 @@ function createFromString(
         }
         const m = createMomentFromParsed(bestParsed, str, bestFormat as string, locale, strict);
         m._f = bestFormat;
-        m._parsedDateParts = bestParsed._parsedDateParts || [];
-        m._unusedTokens = bestParsed._unusedTokens || [];
-        m._unusedInput = bestParsed._unusedInput || [];
-        m._charsLeftOver = bestParsed._charsLeftOver || 0;
+        m._parsedDateParts = bestParsed._parsedDateParts ?? [];
+        m._unusedTokens = bestParsed._unusedTokens ?? [];
+        m._unusedInput = bestParsed._unusedInput ?? [];
+        m._charsLeftOver = bestParsed._charsLeftOver ?? 0;
         m._empty = bestParsed._empty !== false;
-        m._invalidMonth = bestParsed._invalidMonth || null;
+        m._invalidMonth = bestParsed._invalidMonth ?? null;
         if (bestFormat === "ISO_8601") {m._iso = true;}
         return m;
       }
@@ -343,7 +343,7 @@ function createFromString(
     return new Moment(config);
   }
 
-  const fmtStr = fmt as string | undefined;
+  const fmtStr = fmt;
 
   if (fmtStr === "ISO_8601") {
     if (strict) {
@@ -811,7 +811,7 @@ function createMomentFromParsed(
   switch (tag) {
     case 1: {
       const loc = getLocale(locale);
-      const weekCfg = (loc._config as Record<string, any>).week || { dow: 0, doy: 6 };
+      const weekCfg = (loc._config as Record<string, any>).week ?? { dow: 0, doy: 6 };
       let weekdayOffset: number;
       if (parsed._localeWeekday !== undefined) {
         weekdayOffset = parsed._localeWeekday;
@@ -822,7 +822,7 @@ function createMomentFromParsed(
       }
       const d = localeWeekToDate(parsed._weekYear, parsed._week, weekdayOffset, weekCfg.dow, weekCfg.doy);
       if (parsed.hour !== undefined) {
-        d.setUTCHours(parsed.hour, parsed.minute || 0, parsed.second || 0, parsed.millisecond || 0);
+        d.setUTCHours(parsed.hour, parsed.minute ?? 0, parsed.second ?? 0, parsed.millisecond ?? 0);
         return new Moment(buildMomentConfig(d, str, format, locale, parsed, baseConfig as MomentConfig));
       }
       const ld = new Date(0);
@@ -834,7 +834,7 @@ function createMomentFromParsed(
       const isoWeekday = parsed._weekdayNum !== undefined ? parsed._weekdayNum : 1;
       const d = weekYearToDate(parsed.isoWeekYear, parsed.isoWeek, isoWeekday);
       if (parsed.hour !== undefined) {
-        d.setUTCHours(parsed.hour, parsed.minute || 0, parsed.second || 0, parsed.millisecond || 0);
+        d.setUTCHours(parsed.hour, parsed.minute ?? 0, parsed.second ?? 0, parsed.millisecond ?? 0);
         return new Moment(buildMomentConfig(d, str, format, locale, parsed, baseConfig as MomentConfig));
       }
       const ld = new Date(0);
@@ -850,14 +850,14 @@ function createMomentFromParsed(
       const dayOfYear = Math.floor((nowTs - nowYearStart.getTime()) / 86400000);
       const currentWeekOfYear = Math.ceil((dayOfYear + nowYearStart.getDay() + 1) / 7);
       const loc = getLocale(locale);
-      const weekCfg = (loc._config as Record<string, any>).week || { dow: 0, doy: 6 };
+      const weekCfg = (loc._config as Record<string, any>).week ?? { dow: 0, doy: 6 };
       const d = localeWeekToDate(year, Math.max(currentWeekOfYear, 1), 0, weekCfg.dow, weekCfg.doy);
       return new Moment(buildMomentConfig(d, str, format, locale, parsed, { _strict: strict }));
     }
     case 4: {
       const year = new Date(nowFn()).getFullYear();
       const loc = getLocale(locale);
-      const weekCfg = (loc._config as Record<string, any>).week || { dow: 0, doy: 6 };
+      const weekCfg = (loc._config as Record<string, any>).week ?? { dow: 0, doy: 6 };
       const d = localeWeekToDate(year, parsed._week, 0, weekCfg.dow, weekCfg.doy);
       return new Moment(buildMomentConfig(d, str, format, locale, parsed, { _strict: strict }));
     }
@@ -905,7 +905,7 @@ function createMomentFromParsed(
         const diff = parsed._weekdayNum - currentDay;
         d.setDate(d.getDate() + diff);
       }
-      d.setHours(parsed.hour || 0, parsed.minute || 0, parsed.second || 0, parsed.millisecond || 0);
+      d.setHours(parsed.hour ?? 0, parsed.minute ?? 0, parsed.second ?? 0, parsed.millisecond ?? 0);
       return new Moment(buildMomentConfig(d, str, format, locale, parsed, {
         ...baseConfig, _meridiem: parsed._meridiem as string | undefined,
       }));

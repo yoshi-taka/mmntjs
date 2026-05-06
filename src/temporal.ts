@@ -3,7 +3,7 @@ import type { Temporal } from "@js-temporal/polyfill";
 
 let _T: typeof Temporal | null = null;
 function getT(): typeof Temporal {
-  if (!_T) {_T = require("@js-temporal/polyfill").Temporal;}
+  _T ??= require("@js-temporal/polyfill").Temporal;
   return _T!;
 }
 
@@ -14,19 +14,19 @@ export function getTemporalNamespace(): typeof Temporal {
 export function toTemporal(m: Moment): Temporal.PlainDate | Temporal.ZonedDateTime {
   if (!m.isValid()) {throw new Error("Cannot convert invalid moment to Temporal");}
 
-  const year = m.year() as number;
-  const month = (m.month() as number) + 1;
-  const day = m.date() as number;
-  const hour = m.hour() as number;
-  const minute = m.minute() as number;
-  const second = m.second() as number;
-  const ms = m.millisecond() as number;
+  const year = m.year();
+  const month = m.month() + 1;
+  const day = m.date();
+  const hour = m.hour();
+  const minute = m.minute();
+  const second = m.second();
+  const ms = m.millisecond();
 
   const hasTime = hour !== 0 || minute !== 0 || second !== 0 || ms !== 0;
   const hasOffset = m._isUTC || m._offset !== 0;
 
   if (hasTime || hasOffset) {
-    const offsetMinutes = m.utcOffset() as number;
+    const offsetMinutes = m.utcOffset();
     const offsetHours = Math.floor(offsetMinutes / 60);
     const offsetMinRemainder = offsetMinutes % 60;
     const offsetStr =

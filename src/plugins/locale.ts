@@ -1,3 +1,5 @@
+import type {
+  Locale} from "../locale";
 import {
   getLocale,
   setLocale,
@@ -7,7 +9,6 @@ import {
   updateLocale,
   getMonths,
   getWeekdays,
-  Locale,
   listLocales,
 } from "../locale";
 import type { LocaleSpec } from "../locale/en";
@@ -22,10 +23,10 @@ export function registerLocaleApi(): void {
       return setLocaleFromArray(locale);
     }
     if (args.length > 0 && typeof args[0] === "object") {
-      defineLocale(locale as string, args[0] as LocaleSpec);
-      return locale as string;
+      defineLocale(locale, args[0] as LocaleSpec);
+      return locale;
     }
-    setLocale(locale as string);
+    setLocale(locale);
     return getCurrentLocale();
   };
   momentRecord.localeData = function (locale?: string): Locale {
@@ -58,7 +59,7 @@ export function registerLocaleApi(): void {
     if (typeof format === "number") {
       return getLocale()._monthsShort[format];
     }
-    return getMonths(format || "short", index);
+    return getMonths(format ?? "short", index);
   };
   momentRecord.weekdays = function (
     format?: string | boolean | number,
@@ -79,7 +80,7 @@ export function registerLocaleApi(): void {
     if (typeof format === "boolean") {
       return getWeekdays(format ? "shortFormat" : "short", index);
     }
-    return getWeekdays(format || "short", index);
+    return getWeekdays(format ?? "short", index);
   };
   momentRecord.weekdaysMin = function (
     format?: string | boolean | number,
@@ -91,6 +92,6 @@ export function registerLocaleApi(): void {
     if (typeof format === "boolean") {
       return getWeekdays(format ? "minFormat" : "min", index);
     }
-    return getWeekdays(format || "min", index);
+    return getWeekdays(format ?? "min", index);
   };
 }

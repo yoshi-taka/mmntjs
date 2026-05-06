@@ -31,7 +31,7 @@ export function registerCoreApi(): void {
   const momentRecord = moment as Record<string, unknown>;
 
   momentRecord.duration = function (input?: unknown, unit?: string): Duration {
-    return new Duration(input as unknown, unit);
+    return new Duration(input, unit);
   };
   (momentRecord.duration as Record<string, unknown>).invalid = function (): Duration {
     return Duration.invalid();
@@ -46,17 +46,17 @@ export function registerCoreApi(): void {
       return getUpdateOffsetCallback();
     },
     set(v: ((m: Moment, keepTime?: boolean) => void) | undefined) {
-      setUpdateOffsetCallback(v || undefined);
+      setUpdateOffsetCallback(v ?? undefined);
     },
     enumerable: true,
     configurable: true,
   });
   Object.defineProperty(moment, "now", {
     get(): () => number {
-      return getMomentNowFunction() || (() => Date.now());
+      return getMomentNowFunction() ?? (() => Date.now());
     },
     set(v: (() => number) | undefined) {
-      setMomentNowFunction(v || undefined);
+      setMomentNowFunction(v ?? undefined);
     },
     enumerable: true,
     configurable: true,
@@ -77,7 +77,7 @@ export function registerCoreApi(): void {
       };
     },
     set(v: ((str: string) => number) | undefined) {
-      setParseTwoDigitYear(v || undefined);
+      setParseTwoDigitYear(v ?? undefined);
     },
     enumerable: true,
     configurable: true,
@@ -119,7 +119,7 @@ export function registerCoreApi(): void {
       return m;
     }
     if (!m._isUTC && isString(input)) {
-      const utcDate = new Date(`${input as string} UTC`);
+      const utcDate = new Date(`${input} UTC`);
       if (!isNaN(utcDate.getTime())) {
         m._d = utcDate;
       } else {
@@ -164,43 +164,43 @@ export function registerCoreApi(): void {
     if (args.length === 0) {return moment();}
     let inputList = args;
     if (args.length === 1 && isArray(args[0]) && !isMoment(args[0])) {
-      inputList = args[0] as unknown[];
+      inputList = args[0];
     }
     let best: Moment | null = null;
     let bestVal = Infinity;
     let bestInvalid: Moment | null = null;
     for (const item of inputList) {
-      const m = isMoment(item) ? (item as Moment) : moment(item as unknown);
+      const m = isMoment(item) ? (item as Moment) : moment(item);
       const val = m.valueOf();
       if (isNaN(val) || !m.isValid()) {
-        if (!bestInvalid) {bestInvalid = m;}
+        bestInvalid ??= m;
       } else if (val < bestVal) {
         bestVal = val;
         best = m;
       }
     }
-    return bestInvalid || best!;
+    return bestInvalid ?? best!;
   };
   momentRecord.max = function (...args: unknown[]): Moment {
     if (args.length === 0) {return moment();}
     let inputList = args;
     if (args.length === 1 && isArray(args[0]) && !isMoment(args[0])) {
-      inputList = args[0] as unknown[];
+      inputList = args[0];
     }
     let best: Moment | null = null;
     let bestVal = -Infinity;
     let bestInvalid: Moment | null = null;
     for (const item of inputList) {
-      const m = isMoment(item) ? (item as Moment) : moment(item as unknown);
+      const m = isMoment(item) ? (item as Moment) : moment(item);
       const val = m.valueOf();
       if (isNaN(val) || !m.isValid()) {
-        if (!bestInvalid) {bestInvalid = m;}
+        bestInvalid ??= m;
       } else if (val > bestVal) {
         bestVal = val;
         best = m;
       }
     }
-    return bestInvalid || best!;
+    return bestInvalid ?? best!;
   };
   momentRecord.suppressDeprecationWarnings = false;
   momentRecord.deprecationHandler = null as ((name: string, msg: string) => void) | null;

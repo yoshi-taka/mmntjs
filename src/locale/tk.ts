@@ -78,7 +78,7 @@ export const tkLocale: LocaleSpec = {
                 const a = number % 10,
                     b = (number % 100) - a,
                     c = number >= 100 ? 100 : null;
-                return number + (suffixes[a] || suffixes[b] || suffixes[c]);
+                return number + (suffixes[a] ?? suffixes[b] ?? suffixes[c]);
         }
     },
     week: {

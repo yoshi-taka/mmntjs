@@ -90,9 +90,9 @@ export function parseString(
   if (format) {
     const preparsed = locObj.preparse(str);
     if (isArray(format)) {
-      return parseWithFormats(preparsed, format as string[], locale, strict);
+      return parseWithFormats(preparsed, format, locale, strict);
     }
-    return parseWithFormat(preparsed, format as string, locale, strict);
+    return parseWithFormat(preparsed, format, locale, strict);
   }
 
   str = locObj.preparse(str);
@@ -127,9 +127,7 @@ export function parseString(
 
   let rfcStr = stripRFC2822Comments(trimmed);
   let rfcMatch = rfcStr.match(RFC_2822_REGEX);
-  if (!rfcMatch) {
-    rfcMatch = trimmed.match(RFC_2822_REGEX);
-  }
+  rfcMatch ??= trimmed.match(RFC_2822_REGEX);
   if (rfcMatch) {
     return parseRFC2822(rfcMatch);
   }
@@ -421,7 +419,7 @@ function parseRFC2822(match: RegExpMatchArray): Record<string, unknown> | null {
 }
 
 function parseISOWithTable(str: string): Record<string, unknown> | null {
-  const match = EXTENDED_ISO_REGEX.exec(str) || BASIC_ISO_REGEX.exec(str);
+  const match = EXTENDED_ISO_REGEX.exec(str) ?? BASIC_ISO_REGEX.exec(str);
   if (!match) {return null;}
 
   const datePart = match[1];
@@ -619,8 +617,8 @@ function getLocaleWeekdaysFull(loc: Locale): string[] {
   if (Array.isArray(cfg.weekdays)) {
     names = cfg.weekdays;
   } else if (typeof cfg.weekdays === "object" && cfg.weekdays !== null) {
-    const standalone = (cfg.weekdays as Record<string, unknown>).standalone || [];
-    const format = (cfg.weekdays as Record<string, unknown>).format || [];
+    const standalone = (cfg.weekdays as Record<string, unknown>).standalone ?? [];
+    const format = (cfg.weekdays as Record<string, unknown>).format ?? [];
     names = [...new Set([...standalone, ...format])];
   } else if (typeof cfg.weekdays === "function") {
     for (let i = 0; i < 7; i++) {
@@ -650,8 +648,8 @@ function getLocaleWeekdaysShort(loc: Locale): string[] {
   if (Array.isArray(cfg.weekdaysShort)) {
     names = cfg.weekdaysShort;
   } else if (typeof cfg.weekdaysShort === "object" && cfg.weekdaysShort !== null) {
-    const standalone = (cfg.weekdaysShort as Record<string, unknown>).standalone || [];
-    const format = (cfg.weekdaysShort as Record<string, unknown>).format || [];
+    const standalone = (cfg.weekdaysShort as Record<string, unknown>).standalone ?? [];
+    const format = (cfg.weekdaysShort as Record<string, unknown>).format ?? [];
     names = [...new Set([...standalone, ...format])];
   } else {
     return getLocaleWeekdaysFull(loc);
@@ -676,8 +674,8 @@ function getLocaleWeekdaysMin(loc: Locale): string[] {
   if (Array.isArray(cfg.weekdaysMin)) {
     names = cfg.weekdaysMin;
   } else if (typeof cfg.weekdaysMin === "object" && cfg.weekdaysMin !== null) {
-    const standalone = (cfg.weekdaysMin as Record<string, unknown>).standalone || [];
-    const format = (cfg.weekdaysMin as Record<string, unknown>).format || [];
+    const standalone = (cfg.weekdaysMin as Record<string, unknown>).standalone ?? [];
+    const format = (cfg.weekdaysMin as Record<string, unknown>).format ?? [];
     names = [...new Set([...standalone, ...format])];
   } else {
     return getLocaleWeekdaysShort(loc);
@@ -711,35 +709,35 @@ function timedMatch(
 const expandedFormatCache = new LruMap<string, string>(500);
 
 function parseTwo(str: string, idx: number): { v: number; len: number } | null {
-  if (idx >= str.length) return null;
+  if (idx >= str.length) {return null;}
   const c1 = str.charCodeAt(idx);
-  if (c1 < 48 || c1 > 57) return null;
+  if (c1 < 48 || c1 > 57) {return null;}
   const c2 = str.charCodeAt(idx + 1);
-  if (c2 >= 48 && c2 <= 57) return { v: (c1 - 48) * 10 + (c2 - 48), len: 2 };
+  if (c2 >= 48 && c2 <= 57) {return { v: (c1 - 48) * 10 + (c2 - 48), len: 2 };}
   return { v: c1 - 48, len: 1 };
 }
 
 function p1(str: string, idx: number): number | null {
-  if (idx >= str.length) return null;
+  if (idx >= str.length) {return null;}
   const c = str.charCodeAt(idx);
   return c >= 48 && c <= 57 ? c - 48 : null;
 }
 function p2(str: string, idx: number): number | null {
-  if (idx + 1 >= str.length) return null;
+  if (idx + 1 >= str.length) {return null;}
   const a = str.charCodeAt(idx), b = str.charCodeAt(idx + 1);
-  if (a < 48 || a > 57 || b < 48 || b > 57) return null;
+  if (a < 48 || a > 57 || b < 48 || b > 57) {return null;}
   return (a - 48) * 10 + (b - 48);
 }
 function p3(str: string, idx: number): number | null {
-  if (idx + 2 >= str.length) return null;
+  if (idx + 2 >= str.length) {return null;}
   const a = str.charCodeAt(idx), b = str.charCodeAt(idx + 1), c = str.charCodeAt(idx + 2);
-  if (a < 48 || a > 57 || b < 48 || b > 57 || c < 48 || c > 57) return null;
+  if (a < 48 || a > 57 || b < 48 || b > 57 || c < 48 || c > 57) {return null;}
   return (a - 48) * 100 + (b - 48) * 10 + (c - 48);
 }
 function p4(str: string, idx: number): number | null {
-  if (idx + 3 >= str.length) return null;
+  if (idx + 3 >= str.length) {return null;}
   const a = str.charCodeAt(idx), b = str.charCodeAt(idx + 1), c = str.charCodeAt(idx + 2), d = str.charCodeAt(idx + 3);
-  if (a < 48 || a > 57 || b < 48 || b > 57 || c < 48 || c > 57 || d < 48 || d > 57) return null;
+  if (a < 48 || a > 57 || b < 48 || b > 57 || c < 48 || c > 57 || d < 48 || d > 57) {return null;}
   return (a - 48) * 1000 + (b - 48) * 100 + (c - 48) * 10 + (d - 48);
 }
 
@@ -770,11 +768,11 @@ function hYYYYYY(ctx: ParseCtx): void {
   const start = pos;
   while (pos < len && pos - start < 6) {
     const c = s.charCodeAt(pos);
-    if (c < 48 || c > 57) break;
+    if (c < 48 || c > 57) {break;}
     pos++;
   }
   if (pos === start || (ctx.strict && pos - start !== 6)) { ctx.failed = true; return; }
-  if (pos - start > 6) pos = start + 6;
+  if (pos - start > 6) {pos = start + 6;}
   let y: number;
   if (pos - start === 6) { y = p6(s, start); }
   else if (pos - start === 5) { y = p5(s, start); }
@@ -798,11 +796,11 @@ function hYYYYY(ctx: ParseCtx): void {
   const start = pos;
   while (pos < len && pos - start < 6) {
     const c = s.charCodeAt(pos);
-    if (c < 48 || c > 57) break;
+    if (c < 48 || c > 57) {break;}
     pos++;
   }
   if (pos === start || (ctx.strict && (pos - start < 5 || pos - start > 6))) { ctx.failed = true; return; }
-  if (pos - start > 6) pos = start + 6;
+  if (pos - start > 6) {pos = start + 6;}
   let y: number;
   if (pos - start === 6) { y = p6(s, start); }
   else if (pos - start === 5) { y = p5(s, start); }
@@ -826,7 +824,7 @@ function hYYYY(ctx: ParseCtx): void {
   const maxEnd = Math.min(pos + 4, len);
   while (pos < maxEnd) {
     const c = s.charCodeAt(pos);
-    if (c < 48 || c > 57) break;
+    if (c < 48 || c > 57) {break;}
     pos++;
   }
   if (pos === start || (ctx.strict && pos - start !== 4)) { ctx.failed = true; return; }
@@ -871,18 +869,18 @@ function hY(ctx: ParseCtx): void {
   const start = pos;
   while (pos < len) {
     const c = s.charCodeAt(pos);
-    if (c < 48 || c > 57) break;
+    if (c < 48 || c > 57) {break;}
     pos++;
   }
   if (pos === start) { ctx.failed = true; return; }
   const digits = pos - start;
   let y: number;
-  if (digits === 6) y = p6(s, start);
-  else if (digits === 5) y = p5(s, start);
-  else if (digits === 4) y = p4(s, start)!;
-  else if (digits === 3) y = p3(s, start)!;
-  else if (digits === 2) y = p2(s, start)!;
-  else y = p1(s, start)!;
+  if (digits === 6) {y = p6(s, start);}
+  else if (digits === 5) {y = p5(s, start);}
+  else if (digits === 4) {y = p4(s, start)!;}
+  else if (digits === 3) {y = p3(s, start)!;}
+  else if (digits === 2) {y = p2(s, start)!;}
+  else {y = p1(s, start)!;}
   ctx.result.year = sign === -1 ? -y : y;
   ctx.result._parsedDateParts[0] = ctx.result.year;
   ctx.strIdx = pos;
@@ -945,9 +943,9 @@ function hDo(ctx: ParseCtx): void {
   if (ordinalParse instanceof RegExp) {
     match = remaining.match(new RegExp(`^(?:${ordinalParse.source})`));
   }
-  if (!match) { match = remaining.match(/^(\d{1,2})(?:st|nd|rd|th)?/i); }
+  match ??= remaining.match(/^(\d{1,2})(?:st|nd|rd|th)?/i);
   if (!match) { ctx.failed = true; return; }
-  const digitStr = (match[0].match(/\d{1,2}/) || [])[0];
+  const digitStr = (match[0].match(/\d{1,2}/) ?? [])[0];
   if (!digitStr) { ctx.failed = true; return; }
   ctx.result.day = parseInt(digitStr, 10);
   ctx.result._parsedDateParts[2] = ctx.result.day;
@@ -1084,7 +1082,7 @@ function hS(ctx: ParseCtx): void {
 
 function hA(ctx: ParseCtx): void {
   const remaining = ctx.str.slice(ctx.strIdx);
-  const ampmReg = ctx.loc.meridiemParse() || /[ap]\.?m?\.?/i;
+  const ampmReg = ctx.loc.meridiemParse() ?? /[ap]\.?m?\.?/i;
   const match = remaining.match(ampmReg);
   if (!match) { ctx.failed = true; return; }
   ctx.result.amp = match[0].toLowerCase();
@@ -1311,7 +1309,7 @@ function hHmm(ctx: ParseCtx): void {
   let pos = i, end = Math.min(i + 4, s.length);
   while (pos < end) {
     const c = s.charCodeAt(pos);
-    if (c < 48 || c > 57) break;
+    if (c < 48 || c > 57) {break;}
     pos++;
   }
   const digits = pos - i;
@@ -1348,15 +1346,15 @@ function hEraYear(ctx: ParseCtx): void {
   let pos = i;
   while (pos < s.length) {
     const c = s.charCodeAt(pos);
-    if (c < 48 || c > 57) break;
+    if (c < 48 || c > 57) {break;}
     pos++;
   }
   if (pos === i) { ctx.failed = true; return; }
   const digits = pos - i;
   let y: number;
-  if (digits === 4) y = p4(s, i)!;
-  else if (digits === 3) y = p3(s, i)!;
-  else y = digits === 2 ? p2(s, i)! : p1(s, i)!;
+  if (digits === 4) {y = p4(s, i)!;}
+  else if (digits === 3) {y = p3(s, i)!;}
+  else {y = digits === 2 ? p2(s, i)! : p1(s, i)!;}
   ctx.result._eraYear = y;
   ctx.result._parsedDateParts[0] = y;
   ctx.strIdx = pos;
@@ -1366,7 +1364,7 @@ function hYo(ctx: ParseCtx): void {
   const remaining = ctx.str.slice(ctx.strIdx);
   const eras = (ctx.loc._config as Record<string, unknown>).eras;
   const eraOrdinalRegex = eras && (ctx.loc._config as Record<string, unknown>).eraYearOrdinalParse
-    ? (ctx.loc._config as Record<string, unknown>).eraYearOrdinalRegex || /(\d+)/
+    ? (ctx.loc._config as Record<string, unknown>).eraYearOrdinalRegex ?? /(\d+)/
     : /(\d+)/;
   const yoMatch = remaining.match(eraOrdinalRegex);
   if (!yoMatch) { ctx.failed = true; return; }
@@ -1547,7 +1545,7 @@ function hdd(ctx: ParseCtx): void {
   }
   const enLoose = remaining.match(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)/i);
   if (enLoose || !ctx.strict) {
-    const looseMatch = enLoose || remaining.match(/^\w+/);
+    const looseMatch = enLoose ?? remaining.match(/^\w+/);
     if (looseMatch) { ctx.strIdx += looseMatch[0].length; return; }
   }
   if (!matched) { ctx.failed = true; }
@@ -1799,7 +1797,7 @@ function parseWithFormat(
 ): Record<string, unknown> | null {
 
   const loc = getLocale(locale);
-  const expandedCacheKey = `${locale || "en"  }:${  format}`;
+  const expandedCacheKey = `${locale ?? "en"  }:${  format}`;
   let expandedFormat = expandedFormatCache.get(expandedCacheKey);
   if (!expandedFormat) {
     expandedFormat = format.replaceAll(/LTS|LT|llll|LLLL|lll|LLL|ll|LL|l|L/g, (match) => {
@@ -1839,7 +1837,7 @@ function parseWithFormat(
   let tokenIndex = -1;
 
   const ctx: ParseCtx = {
-    str, strIdx, strict: strict || false, loc, result,
+    str, strIdx, strict: strict ?? false, loc, result,
     _seenUnusedTokens, failed: false, tokenIndex, tokens,
   };
 
@@ -1851,7 +1849,7 @@ function parseWithFormat(
     if (strIdx > str.length) { break; }
 
     if (token.type === "literal") {
-      const val = token.value || "";
+      const val = token.value ?? "";
       if (!val) {continue;}
 
       if (strIdx >= str.length) {
@@ -1884,7 +1882,7 @@ function parseWithFormat(
                   c === 0x20 || c === 0x09 || c === 0x0A || c === 0x0D || c === 0x0C;
                 const isWord =
                   (c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122);
-                if (isSpace || isWord) break;
+                if (isSpace || isWord) {break;}
                 skipIdx++;
               }
               if (skipIdx > 0) {
@@ -2116,7 +2114,7 @@ function parseWithFormat(
       if (sinceYear === 0 && era.until != null && typeof era.until === "number" && era.until < 0) {
         result.year = 1 - result._eraYear;
       } else {
-        result.year = sinceYear + result._eraYear - (era.offset || 1);
+        result.year = sinceYear + result._eraYear - (era.offset ?? 1);
       }
       result._parsedDateParts[0] = result.year;
     }

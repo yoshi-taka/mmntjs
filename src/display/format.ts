@@ -93,7 +93,7 @@ function formatCommonEn(m: Moment, format: string): string | undefined {
     case "YYYY-MM-DD HH:mm:ss.SSS":
       return `${datePart  } ${  PAD2[raw.$H]  }:${  PAD2[raw.$m]  }:${  PAD2[raw.$s]  }.${  pad3(raw.$ms)}`;
     case "YYYY-MM-DDTHH:mm:ss.SSSZ":
-      return `${datePart  }T${  PAD2[raw.$H]  }:${  PAD2[raw.$m]  }:${  PAD2[raw.$s]  }.${  pad3(raw.$ms)  }${formatOffset(m.utcOffset() as number)}`;
+      return `${datePart  }T${  PAD2[raw.$H]  }:${  PAD2[raw.$m]  }:${  PAD2[raw.$s]  }.${  pad3(raw.$ms)  }${formatOffset(m.utcOffset())}`;
   }
   return undefined;
 }

@@ -79,7 +79,7 @@ export function normalizeUnitCode(unit: string): number {
   const exact = _codeAliases[unit];
   if (exact !== undefined) {return exact;}
   const folded = _codeNmap[unit.toLowerCase()];
-  return folded !== undefined ? folded : INVALID_UNIT;
+  return folded ?? INVALID_UNIT;
 }
 
 export function isLeapYear(y: number): boolean {

@@ -70,7 +70,7 @@ export const kkLocale: LocaleSpec = {
     ordinal: function (number) {
         const a = number % 10,
             b = number >= 100 ? 100 : null;
-        return number + (suffixes[number] || suffixes[a] || suffixes[b]);
+        return number + (suffixes[number] ?? suffixes[a] ?? suffixes[b]);
     },
     week: {
       dow: 1,

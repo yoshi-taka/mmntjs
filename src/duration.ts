@@ -141,7 +141,7 @@ export class Duration {
 
     // If called from moment(), override with the moment's locale
     if (input && typeof input === "object" && (input as Record<string, unknown>)._isAMomentObject) {
-      this._locale = (input as Record<string, unknown>)._l || this._locale;
+      this._locale = (input as Record<string, unknown>)._l ?? this._locale;
     }
 
     if (input === undefined || input === null) {
@@ -718,7 +718,7 @@ export class Duration {
     let thresholds: Record<string, number> | undefined;
 
     if (typeof withSuffix === "object") {
-      thresholds = withSuffix as Record<string, number>;
+      thresholds = withSuffix;
       withSuffix = undefined;
     } else {
       thresholds = thresholdsArg;
@@ -729,15 +729,14 @@ export class Duration {
     const locale = getLocale(this._locale);
     const ms = this.valueOf();
 
-    const thresh = thresholds || {};
-    const sThresh = thresh.s !== undefined ? thresh.s : (getRelTimeThreshold("s") as number) || 45;
-    const ssThresh =
-      thresh.ss !== undefined ? thresh.ss : (getRelTimeThreshold("ss") as number) || 44;
-    const mThresh = thresh.m !== undefined ? thresh.m : (getRelTimeThreshold("m") as number) || 45;
-    const hThresh = thresh.h !== undefined ? thresh.h : (getRelTimeThreshold("h") as number) || 22;
-    const dThresh = thresh.d !== undefined ? thresh.d : (getRelTimeThreshold("d") as number) || 26;
-    const wThresh = thresh.w !== undefined ? thresh.w : (getRelTimeThreshold("w") as number) || 0;
-    const MThresh = thresh.M !== undefined ? thresh.M : (getRelTimeThreshold("M") as number) || 11;
+    const thresh = thresholds ?? {};
+    const sThresh = thresh.s ?? (getRelTimeThreshold("s") as number) ?? 45;
+    const ssThresh = thresh.ss ?? (getRelTimeThreshold("ss") as number) ?? 44;
+    const mThresh = thresh.m ?? (getRelTimeThreshold("m") as number) ?? 45;
+    const hThresh = thresh.h ?? (getRelTimeThreshold("h") as number) ?? 22;
+    const dThresh = thresh.d ?? (getRelTimeThreshold("d") as number) ?? 26;
+    const wThresh = thresh.w ?? (getRelTimeThreshold("w") as number) ?? 0;
+    const MThresh = thresh.M ?? (getRelTimeThreshold("M") as number) ?? 11;
 
     const roundFn =
       getRelTimeRounding() === true || !getRelTimeRounding()

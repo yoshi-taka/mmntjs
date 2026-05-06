@@ -14,7 +14,7 @@ export function runInit(dir = ".") {
   console.log("Creating git checkpoint...");
 
   console.log("Adding npm alias: moment → @compat/moment2");
-  pkg.dependencies = pkg.dependencies || {};
+  pkg.dependencies ??= {};
   pkg.dependencies["moment"] = "npm:@compat/moment2@^1.0.0";
 
   if (pkg.devDependencies && pkg.devDependencies["@types/moment"]) {

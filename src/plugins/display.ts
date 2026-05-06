@@ -11,14 +11,14 @@ export function registerDisplayApi(): void {
     threshold: string,
     limit?: number,
   ): number | boolean {
-    return setRelTimeThreshold(threshold, limit as number | undefined) as number | boolean;
+    return setRelTimeThreshold(threshold, limit) as number | boolean;
   };
   Object.defineProperty(moment, "calendarFormat", {
     get(): ((m: Moment, now: Moment) => string) | undefined {
       return Moment.calendarFormat;
     },
     set(v: ((m: Moment, now: Moment) => string) | undefined) {
-      Moment.calendarFormat = v || undefined;
+      Moment.calendarFormat = v ?? undefined;
     },
     enumerable: true,
     configurable: true,
