@@ -1,0 +1,8 @@
+pre-commit:
+  commands:
+    lint:
+      glob: "{src,test}/*.ts"
+      run: oxlint --type-aware --type-check --fix {staged_files} && bun run audit:static
+    audit-config:
+      glob: "{knip.json,.fallowrc.json}"
+      run: bun run audit:static
