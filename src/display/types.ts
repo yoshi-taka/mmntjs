@@ -3,6 +3,8 @@ import type { Locale } from "../locale";
 export interface FormattableMoment {
   _l: string | undefined;
   _isValid: boolean;
+  _isUTC: boolean;
+  _offset: number;
   _dirty: boolean;
   $y: number;
   $M: number;
@@ -13,5 +15,6 @@ export interface FormattableMoment {
   $ms: number;
   utcOffset(): number;
   localeData(): Locale;
+  valueOf(): number;
   _ensureFields(): void;
 }

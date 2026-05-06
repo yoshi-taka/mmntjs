@@ -125,7 +125,7 @@ export function formatMoment(m: FormattableMoment, format: string): string {
   setCurrentFormat(format);
   const parts: string[] = [];
   for (const fn of fns) {
-    parts.push(fn(m));
+    parts.push((fn as unknown as (m: FormattableMoment) => string)(m));
   }
   setCurrentFormat(savedFormat);
   setCurrentLocale(undefined);

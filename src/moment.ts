@@ -1,4 +1,3 @@
-import type { Moment as MomentFixed } from "./moment_fixed";
 import type { Locale} from "./locale";
 import { getLocale, getCurrentLocale, hasLocale } from "./locale";
 import {
@@ -15,6 +14,8 @@ import {
 import { normalizeUnits, daysInMonth, isLeapYear } from "./units";
 import { parseString, parseArray, type ParsedData } from "./parse";
 import { formatMoment } from "./format";
+import type { FormattableMoment } from "./display/types";
+import type { ParseLocale } from "./parse-locale";
 import { Duration, isDuration } from "./duration";
 
 export let momentProperties: string[] = [];
@@ -1205,7 +1206,7 @@ export class Moment {
         format = "YYYY-MM-DDTHH:mm:ssZ";
       }
     }
-    return formatMoment(this as unknown as MomentFixed, format);
+    return formatMoment(this as unknown as FormattableMoment, format);
   }
 
   fromNow(pref?: boolean): string {
@@ -1328,10 +1329,10 @@ export class Moment {
     }
 
     if (typeof formatString === "string") {
-      return formatMoment(this as unknown as MomentFixed, formatString);
+      return formatMoment(this as unknown as FormattableMoment, formatString);
     }
 
-    return formatMoment(this as unknown as MomentFixed, "L");
+    return formatMoment(this as unknown as FormattableMoment, "L");
   }
 
   diff(input: MomentInput, unit?: string, float?: boolean): number {
@@ -1842,8 +1843,8 @@ export class Moment {
         const fmt = this._f as string | undefined;
         const p =
           fmt && fmt !== "RFC_2822" && fmt !== "ISO_8601"
-            ? parseString(this._i, fmt, this._getLocale())
-            : parseString(this._i, undefined, this._getLocale());
+            ? parseString(this._i, fmt, this._getLocale() as unknown as ParseLocale)
+            : parseString(this._i, undefined, this._getLocale() as unknown as ParseLocale);
         if (p?.offset !== undefined) {
           m._d = new Date(m.valueOf() + p.offset * 60000);
           m._shared = false;
@@ -1866,7 +1867,7 @@ export class Moment {
     const m = momentFromAnything(input);
     m._isParseZone = true;
     if (format && isString(input)) {
-      const parsed = parseString(input, format as string | string[], m._getLocale());
+      const parsed = parseString(input, format as string | string[], m._getLocale() as unknown as ParseLocale);
       if (parsed?.offset !== undefined) {
         const d = createDateSafe(
           parsed.year ?? 0,
@@ -2176,7 +2177,7 @@ export function momentFromAnything(input: unknown, isUTC?: boolean): Moment {
     return m;
   }
   if (typeof input === "string") {
-    const parsed = parseString(input, undefined, getLocale(getCurrentLocale()));
+    const parsed = parseString(input, undefined, getLocale(getCurrentLocale()) as unknown as ParseLocale);
     if (parsed && hasAnyValue(parsed)) {
       const m = new Moment({ _d: createDateSafe(parsed.year ?? 0, parsed.month ?? 0, parsed.day ?? 1, parsed.hour ?? 0, parsed.minute ?? 0, parsed.second ?? 0, parsed.millisecond ?? 0, false), _i: input, _dClone: false });
       if (isUTC) {m.utc();}

@@ -27,6 +27,7 @@ import {
   parseObject,
   type ParsedData,
 } from "../parse";
+import type { ParseLocale } from "../parse-locale";
 
 let momentNowFn: (() => number) | undefined;
 
@@ -203,7 +204,7 @@ function createFromString(
 
   if (isArray(fmt)) {
     const formats = fmt;
-    const parseLocale = getLocale(locale ?? getCurrentLocale());
+    const parseLocale = getLocale(locale ?? getCurrentLocale()) as unknown as ParseLocale;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let bestParsed: Record<string, any> | null = null;
     let bestScore = -99999;
@@ -390,7 +391,7 @@ function createFromString(
         });
       }
     }
-        const parsed = parseString(str, undefined, getLocale(getCurrentLocale()));
+        const parsed = parseString(str, undefined, getLocale(getCurrentLocale()) as unknown as ParseLocale);
     if (parsed && hasAnyValue(parsed)) {
       const overflow = checkOverflow(parsed);
       if (overflow >= 0) {
@@ -453,7 +454,7 @@ function createFromString(
   }
 
   if (fmtStr === "RFC_2822") {
-    const rfcParsed = parseString(str, undefined, getLocale(getCurrentLocale()));
+    const rfcParsed = parseString(str, undefined, getLocale(getCurrentLocale()) as unknown as ParseLocale);
     if (rfcParsed && hasAnyValue(rfcParsed)) {
       let weekdayMismatch = false;
       if (rfcParsed._weekdayName !== undefined && rfcParsed.day !== undefined) {
@@ -508,7 +509,7 @@ function createFromString(
   }
 
   if (fmtStr) {
-      const parsed = parseString(str, fmtStr, getLocale(locale ?? getCurrentLocale()), strict) as ParsedRecord | null;
+      const parsed = parseString(str, fmtStr, getLocale(locale ?? getCurrentLocale()) as unknown as ParseLocale, strict) as ParsedRecord | null;
     const config: MomentConfig = {
       _d: undefined,
       _i: str,
@@ -604,7 +605,7 @@ function createFromString(
     }
   }
 
-  const parsed = parseString(str, undefined, getLocale(getCurrentLocale())) as ParsedRecord | null;
+  const parsed = parseString(str, undefined, getLocale(getCurrentLocale()) as unknown as ParseLocale) as ParsedRecord | null;
   if (parsed && !parsed._claimed) {
     if (parsed._hasDate !== undefined) {
       const { year, month, day, hour, minute, second, millisecond, offset } = parsed;
