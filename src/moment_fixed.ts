@@ -1068,15 +1068,20 @@ export class Moment {
         this._ensureFields();
         const rawMonths = unit === YEAR ? amount * 12 : unit === QUARTER ? amount * 3 : amount;
         const totalMonths = Number.isInteger(rawMonths) ? rawMonths : (rawMonths < 0 ? Math.round(rawMonths * -1) * -1 : Math.round(rawMonths));
-
         const tm = this.$y * 12 + this.$M + totalMonths;
         const y = Math.floor(tm / 12);
         const m = ((tm % 12) + 12) % 12;
-        const maxDay = daysInMonth(y, m);
-        const d_ = this.$D > maxDay ? maxDay : this.$D;
-
+        let d_ = this.$D;
+        if (d_ > 28) {
+          const _md = m === 1
+            ? (y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0) ? 29 : 28)
+            : (m === 3 || m === 5 || m === 8 || m === 10 ? 30 : 31);
+          if (d_ > _md) d_ = _md;
+        }
         if (this._isUTC) {
           this._t = Date.UTC(y, m, d_, this.$H, this.$m, this.$s, this.$ms);
+          this._d = undefined;
+          this._dirty = true;
         } else {
           const dt = this._d || (this._d = new Date(this._t));
           dt.setFullYear(y, m, d_);
@@ -1240,7 +1245,7 @@ export class Moment {
   add(amount: number | string | Duration | object, unit?: string): Moment {
     if (!this._isValid) {return this;}
     if (typeof amount === "number" && typeof unit === "string") {
-      if (unit === "month" || unit === "months") {this._addMonths(amount); return this;}
+      if (unit === "month" || unit === "months") {this._addSimple(amount, MONTH); return this;}
       const u = normalizeUnitCode(unit);
       if (u >= 0) {this._addSimple(amount, u);}
       return this;
@@ -1251,62 +1256,10 @@ export class Moment {
     return this;
   }
 
-  private _addMonths(amount: number): void {
-    if (this._dirty) {
-      this._dirty = false;
-      if (this._isUTC && !this._d) {
-        const t = this._t;
-        const totalDays = Math.floor(t / 86400000);
-        const totalSec = Math.floor(t / 1000);
-        this.$W = ((totalDays + 4) % 7 + 7) % 7;
-        const [y, M, D] = Moment._epochDaysToYMD(totalDays);
-        this.$y = y; this.$M = M; this.$D = D;
-        this.$H = ((Math.floor(totalSec / 3600) % 24) + 24) % 24;
-        this.$m = ((Math.floor(totalSec / 60) % 60) + 60) % 60;
-        this.$s = ((totalSec % 60) + 60) % 60;
-        this.$ms = ((t % 1000) + 1000) % 1000;
-      } else {
-        const d = this._d || (this._d = new Date(this._t));
-        this.$y = d.getFullYear();
-        this.$M = d.getMonth();
-        this.$D = d.getDate();
-        this.$W = d.getDay();
-        this.$H = d.getHours();
-        this.$m = d.getMinutes();
-        this.$s = d.getSeconds();
-        this.$ms = d.getMilliseconds();
-        this._offset = -d.getTimezoneOffset();
-      }
-    }
-    const totalMonths = Number.isInteger(amount) ? amount
-      : (amount < 0 ? Math.round(amount * -1) * -1 : Math.round(amount));
-    const tm = this.$y * 12 + this.$M + totalMonths;
-    const y = Math.floor(tm / 12);
-    const m = ((tm % 12) + 12) % 12;
-    const maxDay = m === 1
-      ? (y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0) ? 29 : 28)
-      : (m === 3 || m === 5 || m === 8 || m === 10 ? 30 : 31);
-    const d_ = this.$D > maxDay ? maxDay : this.$D;
-    if (this._isUTC) {
-      this._t = Date.UTC(y, m, d_, this.$H, this.$m, this.$s, this.$ms);
-    } else {
-      const dt = this._d || (this._d = new Date(this._t));
-      dt.setFullYear(y, m, d_);
-      this._t = dt.getTime();
-    }
-    this.$y = y;
-    this.$M = m;
-    this.$D = d_;
-    this.$W = this._isUTC ? _dayOfWeek(y, m, d_) : this._d.getDay();
-    if (typeof updateOffsetCallback === "function") {
-      (updateOffsetCallback as Function)(this, true);
-    }
-    if (isNaN(this._t)) {this._isValid = false;}
-  }
-
   subtract(amount: number | string | Duration | object, unit?: string): Moment {
     if (!this._isValid) {return this;}
     if (typeof amount === "number" && typeof unit === "string") {
+      if (unit === "month" || unit === "months") {this._addSimple(-amount, MONTH); return this;}
       const u = normalizeUnitCode(unit);
       if (u >= 0) {this._addSimple(-amount, u);}
       return this;
@@ -1822,42 +1775,6 @@ export class Moment {
         const bMonth = b.$M;
 
         const wholeMonthDiff = (bYear - aYear) * 12 + (bMonth - aMonth);
-
-        if (!float) {
-          // Calendar-based month diff: determine sign by comparing b with anchor date
-          const tm = aYear * 12 + aMonth + wholeMonthDiff;
-          const anchorY = Math.floor(tm / 12);
-          const anchorM = ((tm % 12) + 12) % 12;
-          const maxDay = daysInMonth(anchorY, anchorM);
-          const anchorD = aDayOf > maxDay ? maxDay : aDayOf;
-          const bDay = b.$D;
-
-          let bBeforeAnchor: boolean;
-          if (bYear !== anchorY) bBeforeAnchor = bYear < anchorY;
-          else if (bMonth !== anchorM) bBeforeAnchor = bMonth < anchorM;
-          else if (bDay !== anchorD) bBeforeAnchor = bDay < anchorD;
-          else {
-            const aH = a.$H, am = a.$m, aS = a.$s, aMs = a.$ms;
-            const bH = b.$H, bm = b.$m, bS = b.$s, bMs = b.$ms;
-            if (bH !== aH) bBeforeAnchor = bH < aH;
-            else if (bm !== am) bBeforeAnchor = bm < am;
-            else if (bS !== aS) bBeforeAnchor = bS < aS;
-            else bBeforeAnchor = bMs < aMs;
-          }
-
-          let result: number;
-          if (bBeforeAnchor) {
-            result = wholeMonthDiff > 0 ? -wholeMonthDiff + 1 : 0;
-          } else {
-            result = -wholeMonthDiff;
-          }
-          if (swap) {result = -result;}
-          if (code === YEAR) {result /= 12;}
-          else if (code === QUARTER) {result /= 3;}
-          const t = result < 0 ? -Math.floor(-result) : Math.floor(result);
-          return Object.is(t, -0) ? 0 : t;
-        }
-
         const anchorVal = anchorMs(aYear, aMonth, aDayOf, a.$H, a.$m, a.$s, a.$ms, a._isUTC, wholeMonthDiff);
         const bVal = b.valueOf();
         const sub = bVal - anchorVal;
