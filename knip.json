@@ -1,6 +1,9 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": ["src/index.ts", "src/bin/cli.ts", "src/temporal-entry.ts", "test/properties/basic.test.ts", "test/properties/boundary.test.ts"],
+  "entry": [
+    "test/properties/basic.test.ts",
+    "test/properties/boundary.test.ts"
+  ],
   "project": ["src/**", "test/**"],
   "ignore": [
     "test/moment/**",

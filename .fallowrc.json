@@ -33,17 +33,17 @@
     "ignore": ["src/moment.ts", "src/moment_fixed.ts", "src/duration.ts", "src/duration_fixed.ts"]
   },
   "health": {
-    "maxCyclomatic": 250,
-    "maxCognitive": 500,
-    "maxCrap": 50000,
-    "ignore": ["src/moment.ts", "src/moment_fixed.ts", "src/duration.ts", "src/duration_fixed.ts", "src/parse.ts", "src/core/factory.ts"]
+    "maxCyclomatic": 120,
+    "maxCognitive": 200,
+    "maxCrap": 15000,
+    "ignore": ["src/moment.ts", "src/moment_fixed.ts", "src/duration.ts", "src/duration_fixed.ts"]
   },
   "rules": {
     "unused-class-members": "off",
     "unused-exports": "off",
     "unused-types": "off",
-    "unused-files": "warn",
-    "unused-dev-dependencies": "warn",
+    "unused-files": "error",
+    "unused-dev-dependencies": "error",
     "circular-dependencies": "warn"
   }
 }

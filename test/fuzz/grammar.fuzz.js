@@ -3,6 +3,7 @@ import _originalMoment from '../../moment/moment.js'
 
 const moment = _moment
 const originalMoment = _originalMoment
+originalMoment.suppressDeprecationWarnings = true
 
 function g(buf) {
   const b = [...buf]
