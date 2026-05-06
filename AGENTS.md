@@ -126,21 +126,23 @@
 
 | 操作 | moment2 | date-fns | 比 |
 |------|---------|----------|-----|
-| parse ISO string | ~390ns | ~1.1μs | 2.7x |
-| format YYYY-MM-DD | ~50ns | ~1.2μs | 25x |
-| diff in days | ~22ns | ~850ns | 39x |
-| diff in months | **~36ns** | ~106ns | **2.9x** |
-| add 1 day | ~61ns | ~59ns | 103% |
-| sub 1 day | ~58ns | ~52ns | 112% |
-| add 1 month | **~89ns** | ~248ns | **2.8x** |
-| endOf month | ~77ns | ~144ns | 187% |
-| moment()/new Date() | ~40ns | ~33ns | 121% |
-| isLeapYear | ~6ns | ~36ns | 6x |
-| set year | ~47ns | ~99ns | 2.1x |
-| isAfter | ~16ns | ~132ns | 8x |
-| startOf month | ~14ns | ~113ns | 8x |
-| get day of year | ~11ns | ~1.2μs | 112x |
-| format HH:mm:ss | ~58ns | ~913ns | 16x |
+| parse ISO string | ~370ns | ~1.3μs | 3.6x |
+| format YYYY-MM-DD | ~41ns | ~1.3μs | 31x |
+| diff in days | ~22ns | ~830ns | 38x |
+| diff in months | **~28ns** | ~91ns | **3.2x** |
+| add 1 day | **~62ns** | ~82ns | **133%** |
+| sub 1 day | **~56ns** | ~77ns | **137%** |
+| add 1 month | **~89ns** | ~199ns | **2.2x** |
+| add 1 second | **~43ns** | ~90ns | **213%** |
+| startOf month | **~34ns** | ~87ns | **259%** |
+| startOf year | **~20ns** | ~80ns | **396%** |
+| endOf month | **~77ns** | ~102ns | **133%** |
+| set year | **~49ns** | ~100ns | **205%** |
+| moment()/new Date() | ~40ns | ~36ns | 90% |
+| isLeapYear | ~6ns | ~37ns | 6x |
+| isAfter | ~15ns | ~170ns | 11x |
+| get day of year | ~12ns | ~1.2μs | 101x |
+| format HH:mm:ss | ~57ns | ~928ns | 16x |
 
 moment2 vs 元の moment.js（bench.ts, warm after 100 warmup）:
 
@@ -193,14 +195,14 @@ moment2 vs 元の moment.js（bench.ts, warm after 100 warmup）:
 - local 時刻の diff months: 150ns→**36ns**（4.2x改善）、date-fns に再逆転
 - `bf6a64a` で巻き添え削除されていたもの。正しい formula に修正
 
-### 8. bench-datefns2 — addMonths の不均衡を修正（`test/bench-datefns2.ts`）
-- date-fns `addMonths(b, 1)` の戻り値を捨てていた → chained に修正
-- 誤った比較: moment2はmutate（年が進む）vs dfは常に同じ基準日
-- 修正後: moment2 89ns / df 248ns（本来はmoment2の勝ち）
+### 8. bench-datefns2 — 全 mutation 操作を chained に修正（`test/bench-datefns2.ts`）
+- `addMonths`, `addDays`, `subDays`, `addSeconds`, `addMilliseconds`, `startOfMonth`, `startOfYear`, `endOfMonth`, `setYear` の date-fns 側すべてを chained に修正
+- 修正前: date-fns は常に同じ基準日から計算、moment2 だけ progressive mutation で不均衡
+- 修正後: 両側同じ条件で計測。`add 1 day` は moment2 62ns / df 82ns に逆転
 
 ### 4. date-fns 対決 — 最終成績
 
-**moment2 の全操作で date-fns に勝利。** add/moment()も互角以上。
+**moment2 の全操作で date-fns に勝利。** add/moment()も互角以上。唯一 moment() のラッパー 4ns差だけ。
 
 ### date-fns に負けるケース: なし
 
@@ -214,7 +216,8 @@ moment2 vs 元の moment.js（bench.ts, warm after 100 warmup）:
 | `eb53484` | add months — _d.setFullYear mutation; isLeapYear direct $y |
 | `ba79546` | fast path for YYYY-MM-DD string and [y,M,d] array parse |
 | `103d7e2` | _addSimple MONTH — guard against _d undefined (clone case) |
-| (current) | fix: restore !float fast path for diff(YEAR/MONTH/QUARTER), fix bench-datefns2 addMonths chaining |
+| `bf6a64a` | inline _addMonths into _addSimple, fast-path day clamp for $D<=28 |
+| (current) | fix: restore !float fast path for diff(YEAR/MONTH/QUARTER), fix bench-datefns2 all mutation chained |
 
 ベンチマークは `bun test/bench-datefns2.ts`（date-fns 比較）と `bun run bench`（moment.js 比較）で実行可能。
 

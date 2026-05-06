@@ -49,8 +49,8 @@ const CASES = [
     name: "add 1 day",
     run: () => {
       const a = moment2("2024-06-15");
-      const b = new Date(2024, 5, 15);
-      return [() => a.add(1, "day"), () => addDays(b, 1)];
+      let b2 = new Date(2024, 5, 15);
+      return [() => a.add(1, "day"), () => { b2 = addDays(b2, 1); }];
     },
   },
   {
@@ -92,8 +92,8 @@ const CASES = [
     name: "startOf month",
     run: () => {
       const a = moment2("2024-06-15");
-      const b = new Date(2024, 5, 15);
-      return [() => a.startOf("month"), () => startOfMonth(b)];
+      let b2 = new Date(2024, 5, 15);
+      return [() => a.startOf("month"), () => { b2 = startOfMonth(b2); }];
     },
   },
   {
@@ -114,16 +114,16 @@ const CASES = [
     name: "startOf year",
     run: () => {
       const a = moment2("2024-06-15");
-      const b = new Date(2024, 5, 15);
-      return [() => a.startOf("year"), () => startOfYear(b)];
+      let b2 = new Date(2024, 5, 15);
+      return [() => a.startOf("year"), () => { b2 = startOfYear(b2); }];
     },
   },
   {
     name: "endOf month",
     run: () => {
       const a = moment2("2024-06-15");
-      const b = new Date(2024, 5, 15);
-      return [() => a.endOf("month"), () => endOfMonth(b)];
+      let b2 = new Date(2024, 5, 15);
+      return [() => a.endOf("month"), () => { b2 = endOfMonth(b2); }];
     },
   },
   {
@@ -139,24 +139,24 @@ const CASES = [
     name: "add 1 second",
     run: () => {
       const a = moment2("2024-06-15 10:30:45.123");
-      const b = new Date(2024, 5, 15, 10, 30, 45, 123);
-      return [() => a.add(1, "second"), () => addSeconds(b, 1)];
+      let b2 = new Date(2024, 5, 15, 10, 30, 45, 123);
+      return [() => a.add(1, "second"), () => { b2 = addSeconds(b2, 1); }];
     },
   },
   {
     name: "add 1 ms",
     run: () => {
       const a = moment2("2024-06-15 10:30:45.123");
-      const b = new Date(2024, 5, 15, 10, 30, 45, 123);
-      return [() => a.add(1, "millisecond"), () => addMilliseconds(b, 1)];
+      let b2 = new Date(2024, 5, 15, 10, 30, 45, 123);
+      return [() => a.add(1, "millisecond"), () => { b2 = addMilliseconds(b2, 1); }];
     },
   },
   {
     name: "sub 1 day",
     run: () => {
       const a = moment2("2024-06-15");
-      const b = new Date(2024, 5, 15);
-      return [() => a.add(-1, "day"), () => subDays(b, 1)];
+      let b2 = new Date(2024, 5, 15);
+      return [() => a.add(-1, "day"), () => { b2 = subDays(b2, 1); }];
     },
   },
   {
@@ -224,8 +224,8 @@ const CASES = [
     name: "set year",
     run: () => {
       const a = moment2("2024-06-15");
-      const b = new Date(2024, 5, 15);
-      return [() => a.year(2020), () => setYear(b, 2020)];
+      let b2 = new Date(2024, 5, 15);
+      return [() => a.year(2020), () => { b2 = setYear(b2, 2020); }];
     },
   },
 ];
