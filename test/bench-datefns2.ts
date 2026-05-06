@@ -130,8 +130,9 @@ const CASES = [
     name: "add 1 month",
     run: () => {
       const a = moment2("2024-06-15");
-      const b = new Date(2024, 5, 15);
-      return [() => a.add(1, "month"), () => addMonths(b, 1)];
+      let b2 = new Date(2024, 5, 15);
+      const fnDF = () => { b2 = addMonths(b2, 1); };
+      return [() => a.add(1, "month"), fnDF];
     },
   },
   {

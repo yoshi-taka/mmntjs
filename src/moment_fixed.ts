@@ -1770,6 +1770,35 @@ export class Moment {
         const bMonth = b.$M;
 
         const wholeMonthDiff = (bYear - aYear) * 12 + (bMonth - aMonth);
+
+        if (!float) {
+          const aH = a.$H, am = a.$m, aS = a.$s, aMs = a.$ms;
+          const bH = b.$H, bm = b.$m, bS = b.$s, bMs = b.$ms;
+          const bDayOf = b.$D;
+          const anchorD = aDayOf > daysInMonth(bYear, bMonth) ? daysInMonth(bYear, bMonth) : aDayOf;
+
+          let bBeforeAnchor: boolean;
+          if (bDayOf !== anchorD) {
+            bBeforeAnchor = bDayOf < anchorD;
+          } else {
+            if (bH !== aH) {bBeforeAnchor = bH < aH;}
+            else if (bm !== am) {bBeforeAnchor = bm < am;}
+            else if (bS !== aS) {bBeforeAnchor = bS < aS;}
+            else {bBeforeAnchor = bMs < aMs;}
+          }
+
+          let result: number;
+          if (bBeforeAnchor) {
+            result = wholeMonthDiff > 0 ? -(wholeMonthDiff - 1) : -wholeMonthDiff;
+          } else {
+            result = -wholeMonthDiff;
+          }
+          if (swap) {result = -result;}
+          if (code === YEAR) {result /= 12;}
+          else if (code === QUARTER) {result /= 3;}
+          return result;
+        }
+
         const anchorVal = anchorMs(aYear, aMonth, aDayOf, a.$H, a.$m, a.$s, a.$ms, a._isUTC, wholeMonthDiff);
         const bVal = b.valueOf();
         const sub = bVal - anchorVal;
@@ -1787,9 +1816,7 @@ export class Moment {
         if (code === YEAR) {result /= 12;}
         else if (code === QUARTER) {result /= 3;}
 
-        if (float) {return result;}
-        const t = result < 0 ? -Math.floor(-result) : Math.floor(result);
-        return Object.is(t, -0) ? 0 : t;
+        return result;
       }
       default:
         return diff;
