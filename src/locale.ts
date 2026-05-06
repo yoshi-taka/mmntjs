@@ -580,8 +580,8 @@ function precompileLocaleFormats(loc: Locale): void {
     const lower = upper.toLowerCase();
     cache[lower] ??= buildRenderFns(lowerVariant(ldf[upper]));
     }
-    cache.lt ??= buildRenderFns(lowerVariant(ldf.LT));
-    cache.lts ??= buildRenderFns(lowerVariant(ldf.LTS));
+    cache.lt = buildRenderFns(lowerVariant(ldf.LT));
+    cache.lts = buildRenderFns(lowerVariant(ldf.LTS));
   (loc._config as Record<string, unknown>)._localeRenderFns = cache;
 }
 

@@ -362,7 +362,7 @@ export class Duration {
     for (const key in obj) {
       if (hasOwnProp(obj, key)) {
         const aliased = unitAliasToKey[key];
-        if (unitIndexMap[aliased] !== undefined) {
+        if (aliased in unitIndexMap) {
           const idx = unitIndexMap[aliased];
           if (smallestSeen < 0 || idx > smallestSeen) {smallestSeen = idx;}
         }
@@ -376,12 +376,11 @@ export class Duration {
         const val = Number(rawVal) || 0;
         const idx = unitIndexMap[aliased];
         if (
-          idx !== undefined &&
-          smallestSeen >= 0 &&
-          idx < smallestSeen &&
-          rawVal !== undefined &&
-          rawVal !== null &&
-          rawVal % 1 !== 0
+      smallestSeen >= 0 &&
+      idx < smallestSeen &&
+      rawVal !== undefined &&
+      rawVal !== null &&
+      rawVal % 1 !== 0
         ) {
           this._isValid = false;
           this._milliseconds = NaN;

@@ -104,7 +104,7 @@ export const tgLocale: LocaleSpec = {
     ordinal: function (number: number) {
         const a = number % 10,
             b = number >= 100 ? 100 : null;
-        return number + ((suffixes as Record<number, string>)[number] ?? (suffixes as Record<number, string>)[a] ?? (suffixes as Record<number, string>)[b]);
+        return number + ((suffixes as Record<number, string>)[number] || (suffixes as Record<number, string>)[a] || (suffixes as Record<number, string>)[b]);
     },
     week: {
       dow: 1,
