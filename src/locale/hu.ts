@@ -11,7 +11,7 @@ function translate(number: number, withoutSuffix: boolean, key: string, isFuture
                 ? 'néhány másodperc'
                 : 'néhány másodperce';
         case 'ss':
-            return num + (isFuture ?? withoutSuffix)
+            return num + (isFuture)
                 ? ' másodperc'
                 : ' másodperce';
         case 'm':

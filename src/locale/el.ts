@@ -70,7 +70,7 @@ export const elLocale: LocaleSpec = {
     },
     calendar: function (key: string, mom: Moment) {
         let output = this._calendarEl[key],
-            hours = mom?.hours();
+            hours = mom.hours();
         if (isFunction(output)) {
             output = output.apply(mom);
         }

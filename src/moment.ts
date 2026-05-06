@@ -1885,7 +1885,7 @@ export class Moment {
         const allInput =
           `${input 
           } ${ 
-          parsed._unusedInput?.join("") ?? ""}`;
+          parsed._unusedInput.join("")}`;
         const tzMatch = allInput.match(/([+-]\d{2}):?(\d{2})\s*$/);
         if (tzMatch) {
           const sign = tzMatch[1][0] === "+" ? 1 : -1;
