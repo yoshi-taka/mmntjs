@@ -1,11 +1,40 @@
 {
   "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
   "entry": ["src/index.ts", "src/bin/cli.ts", "src/temporal-entry.ts", "test/mutation.test.ts", "test/properties/basic.test.ts", "test/properties/boundary.test.ts", "src/moment.ts", "src/moment_fixed.ts"],
-  "ignorePatterns": ["moment/**", "lib/**", "test/moment/**", "test/helpers/**", "test/qunit.js", "test/oracle.ts", "test/debug_calendar.js", "src.after/**", "src.orig/**", "src.snapshot/**", "src.before/**", "test/locale/**", "src/locale/**", "test/properties/**", "test/bench-datefns.ts", "test/locale-helper.ts", "scripts/**"],
+  "ignorePatterns": [
+    "moment/**",
+    "lib/**",
+    "test/moment/**",
+    "test/helpers/**",
+    "test/qunit.js",
+    "test/oracle.ts",
+    "test/debug_calendar.js",
+    "src.after/**",
+    "src.orig/**",
+    "src.snapshot/**",
+    "src.before/**",
+    "test/locale/**",
+    "src/locale/**",
+    "test/properties/**",
+    "test/bench-datefns.ts",
+    "test/locale-helper.ts",
+    "scripts/**",
+    "_debug_ast.ts",
+    "test/bench-*",
+    "test/bench*.ts",
+    "test/bench*.mjs",
+    "test/debug_*",
+    "test/fuzz/**",
+    "test/sbst-*",
+    "moment2.js"
+  ],
+  "ignoreDependencies": ["acorn", "benchmark"],
   "rules": {
     "unused-class-members": "off",
     "unused-exports": "off",
     "unused-types": "off",
+    "unused-files": "warn",
+    "unused-dev-dependencies": "warn",
     "circular-dependencies": "warn"
   }
 }
