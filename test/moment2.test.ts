@@ -137,6 +137,14 @@ describe('moment2 specific', () => {
     expect(local.valueOf()).toBe(ref.valueOf())
   })
 
+  test('ISO date-only fast path preserves years 0-99', () => {
+    const local = moment('0000-06-28')
+    const ref = originalMoment('0000-06-28')
+    expect(local.isValid()).toBe(ref.isValid())
+    expect(local.format('YYYY-MM-DD')).toBe(ref.format('YYYY-MM-DD'))
+    expect(local.valueOf()).toBe(ref.valueOf())
+  })
+
   test('_dClone: false skips defensive clone in constructor', () => {
     const MomentCtor = Object.getPrototypeOf(moment()).constructor
     const d = new Date('2024-06-15T12:00:00Z')

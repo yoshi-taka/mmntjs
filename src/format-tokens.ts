@@ -298,7 +298,8 @@ export function buildRenderFns(format: string): RenderFn[] {
     if (ch === "[") {
       const close = format.indexOf("]", i);
       if (close !== -1) {
-        fns.push(() => format.slice(i + 1, close));
+        const literal = format.slice(i + 1, close);
+        fns.push(() => literal);
         i = close + 1;
         continue;
       }
@@ -327,12 +328,14 @@ export function buildRenderFns(format: string): RenderFn[] {
           if (c === "[" || tokenByChar[c]) break;
           j++;
         }
-        fns.push(() => format.slice(i, j));
+        const literal = format.slice(i, j);
+        fns.push(() => literal);
         i = j;
         continue;
       }
     }
-    fns.push(() => ch);
+    const literal = ch;
+    fns.push(() => literal);
     i++;
   }
 

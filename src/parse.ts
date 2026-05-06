@@ -451,6 +451,12 @@ function parseISOWithTable(str: string): Record<string, unknown> | null {
       }
     }
     if (!timeFormat) {return { _claimed: true };}
+    if (timeFormat.includes("SSSS")) {
+      const fracPos = match[3].search(/[.,]/);
+      if (fracPos >= 0) {
+        timeFormat = timeFormat.replace("SSSS", "S".repeat(match[3].length - fracPos - 1));
+      }
+    }
     dateFormat = dateFormat + (match[2] || " ") + timeFormat;
   }
 
@@ -1826,6 +1832,7 @@ function parseWithFormat(
     _meridiem: undefined as string | undefined,
   };
   const _seenUnusedTokens = new Set<string>();
+  const deferredWhitespaceLiterals: string[] = [];
 
   let strIdx = 0;
   let failed = false;
@@ -1860,10 +1867,41 @@ function parseWithFormat(
 
       const trimmedVal = val.trim();
       if (!trimmedVal) {
-        while (strIdx < str.length) {
-          const c = str.charCodeAt(strIdx);
-          if (c !== 0x20 && c !== 0x09 && c !== 0x0A && c !== 0x0D && c !== 0x0C) {break;}
-          strIdx++;
+        if (strict) {
+          if (str.startsWith(val, strIdx)) {
+            strIdx += val.length;
+          } else {
+            const ch = str.charCodeAt(strIdx);
+            const isAlphaNum =
+              (ch >= 48 && ch <= 57) || (ch >= 65 && ch <= 90) || (ch >= 97 && ch <= 122);
+            if (isAlphaNum) {
+              result._unusedTokens.push(val);
+            } else {
+              let skipIdx = 0;
+              while (strIdx + skipIdx < str.length) {
+                const c = str.charCodeAt(strIdx + skipIdx);
+                const isSpace =
+                  c === 0x20 || c === 0x09 || c === 0x0A || c === 0x0D || c === 0x0C;
+                const isWord =
+                  (c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122);
+                if (isSpace || isWord) break;
+                skipIdx++;
+              }
+              if (skipIdx > 0) {
+                result._unusedInput.push(str.substring(strIdx, strIdx + skipIdx));
+                strIdx += skipIdx;
+                deferredWhitespaceLiterals.push(val);
+              } else {
+                result._unusedTokens.push(val);
+              }
+            }
+          }
+        } else {
+          while (strIdx < str.length) {
+            const c = str.charCodeAt(strIdx);
+            if (c !== 0x20 && c !== 0x09 && c !== 0x0A && c !== 0x0D && c !== 0x0C) {break;}
+            strIdx++;
+          }
         }
         continue;
       }
@@ -1930,7 +1968,7 @@ function parseWithFormat(
     }
 
     // Pre-scan: skip non-matching chars for lenient parsing
-    if (token.type === "token" && token.name) {
+    if (!strict && token.type === "token" && token.name) {
       const nameToken =
         token.name === "MMMM" || token.name === "MMM" ||
         token.name === "dddd" || token.name === "ddd" ||
@@ -2017,9 +2055,26 @@ function parseWithFormat(
           const t = tokens[j];
           if (t.type === "token") {
             if (!_seenUnusedTokens.has(t.name!)) { _seenUnusedTokens.add(t.name!); result._unusedTokens.push(t.name!); }
+            if (j === tokenIndex && deferredWhitespaceLiterals.length > 0) {
+              for (const literal of deferredWhitespaceLiterals) {
+                if (!_seenUnusedTokens.has(literal)) {
+                  _seenUnusedTokens.add(literal);
+                  result._unusedTokens.push(literal);
+                }
+              }
+              deferredWhitespaceLiterals.length = 0;
+            }
           } else if (t.value && t.value.trim()) {
             const trimmed = t.value.trim();
             if (!_seenUnusedTokens.has(trimmed)) { _seenUnusedTokens.add(trimmed); result._unusedTokens.push(trimmed); }
+          } else if (t.value && deferredWhitespaceLiterals.length > 0) {
+            for (const literal of deferredWhitespaceLiterals) {
+              if (!_seenUnusedTokens.has(literal)) {
+                _seenUnusedTokens.add(literal);
+                result._unusedTokens.push(literal);
+              }
+            }
+            deferredWhitespaceLiterals.length = 0;
           }
         }
         break;
@@ -2114,6 +2169,12 @@ interface FormatToken {
 }
 
 const FORMAT_TOKENS = [
+  "SSSSSSSSS",
+  "SSSSSSSS",
+  "SSSSSSS",
+  "SSSSSS",
+  "SSSSS",
+  "SSSS",
   "Hmmss",
   "Hmm",
   "hmmss",

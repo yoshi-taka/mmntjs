@@ -45,3 +45,17 @@ test("strict array-of-formats rejects partial matches the same way as moment.js"
     expect((m2 as Record<string, unknown>)._f).toBe((orig as Record<string, unknown>)._f);
   }
 });
+
+test("strict single-format requires literal spaces like moment.js", () => {
+  const cases = [
+    { input: "051179", format: "DD MM YY" },
+    { input: "05 11 79", format: "DD MM YY" },
+  ];
+
+  for (const entry of cases) {
+    const m2 = moment(entry.input, entry.format as any, true);
+    const orig = originalMoment(entry.input, entry.format as any, true);
+    expect(m2.isValid()).toBe(orig.isValid());
+    expect((m2 as any)._f).toBe((orig as any)._f);
+  }
+});
