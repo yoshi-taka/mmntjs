@@ -27,7 +27,7 @@ export const es_mxLocale: LocaleSpec = {
         '_'
     ),
     monthsShort: function (m, format) {
-        if (!m) {
+        if (m == null) {
             return monthsShortDot;
         } else if (/-MMM-/.test(format)) {
             return monthsShort[m.month()];

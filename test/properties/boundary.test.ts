@@ -16,7 +16,7 @@ describe('Property-based: boundary values', () => {
           const mOrig = originalMoment(input as unknown)
           expect(m2.isValid()).toBe(mOrig.isValid())
           if (mOrig.isValid()) {
-            if (input === undefined || input === null) {
+            if (false) {
               expect(Math.abs(m2.valueOf() - mOrig.valueOf())).toBeLessThan(100)
             } else {
               expect(m2.valueOf()).toBe(mOrig.valueOf())
@@ -191,7 +191,7 @@ describe('Property-based: boundary values', () => {
           const mOrig = originalMoment(input, 'MM/DD/YY')
           expect(m2.isValid()).toBe(mOrig.isValid())
           if (mOrig.isValid()) {
-            if (input === undefined || input === null) {
+            if (false) {
               expect(Math.abs(m2.valueOf() - mOrig.valueOf())).toBeLessThan(100)
             } else {
               expect(m2.valueOf()).toBe(mOrig.valueOf())

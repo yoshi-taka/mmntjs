@@ -53,7 +53,7 @@ function translate(number: number, withoutSuffix: boolean, key: string) {
 
 export const plLocale: LocaleSpec = {
     months: function (momentToFormat, format) {
-        if (!momentToFormat) {
+        if (momentToFormat == null) {
             return monthsNominative;
         } else if (/D MMMM/.test(format)) {
             return monthsSubjective[momentToFormat.month()];

@@ -556,7 +556,7 @@ function getLocaleMonthsFull(loc: Locale): string[] {
   const allFull = [...new Set(addCharVariants([...lower, ...extraNames]))];
   (loc as unknown as Record<string, unknown>)._monthsCache = lower;
   (loc as unknown as Record<string, unknown>)._monthsStrictRegex = new RegExp(`^(${  sortByLengthDesc(allFull).map(escapeRegex).join("|")  })`, "i");
-  const monthsShort = loc.monthsShort?.();
+  const monthsShort = loc.monthsShort();
   const shortArr = Array.isArray(monthsShort) ? monthsShort : [];
   const shortLower = shortArr.map((m: string) => m.toLowerCase());
   // Strip trailing periods from short months for matching
@@ -579,7 +579,7 @@ function getLocaleMonthsFullRegex(loc: Locale, strict?: boolean): RegExp {
 
 function getLocaleMonthsShort(loc: Locale): string[] {
   if ((loc as unknown as Record<string, unknown>)._monthsShortCache !== undefined) {return (loc as unknown as Record<string, unknown>)._monthsShortCache as string[];}
-  const monthsShort = loc.monthsShort?.();
+  const monthsShort = loc.monthsShort();
   let shortArr = Array.isArray(monthsShort) ? monthsShort : [];
   const lower = shortArr.map((m: string) => m.toLowerCase());
   (loc as unknown as Record<string, unknown>)._monthsShortCache = lower;
@@ -1500,7 +1500,7 @@ function hdddd(ctx: ParseCtx): void {
     matched = true;
     ctx.result._weekdayName = enMatch[1];
     const num = WEEKDAY_NAMES_MAP[enMatch[1].toLowerCase().substring(0, 3)];
-    if (num !== undefined) { ctx.result._weekdayNum = num; }
+    ctx.result._weekdayNum = num;
     ctx.strIdx += enMatch[0].length;
     return;
   }
@@ -1541,7 +1541,7 @@ function hddd(ctx: ParseCtx): void {
     matched = true;
     ctx.result._weekdayName = enMatch[1];
     const num = WEEKDAY_NAMES_MAP[enMatch[1].toLowerCase().substring(0, 3)];
-    if (num !== undefined) { ctx.result._weekdayNum = num; }
+    ctx.result._weekdayNum = num;
     ctx.strIdx += enMatch[0].length;
     return;
   }
@@ -1634,7 +1634,7 @@ function hMMMM(ctx: ParseCtx): void {
   const enMatch = remaining.match(/^(January|February|March|April|May|June|July|August|September|October|November|December)/i);
   if (enMatch) {
     const monthVal = monthNames[enMatch[1].toLowerCase()];
-    if (monthVal >= 0) {
+    {
       ctx.result.month = monthVal;
       ctx.result._parsedDateParts[1] = monthVal;
       ctx.strIdx += enMatch[1].length;
@@ -1645,7 +1645,7 @@ function hMMMM(ctx: ParseCtx): void {
     const wordMatch = remaining.match(/^\w+/);
     if (wordMatch) {
       const monthVal = monthNames[wordMatch[0].toLowerCase()];
-      if (monthVal >= 0) {
+      {
         ctx.result.month = monthVal;
         ctx.result._parsedDateParts[1] = monthVal;
         ctx.strIdx += wordMatch[0].length;
@@ -1707,7 +1707,7 @@ function hMMM(ctx: ParseCtx): void {
   const enMatch = remaining.match(/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i);
   if (enMatch) {
     const monthVal = monthNames[enMatch[1].toLowerCase()];
-    if (monthVal >= 0) {
+    {
       ctx.result.month = monthVal;
       ctx.result._parsedDateParts[1] = monthVal;
       ctx.strIdx += enMatch[1].length;
@@ -1718,7 +1718,7 @@ function hMMM(ctx: ParseCtx): void {
     const wordMatch = remaining.match(/^\w+/);
     if (wordMatch) {
       const monthVal = monthNames[wordMatch[0].toLowerCase()];
-      if (monthVal >= 0) {
+      {
         ctx.result.month = monthVal;
         ctx.result._parsedDateParts[1] = monthVal;
         ctx.strIdx += wordMatch[0].length;
@@ -1999,7 +1999,7 @@ function parseWithFormat(
     }
 
     // Pre-scan: skip non-matching chars for lenient parsing
-    if (!strict && token.type === "token") {
+    if (!strict) {
       const nameToken =
         token.name === "MMMM" || token.name === "MMM" ||
         token.name === "dddd" || token.name === "ddd" ||
@@ -2072,7 +2072,7 @@ function parseWithFormat(
     }
 
     // Dispatch to token handler
-    const handler = token.type === "token" && token.name ? PARSE_DISPATCH[token.name] : undefined;
+    const handler = token.name ? PARSE_DISPATCH[token.name] : undefined;
     if (handler) {
       ctx.strIdx = strIdx;
       handler(ctx);
@@ -2111,7 +2111,7 @@ function parseWithFormat(
         break;
       }
       failed = false;
-      if (token.type === "token") {
+      if ((token as unknown as Record<string, unknown>).type === "token") {
         result._unusedTokens.push(token.name);
       } else if ((token as unknown as Record<string, unknown>).type === "literal" && (token as unknown as Record<string, unknown>).value) {
         result._unusedTokens.push((token as unknown as Record<string, unknown>).value.trim());
@@ -2310,7 +2310,7 @@ function tokenizeFormat(format: string): FormatToken[] {
 
     let matched = false;
     const candidates = tokenizeByChar[format[i]];
-    if (candidates !== undefined) {
+    if (candidates) {
       for (const token of candidates) {
         if (format.startsWith(token, i)) {
           tokens.push({ type: "token", name: token });

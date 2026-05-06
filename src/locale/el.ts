@@ -16,7 +16,7 @@ export const elLocale: LocaleSpec = {
             '_'
         ),
     months: function (momentToFormat, format) {
-        if (!momentToFormat) {
+        if (momentToFormat == null) {
             return this._monthsNominativeEl;
         } else if (
             typeof format === 'string' &&
@@ -70,7 +70,7 @@ export const elLocale: LocaleSpec = {
     },
     calendar: function (key: string, mom: Moment) {
         let output = this._calendarEl[key],
-            hours = mom?.hours();
+            hours = mom && mom.hours();
         if (isFunction(output)) {
             output = output.apply(mom);
         }

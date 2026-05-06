@@ -1,5 +1,5 @@
 // @ts-expect-error TypeScript errors are intentional for compatibility
-const gc = globalThis.Bun?.gc ?? globalThis.gc;
+const gc = globalThis.gc;
 
 async function measure(label: string, importPath: string) {
   gc(true); gc(true);

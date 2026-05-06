@@ -480,13 +480,12 @@ export class Moment {
   year(y: unknown): this;
   year(y?: unknown): number | this {
     if (y !== undefined) {
-      if (
-        y === undefined ||
-        y === undefined ||
-        y === "" ||
-        (typeof y === "object" && !(y instanceof Date))
-      )
-        {return this;}
+    if (
+      y === undefined ||
+      y === "" ||
+      (typeof y === "object" && !(y instanceof Date))
+    )
+    {return this;}
       const num = Number(y);
       if (isNaN(num)) {return this;}
       const dt = this._getD();
@@ -516,7 +515,6 @@ export class Moment {
   month(m?: unknown): number | this {
     this._ensureFields();
     if (m !== undefined) {
-      if (m === undefined) {return this;}
       if (typeof m === "string" && !/^-?\d+$/.test(m)) {
         const lower = m.toLowerCase();
         const localeMonthsFull = this._getLocale().monthsArray();
@@ -586,7 +584,6 @@ export class Moment {
   day(d?: unknown): number | this {
     this._ensureFields();
     if (d !== undefined) {
-      if (d === undefined) {return this;}
       let dayNum = Number(d);
       if (typeof d === "string") {
         const lower = d.toLowerCase();

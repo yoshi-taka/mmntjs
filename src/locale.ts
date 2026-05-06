@@ -88,7 +88,7 @@ export class Locale {
       return [];
     }
     if (Array.isArray(months)) {return months;}
-    return months.standalone ?? months.format ?? [];
+    return months.standalone;
   }
 
   get _monthsShort(): string[] {
@@ -103,7 +103,7 @@ export class Locale {
       return result;
     }
     if (Array.isArray(ms)) {return ms;}
-    return ms.standalone ?? ms.format ?? this._months;
+    return ms.standalone;
   }
 
   get _weekdays(): string[] {
@@ -118,8 +118,8 @@ export class Locale {
       return result;
     }
     if (Array.isArray(wd)) {return wd;}
-    if (wd !== null) {
-      return (wd as Record<string, string[]>).standalone ?? (wd as Record<string, string[]>).format ?? [];
+    {
+      return (wd as Record<string, string[]>).standalone;
     }
     return wd as string[];
   }
@@ -227,7 +227,7 @@ export class Locale {
   private _resolveWeekdays(wd: string[] | Function | Record<string, unknown>, m: Moment, format?: string): string {
     if (isFunction(wd)) {return wd(m, format) as string;}
     if (Array.isArray(wd)) {return wd[m.day()] || "";}
-    if (wd !== null) {
+    {
       const isFmt = wd.isFormat;
       const useFormat = format && isFmt instanceof RegExp && isFmt.test(format);
       const list = useFormat ? wd.format : wd.standalone ?? wd.format;
@@ -578,14 +578,14 @@ function precompileLocaleFormats(loc: Locale): void {
   }
   for (const upper of ["L", "LL", "LLL", "LLLL"]) {
     const lower = upper.toLowerCase();
-    if (ldf[upper] && !cache[lower]) {
+    if (!cache[lower]) {
       cache[lower] = buildRenderFns(lowerVariant(ldf[upper]));
     }
   }
-  if (ldf.LT && !cache.lt) {
+  if (!cache.lt) {
     cache.lt = buildRenderFns(lowerVariant(ldf.LT));
   }
-  if (ldf.LTS && !cache.lts) {
+  if (!cache.lts) {
     cache.lts = buildRenderFns(lowerVariant(ldf.LTS));
   }
   (loc._config as Record<string, unknown>)._localeRenderFns = cache;

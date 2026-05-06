@@ -30,7 +30,7 @@ export function getRelTimeThreshold(threshold: string): number | null | undefine
 }
 
 export function setRelTimeThreshold(threshold: string, limit?: number): number | boolean | undefined {
-  if (relTimeThreshold[threshold] === undefined) {
+  if (relTimeThreshold[threshold] === null) {
     return undefined;
   }
   if (limit === undefined) {
