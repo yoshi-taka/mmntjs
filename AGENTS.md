@@ -1,3 +1,26 @@
+# 開発ルール
+
+- `spec.md` をもとに moment2 を制作する
+- `root/moment/` ディレクトリが clone してきた moment.js — ここは変更しないこと
+- ビルドまで行う。publish 禁止（できないが）
+- `npx` 禁止、`bun` 使え（`bun add`, `bun run`, `bun test`, `bun x`）
+- なんども `spec.md` を読み、なんども moment.js のテストケースに沿ってるかチェックしよう
+
+## ファイル変更の安全ルール
+
+1. **変更前バックアップ**: ファイルを編集する前に必ず `cp file.ts file.ts.YYYYMMDD.bak` を作れ（変更後のバックアップは無価値）
+2. **git初期化**: リポジトリが未コミットなら最初に `git add -A && git commit -m "init"` せよ
+3. **dry run**: 複数ファイルにわたるスクリプト（sed, node -e 等）を流す前に `--dry-run` 相当の確認（何が変わるか表示）を実施せよ。いきなり本実行するな
+4. **1タスク=1ファイル**: タスクエージェントに一度に複数ファイルの変更を任せるな。1ファイルずつ変更→検証を繰り返せ
+5. **変更後即構文チェック**: ファイルを変更したら直後に `bun build src/変更したファイル.ts --no-bundle` で構文エラーがないか確認せよ
+6. **chflags禁止**: ファイルをロックする `chflags uchg` は絶対に使うな。ロックされると `chflags nouchg` が必要になり、存在を忘れて長時間ハマる
+7. **シェルスクリプトの冪等性**: 同じスクリプトを2回実行しても壊れないように書け（元の状態を確認してから変更する）
+8. **テストは両方のTZで**: 日付処理の変更後は `TZ=UTC bun test` と `TZ=Asia/Tokyo bun test`（またはAmerica/New_York）の両方でテストを通せ
+9. **比較方法**: `bash scripts/compare.sh {bench|test|moment-tests}` — benchは性能比較、testはプロパティ比較、moment-testsはmoment.jsのテストをmoment2で実行（oracle.tsを一時的に差し替え）
+10. **修正前後比較**: 大幅な変更前に `bash scripts/snapshot.sh save` → 変更後 `bash scripts/snapshot.sh compare` で前後のbenchを比較せよ
+
+---
+
 # Handover Memo
 
 ## 開発環境
@@ -213,33 +236,3 @@ date-fns に負けるケース: なし（唯一の `moment()` 6ns差はJSラッ�
    - 全関連ファイルの整合性を確認する
 5. **`git checkout --` で消える変更は二度と戻せない**（reflog に残らない）
 
-## typecheck 進捗 (2026-05-06)
-
-`bun run typecheck` のエラー数を 2299 から 600 (74%削減) まで削減済み。
-
-### 全滅したカテゴリ
-- TS2578 (不要 @ts-expect-error): 138→0
-- TS18046 (unknown): 878→0
-- restrict-template-expressions: 396→0
-- TS7006 (implicit any): 114→0
-- TS2352 (不要 as): 72→0
-- TS2561 (過剰プロパティ): 33→0
-- prefer-nullish-coalescing: 57→0
-- prefer-optional-chain: 21→0
-- dot-notation: 8→0
-- no-unnecessary-template-expression: 3→0
-- テスト全685件 pass
-
-### 残り600件の内訳
-- TS2339 (154): 存在しないプロパティ
-- no-unnecessary-condition (90): 不要条件
-- TS2345 (65) + TS2365 (43) + TS18047 (42): 型エラー (~150)
-- no-unnecessary-type-assertion (26)
-- prefer-includes (10)
-- その他 (~130)
-
-### 再開方法
-```bash
-git log --oneline -3  # 最新のコミットを確認
-bun run typecheck 2>&1 | head -50  # 現在のエラー状況
-```

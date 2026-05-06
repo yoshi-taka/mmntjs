@@ -53,8 +53,7 @@
     "bench:mem": "bun test/bench-mem.ts",
     "snapshot:save": "bash scripts/snapshot.sh save",
     "snapshot:compare": "bash scripts/snapshot.sh compare",
-    "lint": "oxlint src/ test/",
-    "typecheck": "oxlint --type-aware --type-check src test",
+    "lint": "oxlint --type-aware --type-check src test",
     "fmt": "oxlint --fix src/ test/",
     "knip": "knip",
     "fallow": "fallow",
@@ -63,7 +62,18 @@
     "fuzz:grammar": "bun run build && jazzer test/fuzz/grammar.fuzz.js --sync -i dist/ -- -runs=10000 -max_len=48",
     "fuzz:grammar:quick": "bun run build && jazzer test/fuzz/grammar.fuzz.js --sync -i dist/ -- -runs=500 -max_len=48",
     "fuzz:ddmin": "bun test/fuzz/delta-debug.mjs",
-    "ci": "bun run lint && bun run typecheck && TZ=UTC bun run test:hard && bun run build && bun run knip && bun run fallow"
+    "audit:static": "bun run knip && bun run fallow",
+    "ci": "bun run lint && TZ=UTC bun run test:hard && bun run build && bun run knip && bun run fallow"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "./node_modules/.bin/nano-staged"
+  },
+  "nano-staged": {
+    "{src,test}/*.ts": [
+      "oxlint --type-aware --fix",
+      "sh -c 'bun run audit:static'"
+    ],
+    "{knip.json,.fallowrc.json}": "sh -c 'bun run audit:static'"
   },
   "keywords": [
     "moment",
@@ -83,8 +93,10 @@
     "fast-check": "^4.7.0",
     "knip": "^6.9.0",
     "luxon": "^3.7.2",
+    "nano-staged": "^1.0.2",
     "oxlint": "^1.62.0",
     "oxlint-tsgolint": "^0.22.1",
+    "simple-git-hooks": "^2.13.1",
     "tsup": "^8.5.1",
     "typescript": "^6.0.3"
   },
