@@ -38,6 +38,11 @@ describe("tree-shaking", () => {
     expect(pkg.exports["./locale/*"]).toBeDefined();
   });
 
+  test("core and full entry points are declared in exports", () => {
+    expect(pkg.exports["./core"]).toBeDefined();
+    expect(pkg.exports["./full"]).toBeDefined();
+  });
+
   describe("via package name", () => {
     test("core moment does not contain Japanese locale data", async () => {
       const code = await bundleAndGetCode(
@@ -53,6 +58,14 @@ describe("tree-shaking", () => {
       );
 
       expect(code).not.toMatch(/moment2 migrate|Migration CLI/);
+    });
+
+    test("core entry does not contain Temporal bridge registration", async () => {
+      const code = await bundleAndGetCode(
+        `import { moment } from '${join(projectRoot, "dist/core-entry.js").replaceAll("\\", "\\\\")}';\nconsole.log(moment().format());`,
+      );
+
+      expect(code).not.toMatch(/fromTemporal|toTemporal|js-temporal\/polyfill/);
     });
   });
 

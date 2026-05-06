@@ -84,7 +84,7 @@ API ごとに直接 prototype 実装を書くのではなく、内部で共有�
 
 ## モジュール境界
 
-現時点の方針として、ソースは次の責務で整理する。
+最終的な整理方針として、ソースは次の責務で分ける。
 
 ```text
 src/
@@ -122,11 +122,59 @@ src/
 
   entry/
     full.ts          従来互換の全部入り
-    core.ts          locale/timezone を除く軽量入口
+    core.ts          locale を含む軽量入口
     temporal.ts      Temporal bridge を含む入口
 ```
 
 ファイル名は将来変えてもよいが、境界の考え方は維持する。
+
+## 現在の実装状況
+
+2026-05-06 時点では、設計上の境界のうち entry / plugin / registration 層までは実装済み。
+
+現在の実ファイル配置は次のとおり。
+
+```text
+src/
+  index.ts            compatibility entry wrapper
+  full.ts             full entry wrapper
+  core-entry.ts       core entry wrapper
+  temporal-entry.ts   temporal helper entry wrapper
+
+  entry/
+    index.ts          compatibility entry 実体
+    full.ts           full entry 実体
+    core.ts           core entry 実体
+    temporal.ts       temporal helper 実体
+    init.ts           entry 初期化シーケンス
+    types.ts          entry 公開型
+
+  core/
+    factory.ts        moment() / moment.utc() / parseZone() の入口
+
+  plugins/
+    core.ts           コア API 登録
+    display.ts        表示系 static API 登録
+    locale.ts         locale static API 登録
+    temporal.ts       Temporal bridge 登録
+    migration.ts      migration API 登録
+    test-locales.ts   テスト用 locale 登録
+```
+
+この時点での判断は以下。
+
+- `index.ts` 集中は解消済み
+- 公開入口と内部 entry 実体は分離済み
+- registration は責務ごとに分離済み
+- `@compat/moment2/full` / `core` / `temporal` は公開済み
+- locale は `@compat/moment2/locale/*` で公開済み
+
+一方で、次はまだ途中または未着手。
+
+- `ops/` / `display/` への実装本体の再配置
+- `duration` を plugin/entry 境界で明示する整理
+- timezone をこの境界にどう接続するかの整理
+- lodash 風の細粒度 export を出すかどうかの判断
 
 ## 公開 API の考え方
 
@@ -144,10 +192,19 @@ src/
 1. 既存互換の単一入口を維持する
 2. 内部境界が安定したら、追加のサブパス export を出す
 
+現在はこの段階まで進めている。
+
+- `@compat/moment2` -> compatibility wrapper
+- `@compat/moment2/full` -> full runtime
+- `@compat/moment2/core` -> 軽量 runtime
+- `@compat/moment2/temporal` -> Temporal helper
+
 例:
 
 ```text
 @compat/moment2
+@compat/moment2/full
+@compat/moment2/core
 @compat/moment2/temporal
 @compat/moment2/locale/ja
 @compat/moment2-timezone
@@ -248,6 +305,46 @@ timezone 側は `moment.fn` 拡張を使って統合するが、コアは timezo
 
 `moment2` の価値は単なる互換ではなく、Temporal への移行導線にある。  
 ただしこれもコア常設ではなく、責務上は独立機能として扱う。
+
+## 進捗整理
+
+段階ごとの進捗は次のとおり。
+
+### Phase 1: `index.ts` の責務削減
+
+- 完了
+- `core/factory.ts` へ生成ロジックを抽出
+- Temporal / migration / test locale 登録を分離
+
+### Phase 2: plugin / entry 層の導入
+
+- 完了
+- `plugins/core.ts`
+- `plugins/display.ts`
+- `plugins/locale.ts`
+- `plugins/temporal.ts`
+- `plugins/migration.ts`
+- `plugins/test-locales.ts`
+- `entry/full.ts`
+- `entry/core.ts`
+- `entry/temporal.ts`
+- `entry/init.ts`
+- `entry/types.ts`
+
+### Phase 3: 公開入口の段階的分離
+
+- 完了
+- `@compat/moment2`
+- `@compat/moment2/full`
+- `@compat/moment2/core`
+- `@compat/moment2/temporal`
+- `@compat/moment2/locale/*`
+
+### Phase 4: 実装本体の再編
+
+- 未完了
+- `ops/` / `display/` / `locale/registry.ts` のような再配置はまだこれから
+- この段階に入る前に、`duration` と timezone の境界を先に確定する
 
 - `toTemporal`
 - `fromTemporal`

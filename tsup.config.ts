@@ -2,7 +2,7 @@ import { defineConfig } from 'tsup'
 
 export default defineConfig([
   {
-    entry: ['src/index.ts', 'src/locale/*.ts', 'src/bin/cli.ts', 'src/temporal-entry.ts'],
+    entry: ['src/index.ts', 'src/full.ts', 'src/core-entry.ts', 'src/temporal-entry.ts', 'src/locale/*.ts', 'src/bin/cli.ts'],
     format: ['cjs', 'esm'],
     dts: false,
     splitting: false,

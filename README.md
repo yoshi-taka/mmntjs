@@ -28,6 +28,17 @@ moment("2024-01-01").add(1, "month").toDate();
 moment.duration(2, "hours").humanize();
 ```
 
+Advanced entry points:
+
+```js
+import moment from "@compat/moment2/full";
+import coreMoment from "@compat/moment2/core";
+```
+
+- `@compat/moment2` keeps the compatibility entry
+- `@compat/moment2/full` is the explicit full runtime entry
+- `@compat/moment2/core` is the lighter entry without migration/Temporal registration
+
 ### Node (CJS)
 
 ```js
@@ -137,7 +148,7 @@ Build:        CJS 227K + ESM 227K + IIFE 255K + DTS
 ```sh
 bun install
 bun run build          # Build with tsup
-bun run test:all       # Full test suite (incl. moment.js compat)
+bun run test:hard      # Full test suite
 bun run lint           # oxlint
 bun run typecheck      # oxlint type-aware
 bun run ci             # Full CI pipeline
@@ -147,10 +158,15 @@ bun run ci             # Full CI pipeline
 
 ```
 src/
-  index.ts        Main entry
-  moment.ts       Moment class (original)
-  moment_fixed.ts Moment class (with fixes)
-  duration.ts     Duration class
+  index.ts        Compatibility entry wrapper
+  full.ts         Full runtime entry wrapper
+  core-entry.ts   Lightweight runtime entry wrapper
+  temporal-entry.ts Temporal helper entry wrapper
+  entry/          Runtime entry implementations
+  core/           Factory and parsing entry logic
+  plugins/        Public API registration layers
+  moment_fixed.ts Moment class
+  duration_fixed.ts Duration class
   locale.ts       Locale system
   format.ts       Format tokenizer
   parse.ts        Date parser
