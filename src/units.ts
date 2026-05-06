@@ -77,9 +77,7 @@ for (const key of Object.keys(_aliases)) {
 export function normalizeUnitCode(unit: string): number {
   if (!unit) {return INVALID_UNIT;}
   const exact = _codeAliases[unit];
-  if (exact !== undefined) {return exact;}
-  const folded = _codeNmap[unit.toLowerCase()];
-  return folded ?? INVALID_UNIT;
+  return exact;
 }
 
 export function isLeapYear(y: number): boolean {

@@ -55,19 +55,15 @@ export function hasOwnProp(obj: object, key: string): boolean {
 
 export function extend(a: Record<string, unknown>, b: Record<string, unknown>, ...others: Record<string, unknown>[]): Record<string, unknown> {
   for (const source of others) {
-    if (source) {
-      for (const key in source) {
-        if (hasOwnProp(source, key)) {
-          a[key] = source[key];
-        }
+    for (const key in source) {
+      if (hasOwnProp(source, key)) {
+        a[key] = source[key];
       }
     }
   }
-  if (b) {
-    for (const key in b) {
-      if (hasOwnProp(b, key)) {
-        a[key] = b[key];
-      }
+  for (const key in b) {
+    if (hasOwnProp(b, key)) {
+      a[key] = b[key];
     }
   }
   return a;
@@ -90,33 +86,33 @@ export function absRound(number: number): number {
 export function createDate(
   year: number,
   month: number,
-  day: number,
+  day: number = 1,
   ...args: [number?, number?, number?, number?]
 ): Date {
   const [hour, minute, second, ms] = args;
   if (year >= 0 && year <= 99) {
     const d = new Date(0);
-    d.setFullYear(year, month, day ?? 1);
+    d.setFullYear(year, month, day);
     d.setHours(hour ?? 0, minute ?? 0, second ?? 0, ms ?? 0);
     return d;
   }
-  return new Date(year, month, day ?? 1, hour ?? 0, minute ?? 0, second ?? 0, ms ?? 0);
+  return new Date(year, month, day, hour ?? 0, minute ?? 0, second ?? 0, ms ?? 0);
 }
 
 export function createUTCDate(
   year: number,
   month: number,
-  day: number,
+  day: number = 1,
   ...args: [number?, number?, number?, number?]
 ): Date {
   const [hour, minute, second, ms] = args;
   if (year >= 0 && year <= 99) {
     const d = new Date(0);
-    d.setUTCFullYear(year, month, day ?? 1);
+    d.setUTCFullYear(year, month, day);
     d.setUTCHours(hour ?? 0, minute ?? 0, second ?? 0, ms ?? 0);
     return d;
   }
-  return new Date(Date.UTC(year, month, day ?? 1, hour ?? 0, minute ?? 0, second ?? 0, ms ?? 0));
+  return new Date(Date.UTC(year, month, day, hour ?? 0, minute ?? 0, second ?? 0, ms ?? 0));
 }
 
 export function createDateSafe(

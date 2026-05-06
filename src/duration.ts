@@ -141,7 +141,7 @@ export class Duration {
 
     // If called from moment(), override with the moment's locale
     if (input && typeof input === "object" && (input as Record<string, unknown>)._isAMomentObject) {
-      this._locale = ((input as Record<string, unknown>)._l as string) ?? this._locale;
+      this._locale = ((input as Record<string, unknown>)._l as string | undefined) ?? this._locale;
     }
 
     if (input == null) {

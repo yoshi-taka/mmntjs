@@ -679,10 +679,9 @@ function createFromString(
     if (/^\d{4}-\d{2}-\d{2}([T ]|$)/.test(trimmedStr)) {
       detectedFmt = "YYYY-MM-DD";
       if (timeMatch) {
-        detectedFmt += `${hasT ? "T" : " "}HH`;
-        if (timeMatch[2] !== undefined) {detectedFmt += ":mm";}
-        if (timeMatch[3] !== undefined) {detectedFmt += ":ss";}
-        if (timeMatch[4] !== undefined) {detectedFmt += ".SSSS";}
+        detectedFmt += `${hasT ? "T" : " "}HH:mm`;
+        if (timeMatch.index! + timeMatch[0].length > 5) {detectedFmt += ":ss";}
+        if (timeMatch.index! + timeMatch[0].length > 8) {detectedFmt += ".SSSS";}
       }
     } else if (/^\d{4}-\d{2}/.test(trimmedStr)) {
       detectedFmt = "YYYY-MM";

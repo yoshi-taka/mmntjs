@@ -68,7 +68,7 @@ export function registerCoreApi(): void {
     get() {
       return (str: string) => {
         const fn = parseTwoDigitYearInternal;
-        return fn(str);
+        if (fn) {return fn(str);}
         const num = parseInt(str, 10);
         return num > 68 ? 1900 + num : 2000 + num;
       };

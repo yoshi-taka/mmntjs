@@ -2655,7 +2655,7 @@ export function momentFromAnything(input: unknown, isUTC?: boolean): Moment {
   if (typeof input === "object" && !isMoment(input)) {
     const obj = input as Record<string, unknown>;
     const parsed = parseObject(obj);
-    if (parsed !== null && (parsed.year !== undefined || parsed.month !== undefined || parsed.day !== undefined)) {
+    if (parsed.year !== undefined || parsed.month !== undefined || parsed.day !== undefined) {
       const now = new Date();
       const y = parsed.year !== undefined ? parsed.year : now.getFullYear();
       const mo = parsed.month ?? 0;
