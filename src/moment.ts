@@ -15,8 +15,9 @@ import { normalizeUnits, daysInMonth, isLeapYear } from "./units";
 import { parseString, parseArray, type ParsedData } from "./parse";
 import { formatMoment } from "./format";
 import type { FormattableMoment } from "./display/types";
+import type { DurationMomentLike } from "./duration-between";
 import type { ParseLocale } from "./parse-locale";
-import { Duration, isDuration } from "./duration";
+import { Duration, isDuration, setDurationMomentResolver } from "./duration";
 
 export let momentProperties: string[] = [];
 
@@ -2215,3 +2216,5 @@ export function momentFromAnything(input: unknown, isUTC?: boolean): Moment {
   }
   return new Moment({ _d: new Date(NaN), _dClone: false, _isValid: false });
 }
+
+setDurationMomentResolver((input) => momentFromAnything(input) as DurationMomentLike);

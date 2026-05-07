@@ -2,6 +2,7 @@ import type { Locale} from "./locale";
 import { getLocale, getCurrentLocale } from "./locale";
 import { absFloor, hasOwnProp, isObject } from "./utils";
 import { getRelTimeThreshold, getRelTimeRounding } from "./reltime";
+import { diffMomentsForDuration, type DurationMomentLike } from "./duration-between";
 
 export interface DurationInput {
   years?: number;
@@ -35,6 +36,14 @@ export interface DurationInput {
 }
 
 export type DurationLike = number | DurationInput | string | Duration;
+
+type DurationMomentResolver = (input: unknown) => DurationMomentLike;
+
+let durationMomentResolver: DurationMomentResolver | undefined;
+
+export function setDurationMomentResolver(resolver: DurationMomentResolver): void {
+  durationMomentResolver = resolver;
+}
 
 function absCeil(number: number): number {
   if (number < 0) {
@@ -302,39 +311,21 @@ export class Duration {
 
   private _parseObject(obj: DurationInput): void {
     if (hasOwnProp(obj, "from") || hasOwnProp(obj, "to")) {
-      const { momentFromAnything, Moment } = require("./moment_fixed");
       const fromVal = (obj as Record<string, unknown>).from;
       const toVal = (obj as Record<string, unknown>).to;
-      const from = fromVal != null ? momentFromAnything(fromVal) : new Moment({ _d: new Date(0), _dClone: false });
-      const to = toVal != null ? momentFromAnything(toVal) : new Moment({ _d: new Date(0), _dClone: false });
-      if (!from.isValid() || !to.isValid()) {
+      if (!durationMomentResolver) {
         this._milliseconds = 0;
         this._days = 0;
         this._months = 0;
+        this._isValid = false;
         return;
       }
-      if (from.valueOf() <= to.valueOf()) {
-        let months =
-          (to.month() as number) -
-          (from.month() as number) +
-          ((to.year() as number) - (from.year() as number)) * 12;
-        const adjusted = from.clone().add(months, "months");
-        if (adjusted.valueOf() > to.valueOf()) {months--;}
-        this._months = months;
-        const base = from.clone().add(this._months, "months");
-        this._milliseconds = to.valueOf() - base.valueOf();
-      } else {
-        let months =
-          (from.month() as number) -
-          (to.month() as number) +
-          ((from.year() as number) - (to.year() as number)) * 12;
-        const adjusted = to.clone().add(months, "months");
-        if (adjusted.valueOf() > from.valueOf()) {months--;}
-        this._months = -months;
-        const base = to.clone().add(months, "months");
-        this._milliseconds = -(from.valueOf() - base.valueOf());
-      }
-      this._days = 0;
+      const from = fromVal != null ? durationMomentResolver(fromVal) : durationMomentResolver(new Date(0));
+      const to = toVal != null ? durationMomentResolver(toVal) : durationMomentResolver(new Date(0));
+      const diff = diffMomentsForDuration(from, to);
+      this._months = diff.months;
+      this._milliseconds = diff.milliseconds;
+      this._days = diff.days;
       return;
     }
     let smallestSeen = -1;

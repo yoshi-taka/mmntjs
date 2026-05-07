@@ -13,10 +13,17 @@ function ensureTemporal(): void {
     const mod = require("../temporal");
     toTemporalFn = mod.toTemporal;
     fromTemporalFn = mod.fromTemporal;
+    const factory = momentFactory;
+    if (factory) {
+      mod.setTemporalMomentFactory?.((...args: unknown[]) => factory(...args));
+    }
   }
 }
 
+let momentFactory: ((...args: unknown[]) => unknown) | null = null;
+
 export function registerTemporalBridge(moment: TemporalRegistrableMoment): void {
+  momentFactory = moment as unknown as (...args: unknown[]) => unknown;
   moment.fn.toTemporal = function (this: Moment): unknown {
     ensureTemporal();
     return toTemporalFn!(this);

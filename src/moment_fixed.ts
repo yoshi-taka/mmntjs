@@ -32,7 +32,7 @@ import { parseString, parseArray, parseObject, type ParsedData } from "./parse";
 import { formatMoment } from "./format";
 import type { FormattableMoment } from "./display/types";
 import type { ParseLocale } from "./parse-locale";
-import { Duration, isDuration } from "./duration_fixed";
+import { Duration, isDuration, setDurationMomentResolver } from "./duration_fixed";
 
 export let momentProperties: string[] = [];
 
@@ -2508,7 +2508,7 @@ export class Moment {
     if (unit) {
       return this._compareCalendarValues(other, unit) < 0;
     }
-    return this.valueOf() < other.valueOf();
+    return this.valueOf() > other.valueOf();
   }
 
   toObject(): Record<string, number> {
@@ -2701,6 +2701,8 @@ export function momentFromAnything(input: unknown, isUTC?: boolean): Moment {
   }
   return new Moment({ _d: new Date(NaN), _dClone: false, _isValid: false });
 }
+
+setDurationMomentResolver((input) => momentFromAnything(input));
 
 function parseDurationNumUnit(amount: number, unit: string): { ms: number; days: number; months: number } {
   const u = normalizeUnits(unit);

@@ -3,6 +3,10 @@ import type { Moment } from "./moment_fixed";
 let _T: unknown = null;
 let _momentFn: ((...args: unknown[]) => Moment) | null = null;
 
+export function setTemporalMomentFactory(fn: (...args: unknown[]) => Moment): void {
+  _momentFn = fn;
+}
+
 function getT(): unknown {
   if (!_T) {
     const g = globalThis as Record<string, unknown>;
@@ -16,7 +20,7 @@ function getT(): unknown {
 function getMoment(): (...args: unknown[]) => Moment {
   const fn = _momentFn;
   if (!fn) {
-    const loaded = require("./index").default;
+    const loaded = require("./core/factory").moment as (...args: unknown[]) => Moment;
     _momentFn = loaded;
     return loaded;
   }
