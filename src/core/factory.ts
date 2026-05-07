@@ -175,6 +175,31 @@ function scoreParsedResult(parsed: Record<string, unknown> | ParsedData): number
   return score;
 }
 
+function createInvalidParsedMoment(
+  str: string,
+  format: string | string[] | undefined,
+  locale: string | undefined,
+  strict: boolean,
+  parsed: ParsedData,
+): Moment {
+  return new Moment({
+    _d: new Date(NaN),
+    _i: str,
+    _f: format,
+    _l: locale,
+    _strict: strict,
+    _isValid: false,
+    _unusedTokens: parsed._unusedTokens,
+    _unusedInput: parsed._unusedInput,
+    _charsLeftOver: parsed._charsLeftOver,
+    _empty: parsed._empty,
+    _invalidMonth: parsed._invalidMonth,
+    _weekdayMismatch: parsed._weekdayMismatch,
+    _parsedDateParts: parsed._parsedDateParts,
+    _meridiem: parsed._meridiem,
+  });
+}
+
 function createFromString(
   str: string,
   format?: unknown,
@@ -258,40 +283,10 @@ function createFromString(
       const overflow = checkOverflow(bestParsed);
       if (overflow < 0) {
         if (strict && bestParsed._unusedTokens && bestParsed._unusedTokens.length > 0) {
-          return new Moment({
-            _d: new Date(NaN),
-            _i: str,
-            _f: bestFormat,
-            _l: locale,
-            _strict: strict,
-            _isValid: false,
-            _unusedTokens: bestParsed._unusedTokens,
-            _unusedInput: bestParsed._unusedInput,
-            _charsLeftOver: bestParsed._charsLeftOver,
-            _empty: bestParsed._empty,
-            _invalidMonth: bestParsed._invalidMonth,
-            _weekdayMismatch: bestParsed._weekdayMismatch,
-            _parsedDateParts: bestParsed._parsedDateParts,
-            _meridiem: bestParsed._meridiem,
-          });
+          return createInvalidParsedMoment(str, bestFormat, locale, strict, bestParsed as ParsedData);
         }
         if (strict && bestParsed._charsLeftOver > 0) {
-          return new Moment({
-            _d: new Date(NaN),
-            _i: str,
-            _f: bestFormat,
-            _l: locale,
-            _strict: strict,
-            _isValid: false,
-            _unusedTokens: bestParsed._unusedTokens,
-            _unusedInput: bestParsed._unusedInput,
-            _charsLeftOver: bestParsed._charsLeftOver,
-            _empty: bestParsed._empty,
-            _invalidMonth: bestParsed._invalidMonth,
-            _weekdayMismatch: bestParsed._weekdayMismatch,
-            _parsedDateParts: bestParsed._parsedDateParts,
-            _meridiem: bestParsed._meridiem,
-          });
+          return createInvalidParsedMoment(str, bestFormat, locale, strict, bestParsed as ParsedData);
         }
         const m = createMomentFromParsed(bestParsed, str, bestFormat as string, locale, strict);
         m._f = bestFormat;
@@ -391,7 +386,7 @@ function createFromString(
         });
       }
     }
-        const parsed = parseString(str, undefined, getLocale(getCurrentLocale()) as unknown as ParseLocale);
+    const parsed = parseString(str, undefined, getLocale(getCurrentLocale()) as unknown as ParseLocale);
     if (parsed && hasAnyValue(parsed)) {
       const overflow = checkOverflow(parsed);
       if (overflow >= 0) {

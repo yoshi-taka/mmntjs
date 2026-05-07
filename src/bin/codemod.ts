@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import path from "node:path";
+import { walkSourceFiles } from "./walk-source-files";
 
 const IMPORT_PATTERNS = [
   { from: /from\s+['"]moment['"]/g, to: "from '@compat/moment2'" },
@@ -45,29 +45,19 @@ function scanFiles(dir: string) {
     modifiedFiles: [] as string[],
   };
 
-  function walk(d: string) {
-    const entries = fs.readdirSync(d, { withFileTypes: true });
-    for (const entry of entries) {
-      if (entry.name.startsWith(".") || entry.name === "node_modules") {continue;}
-      const p = path.join(d, entry.name);
-      if (entry.isDirectory()) {walk(p);}
-      else if (/\.(js|ts|jsx|tsx|vue)$/.test(entry.name)) {
-        const content = fs.readFileSync(p, "utf-8");
-        let count = 0;
-        for (const pattern of IMPORT_PATTERNS) {
-          const matches = content.match(pattern.from);
-          if (matches) {count += matches.length;}
-        }
-        if (count > 0) {
-          results.total += count;
-          results.files++;
-          results.fileCounts[p] = count;
-          results.modifiedFiles.push(p);
-        }
-      }
+  walkSourceFiles(dir, (p) => {
+    const content = fs.readFileSync(p, "utf-8");
+    let count = 0;
+    for (const pattern of IMPORT_PATTERNS) {
+      const matches = content.match(pattern.from);
+      if (matches) {count += matches.length;}
     }
-  }
-
-  walk(path.resolve(dir));
+    if (count > 0) {
+      results.total += count;
+      results.files++;
+      results.fileCounts[p] = count;
+      results.modifiedFiles.push(p);
+    }
+  });
   return results;
 }

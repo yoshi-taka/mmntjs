@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { walkSourceFiles } from "./walk-source-files";
 
 const NEVER_MOMENT = new Set([
   "toBe", "toEqual", "toStrictEqual", "toContain", "toContainEqual",
@@ -86,60 +87,46 @@ export function runAudit(dir = ".") {
   const unrecognized = new Set<string>();
   const unrecognizedLines: string[] = [];
 
-  function walk(d: string) {
-    const entries = fs.readdirSync(d, { withFileTypes: true });
-    for (const entry of entries) {
-      if (entry.name.startsWith(".") || entry.name === "node_modules") {continue;}
-      const p = path.join(d, entry.name);
-      if (entry.isDirectory()) {walk(p);}
-      else if (/\.(js|ts|jsx|tsx|vue)$/.test(entry.name)) {
-        const content = fs.readFileSync(p, "utf-8");
-        const lines = content.split("\n");
+  walkSourceFiles(dir, (p) => {
+    const content = fs.readFileSync(p, "utf-8");
+    const lines = content.split("\n");
 
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i];
-          if (!/\bmoment\b/.test(line)) {continue;}
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (!/\bmoment\b/.test(line)) {continue;}
 
-          totalLines++;
+      totalLines++;
 
-          // moment(…) — constructor
-          const ctorMatches = line.match(/\bmoment\s*\(/g);
-          if (ctorMatches) {constructorCalls += ctorMatches.length;}
+      const ctorMatches = line.match(/\bmoment\s*\(/g);
+      if (ctorMatches) {constructorCalls += ctorMatches.length;}
 
-          // moment.xxx(…) — static methods
-          const staticMatches = line.matchAll(/\bmoment\s*\.\s*(\w+)\s*\(/g);
-          for (const m of staticMatches) {
-            staticMethodCalls++;
-            if (!known.has(m[1])) {
-              unrecognized.add(m[1]);
-              unrecognizedCalls++;
-              unrecognizedLines.push(`${p}:${i + 1} — moment.${m[1]}()`);
-            }
-          }
-
-          // .xxx(…) after moment — chain methods (only known moment APIs)
-          const afterMoment = line.split(/\bmoment\b/).slice(1).join(" ");
-          const chainMatches = afterMoment.matchAll(/\.\s*(\w+)\s*\(/g);
-          for (const m of chainMatches) {
-            if (NEVER_MOMENT.has(m[1])) {continue;}
-            chainMethodCalls++;
-            if (!known.has(m[1])) {
-              unrecognized.add(m[1]);
-              unrecognizedCalls++;
-              unrecognizedLines.push(`${p}:${i + 1} — .${m[1]}()`);
-            }
-          }
-
-          // Object.freeze check
-          if (line.includes("Object.freeze(")) {
-            unrecognizedLines.push(`${p}:${i + 1} — Object.freeze() on moment instance`);
-          }
+      const staticMatches = line.matchAll(/\bmoment\s*\.\s*(\w+)\s*\(/g);
+      for (const m of staticMatches) {
+        staticMethodCalls++;
+        if (!known.has(m[1])) {
+          unrecognized.add(m[1]);
+          unrecognizedCalls++;
+          unrecognizedLines.push(`${p}:${i + 1} — moment.${m[1]}()`);
         }
       }
-    }
-  }
 
-  walk(path.resolve(dir));
+      const afterMoment = line.split(/\bmoment\b/).slice(1).join(" ");
+      const chainMatches = afterMoment.matchAll(/\.\s*(\w+)\s*\(/g);
+      for (const m of chainMatches) {
+        if (NEVER_MOMENT.has(m[1])) {continue;}
+        chainMethodCalls++;
+        if (!known.has(m[1])) {
+          unrecognized.add(m[1]);
+          unrecognizedCalls++;
+          unrecognizedLines.push(`${p}:${i + 1} — .${m[1]}()`);
+        }
+      }
+
+      if (line.includes("Object.freeze(")) {
+        unrecognizedLines.push(`${p}:${i + 1} — Object.freeze() on moment instance`);
+      }
+    }
+  });
 
   const totalCalls = constructorCalls + staticMethodCalls + chainMethodCalls;
   const recognizedCalls = totalCalls - unrecognizedCalls;

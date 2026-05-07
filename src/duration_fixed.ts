@@ -692,6 +692,74 @@ export class Duration {
     return d as this;
   }
 
+  round(options?: {
+    smallestUnit?: string;
+    roundingMode?: "ceil" | "floor" | "trunc" | "halfExpand";
+    roundingIncrement?: number;
+  }): this {
+    if (!this._isValid) {return this;}
+    const smallestUnit = options?.smallestUnit ?? "milliseconds";
+    const roundingMode = options?.roundingMode ?? "halfExpand";
+    const increment = options?.roundingIncrement ?? 1;
+
+    const total = this.as(smallestUnit);
+    const divided = total / increment;
+    let rounded: number;
+    switch (roundingMode) {
+      case "ceil": rounded = Math.ceil(divided); break;
+      case "floor": rounded = Math.floor(divided); break;
+      case "trunc": rounded = Math.trunc(divided); break;
+      default: rounded = Math.round(divided); break;
+    }
+
+    this._months = 0;
+    this._days = 0;
+    this._milliseconds = 0;
+
+    const unit = smallestUnit.replace(/s$/, "").replace(/^millisecond$/, "milliseconds");
+    switch (unit) {
+      case "millisecond":
+      case "ms":
+        this._milliseconds = rounded * increment;
+        break;
+      case "second":
+      case "s":
+        this._milliseconds = rounded * increment * 1000;
+        break;
+      case "minute":
+      case "m":
+        this._milliseconds = rounded * increment * 60000;
+        break;
+      case "hour":
+      case "h":
+        this._milliseconds = rounded * increment * 3600000;
+        break;
+      case "day":
+      case "d":
+        this._days = rounded * increment;
+        break;
+      case "week":
+      case "w":
+        this._days = rounded * increment * 7;
+        break;
+      case "month":
+      case "M":
+        this._months = rounded * increment;
+        break;
+      case "year":
+      case "y":
+        this._months = rounded * increment * 12;
+        break;
+      case "quarter":
+      case "Q":
+        this._months = rounded * increment * 3;
+        break;
+    }
+
+    this._bubble();
+    return this;
+  }
+
   humanize(
     withSuffix?: boolean | Partial<Record<string, number>>,
     thresholdsArg?: Partial<Record<string, number>>,

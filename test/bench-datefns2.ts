@@ -70,11 +70,20 @@ const CASES = [
     },
   },
   {
-    name: "Intl.DateTimeFormat YYYY-MM-DD",
+    name: "Intl.DateTimeFormat YYYY-MM-DD (sv-SE)",
     run: () => {
       const a = moment2("2024-06-15");
       const b = new Date(2024, 5, 15);
       const fmt = new Intl.DateTimeFormat("sv-SE", {year: "numeric", month: "2-digit", day: "2-digit"});
+      return [() => a.format("YYYY-MM-DD"), () => fmt.format(b)];
+    },
+  },
+  {
+    name: "Intl.DateTimeFormat YYYY-MM-DD (ar-SA)",
+    run: () => {
+      const a = moment2("2024-06-15");
+      const b = new Date(2024, 5, 15);
+      const fmt = new Intl.DateTimeFormat("ar-SA", {year: "numeric", month: "2-digit", day: "2-digit"});
       return [() => a.format("YYYY-MM-DD"), () => fmt.format(b)];
     },
   },
@@ -186,11 +195,20 @@ const CASES = [
     },
   },
   {
-    name: "Intl.DateTimeFormat HH:mm:ss",
+    name: "Intl.DateTimeFormat HH:mm:ss (en-US)",
     run: () => {
       const a = moment2("2024-06-15 10:30:45");
       const b = new Date(2024, 5, 15, 10, 30, 45);
       const fmt = new Intl.DateTimeFormat("en-US", {hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false});
+      return [() => a.format("HH:mm:ss"), () => fmt.format(b)];
+    },
+  },
+  {
+    name: "Intl.DateTimeFormat HH:mm:ss (ar-SA)",
+    run: () => {
+      const a = moment2("2024-06-15 10:30:45");
+      const b = new Date(2024, 5, 15, 10, 30, 45);
+      const fmt = new Intl.DateTimeFormat("ar-SA", {hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false});
       return [() => a.format("HH:mm:ss"), () => fmt.format(b)];
     },
   },

@@ -1,96 +1,95 @@
 import type { Moment } from "./moment_fixed";
-import type { Temporal } from "@js-temporal/polyfill";
 
-let _T: typeof Temporal | null = null;
-function getT(): typeof Temporal {
-  _T ??= require("@js-temporal/polyfill").Temporal;
-  return _T!;
+let _T: unknown = null;
+let _momentFn: ((...args: unknown[]) => Moment) | null = null;
+
+function getT(): unknown {
+  if (!_T) {
+    const g = globalThis as Record<string, unknown>;
+    _T = (typeof g.Temporal === "object" && g.Temporal !== null)
+      ? g.Temporal
+      : require("@js-temporal/polyfill").Temporal;
+  }
+  return _T;
 }
 
-export function getTemporalNamespace(): typeof Temporal {
+function getMoment(): (...args: unknown[]) => Moment {
+  const fn = _momentFn;
+  if (!fn) {
+    const loaded = require("./index").default;
+    _momentFn = loaded;
+    return loaded;
+  }
+  return fn;
+}
+
+function offsetToString(offsetMinutes: number): string {
+  if (offsetMinutes === 0) {return "UTC";}
+  const sign = offsetMinutes >= 0 ? "+" : "-";
+  const abs = Math.abs(offsetMinutes);
+  const h = Math.floor(abs / 60);
+  const m = abs % 60;
+  return `${sign}${h < 10 ? "0" : ""}${h}:${m < 10 ? "0" : ""}${m}`;
+}
+
+export function getTemporalNamespace(): unknown {
   return getT();
 }
 
-export function toTemporal(m: Moment): Temporal.PlainDate | Temporal.ZonedDateTime {
+export function toTemporal(m: Moment): unknown {
   if (!m.isValid()) {throw new Error("Cannot convert invalid moment to Temporal");}
 
   const year = m.year();
   const month = m.month() + 1;
   const day = m.date();
-  const hour = m.hour();
-  const minute = m.minute();
-  const second = m.second();
-  const ms = m.millisecond();
+  const T = getT() as {
+    PlainDate: new (y: number, m: number, d: number) => { year: number; month: number; day: number };
+    ZonedDateTime: { from(o: Record<string, unknown>): unknown };
+  };
 
-  const hasTime = hour !== 0 || minute !== 0 || second !== 0 || ms !== 0;
+  const hasTime = m.hour() !== 0 || m.minute() !== 0 || m.second() !== 0 || m.millisecond() !== 0;
   const hasOffset = m._isUTC || m._offset !== 0;
 
-  if (hasTime || hasOffset) {
-    const offsetMinutes = m.utcOffset();
-    const offsetHours = Math.floor(offsetMinutes / 60);
-    const offsetMinRemainder = offsetMinutes % 60;
-    const offsetStr =
-      `${(offsetMinutes >= 0 ? "+" : "-") +
-      String(Math.abs(offsetHours)).padStart(2, "0") 
-      }:${ 
-      String(Math.abs(offsetMinRemainder)).padStart(2, "0")}`;
-
-    let timezone: string;
-    if (m._isUTC && m._offset === 0) {
-      timezone = "UTC";
-    } else {
-      timezone = offsetStr;
-    }
-
-    return getT().ZonedDateTime.from({
-      timeZone: timezone,
-      year,
-      month,
-      day,
-      hour,
-      minute,
-      second,
-      millisecond: ms,
-    });
+  if (!hasTime && !hasOffset) {
+    return new T.PlainDate(year, month, day);
   }
 
-  return getT().PlainDate.from({ year, month, day });
+  return T.ZonedDateTime.from({
+    timeZone: offsetToString(m.utcOffset()),
+    year, month, day,
+    hour: m.hour(), minute: m.minute(), second: m.second(), millisecond: m.millisecond(),
+  });
+}
+
+function isTemporalInstance(t: unknown, cls: string): t is Record<string, unknown> {
+  try {
+    return t != null && typeof t === "object" && (t as Record<string, unknown>).constructor.name === cls;
+  } catch { return false; }
 }
 
 export function fromTemporal(t: unknown): Moment {
-  const { default: moment } = require("./index");
-  const T = getT();
+  const moment = getMoment();
 
-  if (t instanceof T.PlainDate) {
-    return moment([t.year, t.month - 1, t.day]);
+  if (isTemporalInstance(t, "PlainDate")) {
+    return moment([t.year as number, (t.month as number) - 1, t.day as number]);
   }
 
-  if (t instanceof T.ZonedDateTime) {
-    const msSinceEpoch = t.epochMilliseconds;
-    const m = moment(msSinceEpoch);
-    const offset = t.offsetNanoseconds ? Math.round(t.offsetNanoseconds / 60e9) : 0;
-    if (offset !== 0) {
-      m.utcOffset(offset);
+  if (isTemporalInstance(t, "ZonedDateTime")) {
+    const m = moment(t.epochMilliseconds as number);
+    if (t.offsetNanoseconds) {
+      m.utcOffset(Math.round(Number(t.offsetNanoseconds) / 6e10));
     }
     return m;
   }
 
-  if (t instanceof T.PlainDateTime) {
-    return moment([t.year, t.month - 1, t.day, t.hour, t.minute, t.second, t.millisecond]);
+  if (isTemporalInstance(t, "PlainDateTime")) {
+    return moment([t.year as number, (t.month as number) - 1, t.day as number, t.hour as number, t.minute as number, t.second as number, t.millisecond as number]);
   }
 
-  if (t instanceof T.PlainTime) {
+  if (isTemporalInstance(t, "PlainTime")) {
     const now = new Date();
-    return moment([
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-      t.hour,
-      t.minute,
-      t.second,
-      t.millisecond,
-    ]);
+    return moment([now.getFullYear(), now.getMonth(), now.getDate(), t.hour as number, t.minute as number, t.second as number, t.millisecond as number]);
   }
 
-  throw new Error(`Unsupported Temporal type: ${  (t as object).constructor.name}`);
+  throw new Error(`Unsupported Temporal type: ${typeof t === "object" && t !== null ? (t as Record<string, unknown>).constructor.name : typeof t}`);
 }

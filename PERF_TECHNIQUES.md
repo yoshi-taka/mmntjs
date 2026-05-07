@@ -268,6 +268,32 @@ function _dayOfWeek(y: number, m: number, d: number): number {
 
 ---
 
+## 14. `format()` が native `Intl.DateTimeFormat` より 10-22x 速い理由
+
+**問題**: なぜ moment2 の `format('YYYY-MM-DD')` (〜40ns) が Node.js ネイティブの `Intl.DateTimeFormat.format()` (〜600ns) より速いのか？
+
+**答え**: Intl.DateTimeFormat は **汎用 ICU パイプライン** を通す。moment2 は **キャッシュされた整数フィールドの直結合**。
+
+| 処理ステップ | Intl.DateTimeFormat | moment2 |
+|-------------|-------------------|---------|
+| Locale 解決 | CLDR データから locale 解決 (ICU C++) | なし ("en" 固定) |
+| Calendar 解決 | Islamic / Buddhist / Japanese 等の変換テーブル引き | なし (Gregorian 固定) |
+| Numbering system | Latin / Arabic-Indic / Thai 桁の解決と変換 | なし (ASCII 固定) |
+| 月日解決 | カレンダー依存の月名/曜日名取得 | なし (整数直書き) |
+| String assembly | ICU パターンに沿った locale-aware 文字列構築 | テンプレートリテラル1発 |
+
+```typescript
+// moment2 (en, Gregorian, ASCII): 3 field reads + 2 PAD2 lookups + 1 template literal
+return `${padYear(this.$y)}-${PAD2[this.$M + 1]}-${PAD2[this.$D]}`;
+// → ~40ns, 0 ICU calls, 0 locale resolution, 0 calendar conversion
+
+// Intl.DateTimeFormat: ICU C++ pipe を通過 (数値→文字列変換も含む)
+const fmt = new Intl.DateTimeFormat("ar-SA", { ... });
+fmt.format(date);  // → ~600ns, ICU C++ calls, locale+calendar+digit resolution
+```
+
+**結論**: 単純な `YYYY-MM-DD` フォーマットには Intl.DateTimeFormat はオーバースペック。moment2 の format は「キャッシュされた整数の sprintf」であり、ICU パイプラインと比較するのがナンセンスなほど軽い。
+
 ## 計測結果（2026-05-05）
 
 ### moment2 vs date-fns (6/8 勝利)

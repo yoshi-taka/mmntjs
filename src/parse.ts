@@ -125,7 +125,7 @@ export function parseString(
   const fastResult = parseCommonISOExtended(trimmed);
   if (fastResult) {return fastResult as unknown as ParsedData;}
 
-  const isoResult = parseISOWithTable(trimmed);
+  const isoResult = parseISOWithTable(trimmed, locale);
   if (isoResult) {
     if (isoResult._claimed) {return { _claimed: true } as unknown as ParsedData;}
     return isoResult as unknown as ParsedData;
@@ -424,7 +424,7 @@ function parseRFC2822(match: RegExpMatchArray): Record<string, unknown> | null {
   };
 }
 
-function parseISOWithTable(str: string): Record<string, unknown> | null {
+function parseISOWithTable(str: string, locale?: ParseLocale): Record<string, unknown> | null {
   const match = EXTENDED_ISO_REGEX.exec(str) ?? BASIC_ISO_REGEX.exec(str);
   if (!match) {return null;}
 
@@ -479,7 +479,7 @@ function parseISOWithTable(str: string): Record<string, unknown> | null {
     parseStr = parseStr.slice(1);
   }
 
-  const result = parseWithFormat(parseStr, dateFormat);
+  const result = parseWithFormat(parseStr, dateFormat, locale);
   if (!result) {return { _claimed: true };}
   if (result._weekdayNum !== undefined && (result._weekdayNum < 1 || result._weekdayNum > 7)) {
     return { _claimed: true };
