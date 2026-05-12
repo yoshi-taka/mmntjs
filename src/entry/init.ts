@@ -1,23 +1,68 @@
-import { moment } from "../core/factory";
+import { moment, nowFn } from "../core/factory";
+import { formatMoment } from "../format";
+import { setCalendarMethodCallbacks, setDebugMethodCallbacks, setFormatMomentCallback, setLocaleRuntimeCallbacks, setLocaleMethodCallbacks } from "../moment2";
+import { getCurrentLocale, getLocale, hasLocale } from "../locale-runtime";
+import { lang, localeData, localeMethod, localeWeek, localeWeekYear, localeWeekday, localeWeeksInWeekYear, localeWeeksInYear } from "../locale-extra";
+import { calendarCompareMoment, dayOfYearMoment, isoWeekdayMoment, isoWeekMoment, isoWeekYearMoment, isoWeeksInISOWeekYearMoment, isoWeeksInYearMoment } from "../calendar-extra";
+import { endOfExtraMoment, startOfExtraMoment } from "../boundary-extra";
+import { creationDataMoment, inspectMoment, invalidAtMoment, parsingFlagsMoment, toArrayMoment, toObjectMoment, toStringMoment } from "../debug-extra";
 import { registerCoreApi } from "../plugins/core";
 import { registerDisplayApi } from "../plugins/display";
-import { registerBuiltinTestLocales } from "../plugins/test-locales";
-import { registerTemporalBridge } from "../plugins/temporal";
-import { registerMigrationApi } from "../plugins/migration";
+import { enableCustomFormatParsing } from "../parse";
 import { initializeLocaleEntry } from "./locale-init";
+import { registerUtcApi } from "../plugins/utc";
 
-type MigrationMoment = Record<string, unknown>;
-type TemporalMoment = { fn: Record<string, unknown>; fromTemporal?: (t: unknown) => unknown };
+type CoreInitMoment = typeof moment;
+type CoreInitDeps = Parameters<typeof registerCoreApi>[1];
 
-export function initializeCoreEntry(): void {
-  registerCoreApi();
-  registerDisplayApi();
+export function initializeCoreEntry(
+  target: CoreInitMoment = moment,
+  deps?: CoreInitDeps,
+): void {
+  setFormatMomentCallback(formatMoment);
+  setLocaleRuntimeCallbacks({ getCurrentLocale, getLocale, hasLocale });
+  setLocaleMethodCallbacks({
+    weekday: localeWeekday,
+    week: localeWeek,
+    weekYear: localeWeekYear,
+    weeksInYear: localeWeeksInYear,
+    weeksInWeekYear: localeWeeksInWeekYear,
+    localeData,
+    lang,
+    locale: localeMethod,
+  });
+  setCalendarMethodCallbacks({
+    isoWeekday: isoWeekdayMoment,
+    dayOfYear: dayOfYearMoment,
+    isoWeek: isoWeekMoment,
+    isoWeekYear: isoWeekYearMoment,
+    isoWeeksInYear: isoWeeksInYearMoment,
+    isoWeeksInISOWeekYear: isoWeeksInISOWeekYearMoment,
+    compare: calendarCompareMoment,
+    startOfExtra: startOfExtraMoment,
+    endOfExtra: endOfExtraMoment,
+  });
+  setDebugMethodCallbacks({
+    toArray: toArrayMoment,
+    inspect: inspectMoment,
+    creationData: creationDataMoment,
+    parsingFlags: parsingFlagsMoment,
+    invalidAt: invalidAtMoment,
+    toObject: toObjectMoment,
+    toString: toStringMoment,
+  });
+  registerCoreApi(target, deps);
+  registerDisplayApi(target);
+  registerUtcApi(target as unknown as Parameters<typeof registerUtcApi>[0], { nowFn });
 }
 
-export function initializeFullEntry(): void {
-  initializeCoreEntry();
+export function initializeFullEntry(
+  target: CoreInitMoment = moment,
+  deps?: CoreInitDeps,
+): void {
+  initializeCoreEntry(target, deps);
+  enableCustomFormatParsing();
   initializeLocaleEntry();
-  registerBuiltinTestLocales();
-  registerMigrationApi(moment as unknown as MigrationMoment);
-  registerTemporalBridge(moment as unknown as TemporalMoment);
 }
+
+export { registerFormatParsePlugin as initializeFormatParsePlugin } from "../plugins/format-parse";

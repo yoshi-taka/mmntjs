@@ -2,11 +2,11 @@ import fs from "node:fs";
 import { walkSourceFiles } from "./walk-source-files";
 
 const IMPORT_PATTERNS = [
-  { from: /from\s+['"]moment['"]/g, to: "from '@compat/moment2'" },
-  { from: /require\(['"]moment['"]\)/g, to: "require('@compat/moment2')" },
-  { from: /from\s+['"]moment\/locale\//g, to: "from '@compat/moment2/locale/" },
-  { from: /require\(['"]moment\/locale\//g, to: "require('@compat/moment2/locale/" },
-  { from: /import\s+(\w+)\s+from\s+['"]moment['"]/g, to: "import $1 from '@compat/moment2'" },
+  { from: /from\s+['"]moment['"]/g, to: "from 'mmntjs'" },
+  { from: /require\(['"]moment['"]\)/g, to: "require('mmntjs')" },
+  { from: /from\s+['"]moment\/locale\//g, to: "from 'mmntjs/locale/" },
+  { from: /require\(['"]moment\/locale\//g, to: "require('mmntjs/locale/" },
+  { from: /import\s+(\w+)\s+from\s+['"]moment['"]/g, to: "import $1 from 'mmntjs'" },
 ];
 
 export function runCheck(dir = ".") {
@@ -16,7 +16,7 @@ export function runCheck(dir = ".") {
     console.log(`  ${file}: ${count} import(s)`);
   }
   console.log(`\n${results.total} import(s) can be auto-migrated (import path replacement only)`);
-  console.log("Run `moment2 migrate --apply` to apply changes\n");
+  console.log("Run `mmntjs migrate --apply` to apply changes\n");
 }
 
 export function runApply(dir = ".") {

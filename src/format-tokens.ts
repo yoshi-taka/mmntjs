@@ -1,5 +1,6 @@
-import type { Moment } from "./moment_fixed";
-import type { Locale } from "./locale";
+import type { Moment } from "./moment2";
+import type { Locale } from "./locale-runtime";
+import { localeMeridiem, localeMonths, localeMonthsShort, localeOrdinal, localeWeekdays, localeWeekdaysMin, localeWeekdaysShort } from "./locale-runtime";
 import { zeroFill } from "./utils";
 
 export let currentFormat: string | undefined;
@@ -96,39 +97,39 @@ export function fng(m: Moment): string { return String(m.weekYear()); }
 
 // Quarter
 export function fnQ(m: Moment): string { return String(Math.ceil((M(m) + 1) / 3)); }
-export function fnQo(m: Moment): string { return currentLocale!.ordinal(Math.ceil((M(m) + 1) / 3), "Q"); }
+export function fnQo(m: Moment): string { return localeOrdinal(currentLocale!, Math.ceil((M(m) + 1) / 3), "Q"); }
 
 // Month
 export function fnM(m: Moment): string { return String(M(m) + 1); }
 export function fnMM(m: Moment): string { return zeroFill(M(m) + 1, 2); }
-export function fnMMM(m: Moment): string { return currentLocale!.monthsShort(m, currentFormat) as string; }
-export function fnMMMM(m: Moment): string { return currentLocale!.months(m, currentFormat) as string; }
-export function fnMo(m: Moment): string { return currentLocale!.ordinal(M(m) + 1, "M"); }
+export function fnMMM(m: Moment): string { return localeMonthsShort(currentLocale!, m, currentFormat) as string; }
+export function fnMMMM(m: Moment): string { return localeMonths(currentLocale!, m, currentFormat) as string; }
+export function fnMo(m: Moment): string { return localeOrdinal(currentLocale!, M(m) + 1, "M"); }
 
 // Day of month
 export function fnD(m: Moment): string { return String(D(m)); }
 export function fnDD(m: Moment): string { return zeroFill(D(m), 2); }
-export function fnDo(m: Moment): string { return currentLocale!.ordinal(D(m), "D"); }
-export function fndo(m: Moment): string { return currentLocale!.ordinal(d(m), "d"); }
+export function fnDo(m: Moment): string { return localeOrdinal(currentLocale!, D(m), "D"); }
+export function fndo(m: Moment): string { return localeOrdinal(currentLocale!, d(m), "d"); }
 
 // Weekday
 export function fnd(m: Moment): string { return String(d(m)); }
-export function fndd(m: Moment): string { return currentLocale!.weekdaysMin(m, currentFormat) as string; }
-export function fnddd(m: Moment): string { return currentLocale!.weekdaysShort(m, currentFormat) as string; }
-export function fndddd(m: Moment): string { return currentLocale!.weekdays(m, currentFormat) as string; }
+export function fndd(m: Moment): string { return localeWeekdaysMin(currentLocale!, m, currentFormat) as string; }
+export function fnddd(m: Moment): string { return localeWeekdaysShort(currentLocale!, m, currentFormat) as string; }
+export function fndddd(m: Moment): string { return localeWeekdays(currentLocale!, m, currentFormat) as string; }
 export function fne(m: Moment): string { return String(locWD(m)); }
 export function fnE(m: Moment): string { return String(isoWD(m)); }
 
 // Week
 export function fnw(m: Moment): string { return String(locW(m)); }
 export function fnww(m: Moment): string { return zeroFill(locW(m), 2); }
-export function fnwo(m: Moment): string { return currentLocale!.ordinal(locW(m), "w"); }
+export function fnwo(m: Moment): string { return localeOrdinal(currentLocale!, locW(m), "w"); }
 export function fnW(m: Moment): string { return String(isoW(m)); }
 export function fnWW(m: Moment): string { return zeroFill(isoW(m), 2); }
-export function fnWo(m: Moment): string { return currentLocale!.ordinal(isoW(m), "W"); }
+export function fnWo(m: Moment): string { return localeOrdinal(currentLocale!, isoW(m), "W"); }
 
 // Day of year
-export function fnDDDo(m: Moment): string { return currentLocale!.ordinal(doy(m), "DDD"); }
+export function fnDDDo(m: Moment): string { return localeOrdinal(currentLocale!, doy(m), "DDD"); }
 export function fnDDD(m: Moment): string { return String(doy(m)); }
 export function fnDDDD(m: Moment): string { return zeroFill(doy(m), 3); }
 
@@ -155,10 +156,10 @@ export function fnHmm(m: Moment): string { return String(H(m)) + zeroFill(Mi(m),
 export function fnHmmss(m: Moment): string { return String(H(m)) + zeroFill(Mi(m), 2) + zeroFill(S(m), 2); }
 
 // Meridiem
-export function fnt(m: Moment): string { return currentLocale!.meridiem(H(m), Mi(m), true).charAt(0); }
-export function fntt(m: Moment): string { return currentLocale!.meridiem(H(m), Mi(m), true); }
-export function fnA(m: Moment): string { return currentLocale!.meridiem(H(m), Mi(m), false); }
-export function fna(m: Moment): string { return currentLocale!.meridiem(H(m), Mi(m), true); }
+export function fnt(m: Moment): string { return localeMeridiem(currentLocale!, H(m), Mi(m), true).charAt(0); }
+export function fntt(m: Moment): string { return localeMeridiem(currentLocale!, H(m), Mi(m), true); }
+export function fnA(m: Moment): string { return localeMeridiem(currentLocale!, H(m), Mi(m), false); }
+export function fna(m: Moment): string { return localeMeridiem(currentLocale!, H(m), Mi(m), true); }
 
 // Millisecond
 export function fnS(m: Moment): string { return String(Math.floor(Ms(m) / 100)); }
@@ -224,8 +225,8 @@ export function fnyyyy(m: Moment): string {
 export function fnyo(m: Moment): string {
   const info = getEraInfo(m, currentLocale!);
   const loc = currentLocale!;
-  if (info) {return loc.ordinal(info.eraYear, "y");}
-  return loc.ordinal(y(m), "y");
+  if (info) {return localeOrdinal(loc, info.eraYear, "y");}
+  return localeOrdinal(loc, y(m), "y");
 }
 
 // Unix timestamp

@@ -1,4 +1,4 @@
-import type { Moment } from "./moment_fixed";
+import type { Moment } from "./moment2";
 
 let _T: unknown = null;
 let _momentFn: ((...args: unknown[]) => Moment) | null = null;

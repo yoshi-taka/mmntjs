@@ -1,28 +1,31 @@
 {
-  "name": "@compat/moment2",
+  "name": "mmntjs",
   "version": "1.0.0",
   "description": "Drop-in replacement for moment.js — a migration path to Temporal API",
   "type": "module",
+  "engines": {
+    "node": ">=16"
+  },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "unpkg": "./dist/moment2.min.js",
-  "jsdelivr": "./dist/moment2.min.js",
+  "unpkg": "./dist/mmntjs.min.js",
+  "jsdelivr": "./dist/mmntjs.min.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
+    "./lite": {
+      "types": "./dist/lite.d.ts",
+      "import": "./dist/lite.js",
+      "require": "./dist/lite.cjs"
+    },
     "./full": {
       "types": "./dist/full.d.ts",
       "import": "./dist/full.js",
       "require": "./dist/full.cjs"
-    },
-    "./core": {
-      "types": "./dist/core-entry.d.ts",
-      "import": "./dist/core-entry.js",
-      "require": "./dist/core-entry.cjs"
     },
     "./temporal": {
       "types": "./dist/temporal-entry.d.ts",
@@ -34,12 +37,22 @@
       "import": "./dist/locale/*.js",
       "require": "./dist/locale/*.cjs"
     },
+    "./plugin/format-parse": {
+      "types": "./dist/plugin/format-parse.d.ts",
+      "import": "./dist/plugin/format-parse.js",
+      "require": "./dist/plugin/format-parse.cjs"
+    },
+    "./plugin/utc": {
+      "types": "./dist/plugin/utc.d.ts",
+      "import": "./dist/plugin/utc.js",
+      "require": "./dist/plugin/utc.cjs"
+    },
     "./dist/*": "./dist/*",
     "./moment": "./moment/moment.js",
     "./moment/*": "./moment/*"
   },
   "bin": {
-    "moment2": "./dist/bin/cli.js"
+    "mmntjs": "./dist/bin/cli.js"
   },
   "sideEffects": false,
   "files": [
@@ -74,17 +87,19 @@
   "license": "MIT",
   "devDependencies": {
     "@jazzer.js/core": "^4.0.0",
+    "@rspack/cli": "^2.0.2",
+    "@rspack/core": "^2.0.2",
     "@types/benchmark": "^2.1.5",
     "@types/bun": "^1.3.13",
-    "@types/node": "^20.19.39",
+    "@types/node": "^20.19.41",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.20",
-    "fallow": "^2.54.3",
-    "fast-check": "^4.7.0",
-    "knip": "^6.9.0",
+    "fallow": "^2.70.0",
+    "fast-check": "^4.8.0",
+    "knip": "^6.12.2",
+    "lefthook": "^1.13.6",
     "luxon": "^3.7.2",
-    "lefthook": "^1.11.0",
-    "oxlint": "^1.62.0",
+    "oxlint": "^1.64.0",
     "oxlint-tsgolint": "^0.22.1",
     "tsup": "^8.5.1",
     "typescript": "^6.0.3"

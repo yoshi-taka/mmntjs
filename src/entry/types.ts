@@ -1,6 +1,7 @@
 import type { Duration } from "../duration_fixed";
 import type { Locale } from "../locale";
-import type { Moment } from "../moment_fixed";
+import type { Moment } from "../moment2";
+import type { MomentLite } from "../moment_lite";
 
 export interface CoreMomentStatic {
   (input?: unknown, format?: unknown, localeOrStrict?: unknown, fourthArg?: unknown): Moment;
@@ -41,7 +42,39 @@ export interface CoreMomentStatic {
   deprecationHandler: ((name: string, msg: string) => void) | null;
 }
 
-export interface MomentStatic extends CoreMomentStatic {
+export interface BaseMomentStatic {
+  (input?: unknown, format?: unknown, localeOrStrict?: unknown, fourthArg?: unknown): Moment;
+  utc(input?: unknown, format?: unknown, localeOrStrict?: unknown, fourthArg?: unknown): Moment;
+  isMoment(obj: unknown): boolean;
+  isDate(obj: unknown): boolean;
+  unix(ts: number): Moment;
+  invalid(input?: unknown): Moment;
+  now: () => number;
+  updateOffset: ((m: Moment, keepTime?: boolean) => void) | undefined;
+  fn: Moment;
+  prototype: Moment;
+  version: string;
+  ISO_8601: string;
+  RFC_2822: string;
+  parseTwoDigitYear: (str: string) => number;
+}
+
+export interface LiteMomentStatic {
+  (input?: unknown, format?: unknown, localeOrStrict?: unknown, fourthArg?: unknown): MomentLite;
+  utc(input?: unknown, format?: unknown, localeOrStrict?: unknown, fourthArg?: unknown): MomentLite;
+  isMoment(obj: unknown): boolean;
+  isDate(obj: unknown): boolean;
+  unix(ts: number): MomentLite;
+  invalid(input?: unknown): MomentLite;
+  now: () => number;
+  fn: MomentLite;
+  prototype: MomentLite;
+  version: string;
+  ISO_8601: string;
+  parseTwoDigitYear: (str: string) => number;
+}
+
+export interface FullMomentStatic extends CoreMomentStatic {
   locale(locale?: string | string[], ...args: unknown[]): string | Locale;
   localeData(locale?: string): Locale;
   defineLocale(locale: string, config: Record<string, unknown>): Locale | void;
@@ -55,3 +88,5 @@ export interface MomentStatic extends CoreMomentStatic {
   report(type?: string): void;
   fromTemporal(t: unknown): unknown;
 }
+
+export interface MomentStatic extends FullMomentStatic {}

@@ -3,7 +3,7 @@ import { localeModule } from "../locale-helper";
 import moment from "../../moment";
 import { bgLocale } from "../../src/locale/bg";
 import { defineLocale } from "../../src/locale";
-import type { Moment } from "../../src/moment_fixed"
+import type { Moment } from "../../src/moment2"
 
 defineLocale("bg", bgLocale);
 

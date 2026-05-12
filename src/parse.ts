@@ -5,11 +5,44 @@ import {
   LruMap,
 } from "./utils";
 import type { ParseLocale } from "./parse-locale";
+import { localeIsPM, localeLongDateFormat, localeMonths, localeMonthsShort, localePreparse } from "./locale-runtime";
 
 export let parseTwoDigitYearFn: ((input: string) => number) | undefined;
+let customFormatParsingEnabled = false;
+type FormatParser = (
+  str: string,
+  format: string,
+  locale?: ParseLocale,
+  strict?: boolean,
+) => ParsedData | null;
+type FormatsParser = (
+  str: string,
+  formats: string[],
+  locale?: ParseLocale,
+  strict?: boolean,
+) => ParsedData | null;
+
+let registeredFormatParser: FormatParser | undefined;
+let registeredFormatsParser: FormatsParser | undefined;
 
 export function setParseTwoDigitYear(fn: ((input: string) => number) | undefined): void {
   parseTwoDigitYearFn = fn;
+}
+
+export function enableCustomFormatParsing(): void {
+  customFormatParsingEnabled = true;
+}
+
+export function isCustomFormatParsingEnabled(): boolean {
+  return customFormatParsingEnabled;
+}
+
+export function registerCustomFormatParser(
+  single: FormatParser,
+  multi: FormatsParser,
+): void {
+  registeredFormatParser = single;
+  registeredFormatsParser = multi;
 }
 
 const ISO_8601_REGEX =
@@ -88,14 +121,14 @@ export function parseString(
   if (!locObj) {return null;}
 
   if (format) {
-    const preparsed = locObj.preparse(str);
+    const preparsed = localePreparse(locObj as never, str);
     if (isArray(format)) {
       return parseWithFormats(preparsed, format, locale, strict) as unknown as ParsedData;
     }
     return parseWithFormat(preparsed, format, locale, strict) as unknown as ParsedData;
   }
 
-  str = locObj.preparse(str);
+  str = localePreparse(locObj as never, str);
   const trimmed = str;
 
   if (trimmed.trim() === "") {return null;}
@@ -555,14 +588,14 @@ function getMonthExtraNames(loc: ParseLocale): string[] {
 
 function getLocaleMonthsFull(loc: ParseLocale): string[] {
   if ((loc as unknown as Record<string, unknown>)._monthsCache !== undefined) {return (loc as unknown as Record<string, unknown>)._monthsCache as string[];}
-  const months = loc.months();
+  const months = localeMonths(loc as never);
   const monthsArr = Array.isArray(months) ? months : [];
   const lower = monthsArr.map((m: string) => m.toLowerCase());
   const extraNames = getMonthExtraNames(loc);
   const allFull = [...new Set(addCharVariants([...lower, ...extraNames]))];
   (loc as unknown as Record<string, unknown>)._monthsCache = lower;
   (loc as unknown as Record<string, unknown>)._monthsStrictRegex = new RegExp(`^(${  sortByLengthDesc(allFull).map(escapeRegex).join("|")  })`, "i");
-  const monthsShort = loc.monthsShort();
+  const monthsShort = localeMonthsShort(loc as never);
   const shortArr = Array.isArray(monthsShort) ? monthsShort : [];
   const shortLower = shortArr.map((m: string) => m.toLowerCase());
   // Strip trailing periods from short months for matching
@@ -585,7 +618,7 @@ function getLocaleMonthsFullRegex(loc: ParseLocale, strict?: boolean): RegExp {
 
 function getLocaleMonthsShort(loc: ParseLocale): string[] {
   if ((loc as unknown as Record<string, unknown>)._monthsShortCache !== undefined) {return (loc as unknown as Record<string, unknown>)._monthsShortCache as string[];}
-  const monthsShort = loc.monthsShort();
+  const monthsShort = localeMonthsShort(loc as never);
   let shortArr = Array.isArray(monthsShort) ? monthsShort : [];
   const lower = shortArr.map((m: string) => m.toLowerCase());
   (loc as unknown as Record<string, unknown>)._monthsShortCache = lower;
@@ -789,6 +822,7 @@ export interface ParsedData {
   _hasTime?: boolean;
   _f?: string;
   _useConstructor?: boolean;
+  _claimed?: boolean;
 }
 
 interface ParseCtx {
@@ -1985,7 +2019,7 @@ function parseWithFormat(
   let expandedFormat = expandedFormatCache.get(expandedCacheKey);
   if (!expandedFormat) {
     expandedFormat = format.replaceAll(/LTS|LT|llll|LLLL|lll|LLL|ll|LL|l|L/g, (match) => {
-      return loc.longDateFormat(match);
+      return localeLongDateFormat(loc as never, match);
     });
     expandedFormatCache.set(expandedCacheKey, expandedFormat);
   }
@@ -2281,7 +2315,7 @@ function parseWithFormat(
     if (typeof mHourFn === "function") {
       result.hour = mHourFn(result.hour, result._meridiem);
     } else {
-      const isPM = loc.isPM(result._meridiem ?? "");
+      const isPM = localeIsPM(loc as never, result._meridiem ?? "");
       if (!isPM && result.hour === 12) {
         result.hour = 0;
       } else if (isPM && result.hour < 12) {

@@ -1,4 +1,4 @@
-import type { Moment } from "../moment_fixed";
+import type { Moment } from "../moment2";
 import type { LocaleSpec } from "./en";
 
 export const zh_cnLocale: LocaleSpec = {

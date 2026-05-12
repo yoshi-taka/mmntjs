@@ -1,6 +1,7 @@
 import type { FormattableMoment } from "./types";
 import { LruMap } from "../utils";
 import { setCurrentLocale, currentFormat, setCurrentFormat, buildRenderFns, type RenderFn } from "../format-tokens";
+import { localeInvalidDate, localeLongDateFormat, localePostformat } from "../locale-runtime";
 
 export { setCurrentFormat };
 
@@ -34,7 +35,7 @@ function expandLocaleTokens(m: FormattableMoment, format: string): string {
     const localMatch = remaining.match(/^(LTS|LT|llll|LLLL|lll|LLL|ll|LL|l|L)(?![a-zA-Z])/);
     if (localMatch) {
       const key = localMatch[1];
-      const longFmt = loc.longDateFormat(key);
+      const longFmt = localeLongDateFormat(loc, key);
       if (longFmt && longFmt !== key) {
         parts.push(longFmt);
         i += key.length;
@@ -109,7 +110,7 @@ export function formatMoment(m: FormattableMoment, format: string): string {
 
   if (!m._isValid) {
     setCurrentLocale(undefined);
-    return loc.invalidDate();
+    return localeInvalidDate(loc);
   }
 
   format = expandLocaleTokens(m, format);
@@ -129,5 +130,5 @@ export function formatMoment(m: FormattableMoment, format: string): string {
   }
   setCurrentFormat(savedFormat);
   setCurrentLocale(undefined);
-  return loc.postformat(parts.join(""));
+  return localePostformat(loc, parts.join(""));
 }

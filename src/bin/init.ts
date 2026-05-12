@@ -13,9 +13,9 @@ export function runInit(dir = ".") {
 
   console.log("Creating git checkpoint...");
 
-  console.log("Adding npm alias: moment → @compat/moment2");
+  console.log("Adding npm alias: moment → mmntjs");
   pkg.dependencies ??= {};
-  pkg.dependencies.moment = "npm:@compat/moment2@^1.0.0";
+  pkg.dependencies.moment = "npm:mmntjs@^1.0.0";
 
   if (pkg.devDependencies?.["@types/moment"]) {
     console.log("Removing @types/moment");
@@ -26,6 +26,6 @@ export function runInit(dir = ".") {
 
   console.log("Run install to complete setup.");
   console.log();
-  console.log("  ✓ @compat/moment2 loaded successfully");
-  console.log("  ✓ Run `moment2 stats` for migration details");
+  console.log("  ✓ mmntjs loaded successfully");
+  console.log("  ✓ Run `mmntjs stats` for migration details");
 }

@@ -3,7 +3,7 @@ import { localeModule } from "../locale-helper";
 import moment from "../../moment";
 import { sr_cyrlLocale } from "../../src/locale/sr-cyrl";
 import { defineLocale } from "../../src/locale";
-import type { Moment } from "../../src/moment_fixed"
+import type { Moment } from "../../src/moment2"
 
 defineLocale("sr-cyrl", sr_cyrlLocale);
 

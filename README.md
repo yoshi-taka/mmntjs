@@ -1,196 +1,161 @@
-# @compat/moment2
+# mmntjs
 
-Drop-in replacement for moment.js — a migration path to [Temporal API](https://tc39.es/proposal-temporal/).
+Most teams don't keep using moment.js because they love it.
+They keep using it because rewriting date logic across a large codebase is risky, expensive, and never becomes this quarter's priority.
 
-```
-moment
-  ↓ `npx moment2 migrate`
-@compat/moment2 (works, warns, guides)
-  ↓ trackUsage + toTemporal()
-Temporal API
-```
+mmntjs designed for that reality.
 
-## Install
+Drop-in replacement for moment.js — migration path to [Temporal API](https://tc39.es/proposal-temporal/).
+
+## Quick Start
+
+### Option A: Zero-code alias (switch today)
+
+Replace moment.js with no code changes:
 
 ```sh
-bun add @compat/moment2
-# or
-npm install @compat/moment2
+npm install moment@npm:mmntjs
 ```
 
-## Usage
+```js
+import moment from "moment";           // unchanged
+moment("2024-01-01").add(1, "month");  // now runs on mmntjs
+```
+
+### Option B: Automated codemod (migrate imports)
+
+Swap imports from `moment` to `mmntjs` across your codebase:
+
+```sh
+npx mmntjs migrate --check ./src     # dry run first
+npx mmntjs migrate --apply ./src     # apply codemod
+```
+
+### As a standalone library
+
+```sh
+npm install mmntjs
+```
 
 ```js
-import moment from "@compat/moment2";
-
+import moment from "mmntjs";
 moment().format("YYYY-MM-DD");
-moment("2024-01-01").add(1, "month").toDate();
 moment.duration(2, "hours").humanize();
 ```
 
-Advanced entry points:
+### Entry Points
+
+| Import | Size (gzip) | Description |
+|--------|------------:|-------------|
+| `mmntjs` (bare import) | ~55 KB | Full compatibility (default) |
+| `mmntjs/lite` | **15.6 KB** | ISO-centric, size-first SKU |
+| `mmntjs/plugin/*` | +separate | Optional plugins (format-parse, duration, …) |
+| `mmntjs/locale/*` | +separate | Individual locales (136 total) |
 
 ```js
-import moment from "@compat/moment2/full";
-import coreMoment from "@compat/moment2/core";
+// Use lite + plugins for smaller bundles
+import moment from "mmntjs/lite";
+import "mmntjs/plugin/format-parse";
+import "mmntjs/locale/ja";
+import "mmntjs-timezone";
 ```
 
-- `@compat/moment2` keeps the compatibility entry
-- `@compat/moment2/full` is the explicit full runtime entry
-- `@compat/moment2/core` is the lighter entry without locale registry, migration, or Temporal registration
+### Platform Support
 
-### Node (CJS)
-
-```js
-const moment = require("@compat/moment2");
-```
-
-### Browser (CDN)
+| Runtime | Support |
+|---------|---------|
+| Node.js | 16+ (CJS `require("mmntjs")`, ESM) |
+| Browser | IIFE via CDN (`<script src="…/mmntjs.min.js">`) |
+| Bun | Native ESM, first-class support |
+| Deno | Compatible via npm specifiers |
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@compat/moment2/dist/moment2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mmntjs/dist/mmntjs.min.js"></script>
 <script>
-  moment2().format("LLLL");
+  mmntjs().format("LLLL");
 </script>
 ```
 
-### Locales
-
-Import locale modules as side effects, same as moment.js:
-
 ```js
-import "@compat/moment2/locale/ja";
-import "@compat/moment2/locale/fr";
-
-moment.locale("ja");
-moment().format("LL"); // → "2024年1月1日"
+// Node.js CJS
+const moment = require("mmntjs");
 ```
 
-136 locales available (all original moment.js locales).
+---
 
-### Timezone
 
-```sh
-bun add @compat/moment2-timezone
-```
 
-```js
-import moment from "@compat/moment2";
-import "@compat/moment2-timezone";
+## Three Pillars
 
-moment.tz("2024-01-01", "Asia/Tokyo").format();
-```
+### 1. Near-100% Drop-in Compatibility
 
-Based on Intl API (no timezone data file — 445 zones supported).
+**moment.js's own test suite**: 678/678 pass (52 QUnit files via compat layer).  
+**Oracle comparison**: 112 properties, 45k+ assertions against upstream moment.js.  
+**Mutation**: 10/10 injected bugs detected.  
+**Fuzzing**: 9 coverage-guided harnesses + grammar-based ISO 8601 generator.
 
-## Drop-in Replacement
+The only known incompatibilities are malformed/edge-case strings discovered through fuzzing (e.g. sign-prefixed strings without delimiters). These are under active repair — see [REMAINING.md](./docs/meta/REMAINING.md) for the shortlist.
 
-For existing moment projects, add an npm alias — no code changes needed:
+136 locales, timezone, duration, calendar, custom format parse — all existing moment.js API surface covered.
 
-```sh
-# npm
-npm install moment@npm:@compat/moment2
+Runs on Node 16+, browsers (IIFE/CDN), Bun, and Deno. CJS and ESM both supported.
 
-# yarn
-yarn add moment@npm:@compat/moment2
+TypeScript types included — `import moment from "moment"` resolves to mmntjs's types automatically. No `@types/moment` needed.
 
-# bun
-bun add moment@npm:@compat/moment2
-```
+### 2. Modular & Smaller Than moment.js
 
-Then keep writing `import moment from "moment"` as before — it resolves to moment2.
+| Entry | gzip | vs moment.js |
+|-------|-----:|--------------|
+| `mmntjs` (full) | ~55 KB | vs 77 KB (moment-with-locales.min.js) |
+| `mmntjs/lite` | **15.6 KB** | vs 18.9 KB (moment.min.js) |
 
-### Migration: moment → moment2 → Temporal
+`lite` drops locale registry, Temporal bridge, custom format parse, and marginal APIs — add them back via plugins only when needed.
 
-```sh
-# Check compatibility (dry run):
-npx moment2 migrate --check ./src
+### 3. Faster Than date-fns in 23/25 Benchmarks
 
-# Apply automated migration:
-npx moment2 migrate --apply ./src
-```
+Also outperforms upstream moment.js in 28/30. Several hot-path operations outperform current Temporal implementations in microbenchmarks.
 
-```sh
-# Audit current moment usage:
-npx moment2 audit ./src
+| Operation | mmntjs | date-fns | vs moment.js |
+|-----------|--------:|---------:|-------------:|
+| format YYYY-MM-DD | **35 ns** | 1.18 us (34x) | 413 ns (12x) |
+| parse ISO string | **281 ns** | 1.01 us (3.6x) | 4.10 us (15x) |
+| diff in days | **18 ns** | 851 ns (47x) | 413 ns (23x) |
+| get day of year | **11 ns** | 1.14 us (104x) | — |
+| moment() / new Date() | **52 ns** | 36 ns (0.9x) | 280 ns (5.4x) |
+| startOf month | **13 ns** | 75 ns (5.8x) | — |
 
-# Stats summary:
-npx moment2 stats ./src
+The main remaining regression is raw `moment()` construction overhead from compatibility wrapping. (wrapper overhead for moment.js API compatibility, negligible in real apps that reuse Moment objects).
 
-# Generate Temporal migration report:
-npx moment2 report ./src
-```
+Representative microbenchmarks on Node.js 26 (Apple M-series). ns-scale results use warmed monomorphic paths after 1000-iteration warmup — see [BENCHMARKS.md](./docs/perf/BENCHMARKS.md) for full methodology and caveats.
 
-## CLI
+Techniques: decomposed field cache, lazy init, Shape stability, charCodeAt parsing, branch reduction, pre-computed tables. See [Performance Analysis](./docs/perf/ANALYSIS.md), [Techniques](./docs/perf/TECHNIQUES.md), [Benchmarks](./docs/perf/BENCHMARKS.md).
+
+## Beyond a Runtime Replacement
+
+mmntjs is not just a drop-in replacement. It also serves as a **migration-analysis toolchain** for legacy Moment codebases targeting [Temporal](https://tc39.es/proposal-temporal/):
 
 ```
-moment2 migrate --check|--apply [dir]   Codemod: moment → moment2
-moment2 audit [dir]                     Show all moment API usage
-moment2 stats [dir]                     Summary of usage patterns
-moment2 report [dir]                    Temporal migration guide
-moment2 init                            Create config file
+Legacy moment.js codebase
+  │
+  ├── mmntjs audit ./src        ← Observability: inventory all moment API usage
+  ├── mmntjs stats ./src        ← Quantify: usage patterns, migration surface
+  │
+  ├── mmntjs migrate --check    ← Dry-run compatibility assessment
+  ├── mmntjs migrate --apply    ← Automated codemod (moment → mmntjs)
+  │
+  └── mmntjs report ./src       ← Temporal migration guidance per module
 ```
 
-## Status
-
-```
-Core test:    625/625 (100%) ✅
-Property:     199 tests, 45k+ assertions ✅
-Mutation:     10/10 kill (oracle comparison) ✅
-Timezone:     8/8 tests ✅
-oxlint:       0 errors
-TS:           0 errors
-Build:        CJS 227K + ESM 227K + IIFE 255K + DTS
-```
+Each phase is independent. Start with audit to understand your legacy surface, then migrate to mmntjs at your own pace, and finally generate a Temporal migration report when ready.
 
 ## Development
 
 ```sh
 bun install
-bun run build          # Build with tsup
+bun run build          # CJS + ESM + IIFE + DTS
 bun run test:hard      # Full test suite
 bun run lint           # oxlint
-bun run typecheck      # oxlint type-aware
-bun run ci             # Full CI pipeline
 ```
-
-### Project Structure
-
-```
-src/
-  index.ts        Compatibility entry wrapper
-  full.ts         Full runtime entry wrapper
-  core-entry.ts   Lightweight runtime entry wrapper
-  temporal-entry.ts Temporal helper entry wrapper
-  entry/          Runtime entry implementations
-  core/           Factory and parsing entry logic
-  plugins/        Public API registration layers
-  moment_fixed.ts Moment class
-  duration_fixed.ts Duration class
-  locale.ts       Locale system
-  format.ts       Format tokenizer
-  parse.ts        Date parser
-  locale/         Locale definitions (136 locales)
-  bin/            CLI tools
-test/
-  moment/         Core test suite (625 tests)
-  properties/     Property-based and metamorphic tests
-packages/
-  timezone/       @compat/moment2-timezone
-```
-
-### Test Strategy
-
-`test/properties/` has three layers:
-
-- oracle tests: `moment2` vs original `moment`
-- metamorphic tests: invariants under add/subtract, diff, zone conversion, parseZone, startOf/endOf, and duration arithmetic
-- boundary/equivalence tests: partition-based coverage for parsing and date math
-
-The metamorphic layer is centered in [test/properties/metamorphic.test.ts](/Users/as/var/localrepos/moment2/test/properties/metamorphic.test.ts:1). It checks both:
-
-- self-consistency inside `moment2`
-- cross-metamorphic consistency against original `moment`
 
 ## License
 

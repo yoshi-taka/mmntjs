@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'bun:test'
 import moment from '../src/index.ts'
 import originalMoment from '../moment/moment.js'
-import type { Moment } from '../src/moment_fixed'
+import type { Moment } from '../src/moment2'
 import { deLocale } from '../src/locale/de'
 import { defineLocale } from '../src/locale'
 defineLocale('de', deLocale)

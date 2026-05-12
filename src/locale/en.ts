@@ -1,4 +1,4 @@
-import type { Moment } from "../moment_fixed";
+import type { Moment } from "../moment2";
 
 export interface LocaleSpec {
   months?: string[] | ((m: Moment, format?: string) => string[] | string) | { format: string[]; standalone: string[]; isFormat?: RegExp };

@@ -1,4 +1,4 @@
-import type { Moment } from "../moment_fixed";
+import type { Moment } from "../moment2";
 
 interface TemporalRegistrableMoment {
   fn: Record<string, unknown>;

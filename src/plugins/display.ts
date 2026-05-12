@@ -1,8 +1,18 @@
-import { Moment, setRelTimeRounding, setRelTimeThreshold } from "../moment_fixed";
+import { Moment, setDisplayExtraCallbacks, setRelTimeRounding, setRelTimeThreshold } from "../moment2";
 import { moment } from "../core/factory";
+import { formatCalendar, formatFrom, formatFromNow, formatTo, formatToNow } from "../display/extra";
 
-export function registerDisplayApi(): void {
-  const momentRecord = moment as unknown as Record<string, unknown>;
+type DisplayMoment = typeof moment;
+
+export function registerDisplayApi(target: DisplayMoment = moment): void {
+  const momentRecord = target as unknown as Record<string, unknown>;
+  setDisplayExtraCallbacks({
+    fromNow: formatFromNow,
+    from: formatFrom,
+    toNow: formatToNow,
+    to: formatTo,
+    calendar: formatCalendar,
+  });
 
   momentRecord.relativeTimeRounding = function (fn?: Function | boolean): Function | boolean {
     return setRelTimeRounding(fn as Function | boolean);
@@ -13,7 +23,7 @@ export function registerDisplayApi(): void {
   ): number | boolean {
     return setRelTimeThreshold(threshold, limit) as number | boolean;
   };
-  Object.defineProperty(moment, "calendarFormat", {
+  Object.defineProperty(target, "calendarFormat", {
     get(): ((m: Moment, now: Moment) => string) | undefined {
       return Moment.calendarFormat;
     },

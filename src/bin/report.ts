@@ -5,7 +5,7 @@ import { scanMomentUsages } from "./moment-usage";
 export function runReport(dir = ".") {
   const { apiCounts, totalUsages, temporalReady } = scanMomentUsages(dir);
 
-  const report = `# moment → @compat/moment2 Migration Report
+  const report = `# moment → mmntjs Migration Report
 
 ## Current State
 

@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import type { Moment } from '../src/moment_fixed'
+import type { Moment } from '../src/moment2'
 import fs from 'node:fs'
 import path from 'node:path'
 import fc from 'fast-check'
@@ -83,10 +83,18 @@ function makeMutations(mutations: Mutation[]) {
   }
 }
 
+const nonZeroInt = (min: number, max: number) =>
+  fc.integer({ min, max }).filter((n) => n !== 0)
+
+const distinctDatePair = () =>
+  fc
+    .tuple(fc.date({ noInvalidDate: true }), fc.date({ noInvalidDate: true }))
+    .filter(([a, b]) => a.getTime() !== b.getTime())
+
 makeMutations([
   {
     name: 'valueOf: off by +1ms',
-    file: 'src/moment_fixed.ts',
+    file: 'src/moment2.ts',
     patterns: [
       [/    return this\._t;\n/g, '    return this._t + 1;\n'],
     ],
@@ -97,12 +105,12 @@ makeMutations([
   },
   {
     name: 'add days: wrong direction',
-    file: 'src/moment_fixed.ts',
+    file: 'src/moment2.ts',
     patterns: [
       [/d\.setUTCDate\(d\.getUTCDate\(\) \+ sign \* days\)/g, 'd.setUTCDate(d.getUTCDate() - sign * days)'],
       [/d\.setDate\(d\.getDate\(\) \+ sign \* days\)/g, 'd.setDate(d.getDate() - sign * days)'],
     ],
-    inputs: fc.tuple(fc.date({ noInvalidDate: true }), fc.integer({ min: -100, max: 100 })),
+    inputs: fc.tuple(fc.date({ noInvalidDate: true }), nonZeroInt(-100, 100)),
     testFn: (input: unknown) => {
       const [date, n] = input as [unknown, unknown];
       return mutatedMoment(date).add({ days: n as number }).format('YYYY-MM-DD') === originalMoment(date as Date).add({ days: n as number }).format('YYYY-MM-DD')
@@ -110,11 +118,11 @@ makeMutations([
   },
   {
     name: 'add days (simple path): wrong direction',
-    file: 'src/moment_fixed.ts',
+    file: 'src/moment2.ts',
     patterns: [
       [/        this\.\$D \+= rounded;/g, '        this.$D -= rounded;'],
     ],
-    inputs: fc.tuple(fc.date({ noInvalidDate: true }), fc.integer({ min: -100, max: 100 })),
+    inputs: fc.tuple(fc.date({ noInvalidDate: true }), nonZeroInt(-100, 100)),
     testFn: (input: unknown) => {
       const [date, n] = input as [unknown, unknown];
       return mutatedMoment(date).add(n as number, 'days').format('YYYY-MM-DD') === originalMoment(date as Date).add(n as number, 'days').format('YYYY-MM-DD')
@@ -122,11 +130,11 @@ makeMutations([
   },
   {
     name: 'diff: sign flipped',
-    file: 'src/moment_fixed.ts',
+    file: 'src/moment2.ts',
     patterns: [
       [/const diff = this\.valueOf\(\) - other\.valueOf\(\)/g, 'const diff = other.valueOf() - this.valueOf()'],
     ],
-    inputs: fc.tuple(fc.date({ noInvalidDate: true }), fc.date({ noInvalidDate: true })),
+    inputs: distinctDatePair(),
     testFn: (input: unknown) => {
       const [a, b] = input as [unknown, unknown];
       return mutatedMoment(a).diff(mutatedMoment(b), 'days') === originalMoment(a as Date).diff(originalMoment(b as Date), 'days')
@@ -134,11 +142,11 @@ makeMutations([
   },
   {
     name: 'isBefore: comparison flipped',
-    file: 'src/moment_fixed.ts',
+    file: 'src/moment2.ts',
     patterns: [
       [/return this\.valueOf\(\) < other\.valueOf\(\)/g, 'return this.valueOf() > other.valueOf()'],
     ],
-    inputs: fc.tuple(fc.date({ noInvalidDate: true }), fc.date({ noInvalidDate: true })),
+    inputs: distinctDatePair(),
     testFn: (input: unknown) => {
       const [a, b] = input as [unknown, unknown];
       return mutatedMoment(a).isBefore(b as Date) === originalMoment(a as Date).isBefore(b as Date)
@@ -146,11 +154,11 @@ makeMutations([
   },
   {
     name: 'isAfter: comparison flipped',
-    file: 'src/moment_fixed.ts',
+    file: 'src/moment2.ts',
     patterns: [
       [/return this\.valueOf\(\) > other\.valueOf\(\)/g, 'return this.valueOf() < other.valueOf()'],
     ],
-    inputs: fc.tuple(fc.date({ noInvalidDate: true }), fc.date({ noInvalidDate: true })),
+    inputs: distinctDatePair(),
     testFn: (input: unknown) => {
       const [a, b] = input as [unknown, unknown];
       return mutatedMoment(a).isAfter(b as Date) === originalMoment(a as Date).isAfter(b as Date)
@@ -158,12 +166,12 @@ makeMutations([
   },
   {
     name: 'add months: wrong direction',
-    file: 'src/moment_fixed.ts',
+    file: 'src/moment2.ts',
     patterns: [
       [/d\.setUTCMonth\(curMonth \+ sign \* months\)/g, 'd.setUTCMonth(curMonth - sign * months)'],
       [/d\.setMonth\(curMonth \+ sign \* months\)/g, 'd.setMonth(curMonth - sign * months)'],
     ],
-    inputs: fc.tuple(fc.date({ noInvalidDate: true }), fc.integer({ min: -12, max: 12 })),
+    inputs: fc.tuple(fc.date({ noInvalidDate: true }), nonZeroInt(-12, 12)),
     testFn: (input: unknown) => {
       const [date, n] = input as [unknown, unknown];
       return mutatedMoment(date).add({ months: n as number }).format('YYYY-MM-DD') === originalMoment(date as Date).add({ months: n as number }).format('YYYY-MM-DD')
@@ -171,7 +179,7 @@ makeMutations([
   },
   {
     name: 'startOf: hours set to noon',
-    file: 'src/moment_fixed.ts',
+    file: 'src/moment2.ts',
     patterns: [
       [/this\.\$H = 0; this\.\$m = 0; this\.\$s = 0; this\.\$ms = 0;/g, 'this.$H = 12; this.$m = 0; this.$s = 0; this.$ms = 0;'],
     ],
@@ -182,7 +190,7 @@ makeMutations([
   },
   {
     name: 'isValid always returns true',
-    file: 'src/moment_fixed.ts',
+    file: 'src/moment2.ts',
     patterns: [
       [/if \(!this\._isValid\) {return false;}\n/g, ''],
     ],
@@ -193,7 +201,7 @@ makeMutations([
   },
   {
     name: 'endOf: no -1ms',
-    file: 'src/moment_fixed.ts',
+    file: 'src/moment2.ts',
     patterns: [
       [/d\.setMilliseconds\(-1\)/g, 'd.setMilliseconds(0)'],
     ],
@@ -204,11 +212,11 @@ makeMutations([
   },
   {
     name: 'subtract: wrong direction',
-    file: 'src/moment_fixed.ts',
+    file: 'src/moment2.ts',
     patterns: [
       [/this\._applyDuration\(parsed\.ms, parsed\.days, parsed\.months, -1\);/g, 'this._applyDuration(parsed.ms, parsed.days, parsed.months, 1);'],
     ],
-    inputs: fc.tuple(fc.date({ noInvalidDate: true }), fc.integer({ min: -30, max: 30 })),
+    inputs: fc.tuple(fc.date({ noInvalidDate: true }), nonZeroInt(-30, 30)),
     testFn: (input: unknown) => {
       const [date, n] = input as [unknown, unknown];
       return mutatedMoment(date).subtract({ days: n as number }).format('YYYY-MM-DD') === originalMoment(date as Date).subtract({ days: n as number }).format('YYYY-MM-DD')
@@ -216,7 +224,7 @@ makeMutations([
   },
   {
     name: 'year setter: wrong year stored',
-    file: 'src/moment_fixed.ts',
+    file: 'src/moment2.ts',
     patterns: [
       [/this\.\$y = this\._isUTC \? dt\.getUTCFullYear\(\) : dt\.getFullYear\(\);/g, 'this.$y = (this._isUTC ? dt.getUTCFullYear() : dt.getFullYear()) + 1;'],
     ],

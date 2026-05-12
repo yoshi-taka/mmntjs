@@ -1,6 +1,7 @@
 import { test, expect, describe } from "bun:test";
 import { mkdtempSync, writeFileSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { gzipSync } from "node:zlib";
 import pkg from "../package.json";
 
 const projectRoot = join(import.meta.dir, "..");
@@ -29,7 +30,31 @@ async function bundleAndGetCode(entryCode: string): Promise<string> {
   }
 }
 
+async function bundleEntryAndGetSize(entrypoint: string): Promise<{ raw: number; gzip: number }> {
+  const result = await Bun.build({
+    entrypoints: [entrypoint],
+    format: "esm",
+    minify: true,
+    sourcemap: "none",
+    target: "browser",
+  });
+
+  expect(result.success).toBe(true);
+  expect(result.outputs.length).toBeGreaterThan(0);
+
+  const text = await result.outputs[0].text();
+  return {
+    raw: text.length,
+    gzip: gzipSync(text).length,
+  };
+}
+
 describe("tree-shaking", () => {
+  const liteSourcePath = join(projectRoot, "src/lite.ts").replaceAll("\\", "\\\\");
+  const fullSourcePath = join(projectRoot, "src/full.ts").replaceAll("\\", "\\\\");
+  const jaLocaleSourcePath = join(projectRoot, "src/locale/ja.ts").replaceAll("\\", "\\\\");
+  const deLocaleSourcePath = join(projectRoot, "src/locale/de.ts").replaceAll("\\", "\\\\");
+
   test("sideEffects is declared false in package.json", () => {
     expect(pkg.sideEffects).toBe(false);
   });
@@ -38,58 +63,79 @@ describe("tree-shaking", () => {
     expect(pkg.exports["./locale/*"]).toBeDefined();
   });
 
-  test("core and full entry points are declared in exports", () => {
-    expect(pkg.exports["./core"]).toBeDefined();
+  test("entry points are declared in exports", () => {
+    expect(pkg.exports["./lite"]).toBeDefined();
     expect(pkg.exports["./full"]).toBeDefined();
+    expect(pkg.exports["./plugin/format-parse"]).toBeDefined();
+    expect(pkg.exports["./plugin/utc"]).toBeDefined();
   });
 
-  describe("via package name", () => {
-    test("core moment does not contain Japanese locale data", async () => {
-      const code = await bundleAndGetCode(
-        `import { moment } from '@compat/moment2';\nconsole.log(moment().format());`,
-      );
+  test("lite bundle stays materially smaller than full bundle", async () => {
+    const lite = await bundleEntryAndGetSize(join(projectRoot, "src/lite.ts"));
+    const full = await bundleEntryAndGetSize(join(projectRoot, "src/full.ts"));
 
-      expect(code).not.toMatch(/jaLocale|午前|午後/);
+    expect(lite.raw).toBeLessThan(60000);
+    expect(lite.gzip).toBeLessThan(18000);
+    expect(full.raw).toBeGreaterThan(lite.raw);
+    expect(full.gzip).toBeGreaterThan(lite.gzip);
+  });
+
+  describe("via lite entry", () => {
+    test("lite entry has utc static built-in", async () => {
+      const mod = await import(`${join(projectRoot, "src/lite.ts")}?lite-has-utc`);
+      const moment = mod.default as Record<string, unknown>;
+
+      expect(typeof moment.utc).toBe("function");
     });
 
-    test("core moment does not contain CLI code", async () => {
+    test("format-parse plugin enables custom format parsing for lite entry", async () => {
+      const litePath = `${join(projectRoot, "src/lite.ts")}?lite-format-plugin`;
+      const pluginPath = `${join(projectRoot, "src/plugin/format-parse.ts")}?lite-format-plugin`;
+      const lite = await import(litePath);
+      await import(pluginPath);
+      const moment = lite.default;
+
+      expect(moment("2024-01-02", "YYYY-MM-DD", true).isValid()).toBe(true);
+    });
+
+    test("lite moment does not contain locale registry registration", async () => {
       const code = await bundleAndGetCode(
-        `import { moment } from '@compat/moment2';\nconsole.log(moment().format());`,
+        `import moment from '${liteSourcePath}';\nconsole.log(moment().format());`,
+      );
+
+      expect(code).not.toMatch(/defineLocale|updateLocale|listLocales/);
+    });
+
+    test("full entry does not contain CLI code", async () => {
+      const code = await bundleAndGetCode(
+        `import moment from '${fullSourcePath}';\nconsole.log(moment().format());`,
       );
 
       expect(code).not.toMatch(/moment2 migrate|Migration CLI/);
     });
 
-    test("core entry does not contain Temporal bridge registration", async () => {
+    test("full entry does not contain Temporal bridge registration", async () => {
       const code = await bundleAndGetCode(
-        `import { moment } from '${join(projectRoot, "dist/core-entry.js").replaceAll("\\", "\\\\")}';\nconsole.log(moment().format());`,
+        `import moment from '${fullSourcePath}';\nconsole.log(moment().format());`,
       );
 
       expect(code).not.toMatch(/fromTemporal|toTemporal|js-temporal\/polyfill/);
     });
-
-    test("core entry does not contain locale registry registration", async () => {
-      const code = await bundleAndGetCode(
-        `import { moment } from '${join(projectRoot, "dist/core-entry.js").replaceAll("\\", "\\\\")}';\nconsole.log(moment().format());`,
-      );
-
-      expect(code).not.toMatch(/defineLocale|updateLocale|listLocales/);
-    });
   });
 
   describe("locale", () => {
-    test("importing ja locale via @compat/moment2/locale/ja does not include de locale", async () => {
+    test("importing ja locale entry does not include de locale", async () => {
       const code = await bundleAndGetCode(
-        `import { jaLocale } from '@compat/moment2/locale/ja';\nconsole.log(jaLocale.months[0]);`,
+        `import { jaLocale } from '${jaLocaleSourcePath}';\nconsole.log(jaLocale.months[0]);`,
       );
 
       expect(code).toMatch(/jaLocale/);
       expect(code).not.toMatch(/deLocale|Januar|Februar|März/);
     });
 
-    test("importing de locale via @compat/moment2/locale/de does not include ja locale", async () => {
+    test("importing de locale entry does not include ja locale", async () => {
       const code = await bundleAndGetCode(
-        `import { deLocale } from '@compat/moment2/locale/de';\nconsole.log(deLocale.months[0]);`,
+        `import { deLocale } from '${deLocaleSourcePath}';\nconsole.log(deLocale.months[0]);`,
       );
 
       expect(code).toMatch(/deLocale/);
@@ -98,7 +144,7 @@ describe("tree-shaking", () => {
 
     test("locale entries are standalone and do not include the core moment", async () => {
       const code = await bundleAndGetCode(
-        `import { jaLocale } from '@compat/moment2/locale/ja';\nconsole.log(jaLocale.months[0]);`,
+        `import { jaLocale } from '${jaLocaleSourcePath}';\nconsole.log(jaLocale.months[0]);`,
       );
 
       expect(code).not.toMatch(/isMoment|isDate|Duration/);

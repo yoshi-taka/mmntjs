@@ -8,13 +8,13 @@ import {
 } from "../locale";
 import { moment } from "../core/factory";
 import { initializeFullEntry } from "./init";
-import type { MomentStatic } from "./types";
+import type { FullMomentStatic } from "./types";
 
-export type { MomentConfig } from "../moment_fixed";
+export type { MomentConfig } from "../moment2";
 export type { DurationInput } from "../duration_fixed";
 export type { LocaleSpec } from "../locale/en";
 
 initializeFullEntry();
 
-export default moment as unknown as MomentStatic;
+export default moment as unknown as FullMomentStatic;
 export { moment, isMoment, isDate, Duration, Locale };

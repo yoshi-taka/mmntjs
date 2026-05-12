@@ -11,7 +11,7 @@ switch (cmd) {
   case "migrate":
     if (args[0] === "--check") {runCheck(args[1]);}
     else if (args[0] === "--apply") {runApply(args[1]);}
-    else {console.error("Usage: moment2 migrate --check|--apply [dir]");}
+    else {console.error("Usage: mmntjs migrate --check|--apply [dir]");}
     break;
   case "init":
     runInit(args[0]);
@@ -27,14 +27,14 @@ switch (cmd) {
     break;
   default:
     console.log(`
-@compat/moment2 v1.0.0 — Migration CLI
+mmntjs v1.0.0 — Migration CLI
 
 Commands:
-  moment2 migrate --check [dir]   Check migration readiness
-  moment2 migrate --apply [dir]   Apply codemod
-  moment2 init [dir]              Single command setup
-  moment2 audit [dir]             Analyze moment usage
-  moment2 stats [dir]             Show migration stats
-  moment2 report [dir]            Generate migration report
+  mmntjs migrate --check [dir]   Check migration readiness
+  mmntjs migrate --apply [dir]   Apply codemod
+  mmntjs init [dir]              Single command setup
+  mmntjs audit [dir]             Analyze moment usage
+  mmntjs stats [dir]             Show migration stats
+  mmntjs report [dir]            Generate migration report
 `);
 }

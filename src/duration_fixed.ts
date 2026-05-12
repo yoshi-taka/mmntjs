@@ -1,5 +1,5 @@
-import type { Locale} from "./locale";
-import { getLocale, getCurrentLocale } from "./locale";
+import type { Locale } from "./locale-runtime";
+import { getLocale, getCurrentLocale, localeInvalidDate, localePostformat, localeRelativeTime } from "./locale-runtime";
 import { absFloor, hasOwnProp, isObject } from "./utils";
 import { getRelTimeThreshold, getRelTimeRounding } from "./reltime";
 import { diffMomentsForDuration, type DurationMomentLike } from "./duration-between";
@@ -757,7 +757,7 @@ export class Duration {
   ): string {
     if (!this._isValid) {
       const locale = getLocale(this._locale);
-      return locale.invalidDate();
+      return localeInvalidDate(locale);
     }
 
     let thresholds: Partial<Record<string, number>> | undefined;
@@ -855,12 +855,12 @@ export class Duration {
       key = "yy";
     }
 
-    const baseStr = locale.relativeTime(n, key, ms > 0, !withSuffixBool);
-    return locale.postformat(baseStr);
+    const baseStr = localeRelativeTime(locale, n, key, ms > 0, !withSuffixBool);
+    return localePostformat(locale, baseStr);
   }
 
   toISOString(): string {
-    if (!this._isValid) {return this.localeData().invalidDate();}
+    if (!this._isValid) {return localeInvalidDate(this.localeData());}
 
     let ms = this._milliseconds;
     let days = this._days;
