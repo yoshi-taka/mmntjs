@@ -26,6 +26,7 @@
     "test/debug_*",
     "test/fuzz/**",
     "test/sbst-*",
+    "test/bin.test.ts",
     "moment2.js"
   ],
   "ignoreDependencies": ["acorn", "benchmark", "date-fns", "dayjs", "luxon", "moment-timezone"],
