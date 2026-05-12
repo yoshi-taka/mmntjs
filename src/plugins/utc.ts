@@ -1,4 +1,5 @@
 import { Moment, setUtcMethodCallbacks } from "../moment2";
+import type { MomentInput } from "../moment2";
 import { isString } from "../utils";
 import {
   hasAlignedHourOffsetMoment,
@@ -37,7 +38,7 @@ export function registerUtcApi(
     isUtc: isUtcMoment,
     isUtcOffset: isUtcOffsetMoment,
     isDST: isDSTMoment,
-    hasAlignedHourOffset: hasAlignedHourOffsetMoment,
+    hasAlignedHourOffset: hasAlignedHourOffsetMoment as (m: Moment, other?: MomentInput) => boolean,
   });
   const momentRecord = target as unknown as Record<string, unknown>;
   momentRecord.utc = function (input?: unknown, format?: unknown, localeOrStrict?: unknown, fourthArg?: unknown): Moment {

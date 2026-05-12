@@ -234,30 +234,30 @@ export type MomentInput =
 export interface MomentConfig {
   _d?: Date;
   _dClone?: boolean;
-  _i?: unknown;
-  _f?: string | string[];
-  _l?: string;
   _isValid?: boolean;
   _isUTC?: boolean;
   _offset?: number;
+  _t?: number;
+  _i?: unknown;
+  _f?: string | string[] | undefined;
+  _l?: string;
   _strict?: boolean;
   _overflow?: number;
-  _nullInput?: boolean;
-  _invalidMonth?: string | null;
-  _empty?: boolean;
-  _iso?: boolean;
+  _parsedDateParts?: number[];
   _unusedTokens?: string[];
   _unusedInput?: string[];
   _charsLeftOver?: number;
-  _weekdayMismatch?: boolean;
-  _parsedDateParts?: number[];
-  _meridiem?: string;
-  _rfc2822?: boolean;
+  _empty?: boolean;
+  _nullInput?: boolean;
+  _invalidMonth?: string | null;
   _invalidFormat?: boolean;
-  _bigHour?: boolean;
-  _isParseZone?: boolean;
   _userInvalidated?: boolean;
-  _t?: number;
+  _iso?: boolean;
+  _rfc2822?: boolean;
+  _weekdayMismatch?: boolean;
+  _bigHour?: boolean;
+  _meridiem?: string;
+  _isParseZone?: boolean;
   _invalidEra?: number;
   _tooBusyWith?: string;
 }
@@ -413,14 +413,14 @@ export class Moment {
   declare _userInvalidated: boolean | undefined;
   declare _tooBusyWith: string | undefined;
 
-  private _locale: Locale | undefined;
+  _locale: Locale | undefined;
   _dirty: boolean;
 
   // Decomposed Date cache (Day.js style)
   $y = 0; $M = 0; $D = 0; $W = 0;
   $H = 0; $m = 0; $s = 0; $ms = 0;
 
-  private static _epochDaysToYMD(z: number): [number, number, number] {
+  static _epochDaysToYMD(z: number): [number, number, number] {
     z += 719468;
     const era = Math.floor(z / 146097);
     const doe = z - era * 146097;
@@ -434,21 +434,21 @@ export class Moment {
     return [year, m - 1, d];
   }
 
-  private _ensureFields(): void {
+  _ensureFields(): void {
     if (this._dirty) {
       this._dirty = false;
       this._refreshFields();
     }
   }
 
-  private _getD(): Date {
+  _getD(): Date {
     this._ensureFields();
     if (this._d) {return this._d;}
     this._d = new Date(this._t);
     return this._d;
   }
 
-  private _refreshFields(): void {
+  _refreshFields(): void {
     if (this._isUTC) {
       if (this._d) {
         this.$y = this._d.getUTCFullYear();
@@ -514,7 +514,7 @@ export class Moment {
     }
   }
 
-  private _initCold(c: MomentConfig): void {
+  _initCold(c: MomentConfig): void {
     const hasErrorCold =
       (c._overflow !== undefined && c._overflow >= 0) ||
       c._empty === true ||
@@ -551,12 +551,12 @@ export class Moment {
     }
   }
 
-  private _getLocale(): Locale {
+  _getLocale(): Locale {
     this._locale ??= (getLocaleCallback ? getLocaleCallback(this._l) : getLiteLocale(this._l));
     return this._locale;
   }
 
-  private _gdt(method: DMethod): number {
+  _gdt(method: DMethod): number {
     const d = this._getD();
     if (this._isUTC) {
       switch (method) {
@@ -584,7 +584,7 @@ export class Moment {
     return NaN;
   }
 
-  private _sdt(method: DMethod, value: number): void {
+  _sdt(method: DMethod, value: number): void {
     const d = this._getD();
     if (this._isUTC) {
       switch (method) {
@@ -1140,7 +1140,7 @@ export class Moment {
     return this;
   }
 
-  private _addSimple(amount: number, unit: number): void {
+  _addSimple(amount: number, unit: number): void {
     let changedDays = false;
 
     switch (unit) {
@@ -1236,7 +1236,7 @@ export class Moment {
     if (isNaN(this._t)) {this._isValid = false;}
   }
 
-  private _parseDurationInput(
+  _parseDurationInput(
     amount: number | string | object,
     unit?: string,
   ): { ms: number; days: number; months: number } | null {
@@ -1244,7 +1244,7 @@ export class Moment {
     return addCallback(this, amount, unit);
   }
 
-  private _applyDuration(ms: number, days: number, months: number, sign: 1 | -1): void {
+  _applyDuration(ms: number, days: number, months: number, sign: 1 | -1): void {
     const d = this._getD();
     if (months) {
       const curMonth = this.$M;
@@ -1702,7 +1702,7 @@ export class Moment {
     return inspectCallback(this);
   }
 
-  private _compareCalendarValues(other: Moment, unit: string): number {
+  _compareCalendarValues(other: Moment, unit: string): number {
     const u = normalizeUnits(unit);
     if (!u) {return NaN;}
     if (u === "millisecond") {return this.valueOf() - other.valueOf();}
@@ -1977,7 +1977,7 @@ export class Moment {
     return langCallback(this, locale, () => getCurrentLocaleCallback ? getCurrentLocaleCallback() : getLiteCurrentLocale()) as string | this;
   }
 
-  private _trySetLocale(locale: string): boolean {
+  _trySetLocale(locale: string): boolean {
     const parts = locale.toLowerCase().replaceAll('_', "-").split("-");
     for (let j = parts.length; j > 0; j--) {
       const candidate = parts.slice(0, j).join("-");
@@ -2044,7 +2044,7 @@ export class Moment {
     return this.valueOf() > other.valueOf();
   }
 
-  private _updateOffset(keepTime?: boolean): void {
+  _updateOffset(keepTime?: boolean): void {
     if (typeof updateOffsetCallback === "function") {
       (updateOffsetCallback as Function)(this, keepTime);
     }

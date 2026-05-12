@@ -1,6 +1,7 @@
 // @ts-expect-error: no types for ../moment2
 import moment2 from "../moment2";
-import { _localeCache, setLocale } from "../src/locale";
+import { _localeCache } from "../src/locale-runtime";
+import { setLocale } from "../src/locale";
 import { format } from "date-fns";
 import { fr, enUS } from "date-fns/locale";
 

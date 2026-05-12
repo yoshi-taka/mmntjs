@@ -372,7 +372,7 @@ function parseRFC2822(str: string): ParsedData | null {
   out.millisecond = 0;
   const tzStr = match[8] || match[9];
   if (tzStr) {
-    const tzMap: Record<string, number> = { UTC: 0, GMT: 0, EST: -300, EDT: -240, CST: -360, CDT: -300, MST: -420, MDT: -360, PST: -480, PDT: -420 };
+    const tzMap: Record<string, number | undefined> = { UTC: 0, GMT: 0, EST: -300, EDT: -240, CST: -360, CDT: -300, MST: -420, MDT: -360, PST: -480, PDT: -420 };
     if (tzMap[tzStr] !== undefined) {
       out.offset = tzMap[tzStr];
     } else if (/^[+-]\d{4}$/.test(tzStr)) {

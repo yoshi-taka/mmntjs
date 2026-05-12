@@ -89,4 +89,4 @@ export interface FullMomentStatic extends CoreMomentStatic {
   fromTemporal(t: unknown): unknown;
 }
 
-export interface MomentStatic extends FullMomentStatic {}
+export type MomentStatic = FullMomentStatic;

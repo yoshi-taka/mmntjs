@@ -15,7 +15,9 @@ import {
 import { getLocale, getCurrentLocale, localeHasMissingParent } from "../locale-runtime";
 import type { ParseLocale } from "../parse-locale";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ParsedDataLike = Record<string, any>;
+
 type FormattedStringInputHandler = (args: {
   str: string;
   format?: unknown;
@@ -152,9 +154,9 @@ export function createMomentFactory(deps: FactoryDeps) {
       m._dirty = true;
       return m;
     }
-    if (isMoment(input)) {return (input as Moment).clone();}
+    if (isMoment(input)) {return (input as unknown as Moment).clone();}
     if (isObject(input) && input._isAMomentObject) {
-      const obj = input as Record<string, any>;
+      const obj = input as unknown as MomentConfig;
       const cfg: MomentConfig = { _d: obj._d ? new Date(obj._d.getTime()) : new Date(NaN), _i: obj._i ?? input, _f: obj._f, _l: obj._l, _isValid: obj._isValid ?? true, _isUTC: obj._isUTC ?? false, _offset: obj._offset ?? 0, _strict: obj._strict ?? false, _overflow: obj._overflow ?? -1, _parsedDateParts: obj._parsedDateParts ?? [] };
       if (obj._unusedTokens) {cfg._unusedTokens = obj._unusedTokens;}
       if (obj._unusedInput) {cfg._unusedInput = obj._unusedInput;}

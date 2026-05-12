@@ -80,7 +80,7 @@ export function creationDataMoment(m: DebugMoment): Record<string, unknown> {
     format: m._f,
     locale: m._getLocale(),
     isUTC: m._isUTC,
-    strict: m._strict ?? false,
+    strict: m._strict,
   };
 }
 

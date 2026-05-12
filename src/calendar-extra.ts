@@ -96,7 +96,7 @@ export function isoWeekdayMoment(m: CalendarAwareMoment, d?: unknown): number | 
         sun: 7,
       };
       target = map[target.toLowerCase()];
-      if (target === undefined) {return m;}
+      if (target === undefined) {return m;} // eslint-disable-line no-unnecessary-condition
     }
     const currentIso = m.$W === 0 ? 7 : m.$W;
     const diff = Number(target) - currentIso;
@@ -197,9 +197,9 @@ export function calendarCompareMoment(left: CalendarAwareMoment, right: Calendar
       return left.week() - right.week();
     }
     case "isoWeek": {
-      const d = (left.isoWeekYear() as number) - (right.isoWeekYear() as number);
+      const d = left.isoWeekYear() - right.isoWeekYear();
       if (d !== 0) {return d;}
-      return (left.isoWeek() as number) - (right.isoWeek() as number);
+      return left.isoWeek() - right.isoWeek();
     }
     default:
       return NaN;

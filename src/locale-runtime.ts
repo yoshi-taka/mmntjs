@@ -179,6 +179,14 @@ export class Locale {
     return undefined;
   }
 
+  months(m?: Moment, format?: string): string[] | string { return localeMonths(this, m, format); }
+  monthsShort(m?: Moment, format?: string): string[] | string { return localeMonthsShort(this, m, format); }
+  weekdays(m?: Moment | boolean, format?: string): string[] | string { return localeWeekdays(this, m, format); }
+  weekdaysShort(m?: Moment | boolean, format?: string): string[] | string { return localeWeekdaysShort(this, m, format); }
+  weekdaysMin(m?: Moment | boolean, format?: string): string[] | string { return localeWeekdaysMin(this, m, format); }
+  invalidDate(): string { return localeInvalidDate(this); }
+  relativeTime(n: number, key: string, isFuture: boolean, withSuffix: boolean): string { return localeRelativeTime(this, n, key, isFuture, withSuffix); }
+  postformat(str: string): string { return localePostformat(this, str); }
 }
 
 export function localeMeridiem(loc: Locale, hour: number, minute: number, isLower: boolean): string {
@@ -256,7 +264,7 @@ export function localeWeekdays(loc: Locale, m?: Moment | boolean, format?: strin
   if (Array.isArray(wd)) {return wd[m.day()] || "";}
   const isFmt = wd.isFormat;
   const useFormat = format && isFmt instanceof RegExp && isFmt.test(format);
-  const list = useFormat ? wd.format : wd.standalone ?? wd.format;
+  const list = useFormat ? wd.format : wd.standalone ?? wd.format; // eslint-disable-line no-unnecessary-condition
   if (Array.isArray(list)) {return list[m.day()] ?? "";}
   return "";
 }

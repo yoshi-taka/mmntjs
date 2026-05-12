@@ -38,7 +38,7 @@ export function registerCoreApi(
 ): void {
   const momentRecord = target as unknown as Record<string, unknown>;
 
-  registerBaseCoreApi(target, deps);
+  registerBaseCoreApi(target as unknown as Parameters<typeof registerBaseCoreApi>[0], deps);
   momentRecord.duration = function (input?: unknown, unit?: string): Duration {
     return new Duration(input as DurationLike, unit);
   };

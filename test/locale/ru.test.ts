@@ -556,9 +556,9 @@ test('calendar next week', function (assert) {
         }
     }
 
-    now = moment().startOf('week');
+    now = moment().startOf('week') as unknown as Moment;
     for (i = 2; i < 7; i++) {
-        m = moment(now).add({ d: i });
+        m = moment(now).add({ d: i }) as unknown as Moment;
         assert.equal(
             m.calendar(now),
             m.format(makeFormatThis(m)),
@@ -578,9 +578,9 @@ test('calendar next week', function (assert) {
         );
     }
 
-    now = moment().endOf('week');
+    now = moment().endOf('week') as unknown as Moment;
     for (i = 2; i < 7; i++) {
-        m = moment(now).add({ d: i });
+        m = moment(now).add({ d: i }) as unknown as Moment;
         assert.equal(
             m.calendar(now),
             m.format(makeFormatNext(m)),
@@ -627,9 +627,9 @@ test('calendar last week', function (assert) {
         }
     }
 
-    now = moment().startOf('week');
+    now = moment().startOf('week') as unknown as Moment;
     for (i = 2; i < 7; i++) {
-        m = moment(now).subtract({ d: i });
+        m = moment(now).subtract({ d: i }) as unknown as Moment;
         assert.equal(
             m.calendar(now),
             m.format(makeFormatLast(m)),
@@ -649,9 +649,9 @@ test('calendar last week', function (assert) {
         );
     }
 
-    now = moment().endOf('week');
+    now = moment().endOf('week') as unknown as Moment;
     for (i = 2; i < 7; i++) {
-        m = moment(now).subtract({ d: i });
+        m = moment(now).subtract({ d: i }) as unknown as Moment;
         assert.equal(
             m.calendar(now),
             m.format(makeFormatThis(m)),

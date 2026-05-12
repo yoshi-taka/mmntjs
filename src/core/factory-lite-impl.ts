@@ -16,6 +16,7 @@ import {
 } from "../parse-lite-strict";
 import type { FactoryDeps } from "./factory-shared";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ParsedDataLike = Record<string, any>;
 
 let momentNowFn: (() => number) | undefined;
@@ -74,9 +75,13 @@ function createMomentFromParsed(parsed: ParsedDataLike, str?: string, format?: s
     if (d === undefined) {d = 1;}
   }
 
+  const h = parsed.hour ?? 0;
+  const min = parsed.minute ?? 0;
+  const sec = parsed.second ?? 0;
+  const ms = parsed.millisecond ?? 0;
   const date = parsed.offset !== undefined
-    ? createUTCDate(y, mo, d, parsed.hour ?? 0, parsed.minute ?? 0, parsed.second ?? 0, parsed.millisecond ?? 0)
-    : createDateSafe(y, mo, d, parsed.hour ?? 0, parsed.minute ?? 0, parsed.second ?? 0, parsed.millisecond ?? 0, false);
+    ? createUTCDate(y, mo, d, h, min, sec, ms)
+    : createDateSafe(y, mo, d, h, min, sec, ms, false);
   return new MomentLite({ _d: date, _i: str, _f: format, _l: locale, _strict: strict, _offset: parsed.offset, _isUTC: parsed.offset !== undefined });
 }
 
@@ -106,6 +111,7 @@ function createFromString(str: string, format?: unknown, localeOrStrict?: unknow
         parseString,
         isCustomFormatParsingEnabled,
       },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       createMomentFromParsed: createMomentFromParsed as any,
     }) as unknown as MomentLite;
   }

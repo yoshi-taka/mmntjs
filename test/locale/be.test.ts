@@ -469,7 +469,7 @@ test('calendar next week', function (assert) {
     }
 
     for (i = 2; i < 7; i++) {
-        m = moment().add({ d: i });
+        m = moment().add({ d: i }) as unknown as Moment;
         assert.equal(
             m.calendar(),
             m.format(makeFormat(m)),
@@ -508,7 +508,7 @@ test('calendar last week', function (assert) {
     }
 
     for (i = 2; i < 7; i++) {
-        m = moment().subtract({ d: i });
+        m = moment().subtract({ d: i }) as unknown as Moment;
         assert.equal(
             m.calendar(),
             m.format(makeFormat(m)),

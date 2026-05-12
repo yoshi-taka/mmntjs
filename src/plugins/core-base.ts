@@ -92,7 +92,7 @@ export function registerBaseCoreApi(
       }
       return { ms: amount, days: 0, months: 0 };
     }
-    if (typeof amount === "object" && amount !== null) {
+    if (typeof amount === "object" && amount !== null) { // eslint-disable-line no-unnecessary-condition
       let ms = 0, days = 0, months = 0;
       for (const key in amount as Record<string, unknown>) {
         if (!hasOwnProp(amount, key)) {continue;}

@@ -5,6 +5,7 @@ import {
   createDateSafe,
 } from "../utils";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ParsedDataLike = Record<string, any>;
 
 export function createFromArrayInput(

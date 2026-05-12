@@ -1,7 +1,7 @@
 import { createDateSafe, isString } from "./utils";
 import { parseString } from "./parse";
 import type { ParseLocale } from "./parse-locale";
-import type { Moment } from "./moment2";
+import type { Moment, MomentInput } from "./moment2";
 
 type MomentFactory = (input?: unknown, format?: unknown, localeOrStrict?: unknown, fourthArg?: unknown) => Moment;
 
@@ -100,19 +100,19 @@ export function utcOffsetMoment(m: UtcMoment, offset?: number | string, keepLoca
 
 export function parseZoneMoment(m: UtcMoment, input?: unknown, format?: unknown, createMoment?: MomentFactory): Moment {
   if (!m._isValid) {
-    const clone = m.clone() as UtcMoment;
+    const clone = m.clone() as unknown as UtcMoment;
     clone._isParseZone = true;
     return clone;
   }
   if (input === undefined) {
-    const clone = m.clone() as UtcMoment;
+    const clone = m.clone() as unknown as UtcMoment;
     clone._isParseZone = true;
     if (isString(m._i)) {
       const fmt = m._f;
       const parsed =
         fmt && fmt !== "RFC_2822" && fmt !== "ISO_8601"
-          ? parseString(m._i, fmt, m._getLocale() as ParseLocale)
-          : parseString(m._i, undefined, m._getLocale() as ParseLocale);
+          ? parseString(m._i, fmt, m._getLocale() as unknown as ParseLocale)
+          : parseString(m._i, undefined, m._getLocale() as unknown as ParseLocale);
       if (parsed?.offset !== undefined) {
         clone._d = new Date(clone.valueOf() + parsed.offset * 60000);
         clone._t = clone._d.getTime();
@@ -120,7 +120,8 @@ export function parseZoneMoment(m: UtcMoment, input?: unknown, format?: unknown,
         clone._isUTC = true;
         clone._refreshFields();
       } else {
-        const allInput = `${m._i ?? ""} ${((m as Record<string, unknown>)._unusedInput as string[] | undefined ?? []).join("")}`;
+        const unusedInput = (m as unknown as Record<string, unknown>)._unusedInput as string[] | undefined ?? [];
+        const allInput = `${String(m._i ?? "")} ${unusedInput.join("")}`; // eslint-disable-line no-unnecessary-condition
         const tzMatch = allInput.match(/([+-]\d{2}):?(\d{2})\s*$/);
         if (tzMatch) {
           const sign = tzMatch[1][0] === "+" ? 1 : -1;
@@ -139,7 +140,7 @@ export function parseZoneMoment(m: UtcMoment, input?: unknown, format?: unknown,
   const next = createMoment(input) as UtcMoment;
   next._isParseZone = true;
   if (format && isString(input)) {
-    const parsed = parseString(input, format as string | string[], next._getLocale() as ParseLocale);
+    const parsed = parseString(input, format as string | string[], next._getLocale() as unknown as ParseLocale);
     if (parsed?.offset !== undefined) {
       const d = createDateSafe(
         parsed.year ?? 0,
@@ -236,6 +237,6 @@ export function isDSTMoment(m: UtcMoment): boolean {
 
 export function hasAlignedHourOffsetMoment(m: UtcMoment, other?: Moment): boolean {
   if (!m._isValid) {return false;}
-  const otherOffset = other ? (other as UtcMoment).utcOffset() as number : 0;
-  return (((m).utcOffset() as number) - otherOffset) % 60 === 0;
+  const otherOffset = other ? (other as unknown as UtcMoment).utcOffset() : 0;
+  return (m.utcOffset() - otherOffset) % 60 === 0;
 }

@@ -2,6 +2,7 @@ import { Moment, checkOverflow } from "../moment2";
 import { getLocale, getCurrentLocale, localeHasMissingParent } from "../locale-runtime";
 import type { ParseLocale } from "../parse-locale";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ParsedDataLike = Record<string, any>;
 
 type FormatDeps = {

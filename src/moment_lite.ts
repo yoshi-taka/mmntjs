@@ -733,7 +733,7 @@ export class MomentLite {
       }
       return { ms: amount, days: 0, months: 0 };
     }
-    if (typeof amount === "object" && amount !== null) {
+    if (typeof amount === "object" && amount !== null) { // eslint-disable-line no-unnecessary-condition
       let ms = 0, days = 0, months = 0;
       for (const key in amount as Record<string, unknown>) {
         if (!hasOwnProp(amount, key)) {continue;}
@@ -1340,6 +1340,7 @@ export class MomentLite {
   }
 }
 
+// eslint-disable-next-line max-params
 function anchorMs(year: number, month: number, day: number, hour: number, min: number, sec: number, ms: number, utc: boolean, n: number): number {
   const tm = year * 12 + month + n;
   const y = Math.floor(tm / 12);

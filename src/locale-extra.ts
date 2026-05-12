@@ -106,7 +106,7 @@ export function localeWeekYear(m: LocaleAwareMoment, y?: number): number | Momen
   const { dow, doy } = weekConfig;
   if (y !== undefined) {
     let currentWeek = getLocaleWeek(m._getD(), m._isUTC, dow, doy);
-    const currentDay = m.weekday() as number;
+    const currentDay = m.weekday();
     const maxWeek = weeksInYear(y, dow, doy, m._isUTC);
     if (currentWeek > maxWeek) {currentWeek = maxWeek;}
     const jan1 = new Date(Date.UTC(y, 0, 1));

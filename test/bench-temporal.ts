@@ -1,4 +1,3 @@
-// @ts-expect-error: no types for dist output
 import moment2 from "../dist/index.js";
 
 function micros(ns: number): string {
@@ -26,7 +25,7 @@ const TD: {
   Now: { plainDateISO(): { year: number; month: number; day: number } };
   PlainDate: { new (year: number, month: number, day: number): PlainDate; from(s: string): PlainDate };
   PlainDateTime: new (year: number, month: number, day: number, hour?: number, minute?: number, second?: number, ms?: number) => { year: number; month: number; day: number; hour: number; minute: number; second: number; millisecond: number };
-} = globalThis.Temporal as never;
+} = (globalThis as unknown as { Temporal: typeof TD }).Temporal;
 
 interface PlainDate {
   readonly year: number;
