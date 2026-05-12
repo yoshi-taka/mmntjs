@@ -1,5 +1,5 @@
 import type { Moment } from "./moment2";
-import { isFunction, isString, isMoment, escapeRegex } from "./utils";
+import { isFunction, isString, isMoment } from "./utils";
 import type { LocaleSpec } from "./locale/en";
 import { enLocale } from "./locale/en";
 import { buildRenderFns, lowerVariant, type RenderFn } from "./format-tokens";

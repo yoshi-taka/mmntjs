@@ -5,7 +5,6 @@ import {
   isObject,
   isDate,
   isMoment,
-  isString,
   hasOwnProp,
   zeroFill,
   createDateSafe,
@@ -276,69 +275,25 @@ function weeksInYear(year: number, dow: number, doy: number, utc: boolean): numb
   return (daysInYear(year) - weekOffset + weekOffsetNext) / 7;
 }
 
-function getISOWeekNumber(d: Date, utc: boolean): number {
-  const getYear = utc ? (x: Date) => x.getUTCFullYear() : (x: Date) => x.getFullYear();
-  const year = getYear(d);
-  const weekOffset = firstWeekOffset(year, 1, 4, utc);
-  const dayOfYear = getDayOfYear(d, utc);
-  let week = Math.floor((dayOfYear - weekOffset - 1) / 7) + 1;
-  if (week < 1) {
-    week += weeksInYear(year - 1, 1, 4, utc);
-  } else {
-    const yearWeeks = weeksInYear(year, 1, 4, utc);
-    if (week > yearWeeks) {return 1;}
-  }
-  return week;
+enum DMethod {
+  FullYear, Month, Date, Day, Hours, Minutes, Seconds, Milliseconds,
 }
 
-function getISOWeekYear(d: Date, utc: boolean): number {
-  const getYear = utc ? (x: Date) => x.getUTCFullYear() : (x: Date) => x.getFullYear();
-  const year = getYear(d);
-  const weekOffset = firstWeekOffset(year, 1, 4, utc);
-  const dayOfYear = getDayOfYear(d, utc);
-  const week = Math.floor((dayOfYear - weekOffset - 1) / 7) + 1;
-  if (week < 1) {return year - 1;}
-  if (week > weeksInYear(year, 1, 4, utc)) {return year + 1;}
-  return year;
-}
+const coldFieldKeys: (keyof MomentCold)[] = [
+  "_overflow", "_parsedDateParts", "_unusedTokens",
+  "_unusedInput", "_charsLeftOver", "_empty", "_nullInput", "_invalidMonth",
+  "_invalidFormat", "_weekdayMismatch", "_iso", "_rfc2822", "_invalidEra",
+  "_bigHour", "_meridiem", "_isParseZone", "_userInvalidated", "_tooBusyWith",
+];
 
-const nonLeapLadder = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
-const leapLadder = [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
-
-function getDayOfYear(d: Date, utc: boolean): number {
-  const month = utc ? d.getUTCMonth() : d.getMonth();
-  const day = utc ? d.getUTCDate() : d.getDate();
-  const year = utc ? d.getUTCFullYear() : d.getFullYear();
-  return day + (isLeapYear(year) ? leapLadder : nonLeapLadder)[month];
-}
-
-function getLocaleWeekNumber(d: Date, utc: boolean, dow: number, doy: number): [number, number] {
-  const getYear = utc ? (x: Date) => x.getUTCFullYear() : (x: Date) => x.getFullYear();
-  const year = getYear(d);
-  const weekOffset = firstWeekOffset(year, dow, doy, utc);
-  const dayOfYear = getDayOfYear(d, utc);
-  let week = Math.floor((dayOfYear - weekOffset - 1) / 7) + 1;
-  if (week < 1) {
-    week += weeksInYear(year - 1, dow, doy, utc);
-    return [year - 1, week];
-  }
-  const yearWeeks = weeksInYear(year, dow, doy, utc);
-  if (week > yearWeeks) {
-    return [year + 1, 1];
-  }
-  return [year, week];
-}
-
-function getLocaleWeekYear(d: Date, utc: boolean, dow: number, doy: number): number {
-  return getLocaleWeekNumber(d, utc, dow, doy)[0];
-}
-
-function getLocaleWeek(d: Date, utc: boolean, dow: number, doy: number): number {
-  return getLocaleWeekNumber(d, utc, dow, doy)[1];
+function _dayOfWeek(y: number, m: number, d: number): number {
+  const t = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
+  y -= m < 3 ? 1 : 0;
+  return ((y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) + t[m] + d) | 0) % 7;
 }
 
 function daysInYear(year: number): number {
-  return isLeapYear(year) ? 366 : 365;
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0 ? 366 : 365;
 }
 
 export interface MomentCold {
@@ -356,28 +311,13 @@ export interface MomentCold {
   _invalidFormat?: boolean;
   _weekdayMismatch?: boolean;
   _iso?: boolean;
+  _userInvalidated?: boolean;
   _rfc2822?: boolean;
-  _invalidEra?: number;
   _bigHour?: boolean;
   _meridiem?: string;
   _isParseZone?: boolean;
-  _userInvalidated?: boolean;
+  _invalidEra?: number;
   _tooBusyWith?: string;
-}
-
-const enum DMethod { FullYear, Month, Date, Day, Hours, Minutes, Seconds, Milliseconds }
-
-const coldFieldKeys: (keyof MomentCold)[] = [
-  "_overflow", "_parsedDateParts", "_unusedTokens",
-  "_unusedInput", "_charsLeftOver", "_empty", "_nullInput", "_invalidMonth",
-  "_invalidFormat", "_weekdayMismatch", "_iso", "_rfc2822", "_invalidEra",
-  "_bigHour", "_meridiem", "_isParseZone", "_userInvalidated", "_tooBusyWith",
-];
-
-function _dayOfWeek(y: number, m: number, d: number): number {
-  const t = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
-  y -= m < 3 ? 1 : 0;
-  return ((y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) + t[m] + d) | 0) % 7;
 }
 
 export class Moment {
@@ -2133,13 +2073,6 @@ function hasAnyValue(parsed: Record<string, unknown> | ParsedData): boolean {
     parsed.second != null ||
     parsed.millisecond != null
   );
-}
-
-function parseOffsetString(offset: string): number | null {
-  const match = offset.match(/([+-])(\d{2}):?(\d{2})$/);
-  if (!match) {return NaN;}
-  const sign = match[1] === "+" ? 1 : -1;
-  return sign * (parseInt(match[2], 10) * 60 + parseInt(match[3], 10));
 }
 
 export function momentFromAnything(input: unknown, isUTC?: boolean): Moment {

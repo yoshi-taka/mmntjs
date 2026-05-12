@@ -22,8 +22,8 @@ type FormatsParser = (
   strict?: boolean,
 ) => ParsedData | null;
 
-let registeredFormatParser: FormatParser | undefined;
-let registeredFormatsParser: FormatsParser | undefined;
+let _registeredFormatParser: FormatParser | undefined;
+let _registeredFormatsParser: FormatsParser | undefined;
 
 export function setParseTwoDigitYear(fn: ((input: string) => number) | undefined): void {
   parseTwoDigitYearFn = fn;
@@ -41,8 +41,8 @@ export function registerCustomFormatParser(
   single: FormatParser,
   multi: FormatsParser,
 ): void {
-  registeredFormatParser = single;
-  registeredFormatsParser = multi;
+  _registeredFormatParser = single;
+  _registeredFormatsParser = multi;
 }
 
 const ISO_8601_REGEX =

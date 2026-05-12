@@ -6,7 +6,6 @@ import {
 import { Duration, isDuration as checkIsDuration, type DurationLike } from "../duration_fixed";
 import {
   isMoment,
-  isDate,
   isArray,
 } from "../utils";
 import {

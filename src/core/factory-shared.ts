@@ -1,5 +1,5 @@
 import type { MomentConfig } from "../moment2";
-import { Moment, checkOverflow } from "../moment2";
+import { Moment } from "../moment2";
 import {
   isMoment,
   isDate,
@@ -7,8 +7,6 @@ import {
   isArray,
   isObject,
   isNumber,
-  isObjectEmpty,
-  createDate,
   createDateSafe,
   createUTCDate,
 } from "../utils";
@@ -54,10 +52,6 @@ export type FactoryDeps = {
 };
 
 export function createMomentFactory(deps: FactoryDeps) {
-  function hasAnyValue(parsed: ParsedDataLike): boolean {
-    return parsed.year !== undefined || parsed.month !== undefined || parsed.day !== undefined || parsed.hour !== undefined || parsed.minute !== undefined || parsed.second !== undefined || parsed.millisecond !== undefined || parsed.isoWeek !== undefined || parsed.isoWeekYear !== undefined || parsed.dayOfYear !== undefined || parsed.quarter !== undefined || parsed._week !== undefined || parsed._weekYear !== undefined || parsed._weekdayNum !== undefined;
-  }
-
   function createMomentFromParsed(parsed: ParsedDataLike, str?: string, format?: string, locale?: string, strict?: boolean): Moment {
     if (parsed.isoWeekYear !== undefined && parsed.isoWeek !== undefined && parsed.year === undefined) {
       const jan4 = new Date(Date.UTC(parsed.isoWeekYear, 0, 4));

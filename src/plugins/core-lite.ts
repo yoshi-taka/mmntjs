@@ -3,7 +3,6 @@ import {
   isMoment,
   isDate,
   isArray,
-  hasOwnProp,
 } from "../utils";
 
 type LiteMomentTarget = ((input?: unknown, format?: unknown, localeOrStrict?: unknown, fourthArg?: unknown) => MomentLite) & Record<string, unknown>;

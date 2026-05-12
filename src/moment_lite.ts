@@ -1,6 +1,6 @@
 import type { Locale } from "./locale-runtime";
-import { getLiteLocale, getLiteCurrentLocale, hasLiteLocale } from "./locale-lite";
-import { isArray, isObject, isDate, isMoment, isString, hasOwnProp, zeroFill, createDateSafe, createUTCDate } from "./utils";
+import { getLiteLocale, getLiteCurrentLocale } from "./locale-lite";
+import { isObject, isDate, isMoment, hasOwnProp, zeroFill, createDateSafe } from "./utils";
 import { normalizeUnits, normalizeUnitCode, daysInMonth, isLeapYear, YEAR, MONTH, DATE, DAY, HOUR, MINUTE, SECOND, MILLISECOND, WEEK, QUARTER } from "./units";
 import { parseString, type ParsedData } from "./parse-lite-strict";
 import { formatMomentBasic } from "./display/format-basic";
