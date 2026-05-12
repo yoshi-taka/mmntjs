@@ -11,10 +11,8 @@ const projectRoot = join(import.meta.dir, "..");
 const momentPath = join(projectRoot, "moment", "moment.js").replaceAll("\\", "\\\\");
 const momentJaPath = join(projectRoot, "moment", "locale", "ja.js").replaceAll("\\", "\\\\");
 const momentDePath = join(projectRoot, "moment", "locale", "de.js").replaceAll("\\", "\\\\");
-const moment2BasePath = join(projectRoot, "src", "base.ts").replaceAll("\\", "\\\\");
 const moment2LitePath = join(projectRoot, "src", "lite.ts").replaceAll("\\", "\\\\");
 const moment2FormatParsePath = join(projectRoot, "src", "plugin", "format-parse.ts").replaceAll("\\", "\\\\");
-const moment2UtcPath = join(projectRoot, "src", "plugin", "utc.ts").replaceAll("\\", "\\\\");
 const moment2JaPath = join(projectRoot, "src", "locale", "ja.ts").replaceAll("\\", "\\\\");
 const moment2DePath = join(projectRoot, "src", "locale", "de.ts").replaceAll("\\", "\\\\");
 const moment2LocalePath = join(projectRoot, "src", "locale.ts").replaceAll("\\", "\\\\");
@@ -33,32 +31,20 @@ const scenarios: Scenario[] = [
     entryCode: `import moment from '${momentPath}'; import '${momentJaPath}'; import '${momentDePath}'; moment.locale('ja'); console.log(moment().format('LL'));`,
   },
   {
-    name: "moment2 base",
-    entryCode: `import moment from '${moment2BasePath}'; console.log(moment().format('YYYY-MM-DD'));`,
-  },
-  {
     name: "moment2 lite",
     entryCode: `import moment from '${moment2LitePath}'; console.log(moment().format('YYYY-MM-DD'));`,
-  },
-  {
-    name: "moment2 lite + utc",
-    entryCode: `import moment from '${moment2LitePath}'; import '${moment2UtcPath}'; console.log(moment.utc('2024-01-01T00:00:00Z').format('YYYY-MM-DD'));`,
   },
   {
     name: "moment2 lite + fmt",
     entryCode: `import moment from '${moment2LitePath}'; import '${moment2FormatParsePath}'; console.log(moment('2024-01-01', 'YYYY-MM-DD', true).format('YYYY-MM-DD'));`,
   },
   {
-    name: "moment2 base + fmt",
-    entryCode: `import moment from '${moment2BasePath}'; import '${moment2FormatParsePath}'; console.log(moment('2024-01-01', 'YYYY-MM-DD', true).format('YYYY-MM-DD'));`,
+    name: "moment2 lite + ja",
+    entryCode: `import moment from '${moment2LitePath}'; import { defineLocale, setLocale } from '${moment2LocalePath}'; import { jaLocale } from '${moment2JaPath}'; defineLocale('ja', jaLocale); setLocale('ja'); console.log(moment().format('LL'));`,
   },
   {
-    name: "moment2 base + ja",
-    entryCode: `import moment from '${moment2BasePath}'; import { defineLocale, setLocale } from '${moment2LocalePath}'; import { jaLocale } from '${moment2JaPath}'; defineLocale('ja', jaLocale); setLocale('ja'); console.log(moment().format('LL'));`,
-  },
-  {
-    name: "moment2 base + ja + de",
-    entryCode: `import moment from '${moment2BasePath}'; import { defineLocale, setLocale } from '${moment2LocalePath}'; import { jaLocale } from '${moment2JaPath}'; import { deLocale } from '${moment2DePath}'; defineLocale('ja', jaLocale); defineLocale('de', deLocale); setLocale('ja'); console.log(moment().format('LL'));`,
+    name: "moment2 lite + ja + de",
+    entryCode: `import moment from '${moment2LitePath}'; import { defineLocale, setLocale } from '${moment2LocalePath}'; import { jaLocale } from '${moment2JaPath}'; import { deLocale } from '${moment2DePath}'; defineLocale('ja', jaLocale); defineLocale('de', deLocale); setLocale('ja'); console.log(moment().format('LL'));`,
   },
 ];
 
@@ -91,7 +77,7 @@ async function bundleScenario(entryCode: string): Promise<{ raw: number; gzip: n
   }
 }
 
-const rows: { name: string; raw: number; gzip: number }[] = [];
+const rows: Array<{ name: string; raw: number; gzip: number }> = [];
 for (const scenario of scenarios) {
   rows.push({ name: scenario.name, ...(await bundleScenario(scenario.entryCode)) });
 }

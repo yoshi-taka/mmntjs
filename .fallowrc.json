@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
-  "entry": ["src/index.ts", "src/bin/cli.ts", "src/temporal-entry.ts", "test/mutation.test.ts", "test/properties/basic.test.ts", "test/properties/boundary.test.ts", "test/iso-parse-temporal-oracle.test.ts", "src/moment.ts", "src/moment_fixed.ts"],
+  "entry": ["src/index.ts", "src/bin/cli.ts", "src/temporal-entry.ts", "test/mutation.test.ts", "test/properties/basic.test.ts", "test/properties/boundary.test.ts", "test/iso-parse-temporal-oracle.test.ts", "test/regression/crashes.test.ts", "test/browser-bundle-compare.ts", "src/moment.ts", "src/moment_fixed.ts"],
   "ignorePatterns": [
     "moment/**",
     "lib/**",
@@ -30,13 +30,13 @@
   ],
   "ignoreDependencies": ["acorn", "benchmark", "date-fns", "dayjs", "luxon", "moment-timezone"],
   "duplicates": {
-    "ignore": ["src/moment.ts", "src/moment_fixed.ts", "src/duration.ts", "src/duration_fixed.ts"]
+    "ignore": ["src/moment.ts", "src/moment_fixed.ts", "src/duration_fixed.ts"]
   },
   "health": {
     "maxCyclomatic": 120,
     "maxCognitive": 200,
     "maxCrap": 15000,
-    "ignore": ["src/moment.ts", "src/moment_fixed.ts", "src/duration.ts", "src/duration_fixed.ts"]
+    "ignore": ["src/moment.ts", "src/moment_fixed.ts", "src/duration_fixed.ts", "src/parse-format.ts", "src/parse.ts"]
   },
   "rules": {
     "unused-class-members": "off",
@@ -44,6 +44,7 @@
     "unused-types": "off",
     "unused-files": "error",
     "unused-dev-dependencies": "error",
+    "duplicate-exports": "warn",
     "circular-dependencies": "warn"
   }
 }

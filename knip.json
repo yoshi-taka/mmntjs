@@ -23,7 +23,8 @@
     "test/sbst-*",
     "test/properties/metamorphic.test.ts",
     "test/iso-parse-temporal-oracle.test.ts",
+    "test/browser-bundle-compare.ts",
     "moment/**"
   ],
-  "ignoreDependencies": ["date-fns", "dayjs", "luxon"]
+  "ignoreDependencies": ["date-fns", "dayjs", "luxon", "@rspack/cli", "@rspack/core"]
 }
