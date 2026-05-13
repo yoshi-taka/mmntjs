@@ -5,4 +5,4 @@ pre-commit:
       run: bun x oxlint --type-aware --type-check --fix {staged_files} && bun x oxfmt --write {staged_files}
     audit-config:
       glob: "{knip.json,.fallowrc.json}"
-      run: bun run knip
+      run: bun run audit:static
