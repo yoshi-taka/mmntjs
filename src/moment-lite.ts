@@ -1333,7 +1333,7 @@ export class MomentLite {
       return diff;
     }
 
-    const code = normalizeUnitCode(unit);
+    const code = normalizeUnitCode(unit) ?? -1;
     if (code < 0) {
       return NaN;
     }
@@ -1493,7 +1493,7 @@ export class MomentLite {
   }
 
   startOf(unit: string): this {
-    const code = normalizeUnitCode(unit);
+    const code = normalizeUnitCode(unit) ?? -1;
     if (code < 0) {
       return this;
     }
@@ -1583,7 +1583,7 @@ export class MomentLite {
   }
 
   endOf(unit: string): this {
-    const code = normalizeUnitCode(unit);
+    const code = normalizeUnitCode(unit) ?? -1;
     if (code < 0) {
       return this;
     }

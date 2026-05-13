@@ -1,3 +1,4 @@
+import type { RelTimeRoundingFn, RelTimeThresholdKey } from "../types";
 import {
   Moment,
   setDisplayExtraCallbacks,
@@ -19,14 +20,15 @@ export function registerDisplayApi(target: DisplayMoment = moment): void {
     calendar: formatCalendar,
   });
 
-  momentRecord.relativeTimeRounding = function (fn?: Function | boolean): Function | boolean {
-    return setRelTimeRounding(fn as Function | boolean);
+  // compatibility boundary: public API accepts any function|boolean
+  momentRecord.relativeTimeRounding = function (fn?: RelTimeRoundingFn): RelTimeRoundingFn {
+    return setRelTimeRounding(fn);
   };
   momentRecord.relativeTimeThreshold = function (
-    threshold: string,
+    threshold: RelTimeThresholdKey,
     limit?: number,
-  ): number | boolean {
-    return setRelTimeThreshold(threshold, limit) as number | boolean;
+  ): number | boolean | null {
+    return setRelTimeThreshold(threshold, limit);
   };
   Object.defineProperty(target, "calendarFormat", {
     get(): ((m: Moment, now: Moment) => string) | undefined {

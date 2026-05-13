@@ -1,22 +1,30 @@
-export const YEAR = 0;
-export const MONTH = 1;
-export const DATE = 2;
-export const HOUR = 3;
-export const MINUTE = 4;
-export const SECOND = 5;
-export const MILLISECOND = 6;
-export const WEEK = 7;
-export const WEEKDAY = 8;
-export const DAY_OF_YEAR = 9;
-export const QUARTER = 10;
-export const ISO_WEEK = 11;
-export const ISO_WEEKDAY = 12;
-export const WEEK_YEAR = 13;
-export const ISO_WEEK_YEAR = 14;
-export const DAY = 15;
-export const INVALID_UNIT = -1;
+import type { NormalizedUnit, UnitAlias, UnitCode } from "./types";
 
-const _aliases: Record<string, string> = {
+// -------------------------------------------------------------------------
+// HOT PATH — numeric unit codes (used in add/subtract/startOf/endOf loops)
+// -------------------------------------------------------------------------
+export const YEAR: UnitCode = 0 as const;
+export const MONTH: UnitCode = 1 as const;
+export const DATE: UnitCode = 2 as const;
+export const HOUR: UnitCode = 3 as const;
+export const MINUTE: UnitCode = 4 as const;
+export const SECOND: UnitCode = 5 as const;
+export const MILLISECOND: UnitCode = 6 as const;
+export const WEEK: UnitCode = 7 as const;
+export const WEEKDAY: UnitCode = 8 as const;
+export const DAY_OF_YEAR: UnitCode = 9 as const;
+export const QUARTER: UnitCode = 10 as const;
+export const ISO_WEEK: UnitCode = 11 as const;
+export const ISO_WEEKDAY: UnitCode = 12 as const;
+export const WEEK_YEAR: UnitCode = 13 as const;
+export const ISO_WEEK_YEAR: UnitCode = 14 as const;
+export const DAY: UnitCode = 15 as const;
+export const INVALID_UNIT: UnitCode = -1 as const;
+
+// -------------------------------------------------------------------------
+// TYPED INTERNAL API — alias→normalized-unit lookup (allocation-free)
+// -------------------------------------------------------------------------
+const _aliases: Record<UnitAlias, NormalizedUnit> = {
   Y: "year",
   y: "year",
   years: "year",
@@ -70,18 +78,18 @@ const _aliases: Record<string, string> = {
   isoWeekYears: "isoWeekYear",
 };
 
-const _nmap: Record<string, string> = {};
+const _nmap: Record<string, NormalizedUnit | undefined> = {};
 for (const key of Object.keys(_aliases)) {
-  _nmap[key.toLowerCase()] = _aliases[key];
+  _nmap[key.toLowerCase()] = _aliases[key as UnitAlias];
 }
 
-export const units: Record<string, string> = _aliases;
+export const units: Record<string, string> = _aliases as unknown as Record<string, string>;
 
-export function normalizeUnits(unit: string): string | undefined {
-  return unit ? _aliases[unit] || _nmap[unit.toLowerCase()] : undefined;
+export function normalizeUnits(unit: string): NormalizedUnit | undefined {
+  return unit ? (_aliases as Record<string, NormalizedUnit | undefined>)[unit] ?? _nmap[unit.toLowerCase()] : undefined;
 }
 
-const _unitCodes: Record<string, number> = {
+const _unitCodes: Record<NormalizedUnit, UnitCode> = {
   year: YEAR,
   month: MONTH,
   date: DATE,
@@ -100,20 +108,19 @@ const _unitCodes: Record<string, number> = {
   day: DAY,
 };
 
-const _codeAliases: Record<string, number> = {};
-const _codeNmap: Record<string, number> = {};
+const _codeAliases: Record<string, UnitCode | undefined> = {};
+const _codeNmap: Record<string, UnitCode | undefined> = {}; // hot path fallback
 for (const key of Object.keys(_aliases)) {
-  const code = _unitCodes[_aliases[key]];
+  const code = _unitCodes[_aliases[key as UnitAlias]];
   _codeAliases[key] = code;
   _codeNmap[key.toLowerCase()] = code;
 }
 
-export function normalizeUnitCode(unit: string): number {
+export function normalizeUnitCode(unit: string): UnitCode | undefined {
   if (!unit) {
     return INVALID_UNIT;
   }
-  const exact = _codeAliases[unit];
-  return exact;
+  return _codeAliases[unit];
 }
 
 export function isLeapYear(y: number): boolean {

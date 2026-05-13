@@ -1,5 +1,11 @@
-let relTimeRounding: Function | boolean = Math.round;
-let relTimeThreshold: Record<string, number | null> = {
+import type { RelTimeRoundingFn, RelTimeThresholdKey } from "../types";
+
+// -------------------------------------------------------------------------
+// TYPED INTERNAL API — relative time rounding/thresholds
+// -------------------------------------------------------------------------
+
+let relTimeRounding: RelTimeRoundingFn = Math.round;
+let relTimeThreshold: Record<RelTimeThresholdKey, number | null> = {
   ss: 44,
   s: 45,
   m: 45,
@@ -9,11 +15,11 @@ let relTimeThreshold: Record<string, number | null> = {
   M: 11,
 };
 
-export function getRelTimeRounding(): Function | boolean {
+export function getRelTimeRounding(): RelTimeRoundingFn {
   return relTimeRounding;
 }
 
-export function setRelTimeRounding(fn?: Function | boolean): Function | boolean {
+export function setRelTimeRounding(fn?: RelTimeRoundingFn): RelTimeRoundingFn {
   if (fn === undefined) {
     return typeof relTimeRounding === "function" ? relTimeRounding : Math.round;
   }
@@ -25,21 +31,21 @@ export function setRelTimeRounding(fn?: Function | boolean): Function | boolean 
   return true;
 }
 
-export function getRelTimeThreshold(threshold: string): number | null | undefined {
+export function getRelTimeThreshold(threshold: RelTimeThresholdKey): number | null {
   return relTimeThreshold[threshold];
 }
 
 export function setRelTimeThreshold(
-  threshold: string,
+  threshold: RelTimeThresholdKey,
   limit?: number,
-): number | boolean | null | undefined {
+): number | boolean | null {
   if (!(threshold in relTimeThreshold)) {
     return false;
   }
   if (limit === undefined) {
     return relTimeThreshold[threshold];
   }
-  (relTimeThreshold as Record<string, number | undefined>)[threshold] = limit;
+  relTimeThreshold[threshold] = limit;
   if (threshold === "s") {
     relTimeThreshold.ss = limit - 1;
   }

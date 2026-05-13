@@ -840,10 +840,11 @@ export class Duration {
     const weeksVal = baseDays / 7 + totalMs / 604800000;
     const yearsVal = monthsVal / 12;
 
+    const rrf = getRelTimeRounding();
     const roundFn =
-      getRelTimeRounding() === true || !getRelTimeRounding()
+      rrf === true || !rrf
         ? Math.round
-        : (getRelTimeRounding() as Function);
+        : rrf;
     const seconds = roundFn(Math.abs(secondsVal));
     const minutes = roundFn(Math.abs(minutesVal));
     const hours = roundFn(Math.abs(hoursVal));

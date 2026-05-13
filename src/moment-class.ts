@@ -1,3 +1,15 @@
+// -------------------------------------------------------------------------
+// TYPED INTERNAL API — core Moment class
+// This file defines the core Moment class used throughout the full build.
+// Hot-path functions (getters, setters, add/subtract, startOf/endOf) are
+// marked with "hot path" comments. No heavy allocation in those paths.
+//
+// COMPATIBILITY BOUNDARY: The Moment class itself is a public export but
+// its internal fields ($y, $M, $D, _d, _t etc.) are accessed directly by
+// display/parse/plugin modules. Do NOT change field names without updating
+// all consumers.
+// -------------------------------------------------------------------------
+
 import type { Locale } from "./locale-runtime";
 import { getLiteCurrentLocale, getLiteLocale, hasLiteLocale } from "./locale-lite";
 import { isArray, isObject, isDate, isMoment, hasOwnProp, zeroFill, createDateSafe } from "./utils";
@@ -5,6 +17,7 @@ import {
   DATE,
   DAY,
   HOUR,
+  INVALID_UNIT,
   ISO_WEEK,
   MILLISECOND,
   MINUTE,
@@ -444,6 +457,7 @@ export class Moment {
     return [year, m - 1, d];
   }
 
+  /** hot path: called before every property read to ensure cached fields are fresh */
   _ensureFields(): void {
     if (this._dirty) {
       this._dirty = false;
@@ -1651,7 +1665,7 @@ export class Moment {
   }
 
   startOf(unit: string): this {
-    const code = normalizeUnitCode(unit);
+    const code = normalizeUnitCode(unit) ?? INVALID_UNIT;
     if (code < 0) {
       return this;
     }
@@ -1774,7 +1788,7 @@ export class Moment {
   }
 
   endOf(unit: string): this {
-    const code = normalizeUnitCode(unit);
+    const code = normalizeUnitCode(unit) ?? INVALID_UNIT;
     if (code < 0) {
       return this;
     }
@@ -1965,7 +1979,7 @@ export class Moment {
       return diff;
     }
 
-    const code = normalizeUnitCode(unit);
+    const code = normalizeUnitCode(unit) ?? INVALID_UNIT;
     if (code < 0) {
       return NaN;
     }
@@ -2666,9 +2680,11 @@ export class Moment {
     return this.valueOf() > other.valueOf();
   }
 
-  _updateOffset(keepTime?: boolean): void {
+  _updateOffset(_keepTime?: boolean): void {
+    // hot path: called after every mutation via _dirty flag
+    // _keepTime is accepted for Moment.js compat but unused internally
     if (typeof updateOffsetCallback === "function") {
-      (updateOffsetCallback as Function)(this, keepTime);
+      updateOffsetCallback(this);
     }
   }
 

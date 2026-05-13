@@ -1,4 +1,12 @@
+// -------------------------------------------------------------------------
+// COMPATIBILITY BOUNDARY — extra startOf/endOf unit handlers
+// These are only reachable via callback from moment-class.ts for units
+// (isoWeek, quarter) that the core Moment class cannot handle inline.
+// UnitCode is used internally; no runtime overhead.
+// -------------------------------------------------------------------------
+
 import { ISO_WEEK, QUARTER, WEEK, daysInMonth } from "./units";
+import type { UnitCode } from "./types";
 import type { Locale } from "./locale-runtime";
 import type { Moment } from "./moment-class";
 
@@ -28,7 +36,7 @@ function dayOfWeek(y: number, m: number, d: number): number {
   );
 }
 
-export function startOfExtraMoment(m: BoundaryAwareMoment, code: number): void {
+export function startOfExtraMoment(m: BoundaryAwareMoment, code: UnitCode): void {
   const d = m._getD();
   const utc = m._isUTC;
   switch (code) {
@@ -97,7 +105,7 @@ export function startOfExtraMoment(m: BoundaryAwareMoment, code: number): void {
   }
 }
 
-export function endOfExtraMoment(m: BoundaryAwareMoment, code: number): void {
+export function endOfExtraMoment(m: BoundaryAwareMoment, code: UnitCode): void {
   const d = m._getD();
   const utc = m._isUTC;
   switch (code) {

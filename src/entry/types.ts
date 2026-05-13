@@ -1,7 +1,14 @@
+// -------------------------------------------------------------------------
+// COMPATIBILITY BOUNDARY — permissive public-facing types
+// These are the "escape hatches" that accept `unknown` and cast internally.
+// Do NOT import these from internal core modules; import from ./types.ts instead.
+// -------------------------------------------------------------------------
+
 import type { Duration } from "../duration";
 import type { Locale } from "../locale";
 import type { Moment } from "../moment-class";
 import type { MomentLite } from "../moment-lite";
+import type { NormalizedUnit, RelTimeRoundingFn, RelTimeThresholdKey } from "../types";
 
 export interface CoreMomentStatic {
   (input?: unknown, format?: unknown, localeOrStrict?: unknown, fourthArg?: unknown): Moment;
@@ -10,14 +17,14 @@ export interface CoreMomentStatic {
   isMoment(obj: unknown): boolean;
   isDate(obj: unknown): boolean;
   isDuration(obj: unknown): boolean;
-  normalizeUnits(unit: string): string;
+  normalizeUnits(unit: string): NormalizedUnit | undefined;
   unix(ts: number): Moment;
   invalid(input?: unknown): Moment;
   parseZone(input?: unknown, format?: unknown, strict?: boolean): Moment;
   min(...args: unknown[]): Moment;
   max(...args: unknown[]): Moment;
-  relativeTimeRounding(fn?: Function | boolean): Function | boolean;
-  relativeTimeThreshold(threshold: string, limit?: number): number | boolean | null | undefined;
+  relativeTimeRounding(fn?: RelTimeRoundingFn): RelTimeRoundingFn;
+  relativeTimeThreshold(threshold: RelTimeThresholdKey, limit?: number): number | boolean | null;
   now: () => number;
   updateOffset: ((m: Moment, keepTime?: boolean) => void) | undefined;
   calendarFormat: ((m: Moment, now: Moment) => string) | undefined;
