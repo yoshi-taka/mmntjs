@@ -280,3 +280,124 @@ describe("MomentLite isLeapYear", () => {
     expect(moment("2023-01-01").isLeapYear()).toBe(false);
   });
 });
+
+describe("MomentLite quarter", () => {
+  test("quarter getter", () => {
+    expect(moment("2024-01-15").quarter()).toBe(1);
+    expect(moment("2024-04-15").quarter()).toBe(2);
+    expect(moment("2024-07-15").quarter()).toBe(3);
+    expect(moment("2024-10-15").quarter()).toBe(4);
+  });
+
+  test("quarter setter", () => {
+    const m = moment("2024-01-15");
+    m.quarter(3);
+    expect(m.quarter()).toBe(3);
+    expect(m.month()).toBe(6);
+  });
+});
+
+describe("MomentLite dayOfYear", () => {
+  test("dayOfYear getter", () => {
+    expect(moment("2024-01-01").dayOfYear()).toBe(1);
+    expect(moment("2024-12-31").dayOfYear()).toBe(366);
+    expect(moment("2023-12-31").dayOfYear()).toBe(365);
+  });
+
+  test("dayOfYear setter", () => {
+    const m = moment("2024-01-15");
+    m.dayOfYear(32);
+    expect(m.dayOfYear()).toBe(32);
+  });
+});
+
+describe("MomentLite week", () => {
+  test("week getter", () => {
+    const w = moment("2024-01-01").week();
+    expect(typeof w).toBe("number");
+  });
+
+  test("week setter", () => {
+    const m = moment("2024-06-15");
+    m.week(10);
+    expect(m.isValid()).toBe(true);
+  });
+});
+
+describe("MomentLite isoWeek", () => {
+  test("isoWeek getter", () => {
+    const w = moment("2024-01-01").isoWeek();
+    expect(typeof w).toBe("number");
+  });
+
+  test("isoWeek setter", () => {
+    const m = moment("2024-06-15");
+    m.isoWeek(10);
+    expect(m.isValid()).toBe(true);
+  });
+});
+
+
+
+describe("MomentLite add various units", () => {
+  test("add quarters", () => {
+    const m = moment("2024-01-15");
+    m.add(1, "quarter");
+    expect(m.month()).toBe(3);
+  });
+
+  test("add weeks", () => {
+    const m = moment("2024-01-15");
+    m.add(2, "weeks");
+    expect(m.date()).toBe(29);
+  });
+
+  test("add hours", () => {
+    const m = moment("2024-01-15T10:00:00");
+    m.add(3, "hours");
+    expect(m.hour()).toBe(13);
+  });
+
+  test("add minutes", () => {
+    const m = moment("2024-01-15T10:30:00");
+    m.add(15, "minutes");
+    expect(m.minute()).toBe(45);
+  });
+
+  test("add seconds", () => {
+    const m = moment("2024-01-15T10:30:00");
+    m.add(30, "seconds");
+    expect(m.second()).toBe(30);
+  });
+
+  test("add milliseconds", () => {
+    const m = moment("2024-01-15T10:30:00.500");
+    m.add(500, "milliseconds");
+    expect(m.millisecond()).toBe(0);
+  });
+});
+
+describe("MomentLite toString", () => {
+  test("toString format", () => {
+    const m = moment("2024-01-15T10:30:00");
+    const str = m.toString();
+    expect(str).toContain("2024");
+    expect(str).toContain("Jan");
+    expect(str).toContain("15");
+  });
+});
+
+
+
+describe("MomentLite isoWeekYear", () => {
+  test("isoWeekYear getter", () => {
+    const y = moment("2024-01-01").isoWeekYear();
+    expect(typeof y).toBe("number");
+  });
+
+  test("isoWeekYear setter", () => {
+    const m = moment("2024-06-15");
+    m.isoWeekYear(2023);
+    expect(m.isoWeekYear()).toBe(2023);
+  });
+});
