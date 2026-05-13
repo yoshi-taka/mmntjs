@@ -31,11 +31,11 @@
 - Mutation count: 12 → 20 (8 new operators)
 - Survival rate: 100% (20/20 killed)
 
-## Phase 3: ファズ corpus & 辞書
+## Phase 3: ファズ corpus & 辞書 ✅
 
-- `test/fuzz/corpus/{parse,operations,...}/` 作成
-- moment.js テストケース等を seed として配置
-- `.dict` ファイル導入 (ISO 8601 tokens, 月名, format tokens)
+- `test/fuzz/corpus/{parse,format,duration,operations,utc,array-input,object-input,reltime}/` 作成
+- moment.js テストケース等を seed として配置 (495 files)
+- `.dict` ファイル導入: `iso-tokens.dict`, `month-names.dict`, `format-tokens.dict`
 - corpus を git 管理
 
 ## Phase 4: カバレッジ計測

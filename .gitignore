@@ -2,7 +2,6 @@
 .fallow/
 .tstree-*
 crash-*
-corpus/
 dist/
 node_modules/
 src.snapshot/
