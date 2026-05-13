@@ -1,5 +1,6 @@
 import { isArray } from "./utils";
 import type { ParseLocale } from "./parse-locale";
+import type { InternalParsedData } from "./types";
 import { liteLocalePreparse } from "./locale-lite";
 import type { ParsedData } from "./parse";
 export type { ParsedData };
@@ -108,7 +109,7 @@ export function parseString(
 
   const iso = parseISOWithTable(str);
   if (iso) {
-    return iso._claimed ? ({ _claimed: true } as ParsedData) : iso;
+    return iso._claimed ? ({ _claimed: true } as ParsedData) : (iso as ParsedData);
   }
 
   return null;
@@ -157,9 +158,7 @@ function parseCommonISOExtended(str: string): ParsedData | null {
   return null;
 }
 
-function parseISOWithTable(
-  str: string,
-): ParsedData | ({ _claimed: true } & Record<string, unknown>) | null {
+function parseISOWithTable(str: string): InternalParsedData | null {
   const match = EXTENDED_ISO_REGEX.exec(str) ?? BASIC_ISO_REGEX.exec(str);
   if (!match) {
     return null;

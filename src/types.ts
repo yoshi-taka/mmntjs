@@ -31,82 +31,198 @@ export type NormalizedUnit =
 
 export type UnitAlias =
   | NormalizedUnit
-  | "Y" | "y" | "years"
-  | "M" | "months" | "Mo"
-  | "D" | "d" | "days" | "date" | "dates"
-  | "h" | "hours"
-  | "m" | "minutes"
-  | "s" | "seconds"
-  | "ms" | "milliseconds"
-  | "w" | "W" | "weeks"
+  | "Y"
+  | "y"
+  | "years"
+  | "M"
+  | "months"
+  | "Mo"
+  | "D"
+  | "d"
+  | "days"
+  | "date"
+  | "dates"
+  | "h"
+  | "hours"
+  | "m"
+  | "minutes"
+  | "s"
+  | "seconds"
+  | "ms"
+  | "milliseconds"
+  | "w"
+  | "W"
+  | "weeks"
   | "isoWeeks"
-  | "weekdays" | "e"
-  | "isoWeekdays" | "E"
-  | "quarter" | "quarters" | "Q"
-  | "dayOfYear" | "dayOfYears" | "doy" | "DDD"
-  | "gg" | "weekYear" | "weekYears"
-  | "GG" | "isoWeekYear" | "isoWeekYears"
+  | "weekdays"
+  | "e"
+  | "isoWeekdays"
+  | "E"
+  | "quarter"
+  | "quarters"
+  | "Q"
+  | "dayOfYear"
+  | "dayOfYears"
+  | "doy"
+  | "DDD"
+  | "gg"
+  | "weekYear"
+  | "weekYears"
+  | "GG"
+  | "isoWeekYear"
+  | "isoWeekYears"
   | "isoWeek";
 
 export type UnitCode =
-  | 0  // YEAR
-  | 1  // MONTH
-  | 2  // DATE
-  | 3  // HOUR
-  | 4  // MINUTE
-  | 5  // SECOND
-  | 6  // MILLISECOND
-  | 7  // WEEK
-  | 8  // WEEKDAY
-  | 9  // DAY_OF_YEAR
+  | 0 // YEAR
+  | 1 // MONTH
+  | 2 // DATE
+  | 3 // HOUR
+  | 4 // MINUTE
+  | 5 // SECOND
+  | 6 // MILLISECOND
+  | 7 // WEEK
+  | 8 // WEEKDAY
+  | 9 // DAY_OF_YEAR
   | 10 // QUARTER
   | 11 // ISO_WEEK
   | 12 // ISO_WEEKDAY
   | 13 // WEEK_YEAR
   | 14 // ISO_WEEK_YEAR
   | 15 // DAY
-  | -1 // INVALID_UNIT
-  ;
+  | -1; // INVALID_UNIT
 
 // -------------------------------------------------------------------------
 // Format token system
 // -------------------------------------------------------------------------
 
 export type FormatToken =
-  | "YYYY" | "YY" | "Y" | "YYYYY" | "YYYYYY"
-  | "GGGGG" | "GGGG" | "GGG" | "GG" | "G"
-  | "ggggg" | "gggg" | "ggg" | "gg" | "g"
-  | "Q" | "Qo"
-  | "M" | "MM" | "MMM" | "MMMM" | "Mo"
-  | "D" | "DD" | "Do" | "do"
-  | "d" | "dd" | "ddd" | "dddd"
-  | "e" | "E"
-  | "w" | "ww" | "wo"
-  | "W" | "WW" | "Wo"
-  | "DDDo" | "DDD" | "DDDD"
-  | "H" | "HH" | "h" | "hh" | "k" | "kk"
-  | "m" | "mm"
-  | "s" | "ss"
-  | "S" | "SS" | "SSS"
-  | "SSSS" | "SSSSS" | "SSSSSS" | "SSSSSSS" | "SSSSSSSS" | "SSSSSSSSS"
-  | "Z" | "ZZ" | "z" | "zz"
-  | "t" | "tt" | "A" | "a"
-  | "hmm" | "hmmss" | "Hmm" | "Hmmss"
-  | "N" | "NN" | "NNN" | "NNNN" | "NNNNN"
-  | "y" | "yy" | "yyy" | "yyyy" | "yo"
-  | "X" | "x";
+  | "YYYY"
+  | "YY"
+  | "Y"
+  | "YYYYY"
+  | "YYYYYY"
+  | "GGGGG"
+  | "GGGG"
+  | "GGG"
+  | "GG"
+  | "G"
+  | "ggggg"
+  | "gggg"
+  | "ggg"
+  | "gg"
+  | "g"
+  | "Q"
+  | "Qo"
+  | "M"
+  | "MM"
+  | "MMM"
+  | "MMMM"
+  | "Mo"
+  | "D"
+  | "DD"
+  | "Do"
+  | "do"
+  | "d"
+  | "dd"
+  | "ddd"
+  | "dddd"
+  | "e"
+  | "E"
+  | "w"
+  | "ww"
+  | "wo"
+  | "W"
+  | "WW"
+  | "Wo"
+  | "DDDo"
+  | "DDD"
+  | "DDDD"
+  | "H"
+  | "HH"
+  | "h"
+  | "hh"
+  | "k"
+  | "kk"
+  | "m"
+  | "mm"
+  | "s"
+  | "ss"
+  | "S"
+  | "SS"
+  | "SSS"
+  | "SSSS"
+  | "SSSSS"
+  | "SSSSSS"
+  | "SSSSSSS"
+  | "SSSSSSSS"
+  | "SSSSSSSSS"
+  | "Z"
+  | "ZZ"
+  | "z"
+  | "zz"
+  | "t"
+  | "tt"
+  | "A"
+  | "a"
+  | "hmm"
+  | "hmmss"
+  | "Hmm"
+  | "Hmmss"
+  | "N"
+  | "NN"
+  | "NNN"
+  | "NNNN"
+  | "NNNNN"
+  | "y"
+  | "yy"
+  | "yyy"
+  | "yyyy"
+  | "yo"
+  | "X"
+  | "x";
 
 // -------------------------------------------------------------------------
 // Locale system
 // -------------------------------------------------------------------------
 
-export type LocaleLongDateFormatKey = "LT" | "LTS" | "L" | "LL" | "LLL" | "LLLL"
-  | "lt" | "lts" | "l" | "ll" | "lll" | "llll";
+export type LocaleLongDateFormatKey =
+  | "LT"
+  | "LTS"
+  | "L"
+  | "LL"
+  | "LLL"
+  | "LLLL"
+  | "lt"
+  | "lts"
+  | "l"
+  | "ll"
+  | "lll"
+  | "llll";
 
-export type LocaleRelativeTimeKey = "s" | "ss" | "m" | "mm" | "h" | "hh"
-  | "d" | "dd" | "w" | "ww" | "M" | "MM" | "y" | "yy";
+export type LocaleRelativeTimeKey =
+  | "s"
+  | "ss"
+  | "m"
+  | "mm"
+  | "h"
+  | "hh"
+  | "d"
+  | "dd"
+  | "w"
+  | "ww"
+  | "M"
+  | "MM"
+  | "y"
+  | "yy";
 
-export type LocaleWeekdayFormatKey = "short" | "min" | "format" | "shortFormat" | "minFormat" | undefined;
+export type LocaleWeekdayFormatKey =
+  | "short"
+  | "min"
+  | "format"
+  | "shortFormat"
+  | "minFormat"
+  | undefined;
 
 // -------------------------------------------------------------------------
 // Parsing system
@@ -124,9 +240,23 @@ export type RelTimeRoundingFn = ((n: number) => number) | boolean;
 export type RelTimeThresholdKey = "ss" | "s" | "m" | "h" | "d" | "w" | "M";
 
 // All keys used in locale relativeTime blocks
-export type RelTimeKey = RelTimeThresholdKey | "future" | "past"
-  | "mm" | "hh" | "dd" | "ww" | "MM" | "yy"
-  | "ss" | "m" | "h" | "d" | "w" | "M" | "y";
+export type RelTimeKey =
+  | RelTimeThresholdKey
+  | "future"
+  | "past"
+  | "mm"
+  | "hh"
+  | "dd"
+  | "ww"
+  | "MM"
+  | "yy"
+  | "ss"
+  | "m"
+  | "h"
+  | "d"
+  | "w"
+  | "M"
+  | "y";
 
 // -------------------------------------------------------------------------
 // Overflows / validation
@@ -165,6 +295,7 @@ export interface InternalParsedData {
   weekYear?: number;
   weekday?: number;
   offset?: number;
+  amp?: string;
   _weekdayNum?: number;
   _week?: number;
   _weekYear?: number;
@@ -178,6 +309,47 @@ export interface InternalParsedData {
   _meridiem?: string;
   _claimed?: boolean;
   _hasDate?: boolean;
+  _hasTime?: boolean;
   _iso?: boolean;
   _rfc2822?: boolean;
+  _nullInput?: boolean;
+  _invalidFormat?: boolean;
+  _userInvalidated?: boolean;
+  _isParseZone?: boolean;
+  _bigHour?: boolean;
+  _eraYear?: number;
+  _era?: unknown;
+  _f?: string;
+  _useConstructor?: boolean;
+  _localeWeekday?: number;
+  _weekdayName?: string;
+  overflow?: number;
+}
+
+// -------------------------------------------------------------------------
+// Locale cache interface — fields attached at runtime to parser's locale
+// -------------------------------------------------------------------------
+
+export interface CachedParseLocale {
+  _abbr?: string;
+  _config: Record<string, unknown>;
+  preparse(str: string): string;
+  months(): string[] | string;
+  monthsShort(): string[] | string;
+  longDateFormat(key: string): string;
+  meridiemParse(): RegExp | undefined;
+  isPM(input: string): boolean;
+  // Runtime caches populated by parse helpers (zero-cost, attached once):
+  _monthsCache?: string[];
+  _monthsStrictRegex?: RegExp;
+  _monthsRegex?: RegExp;
+  _monthsShortCache?: string[];
+  _monthsShortStrictRegex?: RegExp;
+  _monthsShortRegex?: RegExp;
+  _weekdaysCache?: string[];
+  _weekdaysRegex?: RegExp;
+  _weekdaysShortCache?: string[];
+  _weekdaysShortRegex?: RegExp;
+  _weekdaysMinCache?: string[];
+  _weekdaysMinRegex?: RegExp;
 }

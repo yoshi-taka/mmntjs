@@ -1,5 +1,6 @@
 import { isArray, hasOwnProp } from "./utils";
 import type { ParseLocale } from "./parse-locale";
+import type { InternalParsedData } from "./types";
 import { localePreparse } from "./locale-runtime";
 import type { ParsedData } from "./parse";
 
@@ -141,7 +142,7 @@ export function parseString(
 
   const iso = parseISOWithTable(str);
   if (iso) {
-    return iso._claimed ? ({ _claimed: true } as ParsedData) : iso;
+    return iso._claimed ? ({ _claimed: true } as ParsedData) : (iso as ParsedData);
   }
 
   const rfc = parseRFC2822(str);
@@ -195,9 +196,7 @@ function parseCommonISOExtended(str: string): ParsedData | null {
   return null;
 }
 
-function parseISOWithTable(
-  str: string,
-): ParsedData | ({ _claimed: true } & Record<string, unknown>) | null {
+function parseISOWithTable(str: string): InternalParsedData | null {
   const match = EXTENDED_ISO_REGEX.exec(str) ?? BASIC_ISO_REGEX.exec(str);
   if (!match) {
     return null;
@@ -531,8 +530,8 @@ export function parseArray(arr: unknown[]): ParsedData | null {
   };
 }
 
-export function parseObject(obj: Record<string, unknown>): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
+export function parseObject(obj: Record<string, unknown>): InternalParsedData {
+  const result: InternalParsedData = {};
   if (hasOwnProp(obj, "year") || hasOwnProp(obj, "years") || hasOwnProp(obj, "y")) {
     const v = obj.year !== undefined ? obj.year : obj.years !== undefined ? obj.years : obj.y;
     if (v != null) {
