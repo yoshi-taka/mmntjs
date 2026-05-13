@@ -1,4 +1,4 @@
-import type { Moment } from "./moment2";
+import type { Moment } from "./moment_core";
 import type { Locale } from "./locale-runtime";
 import { localeMeridiem, localeMonths, localeMonthsShort, localeOrdinal, localeWeekdays, localeWeekdaysMin, localeWeekdaysShort } from "./locale-runtime";
 import { zeroFill } from "./utils";

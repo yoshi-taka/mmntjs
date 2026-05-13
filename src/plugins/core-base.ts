@@ -1,10 +1,10 @@
-import type { MomentConfig } from "../moment2";
+import type { MomentConfig } from "../moment_core";
 import {
   Moment,
   setAddCallback,
   setUpdateOffsetCallback,
   getUpdateOffsetCallback,
-} from "../moment2";
+} from "../moment_core";
 import {
   isMoment,
   isDate,

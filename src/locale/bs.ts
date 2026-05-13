@@ -1,4 +1,4 @@
-import type { Moment } from "../moment2";
+import type { Moment } from "../moment_core";
 import type { LocaleSpec } from "./en";
 
 function processRelativeTime(number: number, withoutSuffix: boolean, key: string, isFuture: boolean) {

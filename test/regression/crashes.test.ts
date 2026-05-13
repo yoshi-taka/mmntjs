@@ -7,8 +7,8 @@ originalMoment.suppressDeprecationWarnings = true
 // ─────────────────────────────────────────────────────────────────
 // Fuzzer crash-file regression tests
 //
-// Groups:  FIXED — moment2 now matches moment.js
-//          KNOWN_DIFF — known pre-existing difference (pin moment2)
+// Groups:  FIXED — mmntjs now matches moment.js
+//          KNOWN_DIFF — known pre-existing difference (pin mmntjs)
 //          NO_THROW — binary/weird inputs that should not throw
 // ─────────────────────────────────────────────────────────────────
 
@@ -39,7 +39,7 @@ test.each(FIXED_UTC)('FIXED (utc): %s', (input) => {
   }
 })
 
-// ── Group 2: KNOWN_DIFF — pin current moment2 behavior ──
+// ── Group 2: KNOWN_DIFF — pin current mmntjs behavior ──
 
 test('KNOWN_DIFF: short numeric strings in utc (0011 → year 2001 month 11)', () => {
   const m2 = moment.utc('0011')
@@ -59,7 +59,7 @@ test('KNOWN_DIFF: utc("0000") → year 2000', () => {
 test('KNOWN_DIFF: utc("0066") → year 1966 (2-digit year 66)', () => {
   const m2 = moment.utc('0066')
   expect(m2.isValid()).toBe(true)
-  // moment.js: year 66 AD; moment2: 2-digit "66" → 1966 (69/68 split)
+  // moment.js: year 66 AD; mmntjs: 2-digit "66" → 1966 (69/68 split)
   expect(m2.year()).toBe(1966)
   expect(m2.month()).toBe(0)
 })
@@ -79,21 +79,21 @@ test('KNOWN_DIFF: utc("0055") → year 1955 (2-digit year 55)', () => {
 })
 
 test('KNOWN_DIFF: negative year sign handling in utc ("-110990-09")', () => {
-  // moment.js drops sign → 1109-09; moment2 preserves sign → -110990-09
+  // moment.js drops sign → 1109-09; mmntjs preserves sign → -110990-09
   const m2 = moment.utc('-110990-09')
   expect(m2.isValid()).toBe(true)
   expect(m2.format('YYYY-MM-DD')).toBe('-110990-09-01')
 })
 
 test('KNOWN_DIFF: negative year + dash-day in utc ("-000700-005")', () => {
-  // moment.js: 0007-01-05, moment2: -0700-05-01
+  // moment.js: 0007-01-05, mmntjs: -0700-05-01
   const m2 = moment.utc('-000700-005')
   expect(m2.isValid()).toBe(true)
   expect(m2.format('YYYY-MM-DD')).toBe('-0700-05-01')
 })
 
 test('KNOWN_DIFF: mixed format parse ("93280531 09-3911")', () => {
-  // moment2: 9328-05-31 09:00:00, moment.js: 9328-06-02 09:11:00
+  // mmntjs: 9328-05-31 09:00:00, moment.js: 9328-06-02 09:11:00
   // Both have same valueOf() but different local-time rendering
   const m2 = moment('93280531 09-3911')
   expect(m2.isValid()).toBe(true)

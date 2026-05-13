@@ -1,5 +1,5 @@
 // @ts-expect-error TypeScript errors are intentional for compatibility
-import moment2 from "../moment2";
+import mmntjs from "../mmntjs";
 import {
   parseISO, getDayOfYear, addDays, addMonths, addSeconds, addMilliseconds,
   subDays, format, lightFormat, isAfter, isBefore,
@@ -35,12 +35,12 @@ const WARM_RUNS = 5;
 const CASES = [
   {
     name: "parse ISO string",
-    run: () => [() => moment2("2024-01-15T10:30:45.123Z"), () => parseISO("2024-01-15T10:30:45.123Z")],
+    run: () => [() => mmntjs("2024-01-15T10:30:45.123Z"), () => parseISO("2024-01-15T10:30:45.123Z")],
   },
   {
     name: "get day of year",
     run: () => {
-      const a = moment2("2024-06-15");
+      const a = mmntjs("2024-06-15");
       const b = new Date(2024, 5, 15);
       return [() => a.dayOfYear(), () => getDayOfYear(b)];
     },
@@ -48,7 +48,7 @@ const CASES = [
   {
     name: "add 1 day",
     run: () => {
-      const a = moment2("2024-06-15");
+      const a = mmntjs("2024-06-15");
       let b2 = new Date(2024, 5, 15);
       return [() => a.add(1, "day"), () => { b2 = addDays(b2, 1); }];
     },
@@ -56,7 +56,7 @@ const CASES = [
   {
     name: "format YYYY-MM-DD",
     run: () => {
-      const a = moment2("2024-06-15");
+      const a = mmntjs("2024-06-15");
       const b = new Date(2024, 5, 15);
       return [() => a.format("YYYY-MM-DD"), () => format(b, "yyyy-MM-dd")];
     },
@@ -64,7 +64,7 @@ const CASES = [
   {
     name: "lightFormat YYYY-MM-DD",
     run: () => {
-      const a = moment2("2024-06-15");
+      const a = mmntjs("2024-06-15");
       const b = new Date(2024, 5, 15);
       return [() => a.format("YYYY-MM-DD"), () => lightFormat(b, "yyyy-MM-dd")];
     },
@@ -72,7 +72,7 @@ const CASES = [
   {
     name: "Intl.DateTimeFormat YYYY-MM-DD (sv-SE)",
     run: () => {
-      const a = moment2("2024-06-15");
+      const a = mmntjs("2024-06-15");
       const b = new Date(2024, 5, 15);
       const fmt = new Intl.DateTimeFormat("sv-SE", {year: "numeric", month: "2-digit", day: "2-digit"});
       return [() => a.format("YYYY-MM-DD"), () => fmt.format(b)];
@@ -81,7 +81,7 @@ const CASES = [
   {
     name: "Intl.DateTimeFormat YYYY-MM-DD (ar-SA)",
     run: () => {
-      const a = moment2("2024-06-15");
+      const a = mmntjs("2024-06-15");
       const b = new Date(2024, 5, 15);
       const fmt = new Intl.DateTimeFormat("ar-SA", {year: "numeric", month: "2-digit", day: "2-digit"});
       return [() => a.format("YYYY-MM-DD"), () => fmt.format(b)];
@@ -90,8 +90,8 @@ const CASES = [
   {
     name: "isAfter",
     run: () => {
-      const a = moment2("2024-06-15");
-      const b = moment2("2024-07-01");
+      const a = mmntjs("2024-06-15");
+      const b = mmntjs("2024-07-01");
       const c = new Date(2024, 5, 15);
       const d = new Date(2024, 6, 1);
       return [() => a.isAfter(b), () => isAfter(c, d)];
@@ -100,7 +100,7 @@ const CASES = [
   {
     name: "startOf month",
     run: () => {
-      const a = moment2("2024-06-15");
+      const a = mmntjs("2024-06-15");
       let b2 = new Date(2024, 5, 15);
       return [() => a.startOf("month"), () => { b2 = startOfMonth(b2); }];
     },
@@ -108,8 +108,8 @@ const CASES = [
   {
     name: "diff in days",
     run: () => {
-      const a = moment2("2024-06-15");
-      const b = moment2("2024-07-01");
+      const a = mmntjs("2024-06-15");
+      const b = mmntjs("2024-07-01");
       const c = new Date(2024, 5, 15);
       const d = new Date(2024, 6, 1);
       return [() => a.diff(b, "days"), () => differenceInCalendarDays(d, c)];
@@ -117,12 +117,12 @@ const CASES = [
   },
   {
     name: "moment() / new Date()",
-    run: () => [() => moment2(), () => new Date()],
+    run: () => [() => mmntjs(), () => new Date()],
   },
   {
     name: "startOf year",
     run: () => {
-      const a = moment2("2024-06-15");
+      const a = mmntjs("2024-06-15");
       let b2 = new Date(2024, 5, 15);
       return [() => a.startOf("year"), () => { b2 = startOfYear(b2); }];
     },
@@ -130,7 +130,7 @@ const CASES = [
   {
     name: "endOf month",
     run: () => {
-      const a = moment2("2024-06-15");
+      const a = mmntjs("2024-06-15");
       let b2 = new Date(2024, 5, 15);
       return [() => a.endOf("month"), () => { b2 = endOfMonth(b2); }];
     },
@@ -138,7 +138,7 @@ const CASES = [
   {
     name: "add 1 month",
     run: () => {
-      const a = moment2("2024-06-15");
+      const a = mmntjs("2024-06-15");
       let b2 = new Date(2024, 5, 15);
       const fnDF = () => { b2 = addMonths(b2, 1); };
       return [() => a.add(1, "month"), fnDF];
@@ -147,7 +147,7 @@ const CASES = [
   {
     name: "add 1 second",
     run: () => {
-      const a = moment2("2024-06-15 10:30:45.123");
+      const a = mmntjs("2024-06-15 10:30:45.123");
       let b2 = new Date(2024, 5, 15, 10, 30, 45, 123);
       return [() => a.add(1, "second"), () => { b2 = addSeconds(b2, 1); }];
     },
@@ -155,7 +155,7 @@ const CASES = [
   {
     name: "add 1 ms",
     run: () => {
-      const a = moment2("2024-06-15 10:30:45.123");
+      const a = mmntjs("2024-06-15 10:30:45.123");
       let b2 = new Date(2024, 5, 15, 10, 30, 45, 123);
       return [() => a.add(1, "millisecond"), () => { b2 = addMilliseconds(b2, 1); }];
     },
@@ -163,7 +163,7 @@ const CASES = [
   {
     name: "sub 1 day",
     run: () => {
-      const a = moment2("2024-06-15");
+      const a = mmntjs("2024-06-15");
       let b2 = new Date(2024, 5, 15);
       return [() => a.add(-1, "day"), () => { b2 = subDays(b2, 1); }];
     },
@@ -171,8 +171,8 @@ const CASES = [
   {
     name: "diff in months",
     run: () => {
-      const a = moment2("2024-01-15");
-      const b = moment2("2024-12-01");
+      const a = mmntjs("2024-01-15");
+      const b = mmntjs("2024-12-01");
       const c = new Date(2024, 0, 15);
       const d = new Date(2024, 11, 1);
       return [() => a.diff(b, "months"), () => differenceInCalendarMonths(d, c)];
@@ -181,7 +181,7 @@ const CASES = [
   {
     name: "format HH:mm:ss",
     run: () => {
-      const a = moment2("2024-06-15 10:30:45");
+      const a = mmntjs("2024-06-15 10:30:45");
       const b = new Date(2024, 5, 15, 10, 30, 45);
       return [() => a.format("HH:mm:ss"), () => format(b, "HH:mm:ss")];
     },
@@ -189,7 +189,7 @@ const CASES = [
   {
     name: "lightFormat HH:mm:ss",
     run: () => {
-      const a = moment2("2024-06-15 10:30:45");
+      const a = mmntjs("2024-06-15 10:30:45");
       const b = new Date(2024, 5, 15, 10, 30, 45);
       return [() => a.format("HH:mm:ss"), () => lightFormat(b, "HH:mm:ss")];
     },
@@ -197,7 +197,7 @@ const CASES = [
   {
     name: "Intl.DateTimeFormat HH:mm:ss (en-US)",
     run: () => {
-      const a = moment2("2024-06-15 10:30:45");
+      const a = mmntjs("2024-06-15 10:30:45");
       const b = new Date(2024, 5, 15, 10, 30, 45);
       const fmt = new Intl.DateTimeFormat("en-US", {hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false});
       return [() => a.format("HH:mm:ss"), () => fmt.format(b)];
@@ -206,7 +206,7 @@ const CASES = [
   {
     name: "Intl.DateTimeFormat HH:mm:ss (ar-SA)",
     run: () => {
-      const a = moment2("2024-06-15 10:30:45");
+      const a = mmntjs("2024-06-15 10:30:45");
       const b = new Date(2024, 5, 15, 10, 30, 45);
       const fmt = new Intl.DateTimeFormat("ar-SA", {hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false});
       return [() => a.format("HH:mm:ss"), () => fmt.format(b)];
@@ -215,8 +215,8 @@ const CASES = [
   {
     name: "isBefore",
     run: () => {
-      const a = moment2("2024-06-15");
-      const b = moment2("2024-07-01");
+      const a = mmntjs("2024-06-15");
+      const b = mmntjs("2024-07-01");
       const c = new Date(2024, 5, 15);
       const d = new Date(2024, 6, 1);
       return [() => a.isBefore(b), () => isBefore(c, d)];
@@ -225,7 +225,7 @@ const CASES = [
   {
     name: "daysInMonth",
     run: () => {
-      const a = moment2("2024-06-15");
+      const a = mmntjs("2024-06-15");
       const b = new Date(2024, 5, 15);
       return [() => a.daysInMonth(), () => getDaysInMonth(b)];
     },
@@ -233,7 +233,7 @@ const CASES = [
   {
     name: "isLeapYear",
     run: () => {
-      const a = moment2("2024-06-15");
+      const a = mmntjs("2024-06-15");
       const b = new Date(2024, 5, 15);
       return [() => a.isLeapYear(), () => isLeapYear(b)];
     },
@@ -241,7 +241,7 @@ const CASES = [
   {
     name: "set year",
     run: () => {
-      const a = moment2("2024-06-15");
+      const a = mmntjs("2024-06-15");
       let b2 = new Date(2024, 5, 15);
       return [() => a.year(2020), () => { b2 = setYear(b2, 2020); }];
     },

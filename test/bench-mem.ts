@@ -16,11 +16,11 @@ async function measure(label: string, importPath: string) {
 }
 
 const f1 = await measure("moment", "../moment/moment.js");
-const f2 = await measure("moment2", "../moment");
+const f2 = await measure("mmntjs", "../moment");
 
 console.log("Module footprint:\n");
 console.log("┌─────────────────────┬──────────┬──────────┬────────┐");
-console.log("│ Metric              │ moment   │ moment2  │ %      │");
+console.log("│ Metric              │ moment   │ mmntjs  │ %      │");
 console.log("├─────────────────────┼──────────┼──────────┼────────┤");
 
 for (const [label, key] of [["heapUsed", "heap"], ["rss", "rss"], ["external", "external"]]) {

@@ -1,4 +1,4 @@
-import type { Moment } from "./moment2";
+import type { Moment } from "./moment_core";
 
 let _T: unknown = null;
 let _momentFn: ((...args: unknown[]) => Moment) | null = null;

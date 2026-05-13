@@ -1,4 +1,4 @@
-import { Moment, checkOverflow } from "../moment2";
+import { Moment, checkOverflow } from "../moment_core";
 import {
   isObjectEmpty,
   createDate,

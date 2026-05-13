@@ -1,12 +1,12 @@
 import { describe, test, expect } from 'bun:test'
 import moment from '../src/index.ts'
 import originalMoment from '../moment/moment.js'
-import type { Moment } from '../src/moment2'
+import type { Moment } from '../src/moment_core'
 import { deLocale } from '../src/locale/de'
 import { defineLocale } from '../src/locale'
 defineLocale('de', deLocale)
 
-describe('moment2 specific', () => {
+describe('mmntjs specific', () => {
 
   test('clone should not share _d reference', () => {
     const m = moment('2024-01-15')
@@ -113,7 +113,7 @@ describe('moment2 specific', () => {
   test('ISO string with timezone uses UTC internally', () => {
     const utc = moment('2024-03-09T12:00:00Z')
     expect(utc._isUTC).toBe(true)
-    // moment2 keeps _isUTC=true for Z strings, so hour() is UTC hour
+    // mmntjs keeps _isUTC=true for Z strings, so hour() is UTC hour
     expect(utc.hour()).toBe(12)
 
     const withOffset = moment('2024-03-09T12:00:00+05:00')

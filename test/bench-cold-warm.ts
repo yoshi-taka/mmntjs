@@ -1,5 +1,5 @@
-// @ts-expect-error: no types for ../moment2
-import moment2 from "../moment2";
+// @ts-expect-error: no types for ../mmntjs
+import mmntjs from "../mmntjs";
 import { _localeCache } from "../src/locale-runtime";
 import { setLocale } from "../src/locale";
 import { format } from "date-fns";
@@ -25,45 +25,45 @@ const cases = [
   {
     name: "LL (fr)",
     setupCold: () => { _localeCache.delete("fr"); setLocale("en"); },
-    setupWarm: () => { moment2(date).locale("fr"); setLocale("en"); },
-    m2: () => { moment2(date).locale("fr").format("LL"); },
+    setupWarm: () => { mmntjs(date).locale("fr"); setLocale("en"); },
+    m2: () => { mmntjs(date).locale("fr").format("LL"); },
     df: () => format(date, "PP", { locale: fr }),
   },
   {
     name: "LT (fr)",
     setupCold: () => { _localeCache.delete("fr"); setLocale("en"); },
-    setupWarm: () => { moment2(date).locale("fr"); setLocale("en"); },
-    m2: () => { moment2(date).locale("fr").format("LT"); },
+    setupWarm: () => { mmntjs(date).locale("fr"); setLocale("en"); },
+    m2: () => { mmntjs(date).locale("fr").format("LT"); },
     df: () => format(date, "p", { locale: fr }),
   },
   {
     name: "LLL (fr)",
     setupCold: () => { _localeCache.delete("fr"); setLocale("en"); },
-    setupWarm: () => { moment2(date).locale("fr"); setLocale("en"); },
-    m2: () => { moment2(date).locale("fr").format("LLL"); },
+    setupWarm: () => { mmntjs(date).locale("fr"); setLocale("en"); },
+    m2: () => { mmntjs(date).locale("fr").format("LLL"); },
     df: () => format(date, "PPp", { locale: fr }),
   },
   {
     name: "LL (en)",
-    setupWarm: () => { moment2(date); setLocale("en"); },
-    m2: () => { moment2(date).format("LL"); },
+    setupWarm: () => { mmntjs(date); setLocale("en"); },
+    m2: () => { mmntjs(date).format("LL"); },
     df: () => format(date, "PP", { locale: enUS }),
   },
   {
     name: "LT (en)",
-    setupWarm: () => { moment2(date); setLocale("en"); },
-    m2: () => { moment2(date).format("LT"); },
+    setupWarm: () => { mmntjs(date); setLocale("en"); },
+    m2: () => { mmntjs(date).format("LT"); },
     df: () => format(date, "p", { locale: enUS }),
   },
   {
     name: "LLL (en)",
-    setupWarm: () => { moment2(date); setLocale("en"); },
-    m2: () => { moment2(date).format("LLL"); },
+    setupWarm: () => { mmntjs(date); setLocale("en"); },
+    m2: () => { mmntjs(date).format("LLL"); },
     df: () => format(date, "PPp", { locale: enUS }),
   },
 ];
 
-console.log("Operation                moment2 cold   moment2 warm   date-fns      cold vs df  warm vs df");
+console.log("Operation                mmntjs cold   mmntjs warm   date-fns      cold vs df  warm vs df");
 for (const c of cases) {
   // cold
   if (c.setupCold) { c.setupCold(); }

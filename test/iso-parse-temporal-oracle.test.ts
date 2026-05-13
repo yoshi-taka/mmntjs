@@ -114,7 +114,7 @@ const CASES: { input: string; note?: string; expectInvalid?: boolean; skipMoment
 const hasTemporal = !!(globalThis as Record<string, unknown>).Temporal;
 
 if (hasTemporal) {
-  describe("ISO parse: moment2 vs Temporal oracle", () => {
+  describe("ISO parse: mmntjs vs Temporal oracle", () => {
     for (const c of CASES) {
       test(c.note ?? c.input, () => {
         const temporal = temporalParse(c.input)!;
@@ -132,7 +132,7 @@ if (hasTemporal) {
         const ok = fieldsEqual(momentResult!, temporal);
         if (!ok) {
           console.log(`Mismatch for ${c.input}:`);
-          console.log("  moment2:", JSON.stringify(momentResult));
+          console.log("  mmntjs:", JSON.stringify(momentResult));
           console.log("  Temporal:", JSON.stringify(temporal));
         }
         expect(ok).toBe(true);
@@ -140,7 +140,7 @@ if (hasTemporal) {
     }
   });
 } else {
-  describe("ISO parse: moment2 (no Temporal oracle)", () => {
+  describe("ISO parse: mmntjs (no Temporal oracle)", () => {
     test("Temporal not available on Bun", () => {
       expect(hasTemporal).toBe(false);
     });

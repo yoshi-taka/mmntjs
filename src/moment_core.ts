@@ -736,21 +736,21 @@ export class Moment {
   weekday(): number;
   weekday(d: number): this;
   weekday(d?: number): number | this {
-    if (!weekdayCallback) {throw new Error("moment2 weekday() is not initialized");}
+    if (!weekdayCallback) {throw new Error("mmntjs weekday() is not initialized");}
     return weekdayCallback(this, d) as number | this;
   }
 
   isoWeekday(): number;
   isoWeekday(d: unknown): this;
   isoWeekday(d?: unknown): number | this {
-    if (!isoWeekdayCallback) {throw new Error("moment2 isoWeekday() is not initialized");}
+    if (!isoWeekdayCallback) {throw new Error("mmntjs isoWeekday() is not initialized");}
     return isoWeekdayCallback(this, d) as number | this;
   }
 
   dayOfYear(): number;
   dayOfYear(d: number): this;
   dayOfYear(d?: number): number | this {
-    if (!dayOfYearCallback) {throw new Error("moment2 dayOfYear() is not initialized");}
+    if (!dayOfYearCallback) {throw new Error("mmntjs dayOfYear() is not initialized");}
     return dayOfYearCallback(this, d) as number | this;
   }
 
@@ -1272,7 +1272,7 @@ export class Moment {
       case QUARTER:
       case WEEK:
       case ISO_WEEK:
-        if (!startOfExtraCallback) {throw new Error("moment2 startOf extra units are not initialized");}
+        if (!startOfExtraCallback) {throw new Error("mmntjs startOf extra units are not initialized");}
         startOfExtraCallback(this, code);
         break;
       case DATE:
@@ -1331,7 +1331,7 @@ export class Moment {
       case QUARTER:
       case WEEK:
       case ISO_WEEK:
-        if (!endOfExtraCallback) {throw new Error("moment2 endOf extra units are not initialized");}
+        if (!endOfExtraCallback) {throw new Error("mmntjs endOf extra units are not initialized");}
         endOfExtraCallback(this, code);
         break;
       case DATE:
@@ -1375,19 +1375,19 @@ export class Moment {
   }
 
   local(keepLocalTime?: boolean): this {
-    if (!localCallback) {throw new Error("moment2 local() is not initialized");}
+    if (!localCallback) {throw new Error("mmntjs local() is not initialized");}
     return localCallback(this, keepLocalTime) as this;
   }
 
   utc(keepLocalTime?: boolean): this {
-    if (!utcCallback) {throw new Error("moment2 utc() is not initialized");}
+    if (!utcCallback) {throw new Error("mmntjs utc() is not initialized");}
     return utcCallback(this, keepLocalTime) as this;
   }
 
   utcOffset(): number;
   utcOffset(offset: number | string, keepLocalTime?: boolean): this;
   utcOffset(offset?: number | string, keepLocalTime?: boolean): number | this {
-    if (!utcOffsetMethodCallback) {throw new Error("moment2 utcOffset() is not initialized");}
+    if (!utcOffsetMethodCallback) {throw new Error("mmntjs utcOffset() is not initialized");}
     return utcOffsetMethodCallback(this, offset, keepLocalTime) as number | this;
   }
 
@@ -1400,32 +1400,32 @@ export class Moment {
       }
     }
     const formatter = formatMomentCallback;
-    if (!formatter) {throw new Error("moment2 formatter is not initialized");}
+    if (!formatter) {throw new Error("mmntjs formatter is not initialized");}
     return formatter(this as unknown as FormattableMoment, format);
   }
 
   fromNow(pref?: boolean): string {
-    if (!fromNowCallback) {throw new Error("moment2 fromNow() is not initialized");}
+    if (!fromNowCallback) {throw new Error("mmntjs fromNow() is not initialized");}
     return fromNowCallback(this, pref);
   }
 
   from(input: MomentInput, pref?: boolean): string {
-    if (!fromCallback) {throw new Error("moment2 from() is not initialized");}
+    if (!fromCallback) {throw new Error("mmntjs from() is not initialized");}
     return fromCallback(this, input, pref);
   }
 
   toNow(pref?: boolean): string {
-    if (!toNowCallback) {throw new Error("moment2 toNow() is not initialized");}
+    if (!toNowCallback) {throw new Error("mmntjs toNow() is not initialized");}
     return toNowCallback(this, pref);
   }
 
   to(input: MomentInput, pref?: boolean): string {
-    if (!toCallback) {throw new Error("moment2 to() is not initialized");}
+    if (!toCallback) {throw new Error("mmntjs to() is not initialized");}
     return toCallback(this, input, pref);
   }
 
   calendar(ref?: MomentInput, opts?: object): string {
-    if (!calendarCallback) {throw new Error("moment2 calendar() is not initialized");}
+    if (!calendarCallback) {throw new Error("mmntjs calendar() is not initialized");}
     return calendarCallback(this, ref, opts);
   }
 
@@ -1568,7 +1568,7 @@ export class Moment {
   }
 
   toArray(): number[] {
-    if (!toArrayCallback) {throw new Error("moment2 toArray() is not initialized");}
+    if (!toArrayCallback) {throw new Error("mmntjs toArray() is not initialized");}
     return toArrayCallback(this);
   }
 
@@ -1633,12 +1633,12 @@ export class Moment {
   }
 
   toString(): string {
-    if (!toStringCallback) {throw new Error("moment2 toString() is not initialized");}
+    if (!toStringCallback) {throw new Error("mmntjs toString() is not initialized");}
     return toStringCallback(this);
   }
 
   inspect(): string {
-    if (!inspectCallback) {throw new Error("moment2 inspect() is not initialized");}
+    if (!inspectCallback) {throw new Error("mmntjs inspect() is not initialized");}
     return inspectCallback(this);
   }
 
@@ -1663,12 +1663,12 @@ export class Moment {
         return this.month() - other.month();
       }
       case "quarter": {
-        if (!calendarCompareCallback) {throw new Error("moment2 quarter comparison is not initialized");}
+        if (!calendarCompareCallback) {throw new Error("mmntjs quarter comparison is not initialized");}
         return calendarCompareCallback(this, other, u);
       }
       case "week":
       case "isoWeek": {
-        if (!calendarCompareCallback) {throw new Error(`moment2 ${u} comparison is not initialized`);}
+        if (!calendarCompareCallback) {throw new Error(`mmntjs ${u} comparison is not initialized`);}
         return calendarCompareCallback(this, other, u);
       }
       case "day":
@@ -1724,27 +1724,27 @@ export class Moment {
   }
 
   isDST(): boolean {
-    if (!isDSTCallback) {throw new Error("moment2 isDST() is not initialized");}
+    if (!isDSTCallback) {throw new Error("mmntjs isDST() is not initialized");}
     return isDSTCallback(this);
   }
 
   isLocal(): boolean {
-    if (!isLocalCallback) {throw new Error("moment2 isLocal() is not initialized");}
+    if (!isLocalCallback) {throw new Error("mmntjs isLocal() is not initialized");}
     return isLocalCallback(this);
   }
 
   isUtc(): boolean {
-    if (!isUtcCallback) {throw new Error("moment2 isUtc() is not initialized");}
+    if (!isUtcCallback) {throw new Error("mmntjs isUtc() is not initialized");}
     return isUtcCallback(this);
   }
 
   isUtcOffset(): boolean {
-    if (!isUtcOffsetCallback) {throw new Error("moment2 isUtcOffset() is not initialized");}
+    if (!isUtcOffsetCallback) {throw new Error("mmntjs isUtcOffset() is not initialized");}
     return isUtcOffsetCallback(this);
   }
 
   isUTC(): boolean {
-    if (!isUtcCallback) {throw new Error("moment2 isUTC() is not initialized");}
+    if (!isUtcCallback) {throw new Error("mmntjs isUTC() is not initialized");}
     return isUtcCallback(this);
   }
 
@@ -1808,7 +1808,7 @@ export class Moment {
   week(): number;
   week(w: number): this;
   week(w?: number): number | this {
-    if (!weekCallback) {throw new Error("moment2 week() is not initialized");}
+    if (!weekCallback) {throw new Error("mmntjs week() is not initialized");}
     return weekCallback(this, w) as number | this;
   }
 
@@ -1839,14 +1839,14 @@ export class Moment {
   weekYear(): number;
   weekYear(y: number): this;
   weekYear(y?: number): number | this {
-    if (!weekYearCallback) {throw new Error("moment2 weekYear() is not initialized");}
+    if (!weekYearCallback) {throw new Error("mmntjs weekYear() is not initialized");}
     return weekYearCallback(this, y) as number | this;
   }
 
   isoWeek(): number;
   isoWeek(w: number): this;
   isoWeek(w?: number): number | this {
-    if (!isoWeekCallback) {throw new Error("moment2 isoWeek() is not initialized");}
+    if (!isoWeekCallback) {throw new Error("mmntjs isoWeek() is not initialized");}
     return isoWeekCallback(this, w) as number | this;
   }
 
@@ -1859,61 +1859,61 @@ export class Moment {
   isoWeekYear(): number;
   isoWeekYear(y: number): this;
   isoWeekYear(y?: number): number | this {
-    if (!isoWeekYearCallback) {throw new Error("moment2 isoWeekYear() is not initialized");}
+    if (!isoWeekYearCallback) {throw new Error("mmntjs isoWeekYear() is not initialized");}
     return isoWeekYearCallback(this, y) as number | this;
   }
 
   isoWeeksInYear(): number {
-    if (!isoWeeksInYearCallback) {throw new Error("moment2 isoWeeksInYear() is not initialized");}
+    if (!isoWeeksInYearCallback) {throw new Error("mmntjs isoWeeksInYear() is not initialized");}
     return isoWeeksInYearCallback(this);
   }
 
   weeksInYear(): number {
-    if (!weeksInYearCallback) {throw new Error("moment2 weeksInYear() is not initialized");}
+    if (!weeksInYearCallback) {throw new Error("mmntjs weeksInYear() is not initialized");}
     return weeksInYearCallback(this);
   }
 
   weeksInWeekYear(): number {
-    if (!weeksInWeekYearCallback) {throw new Error("moment2 weeksInWeekYear() is not initialized");}
+    if (!weeksInWeekYearCallback) {throw new Error("mmntjs weeksInWeekYear() is not initialized");}
     return weeksInWeekYearCallback(this);
   }
 
   isoWeeksInISOWeekYear(): number {
-    if (!isoWeeksInISOWeekYearCallback) {throw new Error("moment2 isoWeeksInISOWeekYear() is not initialized");}
+    if (!isoWeeksInISOWeekYearCallback) {throw new Error("mmntjs isoWeeksInISOWeekYear() is not initialized");}
     return isoWeeksInISOWeekYearCallback(this);
   }
 
   parseZone(input?: unknown, format?: unknown): Moment {
-    if (!parseZoneCallback) {throw new Error("moment2 parseZone() is not initialized");}
+    if (!parseZoneCallback) {throw new Error("mmntjs parseZone() is not initialized");}
     return parseZoneCallback(this, input, format);
   }
 
   zone(): number;
   zone(offset: number | string, keepLocalTime?: boolean): this;
   zone(offset?: number | string, keepLocalTime?: boolean): number | this {
-    if (!zoneCallback) {throw new Error("moment2 zone() is not initialized");}
+    if (!zoneCallback) {throw new Error("mmntjs zone() is not initialized");}
     return zoneCallback(this, offset, keepLocalTime) as number | this;
   }
 
   zoneAbbr(): string {
-    if (!zoneAbbrCallback) {throw new Error("moment2 zoneAbbr() is not initialized");}
+    if (!zoneAbbrCallback) {throw new Error("mmntjs zoneAbbr() is not initialized");}
     return zoneAbbrCallback(this);
   }
 
   zoneName(): string {
-    if (!zoneNameCallback) {throw new Error("moment2 zoneName() is not initialized");}
+    if (!zoneNameCallback) {throw new Error("mmntjs zoneName() is not initialized");}
     return zoneNameCallback(this);
   }
 
   localeData(): Locale {
-    if (!localeDataCallback) {throw new Error("moment2 localeData() is not initialized");}
+    if (!localeDataCallback) {throw new Error("mmntjs localeData() is not initialized");}
     return localeDataCallback(this);
   }
 
   lang(): string;
   lang(locale: string | string[] | false): this;
   lang(locale?: string | string[] | false): string | this {
-    if (!langCallback) {throw new Error("moment2 lang() is not initialized");}
+    if (!langCallback) {throw new Error("mmntjs lang() is not initialized");}
     return langCallback(this, locale, () => getCurrentLocaleCallback ? getCurrentLocaleCallback() : getLiteCurrentLocale()) as string | this;
   }
 
@@ -1933,17 +1933,17 @@ export class Moment {
   locale(): string;
   locale(locale: string | string[] | false): this;
   locale(locale?: string | string[] | false): string | this {
-    if (!localeCallback) {throw new Error("moment2 locale() is not initialized");}
+    if (!localeCallback) {throw new Error("mmntjs locale() is not initialized");}
     return localeCallback(this, locale, () => getCurrentLocaleCallback ? getCurrentLocaleCallback() : getLiteCurrentLocale()) as string | this;
   }
 
   creationData(): Record<string, unknown> {
-    if (!creationDataCallback) {throw new Error("moment2 creationData() is not initialized");}
+    if (!creationDataCallback) {throw new Error("mmntjs creationData() is not initialized");}
     return creationDataCallback(this);
   }
 
   parsingFlags(): Record<string, unknown> {
-    if (!parsingFlagsCallback) {throw new Error("moment2 parsingFlags() is not initialized");}
+    if (!parsingFlagsCallback) {throw new Error("mmntjs parsingFlags() is not initialized");}
     return parsingFlagsCallback(this);
   }
 
@@ -1952,12 +1952,12 @@ export class Moment {
   }
 
   hasAlignedHourOffset(other?: MomentInput): boolean {
-    if (!hasAlignedHourOffsetCallback) {throw new Error("moment2 hasAlignedHourOffset() is not initialized");}
+    if (!hasAlignedHourOffsetCallback) {throw new Error("mmntjs hasAlignedHourOffset() is not initialized");}
     return hasAlignedHourOffsetCallback(this, other);
   }
 
   invalidAt(): number {
-    if (!invalidAtCallback) {throw new Error("moment2 invalidAt() is not initialized");}
+    if (!invalidAtCallback) {throw new Error("mmntjs invalidAt() is not initialized");}
     return invalidAtCallback(this);
   }
 
@@ -1971,7 +1971,7 @@ export class Moment {
   }
 
   toObject(): Record<string, number> {
-    if (!toObjectCallback) {throw new Error("moment2 toObject() is not initialized");}
+    if (!toObjectCallback) {throw new Error("mmntjs toObject() is not initialized");}
     return toObjectCallback(this);
   }
 

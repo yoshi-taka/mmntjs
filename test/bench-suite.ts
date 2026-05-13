@@ -1,5 +1,5 @@
-// @ts-expect-error: no types for ../moment2
-import moment2 from "../moment2";
+// @ts-expect-error: no types for ../mmntjs
+import mmntjs from "../mmntjs";
 import { defineLocale } from "../src/locale";
 import { frLocale } from "../src/locale/fr";
 defineLocale("fr", frLocale);
@@ -21,7 +21,7 @@ const isoStr = date.toISOString();
 const dateA = new Date(1989, 6, 10);
 const dateB = new Date(1987, 1, 11);
 
-const momentForLocale = (locale: string) => moment2(date).locale(locale);
+const momentForLocale = (locale: string) => mmntjs(date).locale(locale);
 const dfLocalePP = (loc: Locale) => () => format(date, "PP", { locale: loc });
 const dfLocalep = (loc: Locale) => () => format(date, "p", { locale: loc });
 const dfLocalePPp = (loc: Locale) => () => format(date, "PPp", { locale: loc });
@@ -35,48 +35,48 @@ const dfEnp = dfLocalep(enUS);
 const dfEnPPp = dfLocalePPp(enUS);
 
 suite
-  .add("moment2#parse ISO string", () => { moment2(isoStr); })
+  .add("mmntjs#parse ISO string", () => { mmntjs(isoStr); })
   .add("date-fns#parseISO", () => { parseISO(isoStr); })
 
-  .add("moment2#format YYYY-MM-DD", () => { moment2(date).format("YYYY-MM-DD"); })
+  .add("mmntjs#format YYYY-MM-DD", () => { mmntjs(date).format("YYYY-MM-DD"); })
   .add("date-fns#format yyyy-MM-dd", () => { format(date, "yyyy-MM-dd"); })
   .add("date-fns#lightFormat yyyy-MM-dd", () => { lightFormat(date, "yyyy-MM-dd"); })
-  .add("moment2#format HH:mm:ss", () => { moment2(date).format("HH:mm:ss"); })
+  .add("mmntjs#format HH:mm:ss", () => { mmntjs(date).format("HH:mm:ss"); })
   .add("date-fns#format HH:mm:ss", () => { format(date, "HH:mm:ss"); })
   .add("date-fns#lightFormat HH:mm:ss", () => { lightFormat(date, "HH:mm:ss"); })
 
-  .add("moment2#format LL (fr locale)", () => { momentForLocale("fr").format("LL"); })
+  .add("mmntjs#format LL (fr locale)", () => { momentForLocale("fr").format("LL"); })
   .add("date-fns#format PP (fr locale)", dfFrPP)
-  .add("moment2#format LT (fr locale)", () => { momentForLocale("fr").format("LT"); })
+  .add("mmntjs#format LT (fr locale)", () => { momentForLocale("fr").format("LT"); })
   .add("date-fns#format p (fr locale)", dfFrp)
-  .add("moment2#format LLL (fr locale)", () => { momentForLocale("fr").format("LLL"); })
+  .add("mmntjs#format LLL (fr locale)", () => { momentForLocale("fr").format("LLL"); })
   .add("date-fns#format PPp (fr locale)", dfFrPPp)
-  .add("moment2#format LL (en locale)", () => { moment2(date).format("LL"); })
+  .add("mmntjs#format LL (en locale)", () => { mmntjs(date).format("LL"); })
   .add("date-fns#format PP (en locale)", dfEnPP)
-  .add("moment2#format LT (en locale)", () => { moment2(date).format("LT"); })
+  .add("mmntjs#format LT (en locale)", () => { mmntjs(date).format("LT"); })
   .add("date-fns#format p (en locale)", dfEnp)
-  .add("moment2#format LLL (en locale)", () => { moment2(date).format("LLL"); })
+  .add("mmntjs#format LLL (en locale)", () => { mmntjs(date).format("LLL"); })
   .add("date-fns#format PPp (en locale)", dfEnPPp)
 
-  .add("moment2#dayOfYear", () => { moment2(date).dayOfYear(); })
+  .add("mmntjs#dayOfYear", () => { mmntjs(date).dayOfYear(); })
   .add("date-fns#getDayOfYear", () => { getDayOfYear(date); })
 
-  .add("moment2#add 1 day", () => { moment2(date).add(1, "day"); })
+  .add("mmntjs#add 1 day", () => { mmntjs(date).add(1, "day"); })
   .add("date-fns#addDays", () => { addDays(date, 1); })
 
-  .add("moment2#isAfter", () => { moment2(dateA).isAfter(dateB); })
+  .add("mmntjs#isAfter", () => { mmntjs(dateA).isAfter(dateB); })
   .add("date-fns#isAfter", () => { isAfter(dateA, dateB); })
 
-  .add("moment2#startOfDay", () => { moment2(date).startOf("day"); })
+  .add("mmntjs#startOfDay", () => { mmntjs(date).startOf("day"); })
   .add("date-fns#startOfDay", () => { startOfDay(date); })
 
-  .add("moment2#setMonth", () => { moment2(date).month(3); })
+  .add("mmntjs#setMonth", () => { mmntjs(date).month(3); })
   .add("date-fns#setMonth", () => { setMonth(date, 3); })
 
-  .add("moment2#setYear", () => { moment2(date).year(2000); })
+  .add("mmntjs#setYear", () => { mmntjs(date).year(2000); })
   .add("date-fns#setYear", () => { setYear(date, 2000); })
 
-  .add("moment2#diff days", () => { moment2(dateA).diff(dateB, "days"); })
+  .add("mmntjs#diff days", () => { mmntjs(dateA).diff(dateB, "days"); })
   .add("date-fns#differenceInCalendarDays", () => { differenceInCalendarDays(dateA, dateB); })
 
   .on("cycle", (event: unknown) => {

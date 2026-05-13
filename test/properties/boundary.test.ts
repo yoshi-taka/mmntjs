@@ -2,7 +2,7 @@ import { describe, test, expect } from 'bun:test'
 import fc from 'fast-check'
 import _moment from '../../src/index.ts'
 import type { MomentStatic } from '../../src/entry/types'
-import type { Moment } from '../../src/moment2'
+import type { Moment } from '../../src/moment_core'
 import type { Duration } from '../../src/duration_fixed'
 import _originalMoment from '../../moment/moment'
 type MomentFn = ((...args: unknown[]) => Moment) & {

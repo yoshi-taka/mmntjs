@@ -1,5 +1,5 @@
 import type { Locale } from "./locale-runtime";
-import type { Moment } from "./moment2";
+import type { Moment } from "./moment_core";
 
 type LocaleAwareMoment = Moment & {
   _getLocale: () => Locale;

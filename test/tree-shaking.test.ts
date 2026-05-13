@@ -111,7 +111,7 @@ describe("tree-shaking", () => {
         `import moment from '${fullSourcePath}';\nconsole.log(moment().format());`,
       );
 
-      expect(code).not.toMatch(/moment2 migrate|Migration CLI/);
+      expect(code).not.toMatch(/mmntjs migrate|Migration CLI/);
     });
 
     test("full entry does not contain Temporal bridge registration", async () => {

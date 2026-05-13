@@ -1,8 +1,8 @@
 import type {
-  Moment} from "../moment2";
+  Moment} from "../moment_core";
 import {
   momentProperties
-} from "../moment2";
+} from "../moment_core";
 import { Duration, isDuration as checkIsDuration, type DurationLike } from "../duration_fixed";
 import {
   isMoment,

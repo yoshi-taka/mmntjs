@@ -5,7 +5,7 @@ import {
   momentFromAnything,
   getFormatMomentCallback,
   type MomentInput,
-} from "../moment2";
+} from "../moment_core";
 import type { FormattableMoment } from "./types";
 import {
   isArray,
@@ -121,6 +121,6 @@ export function formatCalendar(m: Moment, ref?: MomentInput, opts?: object): str
   }
 
   const formatter = getFormatMomentCallback();
-  if (!formatter) {throw new Error("moment2 formatter is not initialized");}
+  if (!formatter) {throw new Error("mmntjs formatter is not initialized");}
   return formatter(m as unknown as FormattableMoment, typeof formatString === "string" ? formatString : "L");
 }

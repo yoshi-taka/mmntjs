@@ -1,4 +1,4 @@
-import { Moment, setDisplayExtraCallbacks, setRelTimeRounding, setRelTimeThreshold } from "../moment2";
+import { Moment, setDisplayExtraCallbacks, setRelTimeRounding, setRelTimeThreshold } from "../moment_core";
 import { moment } from "../core/factory";
 import { formatCalendar, formatFrom, formatFromNow, formatTo, formatToNow } from "../display/extra";
 

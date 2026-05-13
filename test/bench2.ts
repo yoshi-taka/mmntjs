@@ -1,5 +1,5 @@
 // @ts-expect-error Benchmark setup requires loose types
-import moment2 from "../moment2";
+import mmntjs from "../mmntjs";
 import moment from "../moment/moment.js";
 
 function micros(ns: number): string {
@@ -17,25 +17,25 @@ function run(name: string, fn: () => void, iterations: number): number {
 }
 
 const CASES = [
-  { name: "moment()", run: () => [() => moment(), () => moment2()] },
-  { name: "moment([y,M,d])", run: () => [() => moment([2024, 0, 15]), () => moment2([2024, 0, 15])] },
-  { name: "moment('ISO string')", run: () => [() => moment("2024-01-15T10:30:45.123Z"), () => moment2("2024-01-15T10:30:45.123Z")] },
+  { name: "moment()", run: () => [() => moment(), () => mmntjs()] },
+  { name: "moment([y,M,d])", run: () => [() => moment([2024, 0, 15]), () => mmntjs([2024, 0, 15])] },
+  { name: "moment('ISO string')", run: () => [() => moment("2024-01-15T10:30:45.123Z"), () => mmntjs("2024-01-15T10:30:45.123Z")] },
   {
     name: "format('YYYY-MM-DD')",
-    run: () => { const a = moment("2024-06-15"), b = moment2("2024-06-15"); return [() => a.format("YYYY-MM-DD"), () => b.format("YYYY-MM-DD")]; },
+    run: () => { const a = moment("2024-06-15"), b = mmntjs("2024-06-15"); return [() => a.format("YYYY-MM-DD"), () => b.format("YYYY-MM-DD")]; },
   },
   {
     name: "getters (7 fields)",
     run: () => {
-      const a = moment("2024-06-15 10:30:45.123"), b = moment2("2024-06-15 10:30:45.123");
+      const a = moment("2024-06-15 10:30:45.123"), b = mmntjs("2024-06-15 10:30:45.123");
       return [
         () => { a.year(); a.month(); a.date(); a.hour(); a.minute(); a.second(); a.millisecond(); },
         () => { b.year(); b.month(); b.date(); b.hour(); b.minute(); b.second(); b.millisecond(); },
       ];
     },
   },
-  { name: "valueOf / unix", run: () => { const a = moment("2024-06-15"), b = moment2("2024-06-15"); return [() => { a.valueOf(); a.unix(); }, () => { b.valueOf(); b.unix(); }]; } },
-  { name: "clone", run: () => { const a = moment("2024-06-15"), b = moment2("2024-06-15"); return [() => a.clone(), () => b.clone()]; } },
+  { name: "valueOf / unix", run: () => { const a = moment("2024-06-15"), b = mmntjs("2024-06-15"); return [() => { a.valueOf(); a.unix(); }, () => { b.valueOf(); b.unix(); }]; } },
+  { name: "clone", run: () => { const a = moment("2024-06-15"), b = mmntjs("2024-06-15"); return [() => a.clone(), () => b.clone()]; } },
 ];
 
 const ITER = 5000;

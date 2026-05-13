@@ -1,4 +1,4 @@
-import moment2 from "../dist/index.js";
+import mmntjs from "../dist/index.js";
 
 function micros(ns: number): string {
   if (ns < 1000) {return `${ns.toFixed(0)}ns`;}
@@ -52,20 +52,20 @@ const pdB = new TD.PlainDate(2024, 8, 1);
 const CASES = [
   {
     name: "now/create",
-    run: () => [() => moment2(), () => TD.Now.plainDateISO()],
+    run: () => [() => mmntjs(), () => TD.Now.plainDateISO()],
   },
   {
     name: "parse ISO string",
-    run: () => [() => moment2(isoStr), () => TD.PlainDate.from(isoStr)],
+    run: () => [() => mmntjs(isoStr), () => TD.PlainDate.from(isoStr)],
   },
   {
     name: "parse [y,M,d]",
-    run: () => [() => moment2([2024, 5, 15]), () => new TD.PlainDate(2024, 6, 15)],
+    run: () => [() => mmntjs([2024, 5, 15]), () => new TD.PlainDate(2024, 6, 15)],
   },
   {
     name: "get year",
     run: () => {
-      const m = moment2(dateA);
+      const m = mmntjs(dateA);
       const pd = pdA;
       return [() => m.year(), () => pd.year];
     },
@@ -73,7 +73,7 @@ const CASES = [
   {
     name: "add 1 day",
     run: () => {
-      const m = moment2(dateA);
+      const m = mmntjs(dateA);
       let pd = pdA;
       return [() => m.add(1, "day"), () => { pd = pd.add({ days: 1 }); }];
     },
@@ -81,7 +81,7 @@ const CASES = [
   {
     name: "add 1 month",
     run: () => {
-      const m = moment2(dateA);
+      const m = mmntjs(dateA);
       let pd = pdA;
       return [() => m.add(1, "month"), () => { pd = pd.add({ months: 1 }); }];
     },
@@ -89,8 +89,8 @@ const CASES = [
   {
     name: "diff in days",
     run: () => {
-      const m = moment2(dateA);
-      const mB = moment2(dateB);
+      const m = mmntjs(dateA);
+      const mB = mmntjs(dateB);
       const pa = pdA;
       const pb = pdB;
       return [() => m.diff(mB, "days"), () => pa.since(pb).days];
@@ -99,7 +99,7 @@ const CASES = [
   {
     name: "format YYYY-MM-DD",
     run: () => {
-      const m = moment2(dateA);
+      const m = mmntjs(dateA);
       const pd = pdA;
       return [() => m.format("YYYY-MM-DD"), () => pd.toString()];
     },
@@ -107,7 +107,7 @@ const CASES = [
   {
     name: "startOf month",
     run: () => {
-      const m = moment2("2024-06-15");
+      const m = mmntjs("2024-06-15");
       const pd = new TD.PlainDate(2024, 6, 15);
       return [() => m.startOf("month"), () => pd.with({ day: 1 })];
     },
@@ -115,7 +115,7 @@ const CASES = [
   {
     name: "daysInMonth",
     run: () => {
-      const m = moment2(dateA);
+      const m = mmntjs(dateA);
       const pd = pdA;
       return [() => m.daysInMonth(), () => pd.daysInMonth];
     },
