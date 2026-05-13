@@ -101,13 +101,12 @@
     2. `parsingFlags with format string matches moment` — `charsLeftOver` 算出の差
 
   - **70%未満ファイル (継続課題):**
-    - `src/moment-lite.ts` (1128行, 59.5%)
     - `src/parse.ts` (2085行, 62.7%)
-    - `src/duration.ts` (774行, 67.4%)
-    - `src/parse-format.ts` (2111行, 70.3% stmt, 48.0% branch)
+    - `src/parse-format.ts` (2111行, 70.3% stmt, 48.0% branch) — branch低い
     - ✅ `core-base.ts`: 53.4% → **83.3%** (+29.9pt)
     - ✅ `core-lite.ts`: 55.6% → **80.0%** (+24.4pt)
-    - ✅ `parse-format.ts`: 39.9% → **70.3%** (stmt) (+30.4pt)
+    - ✅ `duration.ts`: 67.4% → **80.4%** (+13.0pt)
+    - ✅ `moment-lite.ts`: 59.5% → **73.1%** (+13.6pt)
 
 ## Phase 5: 差分ファジング多様化
 
