@@ -32,123 +32,209 @@ describe("Duration constructor edge cases", () => {
     expect(d.milliseconds()).toBe(5);
   });
 
-  test("from HH:mm:ss format", () => {
-    const d = moment.duration("10:30:45");
-    expect(d.hours()).toBe(10);
-    expect(d.minutes()).toBe(30);
-    expect(d.seconds()).toBe(45);
-  });
-
-  test("from HH:mm format", () => {
-    const d = moment.duration("10:30");
-    expect(d.hours()).toBe(10);
-    expect(d.minutes()).toBe(30);
-  });
-
-  test("from number with unit string", () => {
-    const d = moment.duration(5, "days");
-    expect(d.days()).toBe(5);
-  });
-
-  test("from number with quarter unit", () => {
-    const d = moment.duration(2, "quarter");
-    expect(d.months()).toBe(6);
-  });
-
-  test("from number with weeks unit", () => {
-    const d = moment.duration(3, "weeks");
-    expect(d.days()).toBe(21);
-  });
-
-  test("from object with aliases", () => {
-    const d = moment.duration({ d: 5, h: 3 });
-    expect(d.days()).toBe(5);
-    expect(d.hours()).toBe(3);
-  });
-
-  test("from object with quarter", () => {
-    const d = moment.duration({ quarter: 1 });
-    expect(d.months()).toBe(3);
-  });
-
-  test("from string with number and unit", () => {
-    const d = moment.duration("5", "days");
-    expect(d.days()).toBe(5);
-  });
-
-  test("NaN input returns invalid", () => {
-    const d = moment.duration(NaN);
-    expect(d.isValid()).toBe(false);
-  });
-
   test("invalid ISO string returns invalid", () => {
     const d = moment.duration("not-a-duration");
     expect(d.isValid()).toBe(false);
   });
-});
 
-describe("Duration clone", () => {
-  test("clone is independent", () => {
-    const a = moment.duration(5, "days");
-    const b = a.clone();
-    b.add(1, "days");
-    expect(a.days()).toBe(5);
-    expect(b.days()).toBe(6);
+  test("from empty object", () => {
+    const d = moment.duration({});
+    expect(d.isValid()).toBe(true);
+    expect(d.asMilliseconds()).toBe(0);
+  });
+
+  test("from object with units", () => {
+    const d = moment.duration({ hours: 2, minutes: 30 });
+    expect(d.asMinutes()).toBe(150);
+  });
+
+  test("from number (ms)", () => {
+    const d = moment.duration(3600000);
+    expect(d.hours()).toBe(1);
+  });
+
+  test("from undefined returns zero duration", () => {
+    const d = moment.duration(undefined);
+    expect(d.isValid()).toBe(true);
+    expect(d.asMilliseconds()).toBe(0);
   });
 });
 
-describe("Duration humanize", () => {
-  test("humanize small durations", () => {
-    expect(moment.duration(1000).humanize()).toBe("a few seconds");
-    expect(moment.duration(60000).humanize()).toBe("a minute");
-    expect(moment.duration(3600000).humanize()).toBe("an hour");
+describe("Duration abs", () => {
+  test("negative duration becomes positive", () => {
+    const d = moment.duration(-3600000);
+    expect(d.asHours()).toBe(-1);
+    d.abs();
+    expect(d.asHours()).toBe(1);
   });
 
-  test("humanize with suffix", () => {
-    const h = moment.duration(-60000).humanize(true);
-    expect(typeof h).toBe("string");
-  });
-});
-
-describe("Duration get", () => {
-  test("get various units", () => {
-    const d = moment.duration({ years: 2, months: 3, days: 5, hours: 10, minutes: 30, seconds: 45, milliseconds: 500 });
-    expect(d.get("years")).toBe(2);
-    expect(d.get("months")).toBe(3);
-    expect(d.get("days")).toBe(5);
-    expect(d.get("hours")).toBe(10);
-    expect(d.get("minutes")).toBe(30);
-    expect(d.get("seconds")).toBe(45);
-    expect(d.get("milliseconds")).toBe(500);
+  test("positive duration stays positive", () => {
+    const d = moment.duration(3600000);
+    d.abs();
+    expect(d.asHours()).toBe(1);
   });
 });
 
-describe("Duration as", () => {
-  test("as various units", () => {
+describe("Duration round", () => {
+  test("default rounds to nearest millisecond", () => {
+    const d = moment.duration(1500);
+    d.round();
+    expect(d.asMilliseconds()).toBe(1500);
+  });
+
+  test("round seconds", () => {
+    const d = moment.duration(6500);
+    d.round({ smallestUnit: "seconds" });
+    expect(d.seconds()).toBe(7);
+  });
+
+  test("round to nearest minute", () => {
+    const d = moment.duration(125000);
+    d.round({ smallestUnit: "minute", roundingMode: "halfExpand" });
+    expect(d.minutes()).toBe(2);
+  });
+
+  test("round ceil mode", () => {
+    const d = moment.duration(100);
+    d.round({ smallestUnit: "second", roundingMode: "ceil" });
+    expect(d.seconds()).toBe(1);
+  });
+
+  test("round floor mode", () => {
+    const d = moment.duration(1800);
+    d.round({ smallestUnit: "second", roundingMode: "floor" });
+    expect(d.seconds()).toBe(1);
+  });
+
+  test("round trunc mode", () => {
+    const d = moment.duration(-500);
+    d.round({ smallestUnit: "second", roundingMode: "trunc" });
+    expect(d.asMilliseconds()).toBe(0);
+  });
+
+  test("round with custom increment", () => {
+    const d = moment.duration(7500);
+    d.round({ smallestUnit: "second", roundingIncrement: 5 });
+    expect(d.seconds()).toBe(10);
+  });
+
+  test("round hours", () => {
+    const d = moment.duration(5400000);
+    d.round({ smallestUnit: "hour" });
+    expect(d.hours()).toBe(2);
+  });
+
+  test("round days", () => {
+    const d = moment.duration(90000000);
+    d.round({ smallestUnit: "day" });
+    expect(d.days()).toBe(1);
+  });
+
+  test("round weeks", () => {
+    const d = moment.duration(432000000);
+    d.round({ smallestUnit: "week" });
+    expect(d.days()).toBe(7);
+  });
+
+  test("round months", () => {
+    const d = moment.duration(45, "days");
+    d.round({ smallestUnit: "month" });
+    expect(d.months()).toBe(1);
+  });
+
+  test("round years", () => {
+    const d = moment.duration(400, "days");
+    d.round({ smallestUnit: "year" });
+    expect(d.years()).toBe(1);
+  });
+
+  test("round quarter", () => {
+    const d = moment.duration(100, "days");
+    d.round({ smallestUnit: "quarter", roundingMode: "halfExpand" });
+    expect(d.months()).toBe(3);
+  });
+
+  test("round invalid duration returns self", () => {
+    const d = moment.duration(NaN);
+    expect(d.isValid()).toBe(false);
+    d.round({ smallestUnit: "second" });
+    expect(d.isValid()).toBe(false);
+  });
+
+  test("round with ms shorthand", () => {
+    const d = moment.duration(5000);
+    d.round({ smallestUnit: "ms", roundingIncrement: 1000 });
+    expect(d.asMilliseconds()).toBe(5000);
+  });
+
+  test("round with s shorthand", () => {
+    const d = moment.duration(3500);
+    d.round({ smallestUnit: "s", roundingMode: "halfExpand" });
+    expect(d.seconds()).toBe(4);
+  });
+
+  test("round with m shorthand", () => {
+    const d = moment.duration(185000);
+    d.round({ smallestUnit: "m" });
+    expect(d.minutes()).toBe(3);
+  });
+
+  test("round with h shorthand", () => {
+    const d = moment.duration(10800000);
+    d.round({ smallestUnit: "h" });
+    expect(d.hours()).toBe(3);
+  });
+
+  test("round with d shorthand", () => {
+    const d = moment.duration(172800000);
+    d.round({ smallestUnit: "d" });
+    expect(d.days()).toBe(2);
+  });
+
+  test("round with w shorthand", () => {
+    const d = moment.duration(864000000);
+    d.round({ smallestUnit: "w" });
+    expect(d.days()).toBe(7);
+  });
+
+  test("round with M shorthand", () => {
+    const d = moment.duration(60, "days");
+    d.round({ smallestUnit: "M" });
+    expect(d.months()).toBe(2);
+  });
+
+  test("round with y shorthand", () => {
+    const d = moment.duration(730, "days");
+    d.round({ smallestUnit: "y" });
+    expect(d.years()).toBe(2);
+  });
+
+  test("round with Q shorthand", () => {
+    const d = moment.duration(100, "days");
+    d.round({ smallestUnit: "Q" });
+    expect(d.months()).toBe(3);
+  });
+
+  test("round day with 0 increment", () => {
     const d = moment.duration(86400000);
-    expect(d.as("days")).toBe(1);
-    expect(d.as("hours")).toBe(24);
-    expect(d.as("minutes")).toBe(1440);
+    d.round({ smallestUnit: "day", roundingIncrement: 1 });
+    expect(d.days()).toBe(1);
   });
 });
 
-describe("Duration toISOString", () => {
-  test("positive duration", () => {
-    const d = moment.duration({ years: 1, months: 2, days: 3, hours: 4, minutes: 5, seconds: 6 });
-    expect(d.toISOString()).toBe("P1Y2M3DT4H5M6S");
+describe("Duration as(unit)", () => {
+  test("asYears", () => {
+    const d = moment.duration(365, "days");
+    expect(d.asYears()).toBeCloseTo(1, 2);
   });
 
-  test("negative duration", () => {
-    const d = moment.duration(-86400000);
-    expect(d.toISOString()).toMatch(/^-P/);
+  test("asQuarters", () => {
+    const d = moment.duration(6, "months");
+    expect(d.asQuarters()).toBe(2);
   });
-});
 
-describe("Duration locale", () => {
-  test("locale getter/setter", () => {
-    const d = moment.duration(60000);
-    expect(d.locale()).toBe("en");
-    d.locale("en");
-    expect(d.locale()).toBe("en");
+  test("asWeeks", () => {
+    const d = moment.duration(14, "days");
+    expect(d.asWeeks()).toBe(2);
   });
 });

@@ -86,9 +86,9 @@ const unitAliasToKey: Record<string, string> = {
   milliseconds: "milliseconds",
   millisecond: "milliseconds",
   ms: "milliseconds",
-  quarter: "quarter",
-  quarters: "quarter",
-  Q: "quarter",
+  quarter: "quarters",
+  quarters: "quarters",
+  Q: "quarters",
   isoweek: "weeks",
   isoweeks: "weeks",
   isoWeek: "weeks",
@@ -693,7 +693,8 @@ export class Duration {
     const roundingMode = options?.roundingMode ?? "halfExpand";
     const increment = options?.roundingIncrement ?? 1;
 
-    const total = this.as(smallestUnit);
+    const unitKey = unitAliasToKey[smallestUnit] ?? (smallestUnit.endsWith("s") ? smallestUnit : `${smallestUnit}s`);
+    const total = this.as(unitKey);
     const divided = total / increment;
     let rounded: number;
     switch (roundingMode) {
@@ -707,7 +708,7 @@ export class Duration {
     this._days = 0;
     this._milliseconds = 0;
 
-    const unit = smallestUnit.replace(/s$/, "").replace(/^millisecond$/, "milliseconds");
+    const unit = unitKey.replace(/s$/, "");
     switch (unit) {
       case "millisecond":
       case "ms":
