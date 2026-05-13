@@ -11,9 +11,7 @@
   "ignore": [
     "test/moment/**",
     "test/helpers/**",
-    "test/qunit.js",
     "test/oracle.ts",
-    "test/debug_calendar.js",
     "test/locale/**",
     "test/bench-datefns.ts",
     "test/locale-helper.ts",
@@ -21,13 +19,9 @@
     "test/bench-*",
     "test/bench*.ts",
     "test/bench*.mjs",
-    "test/debug_*",
     "test/fuzz/**",
-    "test/sbst-*",
     "test/properties/metamorphic.test.ts",
-    "test/iso-parse-temporal-oracle.test.ts",
     "test/browser-bundle-compare.ts",
-    "test/bin.test.ts",
     "moment/**"
   ],
   "ignoreDependencies": ["date-fns", "dayjs", "luxon", "@rspack/cli", "@rspack/core"]

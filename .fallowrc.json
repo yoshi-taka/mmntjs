@@ -21,7 +21,20 @@
     "test/debug_*",
     "test/fuzz/**",
     "test/sbst-*",
-    "test/bin.test.ts"
+    "test/bin.test.ts",
+    "test/*-extra.test.ts",
+    "test/*-lite.test.ts",
+    "test/*-lite-strict.test.ts",
+    "test/format-basic.test.ts",
+    "test/plugins.test.ts",
+    "test/tree-shaking.test.ts",
+    "test/units.test.ts",
+    "test/temporal.test.ts",
+    "test/parse-format.test.ts",
+    "test/parse-main.test.ts",
+    "test/duration-between.test.ts",
+    "test/factory-input-format.test.ts",
+    "test/locale-mgmt.test.ts"
   ],
   "ignoreDependencies": ["acorn", "benchmark", "date-fns", "dayjs", "luxon", "moment-timezone"],
   "duplicates": {
