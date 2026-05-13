@@ -85,4 +85,48 @@ describe("factory-lite-impl", () => {
       expect(m.isValid()).toBe(false);
     });
   });
+
+  describe("core-lite static methods", () => {
+    test("moment.version", () => {
+      expect(moment.version).toBe("2.30.1");
+    });
+
+    test("moment.ISO_8601", () => {
+      expect(moment.ISO_8601).toBe("ISO_8601");
+    });
+
+    test("moment.unix", () => {
+      const m = moment.unix(1704067200);
+      expect(m.isValid()).toBe(true);
+    });
+
+    test("moment.invalid", () => {
+      const m = moment.invalid();
+      expect(m.isValid()).toBe(false);
+    });
+
+    test("moment.invalid with object", () => {
+      const m = moment.invalid({ foo: "bar" });
+      expect(m.isValid()).toBe(false);
+    });
+
+    test("moment.invalid with Date", () => {
+      const m = moment.invalid(new Date());
+      expect(m.isValid()).toBe(false);
+    });
+
+    test("moment.now getter", () => {
+      const n = moment.now;
+      expect(typeof n).toBe("function");
+      expect(n()).toBeGreaterThan(0);
+    });
+
+    test("moment.parseTwoDigitYear", () => {
+      const fn = moment.parseTwoDigitYear;
+      expect(typeof fn).toBe("function");
+      const result = fn("68");
+      expect(typeof result).toBe("number");
+      expect(result).toBeGreaterThan(1900);
+    });
+  });
 });
