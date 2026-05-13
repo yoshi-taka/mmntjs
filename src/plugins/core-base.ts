@@ -135,7 +135,7 @@ export function registerBaseCoreApi(
       for (const key of Object.keys(input)) {
         config[`_${key}`] = (input as Record<string, unknown>)[key];
       }
-      delete config._userInvalidated;
+      config._userInvalidated = true;
       config._i = input;
     } else {
       config._i = input;

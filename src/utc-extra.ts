@@ -72,7 +72,7 @@ function parseOffsetString(offset: string): number {
 export function utcOffsetMoment(m: UtcMoment, offset?: number | string, keepLocalTime?: boolean): number | Moment {
   if (offset === undefined) {
     (m as unknown as { _ensureFields: () => void })._ensureFields();
-    return m._offset === undefined ? 0 : m._offset;
+    return m._offset ?? 0;
   }
   let numOffset: number;
   if (typeof offset === "string") {

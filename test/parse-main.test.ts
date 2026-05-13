@@ -13,14 +13,14 @@ function check(input: string, fmt: string, exp: Record<string, number | undefine
     return;
   }
   expect(result).toBeDefined();
-  if (exp.year !== undefined) expect(result!.year).toBe(exp.year);
-  if (exp.month !== undefined) expect(result!.month).toBe(exp.month);
-  if (exp.day !== undefined) expect(result!.day).toBe(exp.day);
-  if (exp.hour !== undefined) expect(result!.hour).toBe(exp.hour);
-  if (exp.minute !== undefined) expect(result!.minute).toBe(exp.minute);
-  if (exp.second !== undefined) expect(result!.second).toBe(exp.second);
-  if (exp.millisecond !== undefined) expect(result!.millisecond).toBe(exp.millisecond);
-  if (exp.offset !== undefined) expect(result!.offset).toBe(exp.offset);
+  if (exp.year !== undefined) {expect(result!.year).toBe(exp.year);}
+  if (exp.month !== undefined) {expect(result!.month).toBe(exp.month);}
+  if (exp.day !== undefined) {expect(result!.day).toBe(exp.day);}
+  if (exp.hour !== undefined) {expect(result!.hour).toBe(exp.hour);}
+  if (exp.minute !== undefined) {expect(result!.minute).toBe(exp.minute);}
+  if (exp.second !== undefined) {expect(result!.second).toBe(exp.second);}
+  if (exp.millisecond !== undefined) {expect(result!.millisecond).toBe(exp.millisecond);}
+  if (exp.offset !== undefined) {expect(result!.offset).toBe(exp.offset);}
 }
 
 describe("parseMain parseString", () => {

@@ -23,7 +23,7 @@ export function isDate(input: unknown): input is Date {
 }
 
 export function isMoment(input: unknown): input is { _isAMomentObject: boolean } {
-  return input != null && (input as { _isAMomentObject: boolean })._isAMomentObject === true;
+  return (input as { _isAMomentObject: boolean })?._isAMomentObject === true;
 }
 
 export function isString(input: unknown): input is string {
