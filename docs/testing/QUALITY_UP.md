@@ -48,7 +48,8 @@
   - 閾値: 67% (67.8%到達、上昇に伴い更新)
   - 目標: 80%
 - 低カバレッジ箇所に mutation / プロパティテストを優先追加 ✅
-  - **最終ベースライン: 74.8%** (+40.7pt, 全1224 tests 0 fail)
+  - **最終ベースライン: 73.27%** (全1224 tests)、Phase 4.5 修正後
+  - **改善ファイル:** core-base 54.6%→83.3%, core-lite 25.0%→80.0%
   - **改善サマリ (全23テストファイル):**
 
 | テストファイル | テスト数 | 主なカバレッジ対象 |
@@ -100,11 +101,13 @@
     2. `parsingFlags with format string matches moment` — `charsLeftOver` 算出の差
 
   - **70%未満ファイル (継続課題):**
-    - `src/parse-format.ts` (48.0%), `src/plugins/core-base.ts` (53.4%), `src/plugins/core-lite.ts` (55.6%), `src/parse.ts` (68.6%)
-    - `parse-format.ts` (2111行, 39.9%)
-    - `moment-lite.ts` (1128行, 61.1%)
-    - `parse.ts` (2085行, 63.8%)
-    - `duration.ts` (774行, 69.5%)
+    - `src/moment-lite.ts` (1128行, 59.5%)
+    - `src/parse.ts` (2085行, 62.7%)
+    - `src/duration.ts` (774行, 67.4%)
+    - `src/parse-format.ts` (2111行, 70.3% stmt, 48.0% branch)
+    - ✅ `core-base.ts`: 53.4% → **83.3%** (+29.9pt)
+    - ✅ `core-lite.ts`: 55.6% → **80.0%** (+24.4pt)
+    - ✅ `parse-format.ts`: 39.9% → **70.3%** (stmt) (+30.4pt)
 
 ## Phase 5: 差分ファジング多様化
 
