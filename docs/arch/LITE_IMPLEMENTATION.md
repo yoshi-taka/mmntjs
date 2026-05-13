@@ -4,13 +4,13 @@
 
 ## 概要
 
-`@compat/moment2/lite` は size-first SKU。`Moment` 本体 (2220行, moment_fixed.ts) から
-必要なメソッドだけ抽出した `MomentLite` クラス (`moment_lite.ts`) を別途持ち、
+`mmntjs/lite` は size-first SKU。`Moment` 本体 (2220行, moment_fixed.ts) から
+必要なメソッドだけ抽出した `MomentLite` クラス (`moment-lite.ts`) を別途持ち、
 bundle graph から moment_fixed を完全に排除する。
 
 ## MomentLite 分離クラス
 
-**ファイル:** `src/moment_lite.ts`
+**ファイル:** `src/moment-lite.ts`
 
 - 自己完結型。moment_fixed.ts への参照なし
 - moment_fixed.ts の callback 変数 (~85), setter (~16) を一切持たない
@@ -42,8 +42,8 @@ bundle graph から moment_fixed を完全に排除する。
 
 ## 含めない API (plugin 必要)
 
-- `moment.duration()` → `@compat/moment2/plugin/duration`
-- `moment(str, format)` → `@compat/moment2/plugin/format-parse`
+- `moment.duration()` → `mmntjs/plugin/duration`
+- `moment(str, format)` → `mmntjs/plugin/format-parse`
 - `moment.utc()` → **lite 本体に内蔵** (旧 plugin)
 - `moment.parseZone`, `moment.min`, `moment.max`, `moment.normalizeUnits`, `moment.HTML5_FMT`
 - Instance: `fromNow`, `calendar`, `locale`, `localeData`, `creationData`, `parsingFlags`, `toArray`, `toObject`, `inspect`
@@ -56,7 +56,7 @@ src/
   entry/lite.ts                → エントリ (registerLiteCoreApi)
   core/factory-lite.ts         → factory-lite-impl.ts の re-export
   core/factory-lite-impl.ts    → MomentLite を生成する moment() 関数
-  moment_lite.ts               → MomentLite クラス
+  moment-lite.ts               → MomentLite クラス
   plugins/core-lite.ts         → lite の static API 登録
   display/format-basic.ts      → 基本トークンのみの format
   locale-lite.ts               → en locale のみの軽量 runtime

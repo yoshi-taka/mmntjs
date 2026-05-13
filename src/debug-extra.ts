@@ -1,6 +1,6 @@
 import { zeroFill } from "./utils";
 import type { Locale } from "./locale-runtime";
-import type { Moment } from "./moment_core";
+import type { Moment } from "./moment-class";
 
 type DebugMoment = Moment & {
   _i?: unknown;

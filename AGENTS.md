@@ -8,15 +8,13 @@
 
 ## ファイル変更の安全ルール
 
-1. **変更前バックアップ**: ファイルを編集する前に必ず `cp file.ts file.ts.YYYYMMDD.bak` を作れ（変更後のバックアップは無価値）
-2. **git初期化**: リポジトリが未コミットなら最初に `git add -A && git commit -m "init"` せよ
-3. **dry run**: 複数ファイルにわたるスクリプト（sed, node -e 等）を流す前に `--dry-run` 相当の確認（何が変わるか表示）を実施せよ。いきなり本実行するな
-4. **1タスク=1ファイル**: タスクエージェントに一度に複数ファイルの変更を任せるな。1ファイルずつ変更→検証を繰り返せ
-5. **変更後即構文チェック**: ファイルを変更したら直後に `bun build src/変更したファイル.ts --no-bundle` で構文エラーがないか確認せよ
-6. **chflags禁止**: ファイルをロックする `chflags uchg` は絶対に使うな。ロックされると `chflags nouchg` が必要になり、存在を忘れて長時間ハマる
-7. **シェルスクリプトの冪等性**: 同じスクリプトを2回実行しても壊れないように書け（元の状態を確認してから変更する）
-8. **テストは両方のTZで**: 日付処理の変更後は `TZ=UTC bun test` と `TZ=Asia/Tokyo bun test`（またはAmerica/New_York）の両方でテストを通せ
-9. **比較方法**: `bash scripts/compare.sh {bench|test|moment-tests}` — benchは性能比較、testはプロパティ比較、moment-testsはmoment.jsのテストをmoment2で実行（oracle.tsを一時的に差し替え）
+1. **git初期化**: リポジトリが未コミットなら最初に `git add -A && git commit -m "init"` せよ
+2. **dry run**: 複数ファイルにわたるスクリプト（sed, node -e 等）を流す前に `--dry-run` 相当の確認（何が変わるか表示）を実施せよ。いきなり本実行するな
+3. **変更後即構文チェック**: ファイルを変更したら直後に `bun build src/変更したファイル.ts --no-bundle` で構文エラーがないか確認せよ
+4. **chflags禁止**: ファイルをロックする `chflags uchg` は絶対に使うな。ロックされると `chflags nouchg` が必要になり、存在を忘れて長時間ハマる
+5. **シェルスクリプトの冪等性**: 同じスクリプトを2回実行しても壊れないように書け（元の状態を確認してから変更する）
+6. **テストは両方のTZで**: 日付処理の変更後は `TZ=UTC bun test` と `TZ=Asia/Tokyo bun test`（またはAmerica/New_York）の両方でテストを通せ
+7. **比較方法**: `bash scripts/compare.sh {bench|test|moment-tests}` — benchは性能比較、testはプロパティ比較、moment-testsはmoment.jsのテストをmoment2で実行（oracle.tsを一時的に差し替え）
 
 
 ---

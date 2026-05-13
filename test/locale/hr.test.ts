@@ -3,7 +3,7 @@ import { localeModule } from "../locale-helper";
 import moment from "../../moment";
 import { hrLocale } from "../../src/locale/hr";
 import { defineLocale } from "../../src/locale";
-import type { Moment } from "../../src/moment_core"
+import type { Moment } from "../../src/moment-class"
 
 defineLocale("hr", hrLocale);
 

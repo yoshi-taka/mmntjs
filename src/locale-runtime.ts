@@ -1,4 +1,4 @@
-import type { Moment } from "./moment_core";
+import type { Moment } from "./moment-class";
 import { isFunction, isString, isMoment } from "./utils";
 import type { LocaleSpec } from "./locale/en";
 import { enLocale } from "./locale/en";

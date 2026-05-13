@@ -1,7 +1,7 @@
 import { createDateSafe, isString } from "./utils";
 import { parseString } from "./parse";
 import type { ParseLocale } from "./parse-locale";
-import type { Moment } from "./moment_core";
+import type { Moment } from "./moment-class";
 
 type MomentFactory = (input?: unknown, format?: unknown, localeOrStrict?: unknown, fourthArg?: unknown) => Moment;
 

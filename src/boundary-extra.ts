@@ -1,6 +1,6 @@
 import { ISO_WEEK, QUARTER, WEEK, daysInMonth } from "./units";
 import type { Locale } from "./locale-runtime";
-import type { Moment } from "./moment_core";
+import type { Moment } from "./moment-class";
 
 type BoundaryAwareMoment = Moment & {
   _isUTC: boolean;

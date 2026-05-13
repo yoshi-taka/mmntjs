@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import type { Moment } from '../src/moment_core'
+import type { Moment } from '../src/moment-class'
 import fs from 'node:fs'
 import path from 'node:path'
 import fc from 'fast-check'
@@ -9,7 +9,7 @@ const ROOT = path.resolve(__dirname, '..')
 
 function clearCache(): void {
   for (const key of Object.keys(require.cache)) {
-    if (key.includes('/moment_core/')) {delete require.cache[key]}
+    if (key.includes('/moment-class/')) {delete require.cache[key]}
   }
 }
 
@@ -94,7 +94,7 @@ const distinctDatePair = () =>
 makeMutations([
   {
     name: 'valueOf: off by +1ms',
-    file: 'src/moment_core.ts',
+    file: 'src/moment-class.ts',
     patterns: [
       [/    return this\._t;\n/g, '    return this._t + 1;\n'],
     ],
@@ -105,7 +105,7 @@ makeMutations([
   },
   {
     name: 'add days: wrong direction',
-    file: 'src/moment_core.ts',
+    file: 'src/moment-class.ts',
     patterns: [
       [/d\.setUTCDate\(d\.getUTCDate\(\) \+ sign \* days\)/g, 'd.setUTCDate(d.getUTCDate() - sign * days)'],
       [/d\.setDate\(d\.getDate\(\) \+ sign \* days\)/g, 'd.setDate(d.getDate() - sign * days)'],
@@ -118,7 +118,7 @@ makeMutations([
   },
   {
     name: 'add days (simple path): wrong direction',
-    file: 'src/moment_core.ts',
+    file: 'src/moment-class.ts',
     patterns: [
       [/        this\.\$D \+= rounded;/g, '        this.$D -= rounded;'],
     ],
@@ -130,7 +130,7 @@ makeMutations([
   },
   {
     name: 'diff: sign flipped',
-    file: 'src/moment_core.ts',
+    file: 'src/moment-class.ts',
     patterns: [
       [/const diff = this\.valueOf\(\) - other\.valueOf\(\)/g, 'const diff = other.valueOf() - this.valueOf()'],
     ],
@@ -142,7 +142,7 @@ makeMutations([
   },
   {
     name: 'isBefore: comparison flipped',
-    file: 'src/moment_core.ts',
+    file: 'src/moment-class.ts',
     patterns: [
       [/return this\.valueOf\(\) < other\.valueOf\(\)/g, 'return this.valueOf() > other.valueOf()'],
     ],
@@ -154,7 +154,7 @@ makeMutations([
   },
   {
     name: 'isAfter: comparison flipped',
-    file: 'src/moment_core.ts',
+    file: 'src/moment-class.ts',
     patterns: [
       [/return this\.valueOf\(\) > other\.valueOf\(\)/g, 'return this.valueOf() < other.valueOf()'],
     ],
@@ -166,7 +166,7 @@ makeMutations([
   },
   {
     name: 'add months: wrong direction',
-    file: 'src/moment_core.ts',
+    file: 'src/moment-class.ts',
     patterns: [
       [/d\.setUTCMonth\(curMonth \+ sign \* months\)/g, 'd.setUTCMonth(curMonth - sign * months)'],
       [/d\.setMonth\(curMonth \+ sign \* months\)/g, 'd.setMonth(curMonth - sign * months)'],
@@ -179,7 +179,7 @@ makeMutations([
   },
   {
     name: 'startOf: hours set to noon',
-    file: 'src/moment_core.ts',
+    file: 'src/moment-class.ts',
     patterns: [
       [/this\.\$H = 0; this\.\$m = 0; this\.\$s = 0; this\.\$ms = 0;/g, 'this.$H = 12; this.$m = 0; this.$s = 0; this.$ms = 0;'],
     ],
@@ -190,7 +190,7 @@ makeMutations([
   },
   {
     name: 'isValid always returns true',
-    file: 'src/moment_core.ts',
+    file: 'src/moment-class.ts',
     patterns: [
       [/if \(!this\._isValid\) {return false;}\n/g, ''],
     ],
@@ -201,7 +201,7 @@ makeMutations([
   },
   {
     name: 'endOf: no -1ms',
-    file: 'src/moment_core.ts',
+    file: 'src/moment-class.ts',
     patterns: [
       [/d\.setMilliseconds\(-1\)/g, 'd.setMilliseconds(0)'],
     ],
@@ -212,7 +212,7 @@ makeMutations([
   },
   {
     name: 'subtract: wrong direction',
-    file: 'src/moment_core.ts',
+    file: 'src/moment-class.ts',
     patterns: [
       [/this\._applyDuration\(parsed\.ms, parsed\.days, parsed\.months, -1\);/g, 'this._applyDuration(parsed.ms, parsed.days, parsed.months, 1);'],
     ],
@@ -224,7 +224,7 @@ makeMutations([
   },
   {
     name: 'year setter: wrong year stored',
-    file: 'src/moment_core.ts',
+    file: 'src/moment-class.ts',
     patterns: [
       [/this\.\$y = this\._isUTC \? dt\.getUTCFullYear\(\) : dt\.getFullYear\(\);/g, 'this.$y = (this._isUTC ? dt.getUTCFullYear() : dt.getFullYear()) + 1;'],
     ],

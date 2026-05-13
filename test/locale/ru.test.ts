@@ -3,7 +3,7 @@ import { localeModule } from "../locale-helper";
 import moment from "../../moment";
 import { ruLocale } from "../../src/locale/ru";
 import { defineLocale } from "../../src/locale";
-import type { Moment } from "../../src/moment_core"
+import type { Moment } from "../../src/moment-class"
 
 defineLocale("ru", ruLocale);
 

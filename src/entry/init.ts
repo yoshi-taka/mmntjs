@@ -1,6 +1,6 @@
 import { moment, nowFn } from "../core/factory";
 import { formatMoment } from "../format";
-import { setCalendarMethodCallbacks, setDebugMethodCallbacks, setFormatMomentCallback, setLocaleRuntimeCallbacks, setLocaleMethodCallbacks } from "../moment_core";
+import { setCalendarMethodCallbacks, setDebugMethodCallbacks, setFormatMomentCallback, setLocaleRuntimeCallbacks, setLocaleMethodCallbacks } from "../moment-class";
 import { getCurrentLocale, getLocale, hasLocale } from "../locale-runtime";
 import { lang, localeData, localeMethod, localeWeek, localeWeekYear, localeWeekday, localeWeeksInWeekYear, localeWeeksInYear } from "../locale-extra";
 import { calendarCompareMoment, dayOfYearMoment, isoWeekdayMoment, isoWeekMoment, isoWeekYearMoment, isoWeeksInISOWeekYearMoment, isoWeeksInYearMoment } from "../calendar-extra";

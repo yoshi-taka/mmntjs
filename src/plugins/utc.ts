@@ -1,5 +1,5 @@
-import { Moment, setUtcMethodCallbacks } from "../moment_core";
-import type { MomentInput } from "../moment_core";
+import { Moment, setUtcMethodCallbacks } from "../moment-class";
+import type { MomentInput } from "../moment-class";
 import { isString } from "../utils";
 import {
   hasAlignedHourOffsetMoment,

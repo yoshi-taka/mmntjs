@@ -15,7 +15,7 @@
 
 ## 前提
 
-- ユーザー向けの第一提供物は引き続き `@compat/moment2`
+- ユーザー向けの第一提供物は引き続き `mmntjs`
 - 既存の `moment` API と `moment.fn` 拡張文化を壊さない
 - locale と timezone はコアから分離可能な領域として扱う
 - 内部では段階的に分割してよいが、公開 API は急に分割しない
@@ -166,8 +166,8 @@ src/
 - `index.ts` 集中は解消済み
 - 公開入口と内部 entry 実体は分離済み
 - registration は責務ごとに分離済み
-- `@compat/moment2/full` / `core` / `temporal` は公開済み
-- locale は `@compat/moment2/locale/*` で公開済み
+- `mmntjs/full` / `core` / `temporal` は公開済み
+- locale は `mmntjs/locale/*` で公開済み
 
 一方で、次はまだ途中または未着手。
 
@@ -194,23 +194,23 @@ src/
 
 現在はこの段階まで進めている。
 
-- `@compat/moment2` -> compatibility wrapper
-- `@compat/moment2/full` -> full runtime
-- `@compat/moment2/core` -> locale registry を含まない軽量 runtime
-- `@compat/moment2/temporal` -> Temporal helper
+- `mmntjs` -> compatibility wrapper
+- `mmntjs/full` -> full runtime
+- `mmntjs/core` -> locale registry を含まない軽量 runtime
+- `mmntjs/temporal` -> Temporal helper
 
 例:
 
 ```text
-@compat/moment2
-@compat/moment2/full
-@compat/moment2/core
-@compat/moment2/temporal
-@compat/moment2/locale/ja
-@compat/moment2-timezone
+mmntjs
+mmntjs/full
+mmntjs/core
+mmntjs/temporal
+mmntjs/locale/ja
+mmntjs-timezone
 ```
 
-`@compat/moment2/add` のような lodash 風 API は、内部依存整理が終わってから判断する。  
+`mmntjs/add` のような lodash 風 API は、内部依存整理が終わってから判断する。  
 先に公開すると、後で依存の持ち方を変えにくくなる。
 
 ## 依存ルール
@@ -222,7 +222,7 @@ core -> ops -> display
 core -> locale
 entry -> plugins
 plugins -> core/ops/display/locale
-timezone package -> @compat/moment2 public API
+timezone package -> mmntjs public API
 ```
 
 ### 避けるもの
@@ -291,7 +291,7 @@ locale は `moment` 互換上、副作用 import と相性が良い。
 
 ## timezone 方針
 
-timezone は別パッケージ `@compat/moment2-timezone` を維持する。
+timezone は別パッケージ `mmntjs-timezone` を維持する。
 
 理由:
 
@@ -334,11 +334,11 @@ timezone 側は `moment.fn` 拡張を使って統合するが、コアは timezo
 ### Phase 3: 公開入口の段階的分離
 
 - 完了
-- `@compat/moment2`
-- `@compat/moment2/full`
-- `@compat/moment2/core`
-- `@compat/moment2/temporal`
-- `@compat/moment2/locale/*`
+- `mmntjs`
+- `mmntjs/full`
+- `mmntjs/core`
+- `mmntjs/temporal`
+- `mmntjs/locale/*`
 
 ### Phase 4: 実装本体の再編
 

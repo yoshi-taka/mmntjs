@@ -2,12 +2,12 @@
 
 ## Package Name
 
-`@compat/moment2`
+`mmntjs`
 
 Part of the `@compat` family — drop-in replacements for legacy libraries that guide users toward modern alternatives.
 
 ```
-@compat/moment2   → moment    → Temporal API
+mmntjs   → moment    → Temporal API
 @compat/lodash2   → lodash    → es-toolkit / native
 @compat/express2  → express   → fastify / hono
 ```
@@ -85,15 +85,15 @@ Temporal API
 
 | Package                     | Content                         |
 |----------------------------|---------------------------------|
-| `@compat/moment2`          | Core. Drop-in for `moment`      |
-| `@compat/moment2-timezone` | Drop-in for `moment-timezone`   |
+| `mmntjs`          | Core. Drop-in for `moment`      |
+| `mmntjs-timezone`          | Drop-in for `moment-timezone`   |
 
 ---
 
 ### Locale
 
 - Default: `en` only  
-- Others: `@compat/moment2/locale/ja` pattern (same as moment)  
+- Others: `mmntjs/locale/ja` pattern (same as moment)  
 - Locale files are separate — only what you load is included  
 
 ## TypeScript Types
@@ -148,7 +148,7 @@ Official plugins from momentjs.com/docs:
 - `moment-range`
 - `moment-business-days`
 - `moment-duration-format`
-- `moment-timezone` (→ `@compat/moment2-timezone`)
+- `moment-timezone` (→ `mmntjs-timezone`)
 - `moment-recur`
 - `moment-twitter`
 - `moment-quarter`
@@ -205,14 +205,14 @@ moment2.report()
 ### CLI migration check
 
 ```sh
-npx @compat/moment2 migrate --check
+npx mmntjs migrate --check
 
 # Found 47 moment2 usages:
 #  32 can be auto-migrated to Temporal
 #  12 need manual review
 #   3 no Temporal equivalent
 
-npx @compat/moment2 migrate --apply
+npx mmntjs migrate --apply
 ```
 
 ---
@@ -253,7 +253,7 @@ npx @compat/moment2 migrate --apply
 ```json
 {
   "dependencies": {
-    "moment": "npm:@compat/moment2@^1.0.0"
+    "moment": "npm:mmntjs@^1.0.0"
   }
 }
 ```
@@ -267,12 +267,12 @@ npx @compat/moment2 migrate --apply
 
 Codemod default behavior:  
 Instead of rewriting imports, set the npm alias in `package.json`.  
-Imports stay as `from 'moment'` — `@compat/moment2` is loaded transparently.
+Imports stay as `from 'moment'` — `mmntjs` is loaded transparently.
 
 ```json
 {
   "dependencies": {
-    "moment": "npm:@compat/moment2@^1.0.0"
+    "moment": "npm:mmntjs@^1.0.0"
   }
 }
 ```
@@ -297,10 +297,10 @@ npm alias is the correct solution for all of these — no special handling requi
 
 ```sh
 # Mode 1 (default): npm alias — zero code changes, peerDeps safe
-npx @compat/moment2 --mode=alias ./
+npx mmntjs --mode=alias ./
 
-# Mode 2: explicit rewrite — changes all imports to '@compat/moment2'
-npx @compat/moment2 --mode=rewrite ./
+# Mode 2: explicit rewrite — changes all imports to 'mmntjs'
+npx mmntjs --mode=rewrite ./
 ```
 
 ---
@@ -468,7 +468,7 @@ This is out of scope for the codemod. Users must configure their registry manual
 Replaces all moment references with moment2. Handles aliases.
 
 ```sh
-npx @compat/moment2 ./
+npx mmntjs ./
 ```
 
 ---
@@ -491,10 +491,10 @@ import { utc } from 'moment'
 
 ```js
 // webpack.config.js
-resolve: { alias: { 'moment': '@compat/moment2' } }
+resolve: { alias: { 'moment': 'mmntjs' } }
 
 // vite.config.js
-resolve: { alias: { 'moment': '@compat/moment2' } }
+resolve: { alias: { 'moment': 'mmntjs' } }
 ```
 
 ---
@@ -503,7 +503,7 @@ resolve: { alias: { 'moment': '@compat/moment2' } }
 
 ```js
 // jest.config.js
-moduleNameMapper: { '^moment$': '@compat/moment2' }
+moduleNameMapper: { '^moment$': 'mmntjs' }
 ```
 
 ---
@@ -514,7 +514,7 @@ moduleNameMapper: { '^moment$': '@compat/moment2' }
 // tsconfig.json
 {
   "paths": {
-    "moment": ["./node_modules/@compat/moment2"]
+    "moment": ["./node_modules/mmntjs"]
   }
 }
 ```
@@ -538,7 +538,7 @@ moduleNameMapper: { '^moment$': '@compat/moment2' }
 ```json
 {
   "scripts": [
-    "node_modules/@compat/moment2/dist/moment2.min.js"
+    "node_modules/mmntjs/dist/moment2.min.js"
   ]
 }
 ```
@@ -551,7 +551,7 @@ files: ['node_modules/moment/moment.js']
 ↓
 
 ```js
-files: ['node_modules/@compat/moment2/dist/moment2.min.js']
+files: ['node_modules/mmntjs/dist/moment2.min.js']
 ```
 
 ---
@@ -569,7 +569,7 @@ files: ['node_modules/@compat/moment2/dist/moment2.min.js']
 
 ```json
 {
-  "@compat/moment2": "^1.0.0"
+  "mmntjs": "^1.0.0"
 }
 ```
 
@@ -577,7 +577,7 @@ files: ['node_modules/@compat/moment2/dist/moment2.min.js']
 // browser field
 {
   "browser": {
-    "moment": "./node_modules/@compat/moment2"
+    "moment": "./node_modules/mmntjs"
   }
 }
 ```
@@ -596,7 +596,7 @@ files: ['node_modules/@compat/moment2/dist/moment2.min.js']
 ```json
 {
   "scripts": {
-    "check": "node -e \"require('@compat/moment2').format()\""
+    "check": "node -e \"require('mmntjs').format()\""
   }
 }
 ```
@@ -625,7 +625,7 @@ Regex core:
 ```json
 {
   "dependencies": {
-    "@compat/moment2": "^1.0.0"
+    "mmntjs": "^1.0.0"
   }
 }
 ```
@@ -645,7 +645,7 @@ requirejs.config({
 
 ```js
 requirejs.config({
-  packages: [{ name: 'moment', location: 'node_modules/@compat/moment2', main: 'dist/index' }]
+  packages: [{ name: 'moment', location: 'node_modules/mmntjs', main: 'dist/index' }]
 })
 ```
 
@@ -655,7 +655,7 @@ define(['moment'], function(moment) { ... })
 define(['moment', 'moment/locale/de'], function(moment) { ... })
 
 // locale path:
-moment/locale/de → @compat/moment2/locale/de
+moment/locale/de → mmntjs/locale/de
 ```
 
 ---
@@ -669,7 +669,7 @@ System.import('moment.js')
 ↓
 
 ```js
-System.import('@compat/moment2')
+System.import('mmntjs')
 ```
 
 ```js
@@ -682,7 +682,7 @@ System.config({
 
 ```js
 System.config({
-  meta: { '@compat/moment2': { format: 'global' } }
+  meta: { 'mmntjs': { format: 'global' } }
 })
 ```
 
@@ -834,7 +834,7 @@ Target: same or better than moment on common operations
 
 - Starts at `1.0.0` (independent from moment’s `2.30.1`)  
 - Compatible with moment `2.30.1` (final version, maintenance ended Dec 2023)  
-- npm: `@compat/moment2`  
+- npm: `mmntjs`  
 
 ---
 
@@ -881,7 +881,7 @@ Progress metric: `X / ~10000 tests passing`
 ### CLI stats
 
 ```sh
-npx @compat/moment2 stats ./src
+npx mmntjs stats ./src
 ```
 
 ```
@@ -954,13 +954,13 @@ Outputs: “CI compatible” or lists issues.
 ### Migration report (copy-paste ready)
 
 ```sh
-npx @compat/moment2 report --output=markdown > MIGRATION.md
+npx mmntjs report --output=markdown > MIGRATION.md
 ```
 
 Output is a ready-to-paste document for PRs, Confluence, Jira, Slack:
 
 ```markdown
-# moment → @compat/moment2 Migration Report
+# moment → mmntjs Migration Report
 
 ## Current state
 
@@ -974,7 +974,7 @@ Output is a ready-to-paste document for PRs, Confluence, Jira, Slack:
 ## Install
 
 ```sh
-npx @compat/moment2 init
+npx mmntjs init
 ```
 
 ---
@@ -999,7 +999,7 @@ The core friction is fear: “will this break my app?”
 `audit` answers that question before the user commits to anything.
 
 ```sh
-npx @compat/moment2 audit ./src
+npx mmntjs audit ./src
 ```
 
 AI-powered static analysis of all moment usages in the codebase.  
@@ -1040,7 +1040,7 @@ Behavior:
 - Report per-package stats  
 
 ```sh
-npx @compat/moment2 audit ./
+npx mmntjs audit ./
 ```
 
 ```
@@ -1055,13 +1055,13 @@ npx @compat/moment2 audit ./
 ### `init` command — single command setup
 
 ```sh
-npx @compat/moment2 init
+npx mmntjs init
 ```
 
 Automatically:
 
 1. Create a git checkpoint commit before making any changes (if git repo detected)  
-2. Add npm alias to `package.json`: `"moment": "npm:@compat/moment2@^1.0.0"`  
+2. Add npm alias to `package.json`: `"moment": "npm:mmntjs@^1.0.0"`  
 3. Remove `@types/moment` from devDependencies  
 4. Run install (`bun install` / `npm install` — auto-detected)  
 5. Run unit tests to verify compatibility (see below)  
@@ -1072,11 +1072,11 @@ Automatically:
 ### Success output
 
 ```
-✓ @compat/moment2 loaded successfully
+✓ mmntjs loaded successfully
 ✓ 47 usages detected
 ✓ 0 breaking changes detected
 
-Run: npx @compat/moment2 stats for details
+Run: npx mmntjs stats for details
 ```
 
 ---
@@ -1084,7 +1084,7 @@ Run: npx @compat/moment2 stats for details
 ### Error output
 
 ```
-✗ @compat/moment2 detected incompatibility:
+✗ mmntjs detected incompatibility:
 File: src/utils.ts:42
 Issue: Object.freeze() on moment instance
 Fix: remove freeze() or see https://...
@@ -1130,7 +1130,7 @@ Priority: scripts field first, then devDependencies detection.
 
 ### README (3 lines)
 
-1. npx @compat/moment2 init  
+1. npx mmntjs init  
 2. It works.  
 3. Run stats to track migration progress.  
 
@@ -1152,7 +1152,7 @@ Document this clearly in README. Users without git cannot use npx anyway.
 ## Audit report for team approval
 
 ```sh
-npx @compat/moment2 audit --output=markdown > AUDIT.md
+npx mmntjs audit --output=markdown > AUDIT.md
 ```
 
 Outputs a markdown report suitable for pasting into PRs, Jira tickets, or Slack.  

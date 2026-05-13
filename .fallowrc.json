@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
-  "entry": ["src/index.ts", "src/bin/cli.ts", "src/temporal-entry.ts", "test/mutation.test.ts", "test/properties/basic.test.ts", "test/properties/boundary.test.ts", "test/iso-parse-temporal-oracle.test.ts", "test/regression/crashes.test.ts", "test/browser-bundle-compare.ts", "src/moment.ts", "src/moment_fixed.ts"],
+  "entry": ["src/index.ts", "src/bin/cli.ts", "src/temporal-entry.ts", "test/mutation.test.ts", "test/properties/basic.test.ts", "test/properties/boundary.test.ts", "test/iso-parse-temporal-oracle.test.ts", "test/regression/crashes.test.ts", "test/browser-bundle-compare.ts"],
   "ignorePatterns": [
     "moment/**",
     "lib/**",
@@ -9,35 +9,29 @@
     "test/qunit.js",
     "test/oracle.ts",
     "test/debug_calendar.js",
-    "src.after/**",
-    "src.orig/**",
-    "src.snapshot/**",
-    "src.before/**",
     "test/locale/**",
     "src/locale/**",
     "test/properties/**",
     "test/bench-datefns.ts",
     "test/locale-helper.ts",
     "scripts/**",
-    "_debug_ast.ts",
     "test/bench-*",
     "test/bench*.ts",
     "test/bench*.mjs",
     "test/debug_*",
     "test/fuzz/**",
     "test/sbst-*",
-    "test/bin.test.ts",
-    "mmntjs.js"
+    "test/bin.test.ts"
   ],
   "ignoreDependencies": ["acorn", "benchmark", "date-fns", "dayjs", "luxon", "moment-timezone"],
   "duplicates": {
-    "ignore": ["src/moment.ts", "src/moment_fixed.ts", "src/duration_fixed.ts"]
+    "ignore": ["src/duration.ts"]
   },
   "health": {
     "maxCyclomatic": 120,
     "maxCognitive": 200,
     "maxCrap": 15000,
-    "ignore": ["src/moment.ts", "src/moment_fixed.ts", "src/duration_fixed.ts", "src/parse-format.ts", "src/parse.ts"]
+    "ignore": ["src/duration.ts", "src/parse-format.ts", "src/parse.ts"]
   },
   "rules": {
     "unused-class-members": "off",

@@ -1,4 +1,4 @@
-import { Moment, checkOverflow } from "../moment_core";
+import { Moment, checkOverflow } from "../moment-class";
 import { getLocale, getCurrentLocale, localeHasMissingParent } from "../locale-runtime";
 import type { ParseLocale } from "../parse-locale";
 

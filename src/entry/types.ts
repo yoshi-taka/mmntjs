@@ -1,7 +1,7 @@
-import type { Duration } from "../duration_fixed";
+import type { Duration } from "../duration";
 import type { Locale } from "../locale";
-import type { Moment } from "../moment_core";
-import type { MomentLite } from "../moment_lite";
+import type { Moment } from "../moment-class";
+import type { MomentLite } from "../moment-lite";
 
 export interface CoreMomentStatic {
   (input?: unknown, format?: unknown, localeOrStrict?: unknown, fourthArg?: unknown): Moment;

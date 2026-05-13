@@ -1,4 +1,4 @@
-import { Duration } from "../duration_fixed";
+import { Duration } from "../duration";
 import {
   isMoment,
   isDate,
@@ -10,8 +10,8 @@ import { moment } from "../core/factory";
 import { initializeFullEntry } from "./init";
 import type { FullMomentStatic } from "./types";
 
-export type { MomentConfig } from "../moment_core";
-export type { DurationInput } from "../duration_fixed";
+export type { MomentConfig } from "../moment-class";
+export type { DurationInput } from "../duration";
 export type { LocaleSpec } from "../locale/en";
 
 initializeFullEntry();

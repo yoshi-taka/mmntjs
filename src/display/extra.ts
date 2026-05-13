@@ -1,11 +1,11 @@
 import { localeInvalidDate } from "../locale-runtime";
-import { Duration } from "../duration_fixed";
+import { Duration } from "../duration";
 import {
   Moment,
   momentFromAnything,
   getFormatMomentCallback,
   type MomentInput,
-} from "../moment_core";
+} from "../moment-class";
 import type { FormattableMoment } from "./types";
 import {
   isArray,

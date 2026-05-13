@@ -1,4 +1,4 @@
-import type { Moment } from "../moment_core";
+import type { Moment } from "../moment-class";
 import type { LocaleSpec } from "./en";
 
 function translate(number: number, withoutSuffix: boolean, key: string) {

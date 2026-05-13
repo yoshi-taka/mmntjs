@@ -1,4 +1,4 @@
-import type { Moment } from "../moment_core";
+import type { Moment } from "../moment-class";
 
 export interface LocaleSpec {
   months?: string[] | ((m: Moment, format?: string) => string[] | string) | { format: string[]; standalone: string[]; isFormat?: RegExp };

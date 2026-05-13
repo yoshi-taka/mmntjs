@@ -4,7 +4,7 @@
 
 ## 目的
 
-`@compat/moment2/lite` は互換最優先 SKU ではなく、size-first SKU とする。
+`mmntjs/lite` は互換最優先 SKU ではなく、size-first SKU とする。
 
 目標:
 
@@ -28,18 +28,18 @@
 ## import 形
 
 ```ts
-import moment from "@compat/moment2/lite";
+import moment from "mmntjs/lite";
 ```
 
 plugin:
 
 ```ts
-import "@compat/moment2/plugin/format-parse";
-import "@compat/moment2/plugin/duration";
-import "@compat/moment2/plugin/display-extra";
-import "@compat/moment2/plugin/utc";
-import "@compat/moment2/plugin/struct-input";
-import "@compat/moment2/locale/ja";
+import "mmntjs/plugin/format-parse";
+import "mmntjs/plugin/duration";
+import "mmntjs/plugin/display-extra";
+import "mmntjs/plugin/utc";
+import "mmntjs/plugin/struct-input";
+import "mmntjs/locale/ja";
 ```
 
 ## constructor 入力

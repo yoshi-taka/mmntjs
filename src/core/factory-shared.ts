@@ -1,5 +1,5 @@
-import type { MomentConfig } from "../moment_core";
-import { Moment } from "../moment_core";
+import type { MomentConfig } from "../moment-class";
+import { Moment } from "../moment-class";
 import {
   isMoment,
   isDate,

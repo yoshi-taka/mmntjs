@@ -1,5 +1,5 @@
 {
-  "name": "@compat/moment2-timezone",
+  "name": "mmntjs-timezone",
   "version": "1.0.0",
   "description": "Drop-in replacement for moment-timezone — powered by native Intl API",
   "type": "module",
@@ -20,7 +20,7 @@
     "test": "bun test"
   },
   "peerDependencies": {
-    "@compat/moment2": "^1.0.0"
+    "mmntjs": "^1.0.0"
   },
   "devDependencies": {
     "moment-timezone": "^0.5.46",

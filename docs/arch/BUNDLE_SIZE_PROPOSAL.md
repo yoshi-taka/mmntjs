@@ -77,7 +77,7 @@ browser bundler 前提で、実運用で意味のある bundle size 改善を行
 
 狙い:
 
-- `@compat/moment2/base` を今より軽くする
+- `mmntjs/base` を今より軽くする
 - ただし日常的な moment 利用感は大きく壊さない
 
 現実的な到達レンジ:
@@ -104,31 +104,31 @@ browser bundler 前提で、実運用で意味のある bundle size 改善を行
 
 ### 1. SKU を 3 層にする
 
-- `@compat/moment2` = `full`
-- `@compat/moment2/base`
-- `@compat/moment2/lite`
+- `mmntjs` = `full`
+- `mmntjs/base`
+- `mmntjs/lite`
 
 さらに:
 
-- `@compat/moment2/plugin/format-parse`
-- `@compat/moment2/plugin/duration`
-- `@compat/moment2/plugin/display-extra`
-- `@compat/moment2/plugin/struct-input`
-- `@compat/moment2/plugin/utc`
-- `@compat/moment2/locale/*`
+- `mmntjs/plugin/format-parse`
+- `mmntjs/plugin/duration`
+- `mmntjs/plugin/display-extra`
+- `mmntjs/plugin/struct-input`
+- `mmntjs/plugin/utc`
+- `mmntjs/locale/*`
 
 ### 2. `full` の役割
 
 完全互換入口。
 
 ```ts
-import moment from "@compat/moment2";
+import moment from "mmntjs";
 ```
 
 または:
 
 ```ts
-import moment from "@compat/moment2/full";
+import moment from "mmntjs/full";
 ```
 
 これは migration safe default のまま維持する。
@@ -206,33 +206,33 @@ import moment from "@compat/moment2/full";
 ### 1. 互換重視の既存 app
 
 ```ts
-import moment from "@compat/moment2";
+import moment from "mmntjs";
 ```
 
 ### 2. 互換をそこそこ残しつつ軽くしたい app
 
 ```ts
-import moment from "@compat/moment2/base";
+import moment from "mmntjs/base";
 ```
 
 ### 3. API から ISO を受けて整形するだけの app
 
 ```ts
-import moment from "@compat/moment2/lite";
+import moment from "mmntjs/lite";
 ```
 
 ### 4. `YYYY-MM-DD` など format 指定 parse が必要
 
 ```ts
-import moment from "@compat/moment2/lite";
-import "@compat/moment2/plugin/format-parse";
+import moment from "mmntjs/lite";
+import "mmntjs/plugin/format-parse";
 ```
 
 ### 5. locale を 1-2 個だけ追加
 
 ```ts
-import moment from "@compat/moment2/lite";
-import "@compat/moment2/locale/ja";
+import moment from "mmntjs/lite";
+import "mmntjs/locale/ja";
 ```
 
 ## 重要な設計変更
@@ -439,7 +439,7 @@ import "@compat/moment2/locale/ja";
 
 ### 実装の切り方
 
-1. `src/moment_lite.ts` を新設する
+1. `src/moment-lite.ts` を新設する
 2. `src/core/factory-lite.ts` を `MomentLite` 前提に切り替える
 3. `src/lite.ts` を `MomentLite` entry にする
 4. `base/full` には触らない

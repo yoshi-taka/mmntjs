@@ -15,7 +15,7 @@ import {
 import { registerLiteCoreApi } from "../plugins/core-lite";
 import type { LiteMomentStatic } from "./types";
 
-export type { MomentConfig } from "../moment_lite";
+export type { MomentConfig } from "../moment-lite";
 
 registerLiteCoreApi(moment as never, {
   getMomentNowFunction,

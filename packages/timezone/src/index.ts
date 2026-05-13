@@ -1,4 +1,4 @@
-import moment from '@compat/moment2'
+import moment from 'mmntjs'
 
 const offsetCache = new Map<string, Map<number, number>>()
 const MAX_DOMAIN_CACHE_SIZE = 1000

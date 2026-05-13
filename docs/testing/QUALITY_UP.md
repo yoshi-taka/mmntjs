@@ -25,7 +25,7 @@
 
 ## Phase 2: ミューテーション拡充
 
-- 対象ファイル拡大: `parse.ts`, `duration_fixed.ts`, `format.ts`, `parse-format.ts`, `locale.ts`
+- 対象ファイル拡大: `parse.ts`, `duration.ts`, `format.ts`, `parse-format.ts`, `locale.ts`
 - operator 追加: 境界値オフバイワン, nullチェック削除, 早期return削除, 条件反転
 - survival rate 自動集計
 

@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import moment from '@compat/moment2'
+import moment from 'mmntjs'
 import '../src/index'
 
 describe('moment2-timezone', () => {

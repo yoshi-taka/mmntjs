@@ -1,4 +1,4 @@
-import type { Moment } from "./moment_core";
+import type { Moment } from "./moment-class";
 import { isLeapYear } from "./units";
 
 type CalendarAwareMoment = Moment & {

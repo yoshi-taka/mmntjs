@@ -1,4 +1,4 @@
-import { MomentLite } from "../moment_lite";
+import { MomentLite } from "../moment-lite";
 import {
   isMoment,
   isDate,
