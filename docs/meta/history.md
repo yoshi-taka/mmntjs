@@ -92,23 +92,23 @@ bench-datefns2（warm median）:
 
 | 操作 | moment2 | date-fns | 比 |
 |------|---------|----------|-----|
-| parse ISO string | ~370ns | ~1.3μs | 3.6x |
-| format YYYY-MM-DD | ~41ns | ~1.3μs | 31x |
-| diff in days | ~22ns | ~830ns | 38x |
-| diff in months | **~28ns** | ~91ns | **3.2x** |
-| add 1 day | **~62ns** | ~82ns | **133%** |
-| sub 1 day | **~56ns** | ~77ns | **137%** |
-| add 1 month | **~89ns** | ~199ns | **2.2x** |
-| add 1 second | **~43ns** | ~90ns | **213%** |
-| startOf month | **~34ns** | ~87ns | **259%** |
-| startOf year | **~20ns** | ~80ns | **396%** |
-| endOf month | **~77ns** | ~102ns | **133%** |
-| set year | **~49ns** | ~100ns | **205%** |
-| moment()/new Date() | ~40ns | ~36ns | 90% |
-| isLeapYear | ~6ns | ~37ns | 6x |
-| isAfter | ~15ns | ~170ns | 11x |
-| get day of year | ~12ns | ~1.2μs | 101x |
-| format HH:mm:ss | ~57ns | ~928ns | 16x |
+| parse ISO string | ~522ns | ~1.21μs | 2.3x |
+| format YYYY-MM-DD | ~43ns | ~1.10μs | 25x |
+| diff in days | ~22ns | ~836ns | 38x |
+| diff in months | **~84ns** | ~100ns | **1.2x** |
+| add 1 day | **~74ns** | ~81ns | **110%** |
+| sub 1 day | **~63ns** | ~73ns | **115%** |
+| add 1 month | **~102ns** | ~194ns | **1.9x** |
+| add 1 second | **~46ns** | ~88ns | **189%** |
+| startOf month | **~12ns** | ~73ns | **6.2x** |
+| startOf year | ~80ns | ~80ns | ~100% |
+| endOf month | **~72ns** | ~86ns | **120%** |
+| set year | **~47ns** | ~114ns | **245%** |
+| moment()/new Date() | ~37ns | ~34ns | 94% |
+| isLeapYear | ~6ns | ~41ns | 7x |
+| isAfter | ~15ns | ~127ns | 8.5x |
+| get day of year | ~17ns | ~1.17μs | 69x |
+| format HH:mm:ss | ~35ns | ~925ns | 26x |
 
 moment2 vs 元の moment.js（bench.ts, warm after 100 warmup）:
 
@@ -124,7 +124,7 @@ moment2 vs 元の moment.js（bench.ts, warm after 100 warmup）:
 | valueOf / unix | ~17ns | ~7ns | 2.4x |
 | getters (7 fields) | ~274ns | ~27ns | 10x |
 
-**moment2 の全操作で date-fns / moment.js に勝利（最終確認済み）。**
+date-fns 比は 25 項目中 23 項目で勝ち。`moment() / new Date()` は負け、`startOf year` はほぼ同等。`diff in months` は `differenceInCalendarMonths` との比較なので、速度比較として読むべきで、完全な同値 API 比較ではない。
 
 最適化履歴:
 | commit | 内容 |

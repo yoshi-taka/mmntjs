@@ -8,13 +8,19 @@ interface BenchCase {
   run: () => [() => void, () => void];
 }
 
+interface BenchStats {
+  median: number;
+  min: number;
+  max: number;
+}
+
 function micros(ns: number): string {
   if (ns < 1000) {return `${ns.toFixed(0)  }ns`;}
   if (ns < 1_000_000) {return `${(ns / 1000).toFixed(2)  }μs`;}
   return `${(ns / 1_000_000).toFixed(3)  }ms`;
 }
 
-function run(name: string, fn: () => void, iterations: number): number {
+function run(fn: () => void, iterations: number): number {
   // warmup
   for (let i = 0; i < Math.min(iterations, 100); i++) {fn();}
   const start = process.hrtime.bigint();
@@ -28,6 +34,17 @@ function runCold(fn: () => void): number {
   fn();
   const end = process.hrtime.bigint();
   return Number(end - start);
+}
+
+function relativeSpread(stats: BenchStats): number {
+  if (stats.median === 0) {return 0;}
+  return (stats.max - stats.min) / stats.median;
+}
+
+function ratioLabel(base: BenchStats, candidate: BenchStats): string {
+  const ratio = (candidate.median / base.median * 100).toFixed(1);
+  const unstable = base.median < 100 || candidate.median < 100 || relativeSpread(base) > 0.25 || relativeSpread(candidate) > 0.25;
+  return unstable ? `~${ratio}` : ratio;
 }
 
 const COLD_RUNS = 20;
@@ -186,36 +203,36 @@ const CASES: BenchCase[] = [
 ];
 
 const ITER = 5000;
-const WARMUP = 100;
 
-console.log(`\ncold/warm benchmark (cold=1st call, warm=${ITER}it after ${WARMUP}warmup):\n`);
+console.log(`\ncold/warm benchmark (cold=median of ${COLD_RUNS}, warm=median of ${WARM_RUNS} runs; ~ = noisy short run):\n`);
 console.log("Operation                           cold mom     cold m2      %   warm mom     warm m2      %");
 for (const c of CASES) {
-  const cm: number[] = [], cd: number[] = [];
+  const coldMomentRuns: number[] = [];
+  const coldMoment2Runs: number[] = [];
   for (let r = 0; r < COLD_RUNS; r++) {
     const [fnMoment, fnMoment2] = c.run();
-    cm.push(runCold(fnMoment));
-    cd.push(runCold(fnMoment2));
+    coldMomentRuns.push(runCold(fnMoment));
+    coldMoment2Runs.push(runCold(fnMoment2));
   }
-  cm.sort((a, b) => a - b);
-  cd.sort((a, b) => a - b);
-  const coldMom = cm[Math.floor(COLD_RUNS / 2)];
-  const coldM2 = cd[Math.floor(COLD_RUNS / 2)];
-  const coldRatio = (coldM2 / coldMom * 100).toFixed(1);
+  coldMomentRuns.sort((a, b) => a - b);
+  coldMoment2Runs.sort((a, b) => a - b);
+  const coldMomentStats = { median: coldMomentRuns[Math.floor(COLD_RUNS / 2)], min: coldMomentRuns[0], max: coldMomentRuns[COLD_RUNS - 1] };
+  const coldMoment2Stats = { median: coldMoment2Runs[Math.floor(COLD_RUNS / 2)], min: coldMoment2Runs[0], max: coldMoment2Runs[COLD_RUNS - 1] };
 
-  const tm: number[] = [], td: number[] = [];
+  const warmMomentRuns: number[] = [];
+  const warmMoment2Runs: number[] = [];
   for (let r = 0; r < WARM_RUNS; r++) {
     const [fnMoment, fnMoment2] = c.run();
-    tm.push(run(`${c.name} (moment)`, fnMoment, ITER));
-    td.push(run(`${c.name} (mmntjs)`, fnMoment2, ITER));
+    warmMomentRuns.push(run(fnMoment, ITER));
+    warmMoment2Runs.push(run(fnMoment2, ITER));
   }
-  tm.sort((a, b) => a - b);
-  td.sort((a, b) => a - b);
-  const warmMom = tm[Math.floor(WARM_RUNS / 2)];
-  const warmM2 = td[Math.floor(WARM_RUNS / 2)];
-  const warmRatio = (warmM2 / warmMom * 100).toFixed(1);
+  warmMomentRuns.sort((a, b) => a - b);
+  warmMoment2Runs.sort((a, b) => a - b);
+  const warmMomentStats = { median: warmMomentRuns[Math.floor(WARM_RUNS / 2)], min: warmMomentRuns[0], max: warmMomentRuns[WARM_RUNS - 1] };
+  const warmMoment2Stats = { median: warmMoment2Runs[Math.floor(WARM_RUNS / 2)], min: warmMoment2Runs[0], max: warmMoment2Runs[WARM_RUNS - 1] };
 
-  console.log(`${c.name.padEnd(35)} ${micros(coldMom).padStart(10)} ${micros(coldM2).padStart(10)} ${coldRatio.padStart(6)}%  ${micros(warmMom).padStart(10)} ${micros(warmM2).padStart(10)} ${warmRatio.padStart(6)}%`);
+  const coldRatio = ratioLabel(coldMomentStats, coldMoment2Stats);
+  const warmRatio = ratioLabel(warmMomentStats, warmMoment2Stats);
+
+  console.log(`${c.name.padEnd(35)} ${micros(coldMomentStats.median).padStart(10)} ${micros(coldMoment2Stats.median).padStart(10)} ${coldRatio.padStart(6)}%  ${micros(warmMomentStats.median).padStart(10)} ${micros(warmMoment2Stats.median).padStart(10)} ${warmRatio.padStart(6)}%`);
 }
-
-

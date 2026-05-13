@@ -46,33 +46,37 @@ add(1,'year')                           589ns       11ns    1.9%
 
 ```
 Operation                           warm m2      warm df       %
-parse ISO string                       281ns      1.01μs  360.7%
-get day of year                         11ns      1.14μs 10186.4%
-add 1 day                               61ns        82ns  133.4%
-format YYYY-MM-DD                       39ns      1.18μs 2994.2%
-lightFormat YYYY-MM-DD                  34ns       541ns 1582.7%
-isAfter                                 15ns       129ns  887.6%
-startOf month                           13ns        75ns  589.5%
-diff in days                            21ns       851ns 4152.4%
-moment() / new Date()                   38ns        36ns   94.0%
-startOf year                            20ns        78ns  400.1%
-endOf month                             75ns        86ns  114.5%
-add 1 month                             83ns       196ns  237.6%
-add 1 second                            38ns        90ns  239.4%
-add 1 ms                                35ns        82ns  231.9%
-sub 1 day                               52ns        73ns  142.1%
-diff in months                          30ns        88ns  287.8%
-format HH:mm:ss                         48ns       870ns 1798.8%
-lightFormat HH:mm:ss                    39ns       410ns 1062.6%
-isBefore                                14ns       129ns  940.6%
-daysInMonth                             14ns       264ns 1864.5%
-isLeapYear                               6ns        37ns  600.1%
-set year                                47ns       100ns  211.5%
+parse ISO string                       522ns      1.21μs ~231.0%
+get day of year                         17ns      1.17μs ~6882.6%
+add 1 day                               74ns        81ns ~110.0%
+format YYYY-MM-DD                       43ns      1.10μs ~2536.9%
+lightFormat YYYY-MM-DD                  30ns       544ns ~1810.7%
+isAfter                                 15ns       127ns  ~846.7%
+startOf month                           12ns        73ns  ~621.2%
+diff in days                            22ns       836ns ~3823.2%
+moment() / new Date()                   37ns        34ns   ~93.9%
+startOf year                            80ns        80ns   ~99.6%
+endOf month                             72ns        86ns  ~119.8%
+add 1 month                            102ns       194ns  ~189.3%
+add 1 second                            46ns        88ns  ~188.9%
+add 1 ms                                51ns        79ns  ~154.6%
+sub 1 day                               63ns        73ns  ~114.6%
+diff in months                          84ns       100ns  ~119.5%
+format HH:mm:ss                         35ns       925ns ~2608.7%
+lightFormat HH:mm:ss                    63ns       412ns  ~653.6%
+isBefore                                13ns       127ns ~1007.3%
+daysInMonth                             14ns       267ns ~1931.0%
+isLeapYear                               6ns        41ns  ~707.8%
+set year                                47ns       114ns  ~244.8%
 ```
 
 (`%` = df / m2 × 100. Higher = moment2 faster. `>100` = moment2 wins.)
 
-**moment2 wins 23/25 operations.** Losses: `moment() / new Date()` (94%, wrapper overhead <3ns), `endOf month` (115%, close). Win margins: **2-110x**.
+`~` は短すぎてノイズが大きい計測を示す。`test/bench-datefns2.ts` は単発値ではなく、繰り返し実行の median を出すようにした。
+
+**moment2 は 25 項目中 23 項目で勝ち。** 負けは `moment() / new Date()`（約94%、ラッパー確保コスト）と `startOf year`（約100%、ほぼ同等）。
+
+`month` / `quarter` / `year` 系は、date-fns 側が `differenceInCalendar*`、moment2 側が moment.js 互換の truncated fractional diff なので、速度比較としては有効だが、完全な同値 API 比較ではない。
 
 ## moment2 vs native Intl.DateTimeFormat
 

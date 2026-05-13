@@ -918,6 +918,22 @@ export class MomentLite {
         const wholeMonthDiff = (bYear - aYear) * 12 + (bMonth - aMonth);
 
         const anchorVal = anchorMs(aYear, aMonth, aDayOf, a.$H, a.$m, a.$s, a.$ms, a._isUTC, wholeMonthDiff);
+        if (!float) {
+          let wholeMonths = -wholeMonthDiff;
+          if (swap) {wholeMonths = -wholeMonths;}
+          const delta = swap ? anchorVal - b.valueOf() : b.valueOf() - anchorVal;
+          if (wholeMonths > 0) {
+            if (delta > 0) {wholeMonths -= 1;}
+          } else if (wholeMonths < 0) {
+            if (delta < 0) {wholeMonths += 1;}
+          }
+          if (code === MONTH) {
+            return Object.is(wholeMonths, -0) ? 0 : wholeMonths;
+          }
+          const scaled = code === YEAR ? Math.trunc(wholeMonths / 12) : Math.trunc(wholeMonths / 3);
+          return Object.is(scaled, -0) ? 0 : scaled;
+        }
+
         const bVal = b.valueOf();
         const sub = bVal - anchorVal;
 
@@ -932,10 +948,6 @@ export class MomentLite {
         if (swap) {result = -result;}
         if (code === YEAR) {result /= 12;}
         else if (code === QUARTER) {result /= 3;}
-        if (!float) {
-          const whole = Math.trunc(result);
-          return Object.is(whole, -0) ? 0 : whole;
-        }
         return result;
       }
       default:

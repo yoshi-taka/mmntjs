@@ -137,16 +137,18 @@ Also outperforms upstream moment.js in 28/30. Several hot-path operations outper
 
 | Operation | mmntjs | date-fns | vs moment.js |
 |-----------|--------:|---------:|-------------:|
-| format YYYY-MM-DD | **35 ns** | 1.18 us (34x) | 413 ns (12x) |
-| parse ISO string | **281 ns** | 1.01 us (3.6x) | 4.10 us (15x) |
-| diff in days | **18 ns** | 851 ns (47x) | 413 ns (23x) |
-| get day of year | **11 ns** | 1.14 us (104x) | — |
-| moment() / new Date() | **52 ns** | 36 ns (0.9x) | 280 ns (5.4x) |
-| startOf month | **13 ns** | 75 ns (5.8x) | — |
+| format YYYY-MM-DD | **43 ns** | 1.10 us (25.4x) | 413 ns (9.6x) |
+| parse ISO string | **522 ns** | 1.21 us (2.3x) | 4.10 us (7.9x) |
+| diff in days | **22 ns** | 836 ns (38.2x) | 413 ns (18.8x) |
+| get day of year | **17 ns** | 1.17 us (68.8x) | — |
+| moment() / new Date() | **37 ns** | 34 ns (0.9x) | 280 ns (7.6x) |
+| startOf month | **12 ns** | 73 ns (6.1x) | — |
 
 The main remaining regression is raw `moment()` construction overhead from compatibility wrapping. (wrapper overhead for moment.js API compatibility, negligible in real apps that reuse Moment objects).
 
-Representative microbenchmarks on Node.js 26 (Apple M-series). ns-scale results use warmed monomorphic paths after 1000-iteration warmup — see [BENCHMARKS.md](./docs/perf/BENCHMARKS.md) for full methodology and caveats.
+Representative Bun microbenchmarks on Apple Silicon. ns-scale results use median-of-repeated warmed runs after warmup — see [BENCHMARKS.md](./docs/perf/BENCHMARKS.md) for methodology, noise markers, and caveats.
+
+For `month`/`quarter`/`year` comparisons, note that date-fns uses calendar-difference helpers while mmntjs matches moment.js's truncated fractional diff semantics. Those rows are still useful as implementation-cost comparisons, but they are not result-equivalent APIs.
 
 Techniques: decomposed field cache, lazy init, Shape stability, charCodeAt parsing, branch reduction, pre-computed tables. See [Performance Analysis](./docs/perf/ANALYSIS.md), [Techniques](./docs/perf/TECHNIQUES.md), [Benchmarks](./docs/perf/BENCHMARKS.md).
 

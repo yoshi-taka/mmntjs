@@ -14,6 +14,12 @@ function micros(ns: number): string {
   return `${(ns / 1_000_000).toFixed(3)  }ms`;
 }
 
+interface BenchStats {
+  median: number;
+  min: number;
+  max: number;
+}
+
 function run(fn: () => void, iter: number, warmup = 500): number {
   for (let i = 0; i < warmup; i++) { fn(); }
   const start = process.hrtime.bigint();
@@ -27,6 +33,17 @@ function runCold(fn: () => void): number {
   fn();
   const end = process.hrtime.bigint();
   return Number(end - start);
+}
+
+function relativeSpread(stats: BenchStats): number {
+  if (stats.median === 0) {return 0;}
+  return (stats.max - stats.min) / stats.median;
+}
+
+function ratioLabel(base: BenchStats, candidate: BenchStats): string {
+  const ratio = (candidate.median / base.median * 100).toFixed(1);
+  const unstable = base.median < 100 || candidate.median < 100 || relativeSpread(base) > 0.25 || relativeSpread(candidate) > 0.25;
+  return unstable ? `~${ratio}` : ratio;
 }
 
 const COLD_RUNS = 20;
@@ -252,6 +269,7 @@ const ITER = 5000;
 const WARMUP = 1000;
 
 console.log("Operation                           cold m2      cold df      %    warm m2      warm df      %");
+console.log("(median of repeated runs; ~ = noisy short run)");
 for (const c of CASES) {
   const cm: number[] = [], cd: number[] = [];
   for (let r = 0; r < COLD_RUNS; r++) {
@@ -261,9 +279,8 @@ for (const c of CASES) {
   }
   cm.sort((a, b) => a - b);
   cd.sort((a, b) => a - b);
-  const coldM2 = cm[Math.floor(COLD_RUNS / 2)];
-  const coldDF = cd[Math.floor(COLD_RUNS / 2)];
-  const coldRatio = (coldDF / coldM2 * 100).toFixed(1);
+  const coldM2Stats = { median: cm[Math.floor(COLD_RUNS / 2)], min: cm[0], max: cm[COLD_RUNS - 1] };
+  const coldDFStats = { median: cd[Math.floor(COLD_RUNS / 2)], min: cd[0], max: cd[COLD_RUNS - 1] };
 
   const tm: number[] = [], td: number[] = [];
   for (let r = 0; r < WARM_RUNS; r++) {
@@ -273,9 +290,10 @@ for (const c of CASES) {
   }
   tm.sort((a, b) => a - b);
   td.sort((a, b) => a - b);
-  const warmM2 = tm[Math.floor(WARM_RUNS / 2)];
-  const warmDF = td[Math.floor(WARM_RUNS / 2)];
-  const warmRatio = (warmDF / warmM2 * 100).toFixed(1);
+  const warmM2Stats = { median: tm[Math.floor(WARM_RUNS / 2)], min: tm[0], max: tm[WARM_RUNS - 1] };
+  const warmDFStats = { median: td[Math.floor(WARM_RUNS / 2)], min: td[0], max: td[WARM_RUNS - 1] };
+  const coldRatio = ratioLabel(coldM2Stats, coldDFStats);
+  const warmRatio = ratioLabel(warmM2Stats, warmDFStats);
 
-  console.log(`${c.name.padEnd(35)} ${micros(coldM2).padStart(10)} ${micros(coldDF).padStart(10)} ${coldRatio.padStart(6)}%  ${micros(warmM2).padStart(10)} ${micros(warmDF).padStart(10)} ${warmRatio.padStart(6)}%`);
+  console.log(`${c.name.padEnd(35)} ${micros(coldM2Stats.median).padStart(10)} ${micros(coldDFStats.median).padStart(10)} ${coldRatio.padStart(6)}%  ${micros(warmM2Stats.median).padStart(10)} ${micros(warmDFStats.median).padStart(10)} ${warmRatio.padStart(6)}%`);
 }
