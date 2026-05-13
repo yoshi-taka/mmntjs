@@ -29,8 +29,8 @@ export function getRelTimeThreshold(threshold: string): number | null | undefine
   return relTimeThreshold[threshold];
 }
 
-export function setRelTimeThreshold(threshold: string, limit?: number): number | boolean | undefined {
-  if (relTimeThreshold[threshold] === undefined) {
+export function setRelTimeThreshold(threshold: string, limit?: number): number | boolean | null | undefined {
+  if (!(threshold in relTimeThreshold)) {
     return false;
   }
   if (limit === undefined) {

@@ -3,7 +3,6 @@ import {
   isMoment,
   isDate,
   isString,
-  isArray,
   isNumber,
   createDateSafe,
   createUTCDate,
@@ -58,7 +57,11 @@ function createMomentFromParsed(parsed: ParsedDataLike, str?: string, format?: s
     const week1Start = new Date(Date.UTC(parsed.isoWeekYear, 0, 4 - (dayOfJan4 - 1)));
     const weekday = parsed._weekdayNum ?? 1;
     const d = new Date(week1Start.getTime() + ((parsed.isoWeek - 1) * 7 + (weekday - 1)) * 86400000);
-    return new MomentLite({ _d: d, _i: str, _f: format, _l: locale, _strict: strict });
+    return new MomentLite({
+      _d: d, _i: str, _f: format, _l: locale, _strict: strict,
+      _unusedTokens: parsed._unusedTokens, _unusedInput: parsed._unusedInput, _charsLeftOver: parsed._charsLeftOver,
+      _empty: parsed._empty, _invalidMonth: parsed._invalidMonth, _parsedDateParts: parsed._parsedDateParts, _meridiem: parsed._meridiem,
+    });
   }
 
   let y = parsed.year;
@@ -82,7 +85,12 @@ function createMomentFromParsed(parsed: ParsedDataLike, str?: string, format?: s
   const date = parsed.offset !== undefined
     ? createUTCDate(y, mo, d, h, min, sec, ms)
     : createDateSafe(y, mo, d, h, min, sec, ms, false);
-  return new MomentLite({ _d: date, _i: str, _f: format, _l: locale, _strict: strict, _offset: parsed.offset, _isUTC: parsed.offset !== undefined });
+  return new MomentLite({
+    _d: date, _i: str, _f: format, _l: locale, _strict: strict,
+    _offset: parsed.offset, _isUTC: parsed.offset !== undefined,
+    _unusedTokens: parsed._unusedTokens, _unusedInput: parsed._unusedInput, _charsLeftOver: parsed._charsLeftOver,
+    _empty: parsed._empty, _invalidMonth: parsed._invalidMonth, _parsedDateParts: parsed._parsedDateParts, _meridiem: parsed._meridiem,
+  });
 }
 
 function createFromString(str: string, format?: unknown, localeOrStrict?: unknown, fourthArg?: unknown): MomentLite {
@@ -129,7 +137,7 @@ function createFromString(str: string, format?: unknown, localeOrStrict?: unknow
 export function moment(input?: unknown, format?: unknown, localeOrStrict?: unknown, fourthArg?: unknown): MomentLite {
   if (input === null) {return new MomentLite({ _dClone: false, _d: new Date(NaN), _i: input, _isValid: false, _nullInput: true, _overflow: -1 });}
   if (input === undefined) {
-    if (format !== undefined && typeof format !== "boolean" && !(isArray(format) && format.length === 0)) {
+    if (format !== undefined && typeof format !== "boolean") {
       return new MomentLite({ _dClone: false, _d: new Date(NaN), _i: input, _f: format as string | string[], _isValid: false, _nullInput: true });
     }
     const m = Object.create(MomentLite.prototype) as MomentLite;

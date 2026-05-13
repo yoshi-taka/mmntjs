@@ -1,17 +1,20 @@
 import { describe, test, expect } from "bun:test";
 import moment from "../src/index.ts";
+import originalMoment from "../moment/moment.js";
 
 describe("calendar-extra week methods", () => {
   describe("isoWeek", () => {
     test("isoWeek getter", () => {
-      const m = moment("2024-01-15");
-      expect(typeof m.isoWeek()).toBe("number");
+      expect(moment("2024-01-15").isoWeek()).toBe(originalMoment("2024-01-15").isoWeek());
     });
 
     test("isoWeek setter", () => {
       const m = moment("2024-06-15");
+      const o = originalMoment("2024-06-15");
       m.isoWeek(20);
-      expect(m.isoWeek()).toBe(20);
+      o.isoWeek(20);
+      expect(m.isoWeek()).toBe(o.isoWeek());
+      expect(m.format("YYYY-MM-DD")).toBe(o.format("YYYY-MM-DD"));
     });
   });
 
@@ -23,21 +26,26 @@ describe("calendar-extra week methods", () => {
 
     test("isoWeekday setter", () => {
       const m = moment("2024-01-15");
+      const o = originalMoment("2024-01-15");
       m.isoWeekday(1);
-      expect(m.isoWeekday()).toBe(1);
+      o.isoWeekday(1);
+      expect(m.isoWeekday()).toBe(o.isoWeekday());
+      expect(m.format("YYYY-MM-DD")).toBe(o.format("YYYY-MM-DD"));
     });
   });
 
   describe("isoWeekYear", () => {
     test("isoWeekYear getter", () => {
-      const m = moment("2024-01-01");
-      expect(typeof m.isoWeekYear()).toBe("number");
+      expect(moment("2024-01-01").isoWeekYear()).toBe(originalMoment("2024-01-01").isoWeekYear());
     });
 
     test("isoWeekYear setter", () => {
       const m = moment("2024-06-15");
+      const o = originalMoment("2024-06-15");
       m.isoWeekYear(2025);
-      expect(typeof m.isoWeekYear()).toBe("number");
+      o.isoWeekYear(2025);
+      expect(m.isoWeekYear()).toBe(o.isoWeekYear());
+      expect(m.format("YYYY-MM-DD")).toBe(o.format("YYYY-MM-DD"));
     });
   });
 

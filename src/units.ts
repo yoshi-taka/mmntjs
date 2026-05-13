@@ -68,10 +68,8 @@ const _codeAliases: Record<string, number> = {};
 const _codeNmap: Record<string, number> = {};
 for (const key of Object.keys(_aliases)) {
   const code = _unitCodes[_aliases[key]];
-  if (code !== undefined) {
-    _codeAliases[key] = code;
-    _codeNmap[key.toLowerCase()] = code;
-  }
+  _codeAliases[key] = code;
+  _codeNmap[key.toLowerCase()] = code;
 }
 
 export function normalizeUnitCode(unit: string): number {

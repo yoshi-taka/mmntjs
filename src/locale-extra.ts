@@ -79,6 +79,7 @@ export function localeWeekday(m: LocaleAwareMoment, d?: number): number | Moment
     const diff = d - weekday;
     const dt = m._getD();
     if (m._isUTC) { dt.setUTCDate(dt.getUTCDate() + diff); } else { dt.setDate(dt.getDate() + diff); }
+    m._d = dt;
     m._t = dt.getTime();
     m._refreshFields();
     return m;
@@ -94,6 +95,7 @@ export function localeWeek(m: LocaleAwareMoment, w?: number): number | Moment {
     const diff = w - current;
     const d = m._getD();
     if (m._isUTC) { d.setUTCDate(d.getUTCDate() + diff * 7); } else { d.setDate(d.getDate() + diff * 7); }
+    m._d = d;
     m._t = d.getTime();
     m._refreshFields();
     return m;
@@ -109,14 +111,15 @@ export function localeWeekYear(m: LocaleAwareMoment, y?: number): number | Momen
     const currentDay = m.weekday();
     const maxWeek = weeksInYear(y, dow, doy, m._isUTC);
     if (currentWeek > maxWeek) {currentWeek = maxWeek;}
-    const jan1 = new Date(Date.UTC(y, 0, 1));
+    const jan1 = m._isUTC ? new Date(Date.UTC(y, 0, 1)) : new Date(y, 0, 1);
     const fwd = 7 + dow - doy;
-    const fwdDate = new Date(Date.UTC(y, 0, fwd));
-    const fwdDay = fwdDate.getUTCDay();
+    const fwdDate = m._isUTC ? new Date(Date.UTC(y, 0, fwd)) : new Date(y, 0, fwd);
+    const fwdDay = m._isUTC ? fwdDate.getUTCDay() : fwdDate.getDay();
     const fwdlw = (7 + fwdDay - dow) % 7;
     const offset = -fwdlw + fwd - 1;
     const week1Start = new Date(jan1.getTime() + offset * 86400000);
-    m._t = new Date(week1Start.getTime() + ((currentWeek - 1) * 7 + currentDay) * 86400000).getTime();
+    m._d = new Date(week1Start.getTime() + ((currentWeek - 1) * 7 + currentDay) * 86400000);
+    m._t = m._d.getTime();
     m._refreshFields();
     return m;
   }
@@ -164,12 +167,13 @@ export function localeMethod(
   locale: string | string[] | false | undefined,
   getCurrentLocale: () => string,
 ): string | Moment {
-  if (locale === undefined || locale === false) {
-    if (locale === false) {
-      m._l = undefined;
-      m._locale = undefined;
-    }
+  if (locale === undefined) {
     return m._l ?? getCurrentLocale();
+  }
+  if (locale === false) {
+    m._l = undefined;
+    m._locale = undefined;
+    return m;
   }
   if (Array.isArray(locale)) {
     for (const l of locale) {

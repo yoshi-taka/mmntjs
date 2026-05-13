@@ -446,10 +446,17 @@ export class Moment {
     if (c._i !== undefined) {this._i = c._i;}
     if (c._f !== undefined) {this._f = c._f;}
     if (c._strict !== undefined) {this._strict = c._strict;}
+    const hasExtraCold = Object.keys(c).some((key) =>
+      key.startsWith("_") &&
+      ![
+        "_d", "_dClone", "_isValid", "_isUTC", "_offset", "_t",
+        "_i", "_f", "_l", "_strict",
+      ].includes(key),
+    );
     if (c._overflow !== undefined || c._empty !== undefined || c._nullInput !== undefined ||
         c._invalidMonth !== undefined || c._invalidFormat !== undefined ||
         c._weekdayMismatch !== undefined || c._userInvalidated !== undefined ||
-        c._parsedDateParts !== undefined) {
+        c._parsedDateParts !== undefined || hasExtraCold) {
       this._initCold(c);
     }
   }
@@ -466,7 +473,14 @@ export class Moment {
     if (hasErrorCold || c._unusedTokens !== undefined || c._unusedInput !== undefined ||
         c._charsLeftOver !== undefined || c._invalidEra !== undefined || c._iso !== undefined ||
         c._rfc2822 !== undefined || c._bigHour !== undefined || c._meridiem !== undefined ||
-        c._isParseZone !== undefined || c._tooBusyWith !== undefined || c._parsedDateParts !== undefined) {
+        c._isParseZone !== undefined || c._tooBusyWith !== undefined || c._parsedDateParts !== undefined ||
+        Object.keys(c).some((key) =>
+          key.startsWith("_") &&
+          ![
+            "_d", "_dClone", "_isValid", "_isUTC", "_offset", "_t",
+            "_i", "_f", "_l", "_strict",
+          ].includes(key),
+        )) {
       const cold: Record<string, unknown> = {};
       if (c._overflow !== undefined) {cold._overflow = c._overflow;}
       if (c._parsedDateParts !== undefined) {cold._parsedDateParts = c._parsedDateParts;}
@@ -486,6 +500,23 @@ export class Moment {
       if (c._isParseZone !== undefined) {cold._isParseZone = c._isParseZone;}
       if (c._userInvalidated !== undefined) {cold._userInvalidated = c._userInvalidated;}
       if (c._tooBusyWith !== undefined) {cold._tooBusyWith = c._tooBusyWith;}
+      for (const [key, value] of Object.entries(c)) {
+        if (
+          key.startsWith("_") &&
+          ![
+            "_d", "_dClone", "_isValid", "_isUTC", "_offset", "_t",
+            "_i", "_f", "_l", "_strict",
+            "_overflow", "_parsedDateParts", "_unusedTokens", "_unusedInput",
+            "_charsLeftOver", "_empty", "_nullInput", "_invalidMonth",
+            "_invalidFormat", "_weekdayMismatch", "_iso", "_rfc2822",
+            "_invalidEra", "_bigHour", "_meridiem", "_isParseZone",
+            "_userInvalidated", "_tooBusyWith",
+          ].includes(key) &&
+          value !== undefined
+        ) {
+          cold[key] = value;
+        }
+      }
       this._cold = cold;
       if (hasErrorCold) {this._dirty = false;}
     }
@@ -567,6 +598,7 @@ export class Moment {
   }
 
   clone(): this {
+    this._ensureFields();
     const m = Object.create(Moment.prototype) as Moment;
     m._isAMomentObject = true;
     m._t = this._t;
@@ -578,7 +610,8 @@ export class Moment {
     if (this._i !== undefined) {m._i = this._i;}
     if (this._f !== undefined) {m._f = this._f;}
     m._strict = this._strict;
-    this._ensureFields();
+    if (this._cold) {m._cold = { ...this._cold } as MomentCold;}
+    if (this._locale) {m._locale = this._locale;}
     m.$y = this.$y; m.$M = this.$M; m.$D = this.$D; m.$W = this.$W;
     m.$H = this.$H; m.$m = this.$m; m.$s = this.$s; m.$ms = this.$ms;
     m._dirty = false;
@@ -835,7 +868,7 @@ export class Moment {
   get(unit: string | object): number | this {
     if (isObject(unit)) {return this;}
     const u = normalizeUnits(unit as string);
-    if (!u) {return NaN;}
+    if (!u) {return this as unknown as number;}
     switch (u) {
       case "year":
         return this.year();
@@ -1495,53 +1528,29 @@ export class Moment {
 
         const wholeMonthDiff = (bYear - aYear) * 12 + (bMonth - aMonth);
 
+        const anchorVal = anchorMs(aYear, aMonth, aDayOf, a.$H, a.$m, a.$s, a.$ms, a._isUTC, wholeMonthDiff);
+        const bVal = b.valueOf();
+        const sub = bVal - anchorVal;
+
+        let adjust: number;
+        if (sub < 0) {
+          adjust = sub / (anchorVal - anchorMs(aYear, aMonth, aDayOf, a.$H, a.$m, a.$s, a.$ms, a._isUTC, wholeMonthDiff - 1));
+        } else {
+          adjust = sub / (anchorMs(aYear, aMonth, aDayOf, a.$H, a.$m, a.$s, a.$ms, a._isUTC, wholeMonthDiff + 1) - anchorVal);
+        }
+
+        let result = -(wholeMonthDiff + adjust);
+        if (swap) {result = -result;}
+
+        if (code === YEAR) {result /= 12;}
+        else if (code === QUARTER) {result /= 3;}
+
         if (!float) {
-          const aH = a.$H, am = a.$m, aS = a.$s, aMs = a.$ms;
-          const bH = b.$H, bm = b.$m, bS = b.$s, bMs = b.$ms;
-          const bDayOf = b.$D;
-          const anchorD = aDayOf > daysInMonth(bYear, bMonth) ? daysInMonth(bYear, bMonth) : aDayOf;
+          const whole = Math.trunc(result);
+          return Object.is(whole, -0) ? 0 : whole;
+        }
 
-          let bBeforeAnchor: boolean;
-          if (bDayOf !== anchorD) {
-            bBeforeAnchor = bDayOf < anchorD;
-          } else {
-            if (bH !== aH) {bBeforeAnchor = bH < aH;}
-            else if (bm !== am) {bBeforeAnchor = bm < am;}
-            else if (bS !== aS) {bBeforeAnchor = bS < aS;}
-            else {bBeforeAnchor = bMs < aMs;}
-          }
-
-          let result: number;
-          if (bBeforeAnchor) {
-            result = wholeMonthDiff > 0 ? -(wholeMonthDiff - 1) : -wholeMonthDiff;
-          } else {
-              result = -wholeMonthDiff;
-            }
-            if (swap) {result = -result;}
-            if (code === YEAR) {result = result / 12;}
-            else if (code === QUARTER) {result = result / 3;}
-            if (code === YEAR || code === QUARTER) {result = Math.trunc(result) || 0;}
-            return result || 0;
-          }
-
-          const anchorVal = anchorMs(aYear, aMonth, aDayOf, a.$H, a.$m, a.$s, a.$ms, a._isUTC, wholeMonthDiff);
-          const bVal = b.valueOf();
-          const sub = bVal - anchorVal;
-
-          let adjust: number;
-          if (sub < 0) {
-            adjust = sub / (anchorVal - anchorMs(aYear, aMonth, aDayOf, a.$H, a.$m, a.$s, a.$ms, a._isUTC, wholeMonthDiff - 1));
-          } else {
-            adjust = sub / (anchorMs(aYear, aMonth, aDayOf, a.$H, a.$m, a.$s, a.$ms, a._isUTC, wholeMonthDiff + 1) - anchorVal);
-          }
-
-          let result = -(wholeMonthDiff + adjust);
-          if (swap) {result = -result;}
-
-          if (code === YEAR) {result /= 12;}
-          else if (code === QUARTER) {result /= 3;}
-
-          return result || 0;
+        return result || 0;
       }
       default:
         return diff;

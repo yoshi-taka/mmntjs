@@ -1,11 +1,91 @@
-import { describe, test, expect } from "bun:test";
+import { afterAll, beforeAll, describe, test, expect } from "bun:test";
 import { parseString, parseArray, parseObject, parseTwoDigitYear, setParseTwoDigitYear } from "../src/parse";
-import { getLocale } from "../src/locale";
+import { defineLocale, getLocale } from "../src/locale";
 import type { ParseLocale } from "../src/parse-locale";
 
 function enLoc(): ParseLocale {
   return getLocale("en") as unknown as ParseLocale;
 }
+
+function namedLoc(name: string): ParseLocale {
+  return getLocale(name) as unknown as ParseLocale;
+}
+
+const objectLocaleName = "parse-main-coverage-obj";
+const functionLocaleName = "parse-main-coverage-fn";
+const apostropheLocaleName = "parse-main-coverage-apos";
+const eraLocaleName = "parse-main-coverage-era";
+const variantLocaleName = "parse-main-coverage-variant";
+
+beforeAll(() => {
+  defineLocale(objectLocaleName, {
+    months: {
+      standalone: ["jan-base", "feb-base", "mar-base", "apr-base", "may-base", "jun-base", "jul-base", "aug-base", "sep-base", "oct-base", "nov-base", "dec-base"],
+      format: ["janvfmt", "fevfmt", "marfmt", "aprfmt", "mayfmt", "junfmt", "julfmt", "augfmt", "sepfmt", "octfmt", "novfmt", "decfmt"],
+    },
+    monthsShort: ["j1", "f1", "m1", "a1", "m2", "j2", "j3", "a2", "s1", "o1", "n1", "d1"],
+    weekdays: {
+      standalone: ["sundayobj", "mondayobj", "tuesdayobj", "wednesdayobj", "thursdayobj", "fridayobj", "saturdayobj"],
+      format: ["sundayfmt", "mondayfmt", "tuesdayfmt", "wednesdayfmt", "thursdayfmt", "fridayfmt", "saturdayfmt"],
+    },
+    weekdaysShort: {
+      standalone: ["suo", "moo", "tuo", "weo", "tho", "fro", "sao"],
+      format: ["suf", "mof", "tuf", "wef", "thf", "frf", "saf"],
+    },
+    weekdaysMin: {
+      standalone: ["u0", "m0", "t0", "w0", "r0", "f0", "s0"],
+      format: ["u1", "m1", "t1", "w1", "r1", "f1", "s1"],
+    },
+    longDateFormat: {
+      L: "DD*MM*YYYY",
+    },
+  } as unknown as Record<string, unknown>);
+
+  defineLocale(functionLocaleName, {
+    months(this: unknown, m?: { month: () => number }): string[] | string {
+      const standalone = ["janbase", "febbase", "marbase", "aprbase", "maybase", "junbase", "julbase", "augbase", "sepbase", "octbase", "novbase", "decbase"];
+      const format = ["janfun", "febfun", "marfun", "aprfun", "mayfun", "junfun", "julfun", "augfun", "sepfun", "octfun", "novfun", "decfun"];
+      if (!m) {return standalone;}
+      return format[m.month()];
+    },
+    weekdays(this: unknown, m?: { day: () => number }): string[] | string {
+      const names = ["sunfun", "monfun", "tuefun", "wedfun", "thufun", "frifun", "satfun"];
+      if (!m) {return names;}
+      return names[m.day()];
+    },
+  } as unknown as Record<string, unknown>);
+
+  defineLocale(apostropheLocaleName, {
+    months: ["jan", "feb", "mar", "lʼavril", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"],
+  } as unknown as Record<string, unknown>);
+
+  defineLocale(eraLocaleName, {
+    eras: [
+      { since: "2019-05-01", offset: 1, name: "Reiwa", narrow: "R", abbr: "RW" },
+      { since: "0001-01-01", until: "2019-04-30", offset: 1, name: "Common", narrow: "C", abbr: "AD" },
+    ],
+    eraYearOrdinalRegex: /(first|\d+)e/,
+    eraYearOrdinalParse(input: string, match: RegExpMatchArray): number {
+      return match[1] === "first" ? 1 : parseInt(match[1] || input, 10);
+    },
+  } as unknown as Record<string, unknown>);
+
+  defineLocale(variantLocaleName, {
+    months: ["januaryx", "februaryx", "marchx", "aprilx", "mayx", "junex", "julyx", "augustx", "septemberx", "octoberx", "novemberx", "decemberx"],
+    monthsShort: ["jan.", "feb.", "mar.", "apr.", "may.", "jun.", "jul.", "aug.", "sep.", "oct.", "nov.", "dec."],
+    weekdays: ["sunʼday", "monʼday", "tueʼsday", "wedʼday", "thuʼday", "friʼday", "satʼday"],
+    weekdaysShort: ["sunʼd", "monʼd", "tueʼd", "wedʼd", "thuʼd", "friʼd", "satʼd"],
+    weekdaysMin: ["suʼ", "moʼ", "tuʼ", "weʼ", "thʼ", "frʼ", "saʼ"],
+  } as unknown as Record<string, unknown>);
+});
+
+afterAll(() => {
+  defineLocale(objectLocaleName, null);
+  defineLocale(functionLocaleName, null);
+  defineLocale(apostropheLocaleName, null);
+  defineLocale(eraLocaleName, null);
+  defineLocale(variantLocaleName, null);
+});
 
 type ParsedExpectation = {
   year?: number;
@@ -117,6 +197,38 @@ describe("parseMain parseString", () => {
     });
     test("MMM lowercase", () => {
       check("jan 15 2024", "MMM DD YYYY", { year: 2024, month: 0, day: 15 });
+    });
+    test("MMMM rejects custom object format names in strict mode", () => {
+      const r = parseString("janvfmt 15 2024", "MMMM DD YYYY", namedLoc(objectLocaleName), true);
+      expect(r).toEqual(expect.objectContaining({ _unusedTokens: expect.arrayContaining(["MMMM"]) }));
+    });
+    test("MMM rejects custom function month names in strict mode", () => {
+      const r = parseString("janfun 15 2024", "MMM DD YYYY", namedLoc(functionLocaleName), true);
+      expect(r).toEqual(expect.objectContaining({ _unusedTokens: expect.arrayContaining(["MMM"]) }));
+    });
+    test("exact apostrophe month names are accepted", () => {
+      const r = parseString("lʼavril 15 2024", "MMMM DD YYYY", namedLoc(apostropheLocaleName), true);
+      expect(r!.month).toBe(3);
+    });
+    test("MMMM does not fall back to English names for custom locales in strict mode", () => {
+      const r = parseString("January 15 2024", "MMMM DD YYYY", namedLoc(objectLocaleName), true);
+      expect(r).toEqual(expect.objectContaining({ _unusedTokens: expect.arrayContaining(["MMMM"]) }));
+    });
+    test("MMM does not fall back to English short names for custom locales in strict mode", () => {
+      const r = parseString("Jan 15 2024", "MMM DD YYYY", namedLoc(objectLocaleName), true);
+      expect(r).toEqual(expect.objectContaining({ _unusedTokens: expect.arrayContaining(["MMM"]) }));
+    });
+    test("non-strict MMMM consumes unknown word and leaves month undefined", () => {
+      const r = parseString("Blarg 15 2024", "MMMM DD YYYY", enLoc(), false);
+      expect(r).toEqual(expect.objectContaining({ month: undefined, day: 15, year: 2024 }));
+    });
+    test("month tokens accept no-period short variants", () => {
+      expect(parseString("jan 15 2024", "MMMM DD YYYY", namedLoc(variantLocaleName), false)).toEqual(
+        expect.objectContaining({ month: 0, day: 15, year: 2024 }),
+      );
+      expect(parseString("jan 15 2024", "MMM DD YYYY", namedLoc(variantLocaleName), true)).toEqual(
+        expect.objectContaining({ month: 0, day: 15, year: 2024 }),
+      );
     });
   });
 
@@ -236,6 +348,55 @@ describe("parseMain parseString", () => {
       const r = parseString("2024-W01-1", "GGGG-[W]WW-E");
       expect(r).toBeDefined();
     });
+    test("weekday name tokens use locale object data", () => {
+      expect(parseString("sundayobj", "dddd", namedLoc(objectLocaleName), true)).toEqual(
+        expect.objectContaining({ _weekdayName: "sundayobj", _weekdayNum: 0 }),
+      );
+      expect(parseString("mof", "ddd", namedLoc(objectLocaleName), true)).toEqual(
+        expect.objectContaining({ _weekdayName: "mof" }),
+      );
+    });
+    test("weekday name token uses locale function data", () => {
+      expect(parseString("wedfun", "dddd", namedLoc(functionLocaleName), true)!._weekdayNum).toBe(3);
+    });
+    test("weekday tokens do not accept apostrophe variants in strict mode", () => {
+      expect(parseString("sun'day", "dddd", namedLoc(variantLocaleName), true)).toEqual(
+        expect.objectContaining({ _unusedTokens: expect.arrayContaining(["dddd"]) }),
+      );
+      expect(parseString("mon'd", "ddd", namedLoc(variantLocaleName), true)).toEqual(
+        expect.objectContaining({ _unusedTokens: expect.arrayContaining(["ddd"]) }),
+      );
+      expect(parseString("tu'", "dd", namedLoc(variantLocaleName), true)).toEqual(
+        expect.objectContaining({ _unusedTokens: expect.arrayContaining(["dd"]) }),
+      );
+    });
+    test("weekday tokens do not fall back to English names for custom locales in strict mode", () => {
+      expect(parseString("Monday", "dddd", namedLoc(objectLocaleName), true)).toEqual(
+        expect.objectContaining({ _unusedTokens: expect.arrayContaining(["dddd"]) }),
+      );
+      expect(parseString("Mon", "ddd", namedLoc(objectLocaleName), true)).toEqual(
+        expect.objectContaining({ _unusedTokens: expect.arrayContaining(["ddd"]) }),
+      );
+      expect(parseString("Mon", "dd", namedLoc(objectLocaleName), true)).toEqual(
+        expect.objectContaining({ _unusedTokens: expect.arrayContaining(["dd"]) }),
+      );
+    });
+    test("non-strict weekday tokens consume unknown words", () => {
+      expect(parseString("Noday", "dddd", enLoc(), false)).toBeDefined();
+      expect(parseString("Noday", "ddd", enLoc(), false)).toBeDefined();
+      expect(parseString("Noday", "dd", enLoc(), false)).toBeDefined();
+    });
+    test("strict weekday tokens fail when nothing matches", () => {
+      expect(parseString("Noday", "dddd", enLoc(), true)).toEqual(
+        expect.objectContaining({ _unusedTokens: expect.arrayContaining(["dddd"]) }),
+      );
+      expect(parseString("Noday", "ddd", enLoc(), true)).toEqual(
+        expect.objectContaining({ _unusedTokens: expect.arrayContaining(["ddd"]) }),
+      );
+      expect(parseString("Noday", "dd", enLoc(), true)).toEqual(
+        expect.objectContaining({ _unusedTokens: expect.arrayContaining(["dd"]) }),
+      );
+    });
   });
 
   describe("escape sequences", () => {
@@ -244,6 +405,10 @@ describe("parseMain parseString", () => {
     });
     test("multiple escape groups", () => {
       check("Q1 2024", "[Q]Q YYYY", { year: 2024 });
+    });
+    test("long date format expands locale tokens", () => {
+      const r = parseString("15*01*2024", "L", namedLoc(objectLocaleName), true);
+      expect(r).toEqual(expect.objectContaining({ year: 2024, month: 0, day: 15 }));
     });
   });
 
@@ -261,6 +426,20 @@ describe("parseMain parseString", () => {
       const r = parseString("2024-01-15 extra", "YYYY-MM-DD", enLoc(), false);
       expect(r).toBeDefined();
     });
+    test("strict failure records remaining token and literal", () => {
+      const r = parseString("2024/", "YYYY-MM-DD", enLoc(), true);
+      expect(r).toEqual(expect.objectContaining({
+        _unusedTokens: expect.arrayContaining(["MM", "-", "DD"]),
+      }));
+    });
+    test("strict whitespace literal mismatch is tracked", () => {
+      const r = parseString("2024@01", "YYYY MM", enLoc(), true);
+      expect(r).toEqual(expect.objectContaining({
+        _unusedInput: expect.arrayContaining(["@"]),
+        year: 2024,
+        month: 0,
+      }));
+    });
   });
 
   describe("multiple formats", () => {
@@ -271,6 +450,10 @@ describe("parseMain parseString", () => {
     test("no exact match returns best effort in non-strict", () => {
       const r = parseString("2024-01-15", ["MM/DD/YYYY", "DD/MM/YYYY"], enLoc(), false);
       expect(r).toBeDefined();
+    });
+    test("best format is retained in _f", () => {
+      const r = parseString("2024-01-15", ["MM-DD-YYYY", "YYYY-MM-DD"], enLoc(), true);
+      expect(r!._f).toBe("YYYY-MM-DD");
     });
   });
 
@@ -293,6 +476,10 @@ describe("parseMain parseString", () => {
       const r = parseString("2024th", "yo", enLoc());
       expect(r).toBeDefined();
     });
+    test("yo uses locale eraYearOrdinalParse when available", () => {
+      const r = parseString("firste", "yo", namedLoc(eraLocaleName));
+      expect(r).toEqual(expect.objectContaining({ _eraYear: 1 }));
+    });
     test("era year y", () => {
       const r = parseString("2024", "y", enLoc());
       expect(r).toBeDefined();
@@ -308,6 +495,49 @@ describe("parseMain parseString", () => {
     test("wo (ordinal week)", () => {
       const r = parseString("2024 1st", "GGGG wo", enLoc());
       expect(r).toBeDefined();
+    });
+    test("NNNN matches wide era names", () => {
+      const r = parseString("Reiwa firste", "NNNN yo", namedLoc(eraLocaleName), true);
+      expect(r).toEqual(expect.objectContaining({ year: 2019 }));
+    });
+    test("strict N only accepts era abbreviations", () => {
+      const r = parseString("Reiwa 2", "N y", namedLoc(eraLocaleName), true);
+      expect(r).toEqual(expect.objectContaining({
+        _unusedTokens: expect.arrayContaining(["N"]),
+      }));
+    });
+    test("NNNNN matches narrow era names", () => {
+      const r = parseString("R 2", "NNNNN y", namedLoc(eraLocaleName), true);
+      expect(r).toEqual(expect.objectContaining({ year: 2020 }));
+    });
+    test("strict NNNN and NNNNN fail when era name does not match", () => {
+      expect(parseString("Unknown 2", "NNNN y", namedLoc(eraLocaleName), true)).toEqual(
+        expect.objectContaining({ _unusedTokens: expect.arrayContaining(["NNNN"]) }),
+      );
+      expect(parseString("Z 2", "NNNNN y", namedLoc(eraLocaleName), true)).toEqual(
+        expect.objectContaining({ _unusedTokens: expect.arrayContaining(["NNNNN"]) }),
+      );
+    });
+    test("lenient parser skips punctuation before digit tokens", () => {
+      const r = parseString("::2024-01-15", "YYYY-MM-DD", enLoc(), false);
+      expect(r).toEqual(expect.objectContaining({ year: 2024, month: 0, day: 15 }));
+      expect(r!._unusedInput).toContain("::");
+    });
+    test("lenient parser skips punctuation before meridiem token", () => {
+      const r = parseString("10 ?? pm", "hh a", enLoc(), false);
+      expect(r).toEqual(expect.objectContaining({ hour: 22 }));
+      expect(r!._unusedInput).toContain("?? ");
+    });
+    test("strict d token rejects weekday outside 0-6", () => {
+      const r = parseString("7", "d", enLoc(), true);
+      expect(r).toEqual(expect.objectContaining({
+        _unusedTokens: expect.arrayContaining(["d"]),
+      }));
+    });
+    test("non-strict d token consumes unknown word", () => {
+      const r = parseString("weekday", "d", enLoc(), false);
+      expect(r).toBeDefined();
+      expect(r!._charsLeftOver).toBe(0);
     });
   });
 
@@ -386,6 +616,26 @@ describe("parseString ISO auto-detection (no format)", () => {
     const r = parseString("20240115T103000+0530", undefined, enLoc());
     expect(r).toBeDefined();
     expect(r!.offset).toBe(330);
+  });
+  test("ISO month-only with time returns claimed", () => {
+    const r = parseString("2024-01T10:30:00", undefined, enLoc());
+    expect(r).toEqual(expect.objectContaining({ _claimed: true }));
+  });
+  test("ISO with hour-only time is accepted", () => {
+    const r = parseString("2024-01-15T10", undefined, enLoc());
+    expect(r).toEqual(expect.objectContaining({ year: 2024, month: 0, day: 15, hour: 10 }));
+  });
+  test("ISO with malformed timezone falls back to null", () => {
+    const r = parseString("2024-01-15T10:30:00+05:3", undefined, enLoc());
+    expect(r).toBeNull();
+  });
+  test("ISO ordinal zero is parsed as dayOfYear 0", () => {
+    const r = parseString("2024-000", undefined, enLoc());
+    expect(r).toEqual(expect.objectContaining({ year: 2024, dayOfYear: 0 }));
+  });
+  test("ISO week weekday overflow returns claimed", () => {
+    const r = parseString("2024-W01-8", undefined, enLoc());
+    expect(r).toEqual(expect.objectContaining({ _claimed: true }));
   });
   test("invalid string auto returns null", () => {
     expect(parseString("not-a-date", undefined, enLoc())).toBeNull();

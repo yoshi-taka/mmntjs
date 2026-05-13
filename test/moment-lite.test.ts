@@ -1,7 +1,12 @@
 import { describe, test, expect } from "bun:test";
 import liteMoment from "../src/entry/lite.ts";
+import originalMoment from "../moment/moment.js";
 
-const moment = liteMoment as unknown as ((input?: unknown, format?: unknown, strict?: unknown) => ReturnType<typeof liteMoment>);
+type LiteMomentFn = typeof liteMoment & {
+  utc(input?: unknown, format?: unknown, strict?: unknown): ReturnType<typeof liteMoment>;
+};
+
+const moment = liteMoment as unknown as LiteMomentFn;
 
 describe("MomentLite basic", () => {
   test("creates current moment", () => {
@@ -313,27 +318,31 @@ describe("MomentLite dayOfYear", () => {
 
 describe("MomentLite week", () => {
   test("week getter", () => {
-    const w = moment("2024-01-01").week();
-    expect(typeof w).toBe("number");
+    expect(moment("2024-01-01").week()).toBe(originalMoment("2024-01-01").week());
   });
 
   test("week setter", () => {
     const m = moment("2024-06-15");
+    const o = originalMoment("2024-06-15");
     m.week(10);
-    expect(m.isValid()).toBe(true);
+    o.week(10);
+    expect(m.week()).toBe(o.week());
+    expect(m.format("YYYY-MM-DD")).toBe(o.format("YYYY-MM-DD"));
   });
 });
 
 describe("MomentLite isoWeek", () => {
   test("isoWeek getter", () => {
-    const w = moment("2024-01-01").isoWeek();
-    expect(typeof w).toBe("number");
+    expect(moment("2024-01-01").isoWeek()).toBe(originalMoment("2024-01-01").isoWeek());
   });
 
   test("isoWeek setter", () => {
     const m = moment("2024-06-15");
+    const o = originalMoment("2024-06-15");
     m.isoWeek(10);
-    expect(m.isValid()).toBe(true);
+    o.isoWeek(10);
+    expect(m.isoWeek()).toBe(o.isoWeek());
+    expect(m.format("YYYY-MM-DD")).toBe(o.format("YYYY-MM-DD"));
   });
 });
 
@@ -391,13 +400,15 @@ describe("MomentLite toString", () => {
 
 describe("MomentLite isoWeekYear", () => {
   test("isoWeekYear getter", () => {
-    const y = moment("2024-01-01").isoWeekYear();
-    expect(typeof y).toBe("number");
+    expect(moment("2024-01-01").isoWeekYear()).toBe(originalMoment("2024-01-01").isoWeekYear());
   });
 
   test("isoWeekYear setter", () => {
     const m = moment("2024-06-15");
+    const o = originalMoment("2024-06-15");
     m.isoWeekYear(2023);
-    expect(m.isoWeekYear()).toBe(2023);
+    o.isoWeekYear(2023);
+    expect(m.isoWeekYear()).toBe(o.isoWeekYear());
+    expect(m.format("YYYY-MM-DD")).toBe(o.format("YYYY-MM-DD"));
   });
 });

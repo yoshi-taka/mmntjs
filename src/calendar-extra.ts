@@ -163,13 +163,16 @@ export function isoWeekYearMoment(m: CalendarAwareMoment, y?: number): number | 
     const currentDay = isoWeekdayMoment(m) as number;
     const maxWeek = weeksInYear(y, 1, 4, m._isUTC);
     if (currentWeek > maxWeek) {currentWeek = maxWeek;}
-    const jan4 = new Date(Date.UTC(y, 0, 4));
-    const jan4Day = jan4.getUTCDay() || 7;
-    const mondayOfWeek1 = new Date(Date.UTC(y, 0, 4 - (jan4Day - 1)));
+    const jan4 = m._isUTC ? new Date(Date.UTC(y, 0, 4)) : new Date(y, 0, 4);
+    const jan4Day = m._isUTC ? (jan4.getUTCDay() || 7) : (jan4.getDay() || 7);
+    const mondayOfWeek1 = m._isUTC
+      ? new Date(Date.UTC(y, 0, 4 - (jan4Day - 1)))
+      : new Date(y, 0, 4 - (jan4Day - 1));
     const target = new Date(
       mondayOfWeek1.getTime() + ((currentWeek - 1) * 7 + (currentDay - 1)) * 86400000,
     );
     m._t = target.getTime();
+    m._d = target;
     m._refreshFields();
     return m;
   }

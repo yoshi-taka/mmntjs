@@ -23,7 +23,9 @@ export interface MomentConfig {
   _overflow?: number;
   _nullInput?: boolean;
   _invalidMonth?: string | null;
+  _meridiem?: string;
   _empty?: boolean;
+  _parsedDateParts?: number[];
   _unusedTokens?: string[];
   _unusedInput?: string[];
   _charsLeftOver?: number;
@@ -73,6 +75,20 @@ function getISOWeekYear(d: Date, utc: boolean): number {
   if (week < 1) {return year - 1;}
   if (week > weeksInYear(year, 1, 4, utc)) {return year + 1;}
   return year;
+}
+
+function getLocaleWeek(d: Date, utc: boolean, dow: number, doy: number): number {
+  const year = utc ? d.getUTCFullYear() : d.getFullYear();
+  const weekOffset = firstWeekOffset(year, dow, doy, utc);
+  const dayOfYear = getDayOfYear(d, utc);
+  let week = Math.floor((dayOfYear - weekOffset - 1) / 7) + 1;
+  if (week < 1) {
+    week += weeksInYear(year - 1, dow, doy, utc);
+  } else {
+    const yearWeeks = weeksInYear(year, dow, doy, utc);
+    if (week > yearWeeks) {week = 1;}
+  }
+  return week;
 }
 
 const nonLeapLadder = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
@@ -218,8 +234,12 @@ export class MomentLite {
     if (c._i !== undefined) {this._i = c._i;}
     if (c._f !== undefined) {this._f = c._f;}
     if (c._strict !== undefined) {this._strict = c._strict;}
+    const hasExtraCold = Object.keys(c).some((key) =>
+      key.startsWith("_") &&
+      !["_d", "_dClone", "_isValid", "_isUTC", "_offset", "_t", "_i", "_f", "_l", "_strict"].includes(key),
+    );
     if (c._overflow !== undefined || c._empty !== undefined || c._nullInput !== undefined ||
-        c._invalidMonth !== undefined || c._userInvalidated !== undefined) {
+        c._invalidMonth !== undefined || c._userInvalidated !== undefined || hasExtraCold) {
       this._initCold(c);
     }
   }
@@ -234,6 +254,19 @@ export class MomentLite {
     if (c._unusedTokens !== undefined) {cold._unusedTokens = c._unusedTokens;}
     if (c._unusedInput !== undefined) {cold._unusedInput = c._unusedInput;}
     if (c._charsLeftOver !== undefined) {cold._charsLeftOver = c._charsLeftOver;}
+    for (const [key, value] of Object.entries(c)) {
+      if (
+        key.startsWith("_") &&
+        ![
+          "_d", "_dClone", "_isValid", "_isUTC", "_offset", "_t", "_i", "_f", "_l", "_strict",
+          "_overflow", "_empty", "_nullInput", "_invalidMonth", "_userInvalidated",
+          "_unusedTokens", "_unusedInput", "_charsLeftOver",
+        ].includes(key) &&
+        value !== undefined
+      ) {
+        cold[key] = value;
+      }
+    }
     this._cold = cold;
     const hasError = (c._overflow !== undefined && c._overflow >= 0) ||
       c._empty === true || c._nullInput === true ||
@@ -255,6 +288,7 @@ export class MomentLite {
   }
 
   clone(): this {
+    this._ensureFields();
     const m = Object.create(MomentLite.prototype) as MomentLite;
     m._isAMomentObject = true;
     m._t = this._t;
@@ -266,7 +300,8 @@ export class MomentLite {
     if (this._i !== undefined) {m._i = this._i;}
     if (this._f !== undefined) {m._f = this._f;}
     m._strict = this._strict;
-    this._ensureFields();
+    if (this._cold) {m._cold = { ...this._cold };}
+    if (this._locale) {m._locale = this._locale;}
     m.$y = this.$y; m.$M = this.$M; m.$D = this.$D; m.$W = this.$W;
     m.$H = this.$H; m.$m = this.$m; m.$s = this.$s; m.$ms = this.$ms;
     m._dirty = false;
@@ -512,7 +547,7 @@ export class MomentLite {
   get(unit: string | object): number | this {
     if (isObject(unit)) {return this;}
     const u = normalizeUnits(unit as string);
-    if (!u) {return NaN;}
+    if (!u) {return this as unknown as number;}
     switch (u) {
       case "year": return this.year();
       case "month": return this.month();
@@ -866,34 +901,6 @@ export class MomentLite {
 
         const wholeMonthDiff = (bYear - aYear) * 12 + (bMonth - aMonth);
 
-        if (!float) {
-          const aH = a.$H, am = a.$m, aS = a.$s, aMs = a.$ms;
-          const bH = b.$H, bm = b.$m, bS = b.$s, bMs = b.$ms;
-          const bDayOf = b.$D;
-          const anchorD = aDayOf > daysInMonth(bYear, bMonth) ? daysInMonth(bYear, bMonth) : aDayOf;
-
-          let bBeforeAnchor: boolean;
-          if (bDayOf !== anchorD) {
-            bBeforeAnchor = bDayOf < anchorD;
-          } else {
-            if (bH !== aH) {bBeforeAnchor = bH < aH;}
-            else if (bm !== am) {bBeforeAnchor = bm < am;}
-            else if (bS !== aS) {bBeforeAnchor = bS < aS;}
-            else {bBeforeAnchor = bMs < aMs;}
-          }
-
-          let result: number;
-          if (bBeforeAnchor) {
-            result = wholeMonthDiff > 0 ? -(wholeMonthDiff - 1) : -wholeMonthDiff;
-          } else {
-            result = -wholeMonthDiff;
-          }
-          if (swap) {result = -result;}
-          if (code === YEAR) {result /= 12;}
-          else if (code === QUARTER) {result /= 3;}
-          return result;
-        }
-
         const anchorVal = anchorMs(aYear, aMonth, aDayOf, a.$H, a.$m, a.$s, a.$ms, a._isUTC, wholeMonthDiff);
         const bVal = b.valueOf();
         const sub = bVal - anchorVal;
@@ -909,6 +916,10 @@ export class MomentLite {
         if (swap) {result = -result;}
         if (code === YEAR) {result /= 12;}
         else if (code === QUARTER) {result /= 3;}
+        if (!float) {
+          const whole = Math.trunc(result);
+          return Object.is(whole, -0) ? 0 : whole;
+        }
         return result;
       }
       default:
@@ -1205,19 +1216,23 @@ export class MomentLite {
   week(w?: number): number | this {
     if (w !== undefined) {
       this._ensureFields();
-      const dow = 0, doy = 6;
-      const baseJan1 = new Date(this.$y, 0, 1);
-      const week1Start = baseJan1.getTime() - (baseJan1.getDay() - dow + 7) % 7 * 86400000 + (doy - 1) * 86400000;
-      const targetMs = week1Start + (w - 1) * 604800000;
+      const dow = 0;
+      const doy = 6;
+      const current = getLocaleWeek(this._getD(), this._isUTC, dow, doy);
+      const diff = w - current;
       const dt = this._getD();
-      dt.setTime(targetMs);
-      this._t = targetMs;
-      this._d = this._isUTC ? undefined : dt;
-      this._dirty = true;
+      if (this._isUTC) {
+        dt.setUTCDate(dt.getUTCDate() + diff * 7);
+      } else {
+        dt.setDate(dt.getDate() + diff * 7);
+      }
+      this._d = dt;
+      this._t = dt.getTime();
+      this._refreshFields();
       return this;
     }
     this._ensureFields();
-    return getISOWeekNumber(this._getD(), this._isUTC);
+    return getLocaleWeek(this._getD(), this._isUTC, 0, 6);
   }
 
   isoWeek(): number;
@@ -1225,18 +1240,17 @@ export class MomentLite {
   isoWeek(w?: number): number | this {
     if (w !== undefined) {
       this._ensureFields();
-      const jan4 = new Date(this.$y, 0, 4);
-      const dayOfJan4 = jan4.getDay() || 7;
-      const week1Start = new Date(this.$y, 0, 4 - (dayOfJan4 - 1));
-      const target = new Date(week1Start.getTime() + (w - 1) * 604800000);
+      const current = getISOWeekNumber(this._getD(), this._isUTC);
+      const diff = w - current;
+      const dt = this._getD();
       if (this._isUTC) {
-        this._d = new Date(Date.UTC(target.getFullYear(), target.getMonth(), target.getDate(), this.$H, this.$m, this.$s, this.$ms));
-        this._t = this._d.getTime();
-        this._dirty = true;
+        dt.setUTCDate(dt.getUTCDate() + diff * 7);
       } else {
-        this._getD().setTime(target.getTime());
-        this._t = this._getD().getTime();
+        dt.setDate(dt.getDate() + diff * 7);
       }
+      this._d = dt;
+      this._t = dt.getTime();
+      this._refreshFields();
       return this;
     }
     this._ensureFields();
@@ -1247,17 +1261,24 @@ export class MomentLite {
   isoWeekYear(y: number): this;
   isoWeekYear(y?: number): number | this {
     if (y !== undefined) {
-      const jan4 = new Date(y, 0, 4);
-      const dayOfJan4 = jan4.getDay() || 7;
-      const week1Start = new Date(y, 0, 4 - (dayOfJan4 - 1));
+      this._ensureFields();
+      let currentWeek = getISOWeekNumber(this._getD(), this._isUTC);
+      const currentDay = ((this.$W + 6) % 7) + 1;
+      const maxWeek = weeksInYear(y, 1, 4, this._isUTC);
+      if (currentWeek > maxWeek) {currentWeek = maxWeek;}
+      const jan4 = this._isUTC ? new Date(Date.UTC(y, 0, 4)) : new Date(y, 0, 4);
+      const dayOfJan4 = this._isUTC ? (jan4.getUTCDay() || 7) : (jan4.getDay() || 7);
+      const week1Start = this._isUTC
+        ? new Date(Date.UTC(y, 0, 4 - (dayOfJan4 - 1)))
+        : new Date(y, 0, 4 - (dayOfJan4 - 1));
+      const target = new Date(week1Start.getTime() + ((currentWeek - 1) * 7 + (currentDay - 1)) * 86400000);
       if (this._isUTC) {
-        this._d = new Date(Date.UTC(week1Start.getFullYear(), week1Start.getMonth(), week1Start.getDate(), this.$H, this.$m, this.$s, this.$ms));
-        this._t = this._d.getTime();
-        this._dirty = true;
+        this._d = new Date(Date.UTC(target.getFullYear(), target.getMonth(), target.getDate(), this.$H, this.$m, this.$s, this.$ms));
       } else {
-        this._getD().setTime(week1Start.getTime());
-        this._t = this._getD().getTime();
+        this._d = new Date(target.getFullYear(), target.getMonth(), target.getDate(), this.$H, this.$m, this.$s, this.$ms);
       }
+      this._t = this._d.getTime();
+      this._refreshFields();
       return this;
     }
     this._ensureFields();

@@ -54,7 +54,7 @@ describe("Duration constructor edge cases", () => {
   });
 
   test("from undefined returns zero duration", () => {
-    const d = moment.duration(undefined);
+    const d = moment.duration();
     expect(d.isValid()).toBe(true);
     expect(d.asMilliseconds()).toBe(0);
   });

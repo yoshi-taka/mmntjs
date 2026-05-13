@@ -17,7 +17,7 @@ export interface CoreMomentStatic {
   min(...args: unknown[]): Moment;
   max(...args: unknown[]): Moment;
   relativeTimeRounding(fn?: Function | boolean): Function | boolean;
-  relativeTimeThreshold(threshold: string, limit?: number): number | boolean;
+  relativeTimeThreshold(threshold: string, limit?: number): number | boolean | null | undefined;
   now: () => number;
   updateOffset: ((m: Moment, keepTime?: boolean) => void) | undefined;
   calendarFormat: ((m: Moment, now: Moment) => string) | undefined;
@@ -78,8 +78,11 @@ export interface FullMomentStatic extends CoreMomentStatic {
   locale(locale?: string | string[], ...args: unknown[]): string | Locale;
   localeData(locale?: string): Locale;
   defineLocale(locale: string, config: Record<string, unknown>): Locale | void;
-  updateLocale(locale: string, config: Record<string, unknown>): Locale | void;
+  updateLocale(locale: string, config: Record<string, unknown> | null): Locale | void;
+  locales(): string[];
+  months(index: number): string;
   months(format?: string, index?: number): string | string[];
+  monthsShort(index: number): string;
   monthsShort(format?: string | number, index?: number): string | string[];
   weekdays(format?: string | boolean | number, index?: number): string | string[];
   weekdaysShort(format?: string | boolean | number, index?: number): string | string[];

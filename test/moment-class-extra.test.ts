@@ -1,5 +1,8 @@
 import { describe, test, expect } from "bun:test";
 import moment from "../src/index.ts";
+import originalMoment from "../moment/moment.js";
+
+const invalidUnit = "invalid" as unknown as never;
 
 describe("Moment class edge cases", () => {
   describe("set()", () => {
@@ -18,7 +21,7 @@ describe("Moment class edge cases", () => {
 
     test("set with invalid unit returns same", () => {
       const m = moment("2024-01-15");
-      const r = m.set("invalid" as any, 1);
+      const r = m.set(invalidUnit, 1);
       expect(r).toBe(m);
     });
   });
@@ -33,7 +36,9 @@ describe("Moment class edge cases", () => {
 
     test("get with invalid unit returns NaN", () => {
       const m = moment("2024-01-15");
-      expect(m.get("invalid" as any)).toBeNaN();
+      const expected = originalMoment("2024-01-15").get(invalidUnit) as unknown as { format: (fmt: string) => string };
+      const actual = m.get(invalidUnit) as unknown as { format: (fmt: string) => string };
+      expect(actual.format("YYYY-MM-DD")).toBe(expected.format("YYYY-MM-DD"));
     });
   });
 
@@ -72,7 +77,7 @@ describe("Moment class edge cases", () => {
     });
 
     test("null input flag", () => {
-      const f = moment(null as any).parsingFlags();
+      const f = moment(null as unknown).parsingFlags();
       expect(f.nullInput).toBe(true);
     });
 

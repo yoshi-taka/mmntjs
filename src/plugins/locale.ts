@@ -10,6 +10,7 @@ import {
   getMonths,
   getWeekdays,
   listLocales,
+  _findBestLocaleName,
 } from "../locale";
 import type { LocaleSpec } from "../locale/en";
 import { moment } from "../core/factory";
@@ -24,9 +25,12 @@ export function registerLocaleApi(): void {
     }
     if (args.length > 0 && typeof args[0] === "object") {
       defineLocale(locale, args[0] as LocaleSpec);
-      return locale;
+      return getCurrentLocale();
     }
-    setLocale(locale);
+    const best = _findBestLocaleName(locale);
+    if (best) {
+      setLocale(best);
+    }
     return getCurrentLocale();
   };
   momentRecord.localeData = function (locale?: string): Locale {
@@ -56,10 +60,19 @@ export function registerLocaleApi(): void {
     format?: string | number,
     index?: number,
   ): string | string[] {
+    const loc = getLocale();
     if (typeof format === "number") {
-      return getLocale()._monthsShort[format];
+      return loc._monthsShort[format];
     }
-    return getMonths(format ?? "short", index);
+    if (format === undefined || format === "short") {
+      return index !== undefined ? loc._monthsShort[index] : loc._monthsShort;
+    }
+    const monthForIndex = (monthIndex: number): string =>
+      loc.monthsShort({ month: () => monthIndex } as unknown as never, format) as string;
+    if (index !== undefined) {
+      return monthForIndex(index);
+    }
+    return loc._monthsShort.map((_, monthIndex) => monthForIndex(monthIndex));
   };
   momentRecord.weekdays = function (
     format?: string | boolean | number,

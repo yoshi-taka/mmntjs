@@ -12,6 +12,8 @@ type MomentFn = ((...args: unknown[]) => Moment) & {
   parseZone(...args: unknown[]): Moment;
   duration(...args: unknown[]): Duration;
   normalizeUnits(unit: string): string;
+  relativeTimeThreshold(threshold: string, limit?: number): number | boolean | null | undefined;
+  relativeTimeRounding(fn?: Function | boolean): Function | boolean;
 }
 const moment = _moment as unknown as MomentStatic
 const originalMoment = _originalMoment as unknown as MomentFn

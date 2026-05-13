@@ -39,6 +39,25 @@ function createInvalidParsedMoment(str: string, format: string | string[] | unde
   return new Moment({ _d: new Date(NaN), _i: str, _f: format, _l: locale, _strict: strict, _isValid: false, _unusedTokens: parsed._unusedTokens, _unusedInput: parsed._unusedInput, _charsLeftOver: parsed._charsLeftOver, _empty: parsed._empty, _invalidMonth: parsed._invalidMonth, _weekdayMismatch: parsed._weekdayMismatch, _parsedDateParts: parsed._parsedDateParts, _meridiem: parsed._meridiem });
 }
 
+type OverflowParsedMomentArgs = {
+  str: string;
+  format: string | string[] | undefined;
+  locale: string | undefined;
+  strict: boolean;
+  parsed: ParsedDataLike;
+  overflow: number;
+};
+
+function createOverflowParsedMoment(args: OverflowParsedMomentArgs): Moment {
+  const { str, format, locale, strict, parsed, overflow } = args;
+  return new Moment({
+    _d: new Date(NaN), _i: str, _f: format, _l: locale, _strict: strict, _isValid: false, _overflow: overflow,
+    _unusedTokens: parsed._unusedTokens, _unusedInput: parsed._unusedInput, _charsLeftOver: parsed._charsLeftOver,
+    _empty: parsed._empty, _invalidMonth: parsed._invalidMonth, _weekdayMismatch: parsed._weekdayMismatch,
+    _parsedDateParts: parsed._parsedDateParts, _meridiem: parsed._meridiem,
+  });
+}
+
 export function createFromFormattedStringInput(args: FormatArgs): Moment {
   const { str, format, localeOrStrict, fourthArg, deps, createMomentFromParsed } = args;
   let strict = false;
@@ -61,7 +80,7 @@ export function createFromFormattedStringInput(args: FormatArgs): Moment {
     let bestScore = -99999;
     let bestFormat: string | undefined;
     for (const singleFmt of fmt) {
-      if (singleFmt === "ISO_8601" || singleFmt === "RFC_2822") {
+      if (singleFmt === "ISO_8601") {
         const parsed = deps.parseString(str, undefined, parseLocale);
         if (parsed && hasAnyValue(parsed)) {
           let score = scoreParsedResult(parsed) + 30;
@@ -97,7 +116,7 @@ export function createFromFormattedStringInput(args: FormatArgs): Moment {
         m._f = bestFormat;
         return m;
       }
-      return new Moment({ _d: new Date(NaN), _i: str, _f: bestFormat, _l: locale, _strict: strict, _isValid: false, _overflow: overflow });
+      return createOverflowParsedMoment({ str, format: bestFormat, locale, strict, parsed: bestParsed, overflow });
     }
     return new Moment({ _d: new Date(NaN), _i: str, _f: fmt, _l: locale, _strict: strict, _isValid: false, _invalidFormat: fmt.length === 0 });
   }
@@ -114,6 +133,13 @@ export function createFromFormattedStringInput(args: FormatArgs): Moment {
         return createInvalidParsedMoment(str, fmt, locale, strict, parsed);
       }
       return createMomentFromParsed(parsed, str, fmt, locale, strict);
+    }
+    if (parsed) {
+      const overflow = checkOverflow(parsed);
+      if (overflow >= 0) {
+        return createOverflowParsedMoment({ str, format: fmt, locale, strict, parsed, overflow });
+      }
+      return createInvalidParsedMoment(str, fmt, locale, strict, parsed);
     }
     return new Moment({ _d: new Date(NaN), _i: str, _f: fmt, _l: locale, _strict: strict, _isValid: false });
   }

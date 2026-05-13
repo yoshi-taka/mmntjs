@@ -158,7 +158,7 @@ export class Duration {
           } else {
             this._months = input;
           }
-        } else if (aliasKey === "quarter") {
+        } else if (aliasKey === "quarters") {
           this._months = input * 3;
         } else {
           const ms = unitToMs(unit);
@@ -182,7 +182,7 @@ export class Duration {
             this._months = val * 12;
           } else if (aliasKey === "months") {
             this._months = val;
-          } else if (aliasKey === "quarter") {
+          } else if (aliasKey === "quarters") {
             this._months = val * 3;
           } else if (aliasKey === "weeks") {
             this._days = val * 7;
@@ -199,7 +199,7 @@ export class Duration {
             this._months = 1 * 12;
           } else if (aliasKey === "months") {
             this._months = 1;
-          } else if (aliasKey === "quarter") {
+          } else if (aliasKey === "quarters") {
             this._months = 3;
           } else if (aliasKey === "weeks") {
             this._days = 1 * 7;
@@ -377,7 +377,7 @@ export class Duration {
           this._months += val;
         } else if (aliased === "years") {
           this._months += val * 12;
-        } else if (aliased === "quarter") {
+        } else if (aliased === "quarters") {
           this._months += val * 3;
         } else if (aliased === "hours") {
           this._milliseconds += Math.round(val * 3600000);
@@ -472,34 +472,26 @@ export class Duration {
 
   as(unit: string): number {
     const ms = this.valueOf();
+    const key = unitAliasToKey[unit] ?? unit;
     const baseDays = this._days + Math.round(monthsToDays(this._months));
-    switch (unit) {
+    switch (key) {
       case "milliseconds":
-      case "ms":
         return baseDays * 86400000 + this._milliseconds;
       case "seconds":
-      case "s":
         return baseDays * 86400 + this._milliseconds / 1000;
       case "minutes":
-      case "m":
         return baseDays * 1440 + this._milliseconds / 60000;
       case "hours":
-      case "h":
         return baseDays * 24 + this._milliseconds / 3600000;
       case "days":
-      case "d":
         return baseDays + this._milliseconds / 86400000;
       case "weeks":
-      case "w":
         return baseDays / 7 + this._milliseconds / 604800000;
       case "months":
-      case "M":
         return this._months + daysToMonths(this._days + this._milliseconds / 86400000);
       case "quarters":
-      case "Q":
         return (this._months + daysToMonths(this._days + this._milliseconds / 86400000)) / 3;
       case "years":
-      case "y":
         return (this._months + daysToMonths(this._days + this._milliseconds / 86400000)) / 12;
       default:
         return ms;

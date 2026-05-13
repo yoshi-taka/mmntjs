@@ -1,9 +1,14 @@
 import { describe, test, expect, beforeEach } from "bun:test";
 import moment from "../src/index.ts";
+import originalMoment from "../moment/moment.js";
+
+const nullLocaleConfig = null as unknown as Record<string, unknown>;
+const localeSpec = (config: Record<string, unknown>): Record<string, unknown> => config;
 
 // guarantee we always start from "en" locale
 beforeEach(() => {
   moment.locale("en");
+  originalMoment.locale("en");
 });
 
 describe("moment.locale()", () => {
@@ -11,10 +16,13 @@ describe("moment.locale()", () => {
     expect(typeof moment.locale()).toBe("string");
   });
 
-  test("sets locale by name", () => {
-    const result = moment.locale("de");
-    expect(result).toBe("de");
-    expect(moment.locale()).toBe("de");
+  test("sets locale by name for a defined locale", () => {
+    moment.locale("xx-switch", {
+      months: "A B C D E F G H I J K L".split(" "),
+    });
+    expect(moment.locale("xx-switch")).toBe("xx-switch");
+    expect(moment.locale()).toBe("xx-switch");
+    moment.locale("xx-switch", nullLocaleConfig);
   });
 
   test("sets locale by array - picks first available", () => {
@@ -22,9 +30,17 @@ describe("moment.locale()", () => {
     expect(result).toBe("en");
   });
 
-  test("unknown locale string is set as-is (no fallback on set)", () => {
-    const result = moment.locale("xx-YY");
-    expect(result).toBe("xx-YY");
+  test("unknown locale string keeps current locale", () => {
+    moment.locale("xx-current", {
+      months: "A B C D E F G H I J K L".split(" "),
+    });
+    originalMoment.locale("xx-current", localeSpec({
+      months: "A B C D E F G H I J K L".split(" "),
+    }));
+    expect(moment.locale("xx-YY")).toBe(originalMoment.locale("xx-YY"));
+    expect(moment.locale()).toBe(originalMoment.locale());
+    moment.locale("xx-current", nullLocaleConfig);
+    originalMoment.locale("xx-current", nullLocaleConfig);
   });
 
   test("locale set by exact name works", () => {
@@ -41,7 +57,7 @@ describe("moment.locale() with key-value (defineLocale)", () => {
     });
     expect(result).toBe("xx-dialect");
     expect(moment.locale()).toBe("xx-dialect");
-    moment.locale("xx-dialect", null as any);
+    moment.locale("xx-dialect", nullLocaleConfig);
   });
 
   test("defines locale with parentLocale", () => {
@@ -51,7 +67,7 @@ describe("moment.locale() with key-value (defineLocale)", () => {
     });
     const m = moment();
     expect(m.format("MMMM")).toMatch(/^Xx/);
-    moment.locale("xx-child", null as any);
+    moment.locale("xx-child", nullLocaleConfig);
   });
 
   test("defines locale then updates it", () => {
@@ -67,7 +83,7 @@ describe("moment.locale() with key-value (defineLocale)", () => {
     });
     expect(moment.utc("2024-01-15").format("MMM")).toBe("J");
     expect(moment.utc("2024-01-15").format("MMMM")).toBe("Ja");
-    moment.locale("xx-test", null as any);
+    moment.locale("xx-test", nullLocaleConfig);
   });
 });
 
@@ -86,9 +102,9 @@ describe("moment.updateLocale()", () => {
   });
 
   test("updateLocale with null on non-existent locale returns en", () => {
-    const result = moment.updateLocale("xx-nonexist", null);
-    // returns the locale object for "en" (fallback)
-    expect(result).toBeDefined();
+    expect(moment.updateLocale("xx-nonexist", null) as unknown).toBe(
+      originalMoment.updateLocale("xx-nonexist", null as unknown as never) as unknown,
+    );
   });
 });
 
@@ -98,13 +114,13 @@ describe("moment.locale() -> defineLocale null", () => {
       months: "A B C D E F G H I J K L".split(" "),
     });
     expect(moment.locales()).toContain("xx-del");
-    moment.locale("xx-del", null as any);
+    moment.locale("xx-del", nullLocaleConfig);
     expect(moment.locales()).not.toContain("xx-del");
   });
 
   test("defineLocale null on unknown locale returns en", () => {
-    const result = moment.locale("xx-ghost", null as any);
-    expect(result).toBeDefined();
+    expect(moment.locale("xx-ghost", nullLocaleConfig)).toBe(originalMoment.locale("xx-ghost", nullLocaleConfig));
+    expect(moment.locales()).not.toContain("xx-ghost");
   });
 });
 
@@ -141,7 +157,8 @@ describe("moment.months()", () => {
 
   test("month(index) with short format returns short", () => {
     moment.locale("en");
-    expect(moment.months("MMM", 0)).toBe("Jan");
+    originalMoment.locale("en");
+    expect(moment.months("MMM", 0)).toBe(originalMoment.months("MMM", 0));
   });
 });
 
@@ -178,27 +195,20 @@ describe("moment.weekdays()", () => {
     expect(reordered.length).toBe(7);
   });
 
-  test("returns format weekdays", () => {
-    const fmt = moment.weekdays("format");
-    expect(Array.isArray(fmt)).toBe(true);
-    expect(fmt.length).toBe(7);
+  test("returns format weekday string", () => {
+    expect(moment.weekdays("format")).toBe(originalMoment.weekdays("format"));
   });
 
-  test("returns shortFormat weekdays", () => {
-    const sf = moment.weekdays("shortFormat");
-    expect(Array.isArray(sf)).toBe(true);
-    expect(sf.length).toBe(7);
+  test("returns shortFormat weekday string", () => {
+    expect(moment.weekdays("shortFormat")).toBe(originalMoment.weekdays("shortFormat"));
   });
 
-  test("returns minFormat weekdays", () => {
-    const mf = moment.weekdays("minFormat");
-    expect(Array.isArray(mf)).toBe(true);
-    expect(mf.length).toBe(7);
+  test("returns minFormat weekday string", () => {
+    expect(moment.weekdays("minFormat")).toBe(originalMoment.weekdays("minFormat"));
   });
 
   test("returns specific index with format", () => {
-    const d = moment.weekdays("format", 1);
-    expect(d).toBe("Monday");
+    expect(moment.weekdays("format", 1)).toBe(originalMoment.weekdays("format", 1));
   });
 });
 
@@ -236,8 +246,13 @@ describe("moment.locale() edge cases", () => {
       parentLocale: "xx-missing",
       months: "A B C D E F G H I J K L".split(" "),
     });
-    expect(typeof result).toBe("string");
-    moment.locale("xx-orphan", null as any);
+    const expected = originalMoment.locale("xx-orphan", localeSpec({
+      parentLocale: "xx-missing",
+      months: "A B C D E F G H I J K L".split(" "),
+    }));
+    expect(result).toBe(expected);
+    expect(moment.locales().includes("xx-orphan")).toBe(originalMoment.locales().includes("xx-orphan"));
+    moment.locale("xx-orphan", nullLocaleConfig);
   });
 
   test("defineLocale updates existing config without parentLocale", () => {
@@ -248,7 +263,7 @@ describe("moment.locale() edge cases", () => {
       monthsShort: "A B C D E F G H I J K L".split(" "),
     });
     expect(moment.monthsShort(0)).toBe("A");
-    moment.locale("xx-dup", null as any);
+    moment.locale("xx-dup", nullLocaleConfig);
   });
 
   test("setLocaleFromArray picks exact match first", () => {

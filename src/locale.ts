@@ -86,6 +86,9 @@ export function defineLocale(locale: string, config: LocaleSpec | null): Locale 
   }
 
   const parentLocale = (config as LocaleSpec & { parentLocale?: string }).parentLocale;
+  if (parentLocale && !hasLocale(parentLocale)) {
+    return undefined;
+  }
   const currentConfig = localeConfigs[locale];
   if (currentConfig && !parentLocale) {
     localeConfigs[locale] = mergeLocaleConfigs(currentConfig, config);
@@ -110,6 +113,10 @@ export function updateLocale(locale: string, config: Partial<LocaleSpec> | null)
       localeConfigs[locale] = { ...original };
       delete originalLocales[locale];
     } else {
+      if (!localeConfigs[locale]) {
+        clearLocaleRuntimeCache();
+        return undefined as unknown as Locale;
+      }
       delete localeConfigs[locale];
       if (getCurrentLocale() === locale) {
         setLocale("en");
@@ -148,27 +155,29 @@ export function listLocales(): string[] {
 
 export function getMonths(format?: string | number, index?: number): string | string[] {
   const loc = getLocale();
+  const months = loc._config.months ?? enLocale.months;
   if (typeof format === "number") {
     return loc._months[format];
   }
-  const isShort = format === "short" || format !== undefined;
-  if (isShort) {
-    const cfgShort = loc._config.monthsShort ?? enLocale.monthsShort;
-    if (isFunction(cfgShort)) {
-      const fmt = typeof format === "string" && format !== "short" ? format : "MMM";
-      if (index !== undefined) {
-        return (cfgShort as Function)({ month: () => index } as { month: () => number }, fmt);
+  if (format !== undefined) {
+    const monthForIndex = (monthIndex: number): string => {
+      if (isFunction(months)) {
+        return (months as Function).call(loc._config, { month: () => monthIndex } as { month: () => number }, format);
       }
-      const all: string[] = [];
-      for (let i = 0; i < loc._months.length; i++) {
-        const r = (cfgShort as Function)({ month: () => i } as { month: () => number }, fmt);
-        if (Array.isArray(r)) {return r;}
-        all.push(r);
+      if (Array.isArray(months)) {
+        return months[monthIndex] ?? "";
       }
-      return all;
-    }
-    if (index !== undefined) {return loc._monthsShort[index];}
-    return loc._monthsShort;
+      if (typeof months === "object") {
+        const isFmt = months.isFormat;
+        const monthsInFormat = /D[oD]?(\[[^[\]]*\]|\s)+MMMM?/;
+        const useFormat = isFmt instanceof RegExp ? isFmt.test(format) : monthsInFormat.test(format);
+        const list = useFormat ? months.format : months.standalone;
+        return list[monthIndex] ?? "";
+      }
+      return "";
+    };
+    if (index !== undefined) {return monthForIndex(index);}
+    return loc._months.map((_, monthIndex) => monthForIndex(monthIndex));
   }
   if (index !== undefined) {return loc._months[index];}
   return loc._months;
@@ -182,6 +191,7 @@ export function getWeekdays(format?: string | number | boolean, index?: number):
   const loc = getLocale();
   const weekCfg = (loc._config as LocaleSpec & Record<string, unknown>).week ?? { dow: 0 };
   const dow = weekCfg.dow;
+  const todayIndex = new Date().getDay();
   if (typeof format === "number") {
     return loc._weekdays[format];
   }
@@ -201,19 +211,13 @@ export function getWeekdays(format?: string | number | boolean, index?: number):
     return wm;
   }
   if (format === "format") {
-    const reordered = reorderByDow(loc._weekdays, dow);
-    if (index !== undefined) {return reordered[index];}
-    return reordered;
+    return loc._weekdays[todayIndex];
   }
   if (format === "shortFormat") {
-    const reordered = reorderByDow(loc.weekdaysShortArray(), dow);
-    if (index !== undefined) {return reordered[index];}
-    return reordered;
+    return loc._weekdays[todayIndex];
   }
   if (format === "minFormat") {
-    const reordered = reorderByDow(loc.weekdaysMinArray(), dow);
-    if (index !== undefined) {return reordered[index];}
-    return reordered;
+    return loc._weekdays[todayIndex];
   }
   if (index !== undefined) {return loc._weekdays[index];}
   return loc._weekdays;

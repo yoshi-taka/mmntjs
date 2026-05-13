@@ -59,7 +59,7 @@ export function initializeCoreEntry(
   registerUtcApi(target as unknown as Parameters<typeof registerUtcApi>[0], { nowFn });
   setDurationMomentResolver((input: unknown) => {
     if (input instanceof Moment) {return input as unknown as DurationMomentLike;}
-    return target(input as any) as unknown as DurationMomentLike;
+    return target(input) as unknown as DurationMomentLike;
   });
 }
 

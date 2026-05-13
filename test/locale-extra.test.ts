@@ -1,5 +1,10 @@
 import { describe, test, expect } from "bun:test";
 import moment from "../src/index.ts";
+import originalMoment from "../moment/moment.js";
+
+type DeprecatedLangMoment = ReturnType<typeof moment> & {
+  lang(locale?: string): string | ReturnType<typeof moment>;
+};
 
 describe("locale-extra week methods", () => {
   describe("weekday", () => {
@@ -10,8 +15,11 @@ describe("locale-extra week methods", () => {
 
     test("setter changes date", () => {
       const m = moment("2024-01-15");
+      const o = originalMoment("2024-01-15");
       m.weekday(0);
-      expect(m.weekday()).toBe(0);
+      o.weekday(0);
+      expect(m.format("YYYY-MM-DD")).toBe(o.format("YYYY-MM-DD"));
+      expect(m.weekday()).toBe(o.weekday());
     });
 
     test("setter returns moment", () => {
@@ -29,8 +37,11 @@ describe("locale-extra week methods", () => {
 
     test("setter changes date", () => {
       const m = moment("2024-01-15");
+      const o = originalMoment("2024-01-15");
       m.week(10);
-      expect(m.week()).toBe(10);
+      o.week(10);
+      expect(m.format("YYYY-MM-DD")).toBe(o.format("YYYY-MM-DD"));
+      expect(m.week()).toBe(o.week());
     });
   });
 
@@ -42,8 +53,11 @@ describe("locale-extra week methods", () => {
 
     test("setter changes week year", () => {
       const m = moment("2024-06-15");
+      const o = originalMoment("2024-06-15");
       m.weekYear(2025);
-      expect(typeof m.weekYear()).toBe("number");
+      o.weekYear(2025);
+      expect(m.format("YYYY-MM-DD")).toBe(o.format("YYYY-MM-DD"));
+      expect(m.weekYear()).toBe(o.weekYear());
     });
   });
 
@@ -73,13 +87,13 @@ describe("locale-extra week methods", () => {
   describe("lang (deprecated)", () => {
     test("getter returns current lang", () => {
       const m = moment("2024-01-15");
-      expect(typeof (m as any).lang()).toBe("string");
+      expect(typeof (m as DeprecatedLangMoment).lang()).toBe("string");
     });
 
     test("setter changes lang to en (only available locale)", () => {
       const m = moment("2024-01-15");
-      (m as any).lang("en");
-      expect((m as any).lang()).toBe("en");
+      (m as DeprecatedLangMoment).lang("en");
+      expect((m as DeprecatedLangMoment).lang()).toBe("en");
     });
   });
 
@@ -104,6 +118,8 @@ describe("locale-extra week methods", () => {
     test("locale(false) resets to global", () => {
       const m = moment("2024-01-15");
       m.locale("en");
+      const r = m.locale(false as unknown as string[]);
+      expect(r).toBe(m);
       expect(m.locale()).toBe("en");
     });
   });

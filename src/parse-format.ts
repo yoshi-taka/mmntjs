@@ -526,50 +526,12 @@ const monthNames: Record<string, number> = {
   december: 11,
 };
 
-function addCharVariants(names: string[]): string[] {
-  const result: string[] = [...names];
-  for (const name of names) {
-    if (name.includes('\u02BC')) {
-      result.push(name.replaceAll('ʼ', "'"));
-    }
-    if (name.includes("'")) {
-      result.push(name.replaceAll('\'', '\u02BC'));
-    }
-  }
-  return result;
-}
-
-function getMonthExtraNames(loc: ParseLocale): string[] {
-  const cfg = (loc as unknown as Record<string, unknown>)._config as Record<string, unknown>;
-  const monthsConfig = cfg.months;
-  const extra: string[] = [];
-  if (typeof monthsConfig === 'object' && monthsConfig !== null && !Array.isArray(monthsConfig)) {
-    const fmt = (monthsConfig as Record<string, unknown>).format;
-    if (Array.isArray(fmt)) {
-      const formatLower = fmt.map((m: string) => m.toLowerCase());
-      extra.push(...formatLower);
-    }
-  } else if (typeof monthsConfig === 'function') {
-    for (let i = 0; i < 12; i++) {
-      const fakeM = { month: () => i } as { month: () => number };
-      try {
-        const name = monthsConfig.call(loc._config, fakeM, 'DD MMMM YYYY');
-        if (typeof name === 'string') {
-          extra.push(name.toLowerCase());
-        }
-      } catch {}
-    }
-  }
-  return extra;
-}
-
 function getLocaleMonthsFull(loc: ParseLocale): string[] {
   if ((loc as unknown as Record<string, unknown>)._monthsCache !== undefined) {return (loc as unknown as Record<string, unknown>)._monthsCache as string[];}
   const months = localeMonths(loc as never);
   const monthsArr = Array.isArray(months) ? months : [];
   const lower = monthsArr.map((m: string) => m.toLowerCase());
-  const extraNames = getMonthExtraNames(loc);
-  const allFull = [...new Set(addCharVariants([...lower, ...extraNames]))];
+  const allFull = [...new Set(lower)];
   (loc as unknown as Record<string, unknown>)._monthsCache = lower;
   (loc as unknown as Record<string, unknown>)._monthsStrictRegex = new RegExp(`^(${  sortByLengthDesc(allFull).map(escapeRegex).join("|")  })`, "i");
   const monthsShort = localeMonthsShort(loc as never);
@@ -577,7 +539,7 @@ function getLocaleMonthsFull(loc: ParseLocale): string[] {
   const shortLower = shortArr.map((m: string) => m.toLowerCase());
   // Strip trailing periods from short months for matching
   const shortNoPeriod = shortLower.map((m: string) => m.replace(/\.$/, '')).filter((m) => m.length > 0);
-  const all = [...new Set(addCharVariants([...allFull, ...shortLower, ...shortNoPeriod]))];
+  const all = [...new Set([...allFull, ...shortLower, ...shortNoPeriod])];
   (loc as unknown as Record<string, unknown>)._monthsRegex = new RegExp(`^(${  sortByLengthDesc(all).map(escapeRegex).join("|")  })`, "i");
   return lower;
 }
@@ -600,7 +562,7 @@ function getLocaleMonthsShort(loc: ParseLocale): string[] {
   const lower = shortArr.map((m: string) => m.toLowerCase());
   (loc as unknown as Record<string, unknown>)._monthsShortCache = lower;
   const noPeriod = lower.map(m => m.replace(/\.$/, '')).filter(m => m.length > 0);
-  const allStrict = [...new Set(addCharVariants([...lower, ...noPeriod]))];
+  const allStrict = [...new Set([...lower, ...noPeriod])];
   (loc as unknown as Record<string, unknown>)._monthsShortStrictRegex = new RegExp(`^(${  sortByLengthDesc(allStrict).map(escapeRegex).join("|")  })`, "i");
   if (lower.length === 0) {return getLocaleMonthsFull(loc);}
   return lower;
@@ -615,15 +577,23 @@ function getLocaleMonthsShortRegex(loc: ParseLocale, strict?: boolean): RegExp {
   if ((loc as unknown as Record<string, unknown>)._monthsShortRegex !== undefined) {return (loc as unknown as Record<string, unknown>)._monthsShortRegex as RegExp;}
   const shortList = getLocaleMonthsShort(loc);
   const fullList = getLocaleMonthsFull(loc);
-  const extraNames = getMonthExtraNames(loc);
   const noPeriod = shortList.map(m => m.replace(/\.$/, '')).filter(m => m.length > 0);
-  const all = [...new Set(addCharVariants([...shortList, ...fullList, ...extraNames, ...noPeriod]))];
+  const all = [...new Set([...shortList, ...fullList, ...noPeriod])];
   (loc as unknown as Record<string, unknown>)._monthsShortRegex = new RegExp(`^(${  sortByLengthDesc(all).map(escapeRegex).join("|")  })`, "i");
   return (loc as unknown as Record<string, unknown>)._monthsShortRegex as RegExp;
 }
 
 function sortByLengthDesc(arr: string[]): string[] {
   return [...arr].sort((a, b) => b.length - a.length);
+}
+
+function allowsEnglishNameFallback(loc: ParseLocale): boolean {
+  const abbr = (loc as unknown as Record<string, unknown>)._abbr;
+  return typeof abbr === "string" && abbr.startsWith("en");
+}
+
+function hasWordContinuation(remaining: string, matchedLength: number): boolean {
+  return /^[\p{L}\p{N}'\u02BC]/u.test(remaining.slice(matchedLength));
 }
 
 function getLocaleWeekdaysFull(loc: ParseLocale): string[] {
@@ -646,7 +616,7 @@ function getLocaleWeekdaysFull(loc: ParseLocale): string[] {
   }
   const lower = names.map((m: string) => m.toLowerCase());
   (loc as unknown as Record<string, unknown>)._weekdaysCache = lower;
-  const all = [...new Set(addCharVariants(lower))];
+  const all = [...new Set(lower)];
   (loc as unknown as Record<string, unknown>)._weekdaysRegex = new RegExp(`^(${  sortByLengthDesc(all).map(escapeRegex).join("|")  })`, "i");
   return lower;
 }
@@ -672,7 +642,7 @@ function getLocaleWeekdaysShort(loc: ParseLocale): string[] {
   }
   const lower = names.map((m: string) => m.toLowerCase());
   (loc as unknown as Record<string, unknown>)._weekdaysShortCache = lower;
-  const all = [...new Set(addCharVariants(lower))];
+  const all = [...new Set(lower)];
   (loc as unknown as Record<string, unknown>)._weekdaysShortRegex = new RegExp(`^(${  sortByLengthDesc(all).map(escapeRegex).join("|")  })`, "i");
   return lower;
 }
@@ -698,7 +668,7 @@ function getLocaleWeekdaysMin(loc: ParseLocale): string[] {
   }
   const lower = names.map((m: string) => m.toLowerCase());
   (loc as unknown as Record<string, unknown>)._weekdaysMinCache = lower;
-  const all = [...new Set(addCharVariants(lower))];
+  const all = [...new Set(lower)];
   (loc as unknown as Record<string, unknown>)._weekdaysMinRegex = new RegExp(`^(${  sortByLengthDesc(all).map(escapeRegex).join("|")  })`, "i");
   return lower;
 }
@@ -1506,14 +1476,9 @@ function hdddd(ctx: ParseCtx): void {
   if (wdList.length > 0) {
     const match = remaining.match(getLocaleWeekdaysFullRegex(ctx.loc));
     if (match) {
+      if (ctx.strict && hasWordContinuation(remaining, match[0].length)) { ctx.failed = true; return; }
       const matchedName = match[1].toLowerCase();
-      let idx = wdList.indexOf(matchedName);
-      if (idx < 0) {
-        for (let vi = 0; vi < wdList.length; vi++) {
-          const v = addCharVariants([wdList[vi]]);
-          if (v.includes(matchedName)) { idx = vi; break; }
-        }
-      }
+      const idx = wdList.indexOf(matchedName);
       if (idx >= 0) {
         _matched = true;
         ctx.result._weekdayName = match[1];
@@ -1523,7 +1488,9 @@ function hdddd(ctx: ParseCtx): void {
       return;
     }
   }
-  const enMatch = remaining.match(/^(Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)/i);
+  const enMatch = allowsEnglishNameFallback(ctx.loc)
+    ? remaining.match(/^(Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)/i)
+    : null;
   if (enMatch) {
     _matched = true;
     ctx.result._weekdayName = enMatch[1];
@@ -1547,14 +1514,9 @@ function hddd(ctx: ParseCtx): void {
     const regex = getLocaleWeekdaysShortRegex(ctx.loc);
     const match = remaining.match(regex);
     if (match) {
+      if (ctx.strict && hasWordContinuation(remaining, match[0].length)) { ctx.failed = true; return; }
       const matchedName = match[1].toLowerCase();
-      let idx = wdList.indexOf(matchedName);
-      if (idx < 0) {
-        for (let vi = 0; vi < wdList.length; vi++) {
-          const v = addCharVariants([wdList[vi]]);
-          if (v.includes(matchedName)) { idx = vi; break; }
-        }
-      }
+      const idx = wdList.indexOf(matchedName);
       if (idx >= 0) {
         _matched = true;
         ctx.result._weekdayName = match[1];
@@ -1564,7 +1526,9 @@ function hddd(ctx: ParseCtx): void {
       return;
     }
   }
-  const enMatch = remaining.match(/^(Sun|Mon|Tue|Wed|Thu|Fri|Sat)/i);
+  const enMatch = allowsEnglishNameFallback(ctx.loc)
+    ? remaining.match(/^(Sun|Mon|Tue|Wed|Thu|Fri|Sat)/i)
+    : null;
   if (enMatch) {
     _matched = true;
     ctx.result._weekdayName = enMatch[1];
@@ -1587,14 +1551,9 @@ function hdd(ctx: ParseCtx): void {
   if (wdList.length > 0) {
     const match = remaining.match(getLocaleWeekdaysMinRegex(ctx.loc));
     if (match) {
+      if (ctx.strict && hasWordContinuation(remaining, match[0].length)) { ctx.failed = true; return; }
       const matchedName = match[1].toLowerCase();
-      let idx = wdList.indexOf(matchedName);
-      if (idx < 0) {
-        for (let vi = 0; vi < wdList.length; vi++) {
-          const v = addCharVariants([wdList[vi]]);
-          if (v.includes(matchedName)) { idx = vi; break; }
-        }
-      }
+      const idx = wdList.indexOf(matchedName);
       if (idx >= 0) {
         _matched = true;
         ctx.result._weekdayName = match[1];
@@ -1604,9 +1563,8 @@ function hdd(ctx: ParseCtx): void {
       return;
     }
   }
-  const enLoose = remaining.match(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)/i);
-  if (enLoose || !ctx.strict) {
-    const looseMatch = enLoose ?? remaining.match(/^\w+/);
+  if (!ctx.strict) {
+    const looseMatch = remaining.match(/^\w+/);
     if (looseMatch) { ctx.strIdx += looseMatch[0].length; return; }
   }
   ctx.failed = true;
@@ -1619,36 +1577,22 @@ function hMMMM(ctx: ParseCtx): void {
   if (monthList.length > 0) {
     const match = remaining.match(getLocaleMonthsFullRegex(ctx.loc, ctx.strict));
     if (match) {
+      if (ctx.strict && hasWordContinuation(remaining, match[0].length)) { ctx.failed = true; return; }
       const matched = match[1].toLowerCase();
       let idx = monthList.indexOf(matched);
       if (!ctx.strict && idx < 0) { idx = monthListShort.indexOf(matched); }
       if (idx < 0) {
-        const cfgMonths = (ctx.loc._config).months;
-        if (typeof cfgMonths === 'object' && !Array.isArray(cfgMonths)) {
-          const fmt = (cfgMonths as Record<string, unknown>).format;
-          if (Array.isArray(fmt)) { idx = fmt.map((m: string) => m.toLowerCase()).indexOf(matched); }
-        } else if (typeof cfgMonths === 'function') {
-          for (let mi = 0; mi < 12; mi++) {
-            const fm = { month: () => mi } as { month: () => number };
-            try {
-              const name = cfgMonths.call((ctx.loc as unknown as Record<string, unknown>)._config, fm, 'DD MMMM YYYY');
-              if (typeof name === 'string' && name.toLowerCase() === matched) { idx = mi; break; }
-            } catch {}
-          }
-        }
-      }
-      if (idx < 0) {
         const noPeriod = matched.replace(/\.$/, '');
         for (let vi = 0; vi < monthList.length; vi++) {
-          const variants = addCharVariants([monthList[vi]]);
-          if (variants.includes(matched) || variants.map((m: string) => m.replace(/\.$/, '')).includes(noPeriod)) { idx = vi; break; }
+          const base = monthList[vi];
+          if (base === matched || base.replace(/\.$/, '') === noPeriod) { idx = vi; break; }
         }
       }
       if (idx < 0 && !ctx.strict) {
         const noPeriod = matched.replace(/\.$/, '');
         for (let vi = 0; vi < monthListShort.length; vi++) {
-          const variants = addCharVariants([monthListShort[vi]]);
-          if (variants.includes(matched) || variants.map((m: string) => m.replace(/\.$/, '')).includes(noPeriod)) { idx = vi; break; }
+          const base = monthListShort[vi];
+          if (base === matched || base.replace(/\.$/, '') === noPeriod) { idx = vi; break; }
         }
       }
       if (idx >= 0) {
@@ -1659,7 +1603,9 @@ function hMMMM(ctx: ParseCtx): void {
       }
     }
   }
-  const enMatch = remaining.match(/^(January|February|March|April|May|June|July|August|September|October|November|December)/i);
+  const enMatch = allowsEnglishNameFallback(ctx.loc)
+    ? remaining.match(/^(January|February|March|April|May|June|July|August|September|October|November|December)/i)
+    : null;
   if (enMatch) {
     const monthVal = monthNames[enMatch[1].toLowerCase()];
     {
@@ -1689,36 +1635,22 @@ function hMMM(ctx: ParseCtx): void {
   if (monthListShort.length > 0 || monthListFull.length > 0) {
     const match = remaining.match(getLocaleMonthsShortRegex(ctx.loc, ctx.strict));
     if (match) {
+      if (ctx.strict && hasWordContinuation(remaining, match[0].length)) { ctx.failed = true; return; }
       const matched = match[1].toLowerCase();
       let idx = monthListShort.indexOf(matched);
       if (!ctx.strict && idx < 0) { idx = monthListFull.indexOf(matched); }
       if (idx < 0) {
-        const cfgMonths = (ctx.loc._config).months;
-        if (typeof cfgMonths === 'object' && !Array.isArray(cfgMonths)) {
-          const fmt = (cfgMonths as Record<string, unknown>).format;
-          if (Array.isArray(fmt)) { idx = fmt.map((m: string) => m.toLowerCase()).indexOf(matched); }
-        } else if (typeof cfgMonths === 'function') {
-          for (let mi = 0; mi < 12; mi++) {
-            const fm = { month: () => mi } as { month: () => number };
-            try {
-              const name = cfgMonths.call((ctx.loc as unknown as Record<string, unknown>)._config, fm, 'DD MMMM YYYY');
-              if (typeof name === 'string' && name.toLowerCase() === matched) { idx = mi; break; }
-            } catch {}
-          }
-        }
-      }
-      if (idx < 0) {
         const noPeriod = matched.replace(/\.$/, '');
         for (let vi = 0; vi < monthListShort.length; vi++) {
-          const variants = addCharVariants([monthListShort[vi]]);
-          if (variants.includes(matched) || variants.map((m: string) => m.replace(/\.$/, '')).includes(noPeriod)) { idx = vi; break; }
+          const base = monthListShort[vi];
+          if (base === matched || base.replace(/\.$/, '') === noPeriod) { idx = vi; break; }
         }
       }
       if (idx < 0) {
         const noPeriod = matched.replace(/\.$/, '');
         for (let vi = 0; vi < monthListFull.length; vi++) {
-          const variants = addCharVariants([monthListFull[vi]]);
-          if (variants.includes(matched) || variants.map((m: string) => m.replace(/\.$/, '')).includes(noPeriod)) { idx = vi; break; }
+          const base = monthListFull[vi];
+          if (base === matched || base.replace(/\.$/, '') === noPeriod) { idx = vi; break; }
         }
       }
       if (idx >= 0) {
@@ -1729,7 +1661,9 @@ function hMMM(ctx: ParseCtx): void {
       }
     }
   }
-  const enMatch = remaining.match(/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i);
+  const enMatch = allowsEnglishNameFallback(ctx.loc)
+    ? remaining.match(/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i)
+    : null;
   if (enMatch) {
     const monthVal = monthNames[enMatch[1].toLowerCase()];
     ctx.result.month = monthVal;

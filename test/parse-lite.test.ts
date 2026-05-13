@@ -9,9 +9,10 @@ import {
   isCustomFormatParsingEnabled,
   registerCustomFormatParser,
 } from "../src/parse-lite.ts";
+import type { ParseLocale } from "../src/parse-locale";
 
-function enLocale() {
-  return { _config: {} } as any;
+function enLocale(): ParseLocale {
+  return { _config: {} } as unknown as ParseLocale;
 }
 
 function parsedYearMonthDay(y: number, m: number, d: number) {
@@ -20,9 +21,9 @@ function parsedYearMonthDay(y: number, m: number, d: number) {
 
 describe("parseString", () => {
   test("returns null for non-string input", () => {
-    expect(parseString(123 as any)).toBeNull();
-    expect(parseString(null as any)).toBeNull();
-    expect(parseString(undefined as any)).toBeNull();
+    expect(parseString(123 as unknown as string)).toBeNull();
+    expect(parseString(null as unknown as string)).toBeNull();
+    expect(parseString(undefined as unknown as string)).toBeNull();
   });
 
   test("returns null without locale", () => {
@@ -161,13 +162,13 @@ describe("parseString", () => {
   test("custom format parsing with registered parser", () => {
     enableCustomFormatParsing();
     registerCustomFormatParser(
-      (str, fmt, loc, strict) => {
+      (str, fmt, _loc, _strict) => {
         if (fmt === "YYYY-MM-DD" && /^\d{4}-\d{2}-\d{2}$/.test(str)) {
           return { year: 2024, month: 0, day: 15, _unusedTokens: [], _unusedInput: [], _charsLeftOver: 0, _empty: false, _invalidMonth: null, _parsedDateParts: [] };
         }
         return null;
       },
-      (str, fmts, loc, strict) => null,
+      (_str, _fmts, _loc, _strict) => null,
     );
     const result = parseString("2024-01-15", "YYYY-MM-DD", enLocale());
     expect(result).toEqual(expect.objectContaining({ year: 2024, month: 0, day: 15 }));

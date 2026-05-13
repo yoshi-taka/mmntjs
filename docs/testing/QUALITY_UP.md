@@ -108,6 +108,72 @@
     - ✅ `duration.ts`: 67.4% → **80.4%** (+13.0pt)
     - ✅ `moment-lite.ts`: 59.5% → **73.1%** (+13.6pt)
 
+## Phase 4 Oracle Audit 進捗 (2026-05-13)
+
+Phase 4 で追加した UT を、実装都合ではなく `moment/` の moment.js 実測に合わせて再精査中。
+
+- **監査・修正済みテスト**
+  - `test/parse-main.test.ts`
+  - `test/parse-format.test.ts`
+  - `test/locale-mgmt.test.ts`
+  - `test/locale-extra.test.ts`
+  - `test/utc-extra.test.ts`
+  - `test/factory-input-format.test.ts`
+  - `test/display-extra.test.ts`
+  - `test/moment-class-extra.test.ts`
+  - `test/factory-lite.test.ts`
+  - `test/moment-lite.test.ts`
+  - `test/format-basic.test.ts`
+  - `test/units.test.ts`
+  - `test/duration-between.test.ts`
+  - `test/debug-extra.test.ts`
+  - `test/calendar-extra.test.ts`
+  - `test/duration-extra.test.ts`
+  - `test/plugins.test.ts`
+  - `test/parse-lite.test.ts`
+  - `test/parse-lite-strict.test.ts`
+  - `test/properties/basic.test.ts`
+
+- **この監査で直した実装バグ**
+  - custom locale の month/weekday strict parse が英語 fallback しすぎる
+  - apostrophe variant を month/weekday parse で過剰受理する
+  - strict parse が prefix-consume (`janfun` → `jan`) を許していた
+  - `moment.locale("xx")` が unknown locale で current locale を保持しない
+  - missing parent locale の `defineLocale` 挙動
+  - `moment.months("MMM", i)` / `weekdays("format"|"shortFormat"|"minFormat")` の static API 差異
+  - instance `locale(false)` の戻り値差異
+  - `weekYear(y)` setter が local moment で効かない
+  - `isDST()` が UTC offset moment で `true` になる
+  - format array 中の `RFC_2822` を過剰受理する
+  - lite の `week()` / `isoWeek()` / `isoWeekYear()` setter/getter 差異
+  - lite の `moment(undefined, [])` 挙動
+  - `get("invalid")` の戻り値差異
+  - `moment.invalid({foo:"bar"})` の custom parsing flag が消える
+  - `clone()` が local offset / cold flags を落とす
+  - `Duration` の `quarter` / `quarters` / `Q` 処理が壊れている
+  - non-float `diff("month"|"year"|"quarter")` が local TZ で 1 ずれる
+  - valid formatted parse / overflow parse で `parsingFlags()` 用の metadata を落としている
+
+- **監査済み検証コマンド**
+  - `TZ=UTC bun test test/parse-main.test.ts test/parse-format.test.ts`
+  - `TZ=Asia/Tokyo bun test test/parse-main.test.ts test/parse-format.test.ts`
+  - `TZ=UTC bun test test/locale-mgmt.test.ts test/locale-extra.test.ts test/utc-extra.test.ts`
+  - `TZ=Asia/Tokyo bun test test/locale-mgmt.test.ts test/locale-extra.test.ts test/utc-extra.test.ts`
+  - `TZ=UTC bun test test/factory-input-format.test.ts`
+  - `TZ=Asia/Tokyo bun test test/factory-input-format.test.ts`
+  - `TZ=UTC bun test test/display-extra.test.ts test/moment-class-extra.test.ts test/factory-lite.test.ts test/moment-lite.test.ts`
+  - `TZ=Asia/Tokyo bun test test/display-extra.test.ts test/moment-class-extra.test.ts test/factory-lite.test.ts test/moment-lite.test.ts`
+  - `TZ=UTC bun test test/calendar-extra.test.ts test/debug-extra.test.ts test/units.test.ts test/duration-between.test.ts`
+  - `TZ=Asia/Tokyo bun test test/calendar-extra.test.ts test/debug-extra.test.ts test/units.test.ts test/duration-between.test.ts`
+  - `TZ=UTC bun test test/plugins.test.ts test/duration-extra.test.ts test/format-basic.test.ts test/parse-lite.test.ts test/parse-lite-strict.test.ts`
+  - `TZ=Asia/Tokyo bun test test/plugins.test.ts test/duration-extra.test.ts test/format-basic.test.ts test/parse-lite.test.ts test/parse-lite-strict.test.ts`
+  - `TZ=UTC bun test test/properties/basic.test.ts`
+  - `TZ=Asia/Tokyo bun test test/properties/basic.test.ts`
+
+- **未監査の Phase 4 追加テスト**
+  - Phase 4 追加 UT の oracle 監査は一通り完了
+  - 以後は Phase 5 以降、または fuzz / property で見つかる新規差分を随時回収
+
 ## Phase 5: 差分ファジング多様化
 
 - date-fns, luxon, dayjs との比較ハーネス追加

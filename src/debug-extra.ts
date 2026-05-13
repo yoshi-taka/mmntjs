@@ -3,6 +3,7 @@ import type { Locale } from "./locale-runtime";
 import type { Moment } from "./moment-class";
 
 type DebugMoment = Moment & {
+  _cold?: Record<string, unknown>;
   _i?: unknown;
   _f?: unknown;
   _isUTC: boolean;
@@ -43,7 +44,7 @@ type DebugMoment = Moment & {
   valueOf: () => number;
 };
 
-export function toArrayMoment(m: DebugMoment): number[] {
+function toArrayDebugMoment(m: DebugMoment): number[] {
   return [
     m.year(),
     m.month(),
@@ -55,7 +56,39 @@ export function toArrayMoment(m: DebugMoment): number[] {
   ];
 }
 
-export function inspectMoment(m: DebugMoment): string {
+function asDebugMoment(m: Moment): DebugMoment {
+  return m as DebugMoment;
+}
+
+export function toArrayMoment(m: Moment): number[] {
+  return toArrayDebugMoment(asDebugMoment(m));
+}
+
+export function inspectMoment(m: Moment): string {
+  return inspectDebugMoment(asDebugMoment(m));
+}
+
+export function toStringMoment(m: Moment): string {
+  return toStringDebugMoment(asDebugMoment(m));
+}
+
+export function creationDataMoment(m: Moment): Record<string, unknown> {
+  return creationDataDebugMoment(asDebugMoment(m));
+}
+
+export function parsingFlagsMoment(m: Moment): Record<string, unknown> {
+  return parsingFlagsDebugMoment(asDebugMoment(m));
+}
+
+export function invalidAtMoment(m: Moment): number {
+  return invalidAtDebugMoment(asDebugMoment(m));
+}
+
+export function toObjectMoment(m: Moment): Record<string, number> {
+  return toObjectDebugMoment(asDebugMoment(m));
+}
+
+function inspectDebugMoment(m: DebugMoment): string {
   if (!m._isValid) {
     const inputStr = m._i !== undefined ? String(m._i as string | number) : "";
     return `moment.invalid(/* ${inputStr} */)`;
@@ -69,12 +102,12 @@ export function inspectMoment(m: DebugMoment): string {
   return m.format(`[moment("]${yearStr}-MM-DD[T]HH:mm:ss.SSS[")]`);
 }
 
-export function toStringMoment(m: DebugMoment): string {
+function toStringDebugMoment(m: DebugMoment): string {
   if (!m._isValid) {return "Invalid date";}
   return m.format("ddd MMM DD YYYY HH:mm:ss [GMT]ZZ");
 }
 
-export function creationDataMoment(m: DebugMoment): Record<string, unknown> {
+function creationDataDebugMoment(m: DebugMoment): Record<string, unknown> {
   return {
     input: m._i,
     format: m._f,
@@ -84,7 +117,7 @@ export function creationDataMoment(m: DebugMoment): Record<string, unknown> {
   };
 }
 
-export function parsingFlagsMoment(m: DebugMoment): Record<string, unknown> {
+function parsingFlagsDebugMoment(m: DebugMoment): Record<string, unknown> {
   const result: Record<string, unknown> = {
     overflow: m._overflow ?? -1,
     unusedTokens: m._unusedTokens ?? [],
@@ -104,18 +137,26 @@ export function parsingFlagsMoment(m: DebugMoment): Record<string, unknown> {
     isParseZone: m._isParseZone ?? false,
     bigHour: m._bigHour ?? false,
   };
+  const known = new Set(Object.keys(result));
+  const cold = m._cold ?? {};
+  for (const [key, value] of Object.entries(cold)) {
+    const publicKey = key.startsWith("_") ? key.slice(1) : key;
+    if (!known.has(publicKey) && value !== undefined) {
+      result[publicKey] = value;
+    }
+  }
   if (m._invalidEra !== undefined) {result.invalidEra = m._invalidEra;}
   if (m._tooBusyWith !== undefined) {result.tooBusyWith = m._tooBusyWith;}
   return result;
 }
 
-export function invalidAtMoment(m: DebugMoment): number {
+function invalidAtDebugMoment(m: DebugMoment): number {
   const overflow = m._overflow;
   if (overflow === undefined || overflow < 0) {return -1;}
   return overflow;
 }
 
-export function toObjectMoment(m: DebugMoment): Record<string, number> {
+function toObjectDebugMoment(m: DebugMoment): Record<string, number> {
   return {
     years: m.year(),
     months: m.month(),

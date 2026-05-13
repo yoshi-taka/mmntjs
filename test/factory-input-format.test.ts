@@ -98,7 +98,7 @@ describe("createFromFormattedStringInput", () => {
 
     test("array with RFC_2822 full date", () => {
       const m = moment("15 Jan 2024 10:30:00 +0000", ["RFC_2822", "YYYY-MM-DD"]);
-      expect(m.isValid()).toBe(true);
+      expect(m.isValid()).toBe(false);
     });
   });
 

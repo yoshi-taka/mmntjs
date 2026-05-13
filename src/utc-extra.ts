@@ -72,7 +72,7 @@ function parseOffsetString(offset: string): number {
 export function utcOffsetMoment(m: UtcMoment, offset?: number | string, keepLocalTime?: boolean): number | Moment {
   if (offset === undefined) {
     (m as unknown as { _ensureFields: () => void })._ensureFields();
-    return m._offset ?? 0;
+    return m._offset;
   }
   let numOffset: number;
   if (typeof offset === "string") {
@@ -228,7 +228,7 @@ export function isUtcOffsetMoment(m: UtcMoment): boolean {
 
 export function isDSTMoment(m: UtcMoment): boolean {
   if (m._isUTC) {
-    return m._offset !== 0;
+    return false;
   }
   const dt = m._getD();
   const jan = new Date(dt.getFullYear(), 0, 1);

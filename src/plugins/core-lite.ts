@@ -54,7 +54,7 @@ export function registerLiteCoreApi(
     return target(ts * 1000);
   };
   momentRecord.invalid = function (input?: unknown): MomentLite {
-    const config: Record<string, unknown> = { _d: new Date(NaN), _isValid: false, _userInvalidated: true };
+    const config: Record<string, unknown> = { _d: new Date(NaN), _isValid: false, _userInvalidated: input === undefined };
     if (
       typeof input === "object" &&
       input !== null &&
@@ -65,7 +65,6 @@ export function registerLiteCoreApi(
       for (const key of Object.keys(input)) {
         config[`_${key}`] = (input as Record<string, unknown>)[key];
       }
-      config._userInvalidated = true;
       config._i = input;
     } else {
       config._i = input;

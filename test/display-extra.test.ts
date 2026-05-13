@@ -1,5 +1,10 @@
 import { describe, test, expect } from "bun:test";
 import moment from "../src/index.ts";
+import originalMoment from "../moment/moment.js";
+
+type CalendarOverrideMoment = ReturnType<typeof moment> & {
+  calendarFormat?: () => string;
+};
 
 describe("calendar", () => {
   test("default calendar (same day)", () => {
@@ -12,7 +17,7 @@ describe("calendar", () => {
     const m = moment("2024-01-15");
     const ref = moment("2024-01-10");
     const cal = m.calendar(ref);
-    expect(typeof cal).toBe("string");
+    expect(cal).toBe(originalMoment("2024-01-15").calendar(originalMoment("2024-01-10")));
   });
 
   test("calendar with format options object", () => {
@@ -40,12 +45,12 @@ describe("calendar", () => {
 
   test("calendar with ref as null", () => {
     const m = moment("2024-01-15");
-    const cal = m.calendar(null);
-    expect(typeof cal).toBe("string");
+    const cal = m.calendar(null as unknown as undefined);
+    expect(cal).toBe(originalMoment("2024-01-15").calendar(null as unknown as undefined));
   });
 
   test("calendar with custom calendarFormat", () => {
-    const m = moment("2024-01-15");
+    const m = moment("2024-01-15") as CalendarOverrideMoment;
     m.calendarFormat = () => "sameElse";
     const cal = m.calendar();
     expect(typeof cal).toBe("string");
@@ -71,7 +76,7 @@ describe("from / to", () => {
   test("from with reference", () => {
     const m = moment("2024-01-15");
     const ref = moment("2024-01-10");
-    expect(typeof m.from(ref)).toBe("string");
+    expect(m.from(ref)).toBe(originalMoment("2024-01-15").from(originalMoment("2024-01-10")));
   });
 
   test("toNow", () => {
@@ -82,7 +87,7 @@ describe("from / to", () => {
   test("to with reference", () => {
     const m = moment("2024-01-10");
     const ref = moment("2024-01-15");
-    expect(typeof m.to(ref)).toBe("string");
+    expect(m.to(ref)).toBe(originalMoment("2024-01-10").to(originalMoment("2024-01-15")));
   });
 
   test("invalid moment fromNow", () => {

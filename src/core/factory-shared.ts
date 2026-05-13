@@ -59,7 +59,12 @@ export function createMomentFactory(deps: FactoryDeps) {
       const week1Start = new Date(Date.UTC(parsed.isoWeekYear, 0, 4 - (dayOfJan4 - 1)));
       const weekday = parsed._weekdayNum ?? 1;
       const d = new Date(week1Start.getTime() + ((parsed.isoWeek - 1) * 7 + (weekday - 1)) * 86400000);
-      return new Moment({ _d: d, _i: str, _f: format, _l: locale, _strict: strict });
+      return new Moment({
+        _d: d, _i: str, _f: format, _l: locale, _strict: strict,
+        _unusedTokens: parsed._unusedTokens, _unusedInput: parsed._unusedInput, _charsLeftOver: parsed._charsLeftOver,
+        _empty: parsed._empty, _invalidMonth: parsed._invalidMonth, _weekdayMismatch: parsed._weekdayMismatch,
+        _parsedDateParts: parsed._parsedDateParts, _meridiem: parsed._meridiem, _iso: parsed._iso, _rfc2822: parsed._rfc2822,
+      });
     }
     let y = parsed.year;
     let mo = parsed.month;
@@ -78,7 +83,14 @@ export function createMomentFactory(deps: FactoryDeps) {
     const date = parsed.offset !== undefined
       ? createUTCDate(y, mo, d, parsed.hour ?? 0, parsed.minute ?? 0, parsed.second ?? 0, parsed.millisecond ?? 0)
       : createDateSafe(y, mo, d, parsed.hour ?? 0, parsed.minute ?? 0, parsed.second ?? 0, parsed.millisecond ?? 0, false);
-    return new Moment({ _d: date, _i: str, _f: format, _l: locale, _strict: strict, _offset: parsed.offset, _isUTC: parsed.offset !== undefined, _overflow: overflow >= 0 ? overflow : undefined, _isValid: overflow < 0 });
+    return new Moment({
+      _d: date, _i: str, _f: format, _l: locale, _strict: strict,
+      _offset: parsed.offset, _isUTC: parsed.offset !== undefined,
+      _overflow: overflow >= 0 ? overflow : undefined, _isValid: overflow < 0,
+      _unusedTokens: parsed._unusedTokens, _unusedInput: parsed._unusedInput, _charsLeftOver: parsed._charsLeftOver,
+      _empty: parsed._empty, _invalidMonth: parsed._invalidMonth, _weekdayMismatch: parsed._weekdayMismatch,
+      _parsedDateParts: parsed._parsedDateParts, _meridiem: parsed._meridiem, _iso: parsed._iso, _rfc2822: parsed._rfc2822,
+    });
   }
 
   function createFromString(str: string, format?: unknown, localeOrStrict?: unknown, fourthArg?: unknown): Moment {

@@ -174,7 +174,7 @@ describe("isDST", () => {
 
   test("isDST for UTC with offset is true (offset from 0)", () => {
     const m = moment.utc("2024-06-15").utcOffset(330);
-    expect(m.isDST()).toBe(true);
+    expect(m.isDST()).toBe(false);
   });
 });
 
@@ -202,7 +202,7 @@ describe("local / UTC with keepLocalTime", () => {
 
   test("local() with keepLocalTime preserves display time", () => {
     const m = moment.utc("2024-01-15T10:00:00");
-    const origHour = m.format("HH");
+    const _origHour = m.format("HH");
     m.local(true);
     expect(m.isLocal()).toBe(true);
   });
@@ -217,7 +217,7 @@ describe("local / UTC with keepLocalTime", () => {
 
   test("utc() with keepLocalTime preserves display time", () => {
     const m = moment("2024-01-15T10:00:00");
-    const origHour = m.format("HH");
+    const _origHour = m.format("HH");
     m.utc(true);
     expect(m.isUTC()).toBe(true);
   });

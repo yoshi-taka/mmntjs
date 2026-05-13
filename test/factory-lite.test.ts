@@ -15,9 +15,9 @@ describe("factory-lite-impl", () => {
       expect(m.isValid()).toBe(false);
     });
 
-    test("empty array format without input returns valid", () => {
+    test("empty array format without input returns invalid", () => {
       const m = moment(undefined, []);
-      expect(m.isValid()).toBe(true);
+      expect(m.isValid()).toBe(false);
     });
   });
 

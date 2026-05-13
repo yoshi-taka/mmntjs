@@ -23,7 +23,8 @@ export function isDate(input: unknown): input is Date {
 }
 
 export function isMoment(input: unknown): input is { _isAMomentObject: boolean } {
-  return (input as { _isAMomentObject: boolean })?._isAMomentObject === true;
+  const momentLike = typeof input === "object" && input !== null ? (input as { _isAMomentObject: boolean }) : undefined;
+  return momentLike?._isAMomentObject === true;
 }
 
 export function isString(input: unknown): input is string {
