@@ -1,5 +1,6 @@
 import _moment from '../../dist/index.js'
 import _originalMoment from '../../moment/moment.js'
+import { applyRandomTZ } from './tz-helper.js'
 
 const moment = _moment
 const originalMoment = _originalMoment
@@ -7,6 +8,7 @@ const originalMoment = _originalMoment
 const KEYS = ['year', 'month', 'day', 'hour', 'minute', 'second', 'millisecond']
 
 export function fuzz(buf) {
+  applyRandomTZ(buf)
   if (buf.length < 4) {return}
   try {
     const obj = {}

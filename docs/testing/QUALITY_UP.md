@@ -174,15 +174,17 @@ Phase 4 で追加した UT を、実装都合ではなく `moment/` の moment.j
   - Phase 4 追加 UT の oracle 監査は一通り完了
   - 以後は Phase 5 以降、または fuzz / property で見つかる新規差分を随時回収
 
-## Phase 5: 差分ファジング多様化
+## Phase 5: 差分ファジング多様化 ✅
 
-- date-fns, luxon, dayjs との比較ハーネス追加
-- `test:hard` のみで実行
+- date-fns, luxon, dayjs との比較ハーネス追加 (diff-datefns/diff-luxon/diff-dayjs)
+- 全ハーネスは `fuzz:quick` に統合 (11 targets)、`test` / `test:hard` 両方で実行
+- 各500 runs、0 failure 確認
 
-## Phase 6: TZ バリエーション
+## Phase 6: TZ バリエーション ✅
 
-- ファズハーネスにランダム TZ 切り替え
-- `TZ=UTC` / `TZ=Asia/Tokyo` 両方でファズ実行
+- `test/fuzz/tz-helper.js`: 8タイムゾーンからランダム選択 (UTC, Asia/Tokyo, America/New_York, Europe/London, Australia/Sydney, Pacific/Auckland, Asia/Shanghai, Europe/Berlin)
+- 全11 fuzz ハーネスに `applyRandomTZ(buf)` 組込み
+- `test:hard` に `TZ=Asia/Tokyo bun run fuzz:quick` 追加 (両TZでのファズ実行)
 
 ## Phase 7: SBST 本格化
 

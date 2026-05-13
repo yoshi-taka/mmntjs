@@ -1,5 +1,6 @@
 import _moment from '../../dist/index.js'
 import _originalMoment from '../../moment/moment.js'
+import { applyRandomTZ } from './tz-helper.js'
 
 const moment = _moment
 const originalMoment = _originalMoment
@@ -27,6 +28,7 @@ function randomFormat(buf) {
 }
 
 export function fuzz(buf) {
+  applyRandomTZ(buf)
   if (buf.length < 4) {return}
   const str = buf.slice(0, Math.min(buf.length, 8)).toString('utf-8')
   const fmtBytes = buf.slice(Math.min(buf.length, 8))

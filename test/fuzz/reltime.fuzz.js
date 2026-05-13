@@ -1,10 +1,12 @@
 import _moment from '../../dist/index.js'
 import _originalMoment from '../../moment/moment.js'
+import { applyRandomTZ } from './tz-helper.js'
 
 const moment = _moment
 const originalMoment = _originalMoment
 
 export function fuzz(buf) {
+  applyRandomTZ(buf)
   if (buf.length < 4) {return}
   const baseTs = Date.now()
   const offset = buf.readInt32LE(0)

@@ -1,9 +1,11 @@
 import _moment from '../../dist/index.js'
 import dayjs from 'dayjs'
+import { applyRandomTZ } from './tz-helper.js'
 
 const moment = _moment
 
 export function fuzz(buf) {
+  applyRandomTZ(buf)
   if (buf.length < 4) return
   const ts = buf.readInt32LE(0)
   try {

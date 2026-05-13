@@ -1,10 +1,12 @@
 import _moment from '../../dist/index.js'
 import _originalMoment from '../../moment/moment.js'
+import { applyRandomTZ } from './tz-helper.js'
 
 const moment = _moment
 const originalMoment = _originalMoment
 
 export function fuzz(buf) {
+  applyRandomTZ(buf)
   if (buf.length < 4) {return}
   const units = ['years', 'months', 'weeks', 'days', 'hours', 'minutes', 'seconds', 'milliseconds']
   try {
