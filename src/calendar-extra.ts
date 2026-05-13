@@ -103,10 +103,11 @@ export function isoWeekdayMoment(m: CalendarAwareMoment, d?: unknown): number | 
         sat: 6,
         sun: 7,
       };
-      target = map[target.toLowerCase()];
-      if (target === undefined) {
+      const lower = target.toLowerCase();
+      if (!(lower in map)) {
         return m;
-      } // eslint-disable-line no-unnecessary-condition
+      }
+      target = map[lower];
     }
     const currentIso = m.$W === 0 ? 7 : m.$W;
     const diff = Number(target) - currentIso;

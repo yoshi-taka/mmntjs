@@ -102,8 +102,7 @@ export function registerBaseCoreApi(target: CoreMomentTarget, deps: CoreApiDeps)
       }
       return { ms: amount, days: 0, months: 0 };
     }
-    if (typeof amount === "object" && amount !== null) {
-      // eslint-disable-line no-unnecessary-condition
+    if (typeof amount === "object") {
       let ms = 0,
         days = 0,
         months = 0;
