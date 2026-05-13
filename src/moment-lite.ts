@@ -1,7 +1,6 @@
-import type { Locale } from "./locale-runtime";
 import { getLiteLocale, getLiteCurrentLocale } from "./locale-lite";
+import type { LiteLocale as Locale } from "./locale-lite";
 import { isObject, isDate, isMoment, hasOwnProp, zeroFill, createDateSafe } from "./utils";
-import { isDuration } from "./duration";
 import { normalizeUnits, normalizeUnitCode, daysInMonth, isLeapYear, YEAR, MONTH, DATE, DAY, HOUR, MINUTE, SECOND, MILLISECOND, WEEK, QUARTER } from "./units";
 import { parseString, type ParsedData } from "./parse-lite-strict";
 import { formatMomentBasic } from "./display/format-basic";
@@ -122,6 +121,19 @@ function valueOfInput(input: unknown): number {
     return new Date(input).getTime();
   }
   return NaN;
+}
+
+function isDurationLike(input: unknown): input is {
+  _ms?: number;
+  _milliseconds?: number;
+  _days?: number;
+  _months?: number;
+  valueOf(): number;
+} {
+  return typeof input === "object" &&
+    input !== null &&
+    typeof (input as { valueOf?: unknown }).valueOf === "function" &&
+    ("_ms" in input || "_milliseconds" in input || "_days" in input || "_months" in input);
 }
 
 export class MomentLite {
@@ -771,8 +783,12 @@ export class MomentLite {
     }
     if (typeof amount === "object" && amount !== null) { // eslint-disable-line no-unnecessary-condition
       let ms = 0, days = 0, months = 0;
-      if (isDuration(amount)) {
-        return { ms: amount._milliseconds, days: amount._days, months: amount._months };
+      if (isDurationLike(amount)) {
+        return {
+          ms: amount._milliseconds ?? amount._ms ?? 0,
+          days: amount._days ?? 0,
+          months: amount._months ?? 0,
+        };
       }
       for (const key in amount as Record<string, unknown>) {
         if (!hasOwnProp(amount, key)) {continue;}

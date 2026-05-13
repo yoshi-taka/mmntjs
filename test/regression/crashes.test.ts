@@ -35,6 +35,13 @@ test.each(FIXED_PARSE)('FIXED (parse): %s', (input) => {
   }
 })
 
+test('FIXED (parse): timezone without time in ISO week date stays invalid', () => {
+  const input = '0006W01Z'
+  const m2 = moment(input)
+  const mo = originalMoment(input)
+  expect(m2.isValid()).toBe(mo.isValid())
+})
+
 const FIXED_UTC = ['constructoror.', '']
 
 test.each(FIXED_UTC)('FIXED (utc): %s', (input) => {

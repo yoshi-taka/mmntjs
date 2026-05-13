@@ -207,6 +207,7 @@ function parseISOWithTable(str: string): ParsedData | ({ _claimed: true } & Reco
     }
     dateFormat += `${match[2] || " "}${timeFormat}`;
   }
+  if (match[4] && !match[3]) {return { _claimed: true } as { _claimed: true };}
   if (match[4] && !TZ_REGEX.exec(match[4])) {return { _claimed: true } as { _claimed: true };}
   if (match[4]) {dateFormat += "Z";}
   return parseIsoTokenFormat(str, dateFormat) ?? ({ _claimed: true } as { _claimed: true });

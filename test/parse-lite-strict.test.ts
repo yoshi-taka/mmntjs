@@ -141,6 +141,10 @@ describe("parseString", () => {
     expect(parseString("2024/01/15", undefined, enLocale())).toBeNull();
     expect(parseString("01-15-2024", undefined, enLocale())).toBeNull();
   });
+  test("timezone without time returns null", () => {
+    const result = parseString("0006W01Z", undefined, enLocale());
+    expect(result).toBeNull();
+  });
 
   test("skip time when format does not allow time", () => {
     const result = parseString("2024-W01", undefined, enLocale());

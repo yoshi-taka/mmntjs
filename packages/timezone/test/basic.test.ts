@@ -1,6 +1,8 @@
 import { describe, test, expect } from 'bun:test'
-import moment from 'mmntjs'
-import '../src/index'
+import moment from '../../../src/index.ts'
+import { installTimezone } from '../src/install'
+
+installTimezone(moment as never)
 
 describe('moment2-timezone', () => {
   test('moment.tz.guess() returns a string', () => {

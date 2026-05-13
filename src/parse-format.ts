@@ -475,6 +475,7 @@ function parseISOWithTable(str: string, locale?: ParseLocale): Record<string, un
   }
 
   if (match[4]) {
+    if (!match[3]) {return { _claimed: true };}
     const tzMatch = match[4].match(TZ_REGEX);
     if (tzMatch) {
       dateFormat += "Z";

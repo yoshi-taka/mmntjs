@@ -523,7 +523,7 @@ export class Moment {
   }
 
   _getLocale(): Locale {
-    this._locale ??= (getLocaleCallback ? getLocaleCallback(this._l) : getLiteLocale(this._l));
+    this._locale ??= (getLocaleCallback ? getLocaleCallback(this._l) : getLiteLocale(this._l) as unknown as Locale);
     return this._locale;
   }
 

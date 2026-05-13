@@ -629,6 +629,10 @@ describe("parseString ISO auto-detection (no format)", () => {
     const r = parseString("2024-01-15T10:30:00+05:3", undefined, enLoc());
     expect(r).toBeNull();
   });
+  test("ISO timezone without time returns null", () => {
+    const r = parseString("0006W01Z", undefined, enLoc());
+    expect(r).toBeNull();
+  });
   test("ISO ordinal zero is parsed as dayOfYear 0", () => {
     const r = parseString("2024-000", undefined, enLoc());
     expect(r).toEqual(expect.objectContaining({ year: 2024, dayOfYear: 0 }));

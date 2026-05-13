@@ -241,7 +241,7 @@ function parseCommonISOExtended(str: string): Record<string, unknown> | null {
         if (wd >= 1 && wd <= 7) {
           return { isoWeekYear: year, isoWeek: weekNum, _weekdayNum: wd };
         }
-        return { isoWeekYear: year, isoWeek: weekNum, _weekdayNum: 1 };
+        return null;
       }
     }
     return null;
@@ -505,6 +505,7 @@ function parseISOWithTable(str: string, locale?: ParseLocale): Record<string, un
   }
 
   if (match[4]) {
+    if (!match[3]) {return { _claimed: true };}
     const tzMatch = match[4].match(TZ_REGEX);
     if (tzMatch) {
       dateFormat += "Z";

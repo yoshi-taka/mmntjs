@@ -1,6 +1,6 @@
 import { isArray } from "./utils";
 import type { ParseLocale } from "./parse-locale";
-import { localePreparse } from "./locale-runtime";
+import { liteLocalePreparse } from "./locale-lite";
 import type { ParsedData } from "./parse";
 export type { ParsedData };
 
@@ -83,12 +83,12 @@ export function parseString(
 
   if (format) {
     if (!customFormatParsingEnabled) {return null;}
-    const preparsed = localePreparse(locale as never, str);
+    const preparsed = liteLocalePreparse(locale as never, str);
     if (isArray(format)) {return registeredFormatsParser?.(preparsed, format, locale, strict) ?? null;}
     return registeredFormatParser?.(preparsed, format, locale, strict) ?? null;
   }
 
-  str = localePreparse(locale as never, str);
+  str = liteLocalePreparse(locale as never, str);
   if (str.trim() === "") {return null;}
 
   const fast = parseCommonISOExtended(str);
@@ -177,6 +177,7 @@ function parseISOWithTable(str: string): ParsedData | ({ _claimed: true } & Reco
     }
     dateFormat += `${match[2] || " "}${timeFormat}`;
   }
+  if (match[4] && !match[3]) {return { _claimed: true } as { _claimed: true };}
   if (match[4] && !TZ_REGEX.exec(match[4])) {return { _claimed: true } as { _claimed: true };}
   if (match[4]) {dateFormat += "Z";}
   return parseIsoTokenFormat(str, dateFormat) ?? ({ _claimed: true } as { _claimed: true });
