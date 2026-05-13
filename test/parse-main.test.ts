@@ -1,12 +1,24 @@
 import { describe, test, expect } from "bun:test";
-import { parseString, parseArray, parseObject, parseTwoDigitYear } from "../src/parse";
+import { parseString, parseArray, parseObject, parseTwoDigitYear, setParseTwoDigitYear } from "../src/parse";
 import { getLocale } from "../src/locale";
+import type { ParseLocale } from "../src/parse-locale";
 
-function enLoc() {
-  return getLocale("en") as any;
+function enLoc(): ParseLocale {
+  return getLocale("en") as unknown as ParseLocale;
 }
 
-function check(input: string, fmt: string, exp: Record<string, number | undefined | null | string>, strict?: boolean) {
+type ParsedExpectation = {
+  year?: number;
+  month?: number;
+  day?: number;
+  hour?: number;
+  minute?: number;
+  second?: number;
+  millisecond?: number;
+  offset?: number;
+} | null;
+
+function check(input: string, fmt: string, exp: ParsedExpectation, strict?: boolean) {
   const result = parseString(input, fmt, enLoc(), strict);
   if (exp === null) {
     expect(result).toBeNull();
@@ -301,10 +313,10 @@ describe("parseMain parseString", () => {
 
   describe("edge cases", () => {
     test("non-string returns null", () => {
-      expect(parseString(123 as any, "YYYY", enLoc())).toBeNull();
+      expect(parseString(123 as unknown as string, "YYYY", enLoc())).toBeNull();
     });
     test("null locale returns null", () => {
-      expect(parseString("2024-01-15", "YYYY-MM-DD", null as any)).toBeNull();
+      expect(parseString("2024-01-15", "YYYY-MM-DD", null as unknown as ParseLocale)).toBeNull();
     });
     test("empty string with format returns result with _empty", () => {
       const r = parseString("", "YYYY", enLoc());
@@ -339,6 +351,42 @@ describe("parseString ISO auto-detection (no format)", () => {
     const r = parseString("15 Jan 2024 10:30:00 +0000", undefined, enLoc());
     expect(r).toBeDefined();
   });
+  test("RFC 2822 with comments auto", () => {
+    const r = parseString("(Init Comment) Tue,\n 1 Nov              2016 (Split\n Comment)  07:23:45 +0000 (GMT)", undefined, enLoc());
+    expect(r).toBeDefined();
+    expect(r!.year).toBe(2016);
+    expect(r!.month).toBe(10);
+    expect(r!.day).toBe(1);
+  });
+  test("RFC 2822 with named timezone auto", () => {
+    const r = parseString("15 Jan 2024 10:30:00 EST", undefined, enLoc());
+    expect(r).toBeDefined();
+    expect(r!.offset).toBe(-300);
+  });
+  test("JSON date auto", () => {
+    const ts = Date.UTC(2024, 0, 15, 0, 30, 0);
+    const r = parseString(`/Date(${ts})/`, undefined, enLoc());
+    expect(r).toBeDefined();
+    expect(r!.year).toBe(2024);
+    expect(r!.hour).toBe(0);
+    expect(r!.minute).toBe(30);
+  });
+  test("JSON date auto with offset suffix", () => {
+    const ts = Date.UTC(2024, 0, 15);
+    const r = parseString(`/Date(${ts}+0530)/`, undefined, enLoc());
+    expect(r).toBeDefined();
+    expect(r!.year).toBe(2024);
+  });
+  test("signed ISO auto", () => {
+    const r = parseString("+002024-01-15", undefined, enLoc());
+    expect(r).toBeDefined();
+    expect(r!.year).toBe(2024);
+  });
+  test("basic ISO auto with offset", () => {
+    const r = parseString("20240115T103000+0530", undefined, enLoc());
+    expect(r).toBeDefined();
+    expect(r!.offset).toBe(330);
+  });
   test("invalid string auto returns null", () => {
     expect(parseString("not-a-date", undefined, enLoc())).toBeNull();
   });
@@ -367,6 +415,14 @@ describe("parseArray", () => {
     expect(r!.second).toBe(45);
     expect(r!.millisecond).toBe(500);
   });
+  test("string arrays are parsed", () => {
+    const r = parseArray(["2014", "7", "31"]);
+    expect(r).toEqual(expect.objectContaining({ year: 2014, month: 7, day: 31 }));
+  });
+  test("out-of-range year uses constructor", () => {
+    const r = parseArray([10000, 0, 1]);
+    expect(r).toEqual(expect.objectContaining({ year: 10000, month: 0, day: 1, _useConstructor: true }));
+  });
   test("empty array returns null", () => {
     expect(parseArray([])).toBeNull();
   });
@@ -386,6 +442,9 @@ describe("parseObject", () => {
   test("date alias", () => {
     expect(parseObject({ year: 2024, month: 0, date: 15 })).toEqual({ year: 2024, month: 0, day: 15 });
   });
+  test("string values are coerced", () => {
+    expect(parseObject({ years: "2014", months: "7", date: "31" })).toEqual({ year: 2014, month: 7, day: 31 });
+  });
   test("null value ignored", () => {
     expect(parseObject({ year: null })).toEqual({});
   });
@@ -402,5 +461,14 @@ describe("parseTwoDigitYear", () => {
   test("68→2068, 00→2000", () => {
     expect(parseTwoDigitYear("68")).toBe(2068);
     expect(parseTwoDigitYear("00")).toBe(2000);
+  });
+  test("customized parseTwoDigitYear can be installed", () => {
+    try {
+      setParseTwoDigitYear((input) => Number(input) + (Number(input) > 30 ? 1900 : 2000));
+      expect(parseString("68-01-01", "YY-MM-DD", enLoc())!.year).toBe(1968);
+      expect(parseString("30-01-01", "YY-MM-DD", enLoc())!.year).toBe(2030);
+    } finally {
+      setParseTwoDigitYear(undefined);
+    }
   });
 });

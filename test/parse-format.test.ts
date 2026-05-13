@@ -1,13 +1,32 @@
 import { describe, test, expect, beforeAll } from "bun:test";
 import { parseString, enableCustomFormatParsing, parseTwoDigitYear, setParseTwoDigitYear } from "../src/parse-format";
 import { getLocale } from "../src/locale";
+import type { ParseLocale } from "../src/parse-locale";
 
 // parseString from parse-format.ts requires a locale object
-function enLoc() {
-  return getLocale("en") as any;
+function enLoc(): ParseLocale {
+  return getLocale("en") as unknown as ParseLocale;
 }
 
-function check(input: string, fmt: string, exp: Record<string, number | undefined | null>) {
+type ParsedExpectation = {
+  year?: number;
+  month?: number;
+  day?: number;
+  hour?: number;
+  minute?: number;
+  second?: number;
+  millisecond?: number;
+  offset?: number;
+} | null;
+
+type ParsedFlags = {
+  _weekYear?: number;
+  _charsLeftOver?: number;
+  _parsedDateParts?: number[];
+  _meridiem?: string;
+};
+
+function check(input: string, fmt: string, exp: ParsedExpectation) {
   const result = parseString(input, fmt, enLoc());
   if (exp === null) {
     expect(result).toBeNull();
@@ -172,13 +191,13 @@ describe("parseFormat parseString", () => {
   describe("week tokens", () => {
     test("ww (week of year)", () => {
       const r = parseString("2024 01", "GGGG ww", enLoc());
-      expect((r as any)._weekYear).toBe(2024);
+      expect((r as ParsedFlags | null)?._weekYear).toBe(2024);
       expect(r).toBeDefined();
     });
 
     test("ISO week with WW token", () => {
       const r = parseString("2024 01", "GGGG WW", enLoc());
-      expect((r as any)._weekYear).toBe(2024);
+      expect((r as ParsedFlags | null)?._weekYear).toBe(2024);
     });
   });
 
@@ -192,12 +211,12 @@ describe("parseFormat parseString", () => {
     test("extra characters produce charsLeftOver", () => {
       const r = parseString("2024-01-15 extra", "YYYY-MM-DD", enLoc());
       expect(r).toBeDefined();
-      expect((r as any)._charsLeftOver).toBeGreaterThan(0);
+      expect((r as ParsedFlags | null)?._charsLeftOver).toBeGreaterThan(0);
     });
 
     test("exact match has charsLeftOver = 0", () => {
       const r = parseString("2024-01-15", "YYYY-MM-DD", enLoc());
-      expect((r as any)._charsLeftOver).toBe(0);
+      expect((r as ParsedFlags | null)?._charsLeftOver).toBe(0);
     });
   });
 
@@ -275,6 +294,18 @@ describe("parseFormat parseString", () => {
     test("a (lowercase am/pm)", () => {
       check("2024-01-15 10:30 am", "YYYY-MM-DD hh:mm a", { hour: 10, minute: 30 });
     });
+    test("hmm compact", () => {
+      expect(parseString("2024-01-15 123", "YYYY-MM-DD hmm", enLoc())).toBeDefined();
+    });
+    test("hmmss compact", () => {
+      expect(parseString("2024-01-15 12345", "YYYY-MM-DD hmmss", enLoc())).toBeDefined();
+    });
+    test("Hmm compact", () => {
+      expect(parseString("2024-01-15 1234", "YYYY-MM-DD Hmm", enLoc())).toBeDefined();
+    });
+    test("Hmmss compact", () => {
+      check("2024-01-15 172345", "YYYY-MM-DD Hmmss", { hour: 17, minute: 23, second: 45 });
+    });
   });
 
   describe("additional format tokens", () => {
@@ -320,20 +351,40 @@ describe("parseFormat parseString", () => {
       const r = parseString("2024 AD", "YYYY N", enLoc());
       expect(r).toBeDefined();
     });
+    test("Y token", () => {
+      const r = parseString("1-1-2010", "M-D-Y", enLoc());
+      expect(r!.year).toBe(2010);
+    });
+    test("milliseconds ladder", () => {
+      check("2024-01-15 10:30:45.12", "YYYY-MM-DD HH:mm:ss.SS", { millisecond: 120 });
+      check("2024-01-15 10:30:45.1234", "YYYY-MM-DD HH:mm:ss.SSSS", { millisecond: 123 });
+      check("2024-01-15 10:30:45.12345", "YYYY-MM-DD HH:mm:ss.SSSSS", { millisecond: 123 });
+    });
+    test("parsed date parts are retained", () => {
+      const r = parseString("10 p", "hh a", enLoc());
+      const flags = r as ParsedFlags | null;
+      expect(flags?._parsedDateParts?.[3]).toBe(10);
+      expect(flags?._meridiem).toBe("p");
+    });
   });
 
   describe("null/edge cases", () => {
     test("non-string returns null", () => {
-      expect(parseString(123 as any, "YYYY", enLoc())).toBeNull();
+      expect(parseString(123 as unknown as string, "YYYY", enLoc())).toBeNull();
     });
 
     test("null locale returns null", () => {
-      expect(parseString("2024-01-15", "YYYY-MM-DD", null as any)).toBeNull();
+      expect(parseString("2024-01-15", "YYYY-MM-DD", null as unknown as ParseLocale)).toBeNull();
     });
 
     test("setParseTwoDigitYear", () => {
-      setParseTwoDigitYear((s) => 2000 + parseInt(s, 10));
-      setParseTwoDigitYear(undefined);
+      try {
+        setParseTwoDigitYear((s) => Number(s) + (Number(s) > 30 ? 1900 : 2000));
+        expect(parseString("68-01-01", "YY-MM-DD", enLoc())!.year).toBe(1968);
+        expect(parseString("30-01-01", "YY-MM-DD", enLoc())!.year).toBe(2030);
+      } finally {
+        setParseTwoDigitYear(undefined);
+      }
     });
   });
 });

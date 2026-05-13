@@ -1,6 +1,9 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": [
+    "test/*.test.ts",
+    "test/*.js",
+    "packages/timezone/test/*.test.ts",
     "test/properties/basic.test.ts",
     "test/properties/boundary.test.ts"
   ],
