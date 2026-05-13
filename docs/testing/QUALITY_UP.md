@@ -14,7 +14,7 @@
 | ミューテーション | 12 operators, `moment2.ts` のみ |
 | クラッシュファイル | 22個 (未トリアージ) |
 | SBST | 2 files (POC) |
-| カバレッジ | 未導入 |
+| カバレッジ | 導入済み (baseline 74.8%) |
 
 ## Phase 1: クラッシュ整理
 
@@ -38,11 +38,73 @@
 - `.dict` ファイル導入: `iso-tokens.dict`, `month-names.dict`, `format-tokens.dict`
 - corpus を git 管理
 
-## Phase 4: カバレッジ計測
+## Phase 4: カバレッジ計測 ✅
 
-- `bun test --coverage` または c8 で行カバレッジ取得
-- CI で閾値 (80%) 設定
-- 低カバレッジ箇所に mutation / プロパティテストを優先追加
+- `bun test --coverage` で行カバレッジ取得 ✅
+  - スクリプト: `test:coverage`, `test:coverage:full`
+  - レポーター: lcov + text、出力先: `coverage/`
+- CI で閾値設定 ✅
+  - `.github/workflows/ci.yml` に coverage step 追加
+  - 閾値: 67% (67.8%到達、上昇に伴い更新)
+  - 目標: 80%
+- 低カバレッジ箇所に mutation / プロパティテストを優先追加 ✅
+  - **最終ベースライン: 74.8%** (+40.7pt, 全1224 tests 0 fail)
+  - **改善サマリ (全23テストファイル):**
+
+| テストファイル | テスト数 | 主なカバレッジ対象 |
+|---|---|---|
+| `test/properties/basic.test.ts` | +7 | `relativeTimeRounding/Threshold`, `normalizeUnits` etc. |
+| `test/format-basic.test.ts` | 11 | `formatMomentBasic` |
+| `test/units.test.ts` | 22 | `normalizeUnits`, `normalizeUnitCode`, `isLeapYear`, `daysInMonth` |
+| `test/duration-between.test.ts` | 10 | `diffMomentsForDuration` |
+| `test/parse-lite.test.ts` | 38 | `parseString` ISO/RFC2822/JSON |
+| `test/parse-lite-strict.test.ts` | 32 | `parseString` strict版ISO |
+| `test/locale-mgmt.test.ts` | 35 | `locale()`/`defineLocale()`/`updateLocale()` |
+| `test/utc-extra.test.ts` | +11 | `local()`/`utc()` keepLocalTime, `zone()` |
+| `test/parse-format.test.ts` | 50 | フォーマットトークンパーサー |
+| `test/parse-main.test.ts` | 87 | `parseString` 全トークンハンドラ |
+| `test/moment-lite.test.ts` | +8 | lite `get/set`, `isBetween` |
+| `test/factory-input-format.test.ts` | 21 | strict mode, 複数フォーマット |
+| `test/debug-extra.test.ts` | 14 | `toArray`, `parsingFlags`, `inspect` |
+| `test/locale-extra.test.ts` | 16 | `weekday`, `week`, `weekYear` |
+| `test/duration-extra.test.ts` | 22 | ISO/C#/TimeSpan, `humanize` |
+| `test/display-extra.test.ts` | 12 | `calendar`, `fromNow` |
+| `test/calendar-extra.test.ts` | 10 | `isoWeek`, `isoWeekday`, `dayOfYear` |
+| `test/factory-lite.test.ts` | 14 | lite null/NaN/Infinity/utc |
+| `test/plugins.test.ts` | 12 | min/max/now/isMoment |
+| `test/moment-class-extra.test.ts` | 26 | `set/get`, `isBetween` |
+
+  - **Phase 4.5 修正 (2026-05-13, 10→2 failures):**
+    - `add(duration)` が Duration オブジェクトを無視 → `core-base.ts`/`moment-lite.ts` に `isDuration` チェック追加
+    - `isoWeeksInYear` が local time で誤計算 → `calendar-extra.ts` で `_ensureFields()` 呼び出し追加
+    - `utcOffset` の `-0` 消失 → `utc-extra.ts` で `_ensureFields()` + `=== undefined` チェック
+    - `"2024-01-32"` が valid になる → `factory-shared.ts` の `createMomentFromParsed` で `checkOverflow` 呼び出し
+    - `firstWeekOffset` がlocal timeを使用 → 常に UTC ベースに変更 (calendar-extra.ts, moment-class.ts, locale-extra.ts)
+
+  - **修正したバグ (9件):**
+
+| バグ | 影響 | 修正ファイル |
+|---|---|---|
+| `isBefore` が `>` を使ってた | isBeforeが逆の結果を返す | `moment-class.ts` |
+| `isMoment(null)` クラッシュ | TypeError | `utils.ts` |
+| `format("dd")`/`toString()` 空文字 | フォーマット出力壊れ | `locale-runtime.ts` |
+| `normalizeUnitCode("year")` → `undefined` | get/set一部動作しない | `units.ts` |
+| strict mode extra chars 無視 | strict指定が効かない | `factory-input-format.ts` |
+| `setRelTimeRounding`/`setRelTimeThreshold` 戻り値 | moment.js非互換 | `display/reltime.ts` |
+| `isLeapYear` invalid moment で true | 誤判定 | `moment-class.ts`, `moment-lite.ts` |
+| 各種 `-0` 戻り値 | `Object.is` 比較で不一致 | 複数ファイル |
+| `duration({from,to})` 常に invalid | resolver未登録 | `entry/init.ts` |
+
+  - **残っている property test failures (2件):**
+    1. `diff for all unit types matches moment` — 一部unitで moment.js とdiff値が異なる
+    2. `parsingFlags with format string matches moment` — `charsLeftOver` 算出の差
+
+  - **70%未満ファイル (継続課題):**
+    - `src/parse-format.ts` (48.0%), `src/plugins/core-base.ts` (53.4%), `src/plugins/core-lite.ts` (55.6%), `src/parse.ts` (68.6%)
+    - `parse-format.ts` (2111行, 39.9%)
+    - `moment-lite.ts` (1128行, 61.1%)
+    - `parse.ts` (2085行, 63.8%)
+    - `duration.ts` (774行, 69.5%)
 
 ## Phase 5: 差分ファジング多様化
 

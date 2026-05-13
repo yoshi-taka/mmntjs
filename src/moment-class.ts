@@ -1431,7 +1431,7 @@ export class Moment {
 
   diff(input: MomentInput, unit?: string, float?: boolean): number {
     const other = momentFromAnything(input);
-    const diff = this.valueOf() - other.valueOf();
+    const diff = this.valueOf() - other.valueOf() || 0;
 
     if (!unit) {return diff;}
 
@@ -1515,32 +1515,33 @@ export class Moment {
           if (bBeforeAnchor) {
             result = wholeMonthDiff > 0 ? -(wholeMonthDiff - 1) : -wholeMonthDiff;
           } else {
-            result = -wholeMonthDiff;
+              result = -wholeMonthDiff;
+            }
+            if (swap) {result = -result;}
+            if (code === YEAR) {result = result / 12;}
+            else if (code === QUARTER) {result = result / 3;}
+            if (code === YEAR || code === QUARTER) {result = Math.trunc(result) || 0;}
+            return result || 0;
           }
+
+          const anchorVal = anchorMs(aYear, aMonth, aDayOf, a.$H, a.$m, a.$s, a.$ms, a._isUTC, wholeMonthDiff);
+          const bVal = b.valueOf();
+          const sub = bVal - anchorVal;
+
+          let adjust: number;
+          if (sub < 0) {
+            adjust = sub / (anchorVal - anchorMs(aYear, aMonth, aDayOf, a.$H, a.$m, a.$s, a.$ms, a._isUTC, wholeMonthDiff - 1));
+          } else {
+            adjust = sub / (anchorMs(aYear, aMonth, aDayOf, a.$H, a.$m, a.$s, a.$ms, a._isUTC, wholeMonthDiff + 1) - anchorVal);
+          }
+
+          let result = -(wholeMonthDiff + adjust);
           if (swap) {result = -result;}
+
           if (code === YEAR) {result /= 12;}
           else if (code === QUARTER) {result /= 3;}
-          return result;
-        }
 
-        const anchorVal = anchorMs(aYear, aMonth, aDayOf, a.$H, a.$m, a.$s, a.$ms, a._isUTC, wholeMonthDiff);
-        const bVal = b.valueOf();
-        const sub = bVal - anchorVal;
-
-        let adjust: number;
-        if (sub < 0) {
-          adjust = sub / (anchorVal - anchorMs(aYear, aMonth, aDayOf, a.$H, a.$m, a.$s, a.$ms, a._isUTC, wholeMonthDiff - 1));
-        } else {
-          adjust = sub / (anchorMs(aYear, aMonth, aDayOf, a.$H, a.$m, a.$s, a.$ms, a._isUTC, wholeMonthDiff + 1) - anchorVal);
-        }
-
-        let result = -(wholeMonthDiff + adjust);
-        if (swap) {result = -result;}
-
-        if (code === YEAR) {result /= 12;}
-        else if (code === QUARTER) {result /= 3;}
-
-        return result;
+          return result || 0;
       }
       default:
         return diff;
@@ -1720,7 +1721,7 @@ export class Moment {
 
   isLeapYear(): boolean {
     this._ensureFields();
-    return isLeapYear(this.$y);
+    return !this._isValid ? false : isLeapYear(this.$y);
   }
 
   isDST(): boolean {
@@ -1967,7 +1968,7 @@ export class Moment {
     if (unit) {
       return this._compareCalendarValues(other, unit) < 0;
     }
-    return this.valueOf() > other.valueOf();
+    return this.valueOf() < other.valueOf();
   }
 
   toObject(): Record<string, number> {

@@ -29,9 +29,10 @@ export function diffMomentsForDuration(
     const adjusted = from.clone().add(months, "months");
     if (adjusted.valueOf() > to.valueOf()) {months--;}
     const base = from.clone().add(months, "months");
+    const ms = to.valueOf() - base.valueOf();
     return {
-      months,
-      milliseconds: to.valueOf() - base.valueOf(),
+      months: months || 0,
+      milliseconds: ms || 0,
       days: 0,
     };
   }
@@ -43,9 +44,10 @@ export function diffMomentsForDuration(
   const adjusted = to.clone().add(months, "months");
   if (adjusted.valueOf() > from.valueOf()) {months--;}
   const base = to.clone().add(months, "months");
+  const ms = -(from.valueOf() - base.valueOf());
   return {
-    months: -months,
-    milliseconds: -(from.valueOf() - base.valueOf()),
+    months: -months || 0,
+    milliseconds: ms || 0,
     days: 0,
   };
 }

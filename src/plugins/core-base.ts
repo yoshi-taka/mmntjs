@@ -12,6 +12,7 @@ import {
   hasOwnProp,
 } from "../utils";
 import { normalizeUnits } from "../units";
+import { isDuration } from "../duration";
 
 type CoreMomentTarget = ((input?: unknown, format?: unknown, localeOrStrict?: unknown, fourthArg?: unknown) => Moment) & Record<string, unknown>;
 
@@ -94,6 +95,12 @@ export function registerBaseCoreApi(
     }
     if (typeof amount === "object" && amount !== null) { // eslint-disable-line no-unnecessary-condition
       let ms = 0, days = 0, months = 0;
+      if (isDuration(amount)) {
+        ms = amount._milliseconds;
+        days = amount._days;
+        months = amount._months;
+        return { ms, days, months };
+      }
       for (const key in amount as Record<string, unknown>) {
         if (!hasOwnProp(amount, key)) {continue;}
         const norm = normalizeUnits(key);

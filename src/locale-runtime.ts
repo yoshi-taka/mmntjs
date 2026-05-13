@@ -287,6 +287,7 @@ export function localeWeekdaysShort(loc: Locale, m?: Moment | boolean, format?: 
   if (!ws) {return localeWeekdays(loc, m) as string[];}
   if (isFunction(ws)) {return ws(m, format);}
   if (isString(ws)) {return ws;}
+  if (Array.isArray(ws)) {return ws[(m as unknown as { day(): number }).day()];}
   return (ws as unknown as Record<string, string[]>).standalone;
 }
 
@@ -308,6 +309,7 @@ export function localeWeekdaysMin(loc: Locale, m?: Moment | boolean, format?: st
   if (!wm) {return localeWeekdaysShort(loc, m) as string[];}
   if (isFunction(wm)) {return wm(m, format);}
   if (isString(wm)) {return wm;}
+  if (Array.isArray(wm)) {return wm[(m as unknown as { day(): number }).day()];}
   return (wm as unknown as Record<string, string[]>).standalone;
 }
 

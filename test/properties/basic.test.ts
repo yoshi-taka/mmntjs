@@ -1206,4 +1206,140 @@ describe('Property-based: moment vs original moment', () => {
       { numRuns: 100 }
     )
   })
+
+  // ============================================================
+  // 16. RELATIVE TIME THRESHOLD / ROUNDING
+  // ============================================================
+
+  const thresholdKeys = fc.constantFrom('ss', 's', 'm', 'h', 'd', 'w', 'M')
+  const thresholdLimits = fc.integer({ min: 1, max: 100 })
+
+  test('relativeTimeThreshold get/set matches moment', () => {
+    fc.assert(
+      fc.property(thresholdKeys, thresholdLimits, (key, limit) => {
+        const saved = moment.relativeTimeThreshold(key)
+        const savedOrig = originalMoment.relativeTimeThreshold(key)
+        expect(saved).toBe(savedOrig)
+
+        const setResult = moment.relativeTimeThreshold(key, limit)
+        const setResultOrig = originalMoment.relativeTimeThreshold(key, limit)
+        expect(setResult).toBe(setResultOrig)
+
+        const got = moment.relativeTimeThreshold(key)
+        const gotOrig = originalMoment.relativeTimeThreshold(key)
+        expect(got).toBe(gotOrig)
+
+        moment.relativeTimeThreshold(key, saved as number)
+        originalMoment.relativeTimeThreshold(key, savedOrig as number)
+      }),
+      { numRuns: 100 }
+    )
+  })
+
+  test('relativeTimeThreshold with null key matches moment', () => {
+    expect(moment.relativeTimeThreshold('w')).toBe(originalMoment.relativeTimeThreshold('w'))
+  })
+
+  test('relativeTimeThreshold with unknown key returns false', () => {
+    expect(moment.relativeTimeThreshold('foo')).toBe(originalMoment.relativeTimeThreshold('foo'))
+  })
+
+  test('relativeTimeRounding get/set matches moment', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: -1000, max: 1000 }), (n) => {
+        const fn = () => Math.ceil(n)
+        const result = moment.relativeTimeRounding(fn)
+        const resultOrig = originalMoment.relativeTimeRounding(fn)
+        expect(result).toBe(resultOrig)
+
+        expect(moment.duration(n).humanize()).toBe(originalMoment.duration(n).humanize())
+
+        moment.relativeTimeRounding(Math.round)
+        originalMoment.relativeTimeRounding(Math.round)
+      }),
+      { numRuns: 50 }
+    )
+  })
+
+  test('relativeTimeRounding with false matches moment', () => {
+    const result = moment.relativeTimeRounding(false)
+    const resultOrig = originalMoment.relativeTimeRounding(false)
+    expect(result).toBe(resultOrig)
+
+    moment.relativeTimeRounding(Math.round)
+    originalMoment.relativeTimeRounding(Math.round)
+  })
+
+  // ============================================================
+  // 17. NORMALIZE UNITS
+  // ============================================================
+
+  const unitAliases = fc.constantFrom(
+    'Y', 'y', 'years', 'year',
+    'M', 'months', 'month',
+    'D', 'd', 'days', 'day', 'date', 'dates',
+    'h', 'hours', 'hour',
+    'm', 'minutes', 'minute',
+    's', 'seconds', 'second',
+    'ms', 'milliseconds', 'millisecond',
+    'w', 'W', 'weeks', 'week',
+    'weekday', 'weekdays', 'e',
+    'isoWeek', 'isoWeeks',
+    'isoWeekday', 'isoWeekdays', 'E',
+    'quarter', 'quarters', 'Q',
+    'dayOfYear', 'dayOfYears', 'DDD',
+    'gg', 'weekYear', 'weekYears',
+    'GG', 'isoWeekYear', 'isoWeekYears',
+  )
+
+  test('normalizeUnits matches moment', () => {
+    fc.assert(
+      fc.property(unitAliases, (alias) => {
+        expect(moment.normalizeUnits(alias)).toBe(originalMoment.normalizeUnits(alias))
+      }),
+      { numRuns: 100 }
+    )
+  })
+
+  test('normalizeUnits with empty/unknown input matches moment', () => {
+    fc.assert(
+      fc.property(fc.constantFrom('', 'foo', 'bar', 'xyz', '123'), (input) => {
+        expect(moment.normalizeUnits(input)).toBe(originalMoment.normalizeUnits(input))
+      }),
+      { numRuns: 50 }
+    )
+  })
+
+  // ============================================================
+  // 18. DAYS IN MONTH / LEAP YEAR (edge branches)
+  // ============================================================
+
+  test('daysInMonth with negative/overflow month matches moment', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: -24, max: 24 }), (month) => {
+        const d = moment({ year: 2024, month: 0 })
+        const dOrig = originalMoment({ year: 2024, month: 0 })
+        expect(d.month(month).daysInMonth()).toBe(dOrig.month(month).daysInMonth())
+      }),
+      { numRuns: 50 }
+    )
+  })
+
+  test('isLeapYear with known years matches moment', () => {
+    fc.assert(
+      fc.property(
+        fc.constantFrom(
+          0, 1, 100, 400, 1600,
+          1700, 1800, 1900, 2000, 2100,
+          2023, 2024, -1, -100, -400, -1600,
+        ),
+        (year) => {
+          const m2 = moment.utc([year, 6, 1])
+          const mOrig = originalMoment.utc([year, 6, 1])
+          expect(m2.isLeapYear()).toBe(mOrig.isLeapYear())
+        }
+      ),
+      { numRuns: 50 }
+    )
+  })
 })

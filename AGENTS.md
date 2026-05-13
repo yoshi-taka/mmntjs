@@ -21,6 +21,10 @@
 
 # Handover Memo
 
+## Phase 4 完了: カバレッジ 34.1% → 74.8% (2026-05-13)
+
+詳細は `docs/testing/QUALITY_UP.md` を参照。
+
 ## 開発環境
 
 - `npm` は使わない。`bun` を使う（`bun install`, `bun run build` etc.）

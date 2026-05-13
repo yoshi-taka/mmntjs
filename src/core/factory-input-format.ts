@@ -109,7 +109,12 @@ export function createFromFormattedStringInput(args: FormatArgs): Moment {
   if (fmt) {
     if (!formatParsingEnabled) {return new Moment({ _dClone: false, _d: new Date(NaN), _i: str, _f: fmt, _l: locale, _strict: strict, _isValid: false });}
     const parsed = deps.parseString(str, fmt, getLocale(locale ?? getCurrentLocale()) as unknown as ParseLocale, strict);
-    if (parsed && hasAnyValue(parsed) && checkOverflow(parsed) < 0) {return createMomentFromParsed(parsed, str, fmt, locale, strict);}
+    if (parsed && hasAnyValue(parsed) && checkOverflow(parsed) < 0) {
+      if (strict && (((parsed._unusedTokens?.length ?? 0) > 0) || ((parsed._charsLeftOver ?? 0) > 0))) {
+        return createInvalidParsedMoment(str, fmt, locale, strict, parsed);
+      }
+      return createMomentFromParsed(parsed, str, fmt, locale, strict);
+    }
     return new Moment({ _d: new Date(NaN), _i: str, _f: fmt, _l: locale, _strict: strict, _isValid: false });
   }
   return new Moment({ _dClone: false, _d: new Date(NaN), _i: str, _isValid: false });

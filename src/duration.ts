@@ -964,6 +964,6 @@ export class Duration {
   }
 }
 
-export function isDuration(input: unknown): boolean {
+export function isDuration(input: unknown): input is Duration {
   return input instanceof Duration;
 }

@@ -71,7 +71,8 @@ function parseOffsetString(offset: string): number {
 
 export function utcOffsetMoment(m: UtcMoment, offset?: number | string, keepLocalTime?: boolean): number | Moment {
   if (offset === undefined) {
-    return m._offset;
+    (m as unknown as { _ensureFields: () => void })._ensureFields();
+    return m._offset === undefined ? 0 : m._offset;
   }
   let numOffset: number;
   if (typeof offset === "string") {
@@ -174,7 +175,8 @@ export function parseZoneMoment(m: UtcMoment, input?: unknown, format?: unknown,
 
 export function zoneMoment(m: UtcMoment, offset?: number | string, keepLocalTime?: boolean): number | Moment {
   if (offset === undefined) {
-    return -(utcOffsetMoment(m) as number);
+    const off = -(utcOffsetMoment(m) as number);
+    return off || 0;
   }
   if (typeof offset === "string") {
     const tzMatch = offset.match(/([+-]\d{1,2}):?(\d{2})?$/);

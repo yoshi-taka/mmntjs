@@ -1,5 +1,5 @@
 import type { MomentConfig } from "../moment-class";
-import { Moment } from "../moment-class";
+import { Moment, checkOverflow } from "../moment-class";
 import {
   isMoment,
   isDate,
@@ -74,10 +74,11 @@ export function createMomentFactory(deps: FactoryDeps) {
       if (mo === undefined && y !== undefined) {mo = 0;}
       if (d === undefined) {d = 1;}
     }
+    const overflow = checkOverflow({ year: y, month: mo, day: d, hour: parsed.hour, minute: parsed.minute, second: parsed.second, millisecond: parsed.millisecond });
     const date = parsed.offset !== undefined
       ? createUTCDate(y, mo, d, parsed.hour ?? 0, parsed.minute ?? 0, parsed.second ?? 0, parsed.millisecond ?? 0)
       : createDateSafe(y, mo, d, parsed.hour ?? 0, parsed.minute ?? 0, parsed.second ?? 0, parsed.millisecond ?? 0, false);
-    return new Moment({ _d: date, _i: str, _f: format, _l: locale, _strict: strict, _offset: parsed.offset, _isUTC: parsed.offset !== undefined });
+    return new Moment({ _d: date, _i: str, _f: format, _l: locale, _strict: strict, _offset: parsed.offset, _isUTC: parsed.offset !== undefined, _overflow: overflow >= 0 ? overflow : undefined, _isValid: overflow < 0 });
   }
 
   function createFromString(str: string, format?: unknown, localeOrStrict?: unknown, fourthArg?: unknown): Moment {

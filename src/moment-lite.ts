@@ -1,6 +1,7 @@
 import type { Locale } from "./locale-runtime";
 import { getLiteLocale, getLiteCurrentLocale } from "./locale-lite";
 import { isObject, isDate, isMoment, hasOwnProp, zeroFill, createDateSafe } from "./utils";
+import { isDuration } from "./duration";
 import { normalizeUnits, normalizeUnitCode, daysInMonth, isLeapYear, YEAR, MONTH, DATE, DAY, HOUR, MINUTE, SECOND, MILLISECOND, WEEK, QUARTER } from "./units";
 import { parseString, type ParsedData } from "./parse-lite-strict";
 import { formatMomentBasic } from "./display/format-basic";
@@ -735,6 +736,9 @@ export class MomentLite {
     }
     if (typeof amount === "object" && amount !== null) { // eslint-disable-line no-unnecessary-condition
       let ms = 0, days = 0, months = 0;
+      if (isDuration(amount)) {
+        return { ms: amount._milliseconds, days: amount._days, months: amount._months };
+      }
       for (const key in amount as Record<string, unknown>) {
         if (!hasOwnProp(amount, key)) {continue;}
         const norm = normalizeUnits(key);
@@ -1102,7 +1106,7 @@ export class MomentLite {
 
   isLeapYear(): boolean {
     this._ensureFields();
-    return isLeapYear(this.$y);
+    return !this._isValid ? false : isLeapYear(this.$y);
   }
 
   daysInMonth(): number {

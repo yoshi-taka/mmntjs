@@ -11,6 +11,9 @@ import { registerDisplayApi } from "../plugins/display";
 import { enableCustomFormatParsing } from "../parse";
 import { initializeLocaleEntry } from "./locale-init";
 import { registerUtcApi } from "../plugins/utc";
+import { setDurationMomentResolver } from "../duration";
+import type { DurationMomentLike } from "../duration-between";
+import { Moment } from "../moment-class";
 
 type CoreInitMoment = typeof moment;
 type CoreInitDeps = Parameters<typeof registerCoreApi>[1];
@@ -54,6 +57,10 @@ export function initializeCoreEntry(
   registerCoreApi(target, deps);
   registerDisplayApi(target);
   registerUtcApi(target as unknown as Parameters<typeof registerUtcApi>[0], { nowFn });
+  setDurationMomentResolver((input: unknown) => {
+    if (input instanceof Moment) {return input as unknown as DurationMomentLike;}
+    return target(input as any) as unknown as DurationMomentLike;
+  });
 }
 
 export function initializeFullEntry(
