@@ -66,6 +66,7 @@
     "eslint/no-useless-call": "error"
   },
   "ignorePatterns": [
+    "moment/",
     "test/moment/",
     "src/index.ts.new.js"
   ]
