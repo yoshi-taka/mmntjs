@@ -58,6 +58,8 @@
 ### 2. fuzz継続
 ファザーは永遠に新しいエッジケースを発見し続ける。`bun run fuzz` で実行可能。crash 最小化は `bun run fuzz:ddmin -- crash-xxx`。
 
+corpus seeds (`test/fuzz/corpus/`) を moment.js テストケースから抽出済み。新たにバグを発見した際は regression test に追加し、必要に応じて corpus にも seed を追加すること。corpus を使ったテストは `bun x jazzer test/fuzz/<name>.fuzz.js --sync -i dist/ -- test/fuzz/corpus/<name>/` で実行可能。`.dict` ファイルは `-dict=test/fuzz/corpus/<name>.dict` で使用。
+
 ### 3. Delta Debugging 導入
 - `test/fuzz/ddmin.ts`: ddmin アルゴリズム汎用実装（文字列・配列対応）
 - `test/fuzz/delta-debug.mjs`: post-hoc 最小化スクリプト（`bun run fuzz:ddmin -- crash-xxx`）

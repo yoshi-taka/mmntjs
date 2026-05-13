@@ -222,23 +222,52 @@ function parseCommonISOExtended(str: string): Record<string, unknown> | null {
       }
       return null;
     }
+  }
 
-    // Compact week: GGGG[W]WW (8 digits: 4digits + W + 2digits)
-    if (len === 8) {
-      const y0 = str.charCodeAt(0) - 48, y1 = str.charCodeAt(1) - 48;
-      const y2 = str.charCodeAt(2) - 48, y3 = str.charCodeAt(3) - 48;
-      if (y0 < 0 || y0 > 9 || y1 < 0 || y1 > 9 || y2 < 0 || y2 > 9 || y3 < 0 || y3 > 9) {return null;}
-      const year = y0 * 1000 + y1 * 100 + y2 * 10 + y3;
-      if (str.charCodeAt(4) === 87) {
-        const w0 = str.charCodeAt(5) - 48, w1 = str.charCodeAt(6) - 48;
-        if (w0 < 0 || w0 > 9 || w1 < 0 || w1 > 9) {return null;}
-        const weekNum = w0 * 10 + w1;
-        if (weekNum >= 1 && weekNum <= 53) {
+  // Compact week: GGGG[W]WW (7 chars) / GGGG[W]WWE (8 chars), W at position 4
+  if ((len === 7 || len === 8) && str.charCodeAt(4) === 87) {
+    const y0 = str.charCodeAt(0) - 48, y1 = str.charCodeAt(1) - 48;
+    const y2 = str.charCodeAt(2) - 48, y3 = str.charCodeAt(3) - 48;
+    if (y0 < 0 || y0 > 9 || y1 < 0 || y1 > 9 || y2 < 0 || y2 > 9 || y3 < 0 || y3 > 9) {return null;}
+    const year = y0 * 1000 + y1 * 100 + y2 * 10 + y3;
+    const w0 = str.charCodeAt(5) - 48, w1 = str.charCodeAt(6) - 48;
+    if (w0 >= 0 && w0 <= 9 && w1 >= 0 && w1 <= 9) {
+      const weekNum = w0 * 10 + w1;
+      if (weekNum >= 1 && weekNum <= 53) {
+        if (len === 7) {
           return { isoWeekYear: year, isoWeek: weekNum, _weekdayNum: 1 };
         }
+        const wd = str.charCodeAt(7) - 48;
+        if (wd >= 1 && wd <= 7) {
+          return { isoWeekYear: year, isoWeek: weekNum, _weekdayNum: wd };
+        }
+        return { isoWeekYear: year, isoWeek: weekNum, _weekdayNum: 1 };
       }
-      return null;
     }
+    return null;
+  }
+
+  // Extended week: GGGG-[W]WW (8-10 chars) — check before ordinal (YYYY-DDD)
+  // since both have dash at position 4, but week has 'W' at position 5
+  if (len >= 8 && len <= 10 && str.charCodeAt(4) === 45 && str.charCodeAt(5) === 87) {
+    const y0 = str.charCodeAt(0) - 48, y1 = str.charCodeAt(1) - 48;
+    const y2 = str.charCodeAt(2) - 48, y3 = str.charCodeAt(3) - 48;
+    if (y0 < 0 || y0 > 9 || y1 < 0 || y1 > 9 || y2 < 0 || y2 > 9 || y3 < 0 || y3 > 9) {return null;}
+    const year = y0 * 1000 + y1 * 100 + y2 * 10 + y3;
+    const w1 = str.charCodeAt(6) - 48, w2 = str.charCodeAt(7) - 48;
+    if (w1 >= 0 && w1 <= 9 && w2 >= 0 && w2 <= 9) {
+      const weekNum = w1 * 10 + w2;
+      if (weekNum >= 1 && weekNum <= 53) {
+        if (len === 8) {
+          return { isoWeekYear: year, isoWeek: weekNum, _weekdayNum: 1 };
+        }
+        const wd = str.charCodeAt(9) - 48;
+        if (wd >= 1 && wd <= 7) {
+          return { isoWeekYear: year, isoWeek: weekNum, _weekdayNum: wd };
+        }
+      }
+    }
+    return null;
   }
 
   // Extended ordinal: YYYY-DDD (8 chars, dash at position 4)
@@ -252,28 +281,6 @@ function parseCommonISOExtended(str: string): Record<string, unknown> | null {
       const dayOfYear = d1 * 100 + d2 * 10 + d3;
       if (dayOfYear >= 1 && dayOfYear <= 366) {
         return { year, dayOfYear };
-      }
-    }
-    return null;
-  }
-
-  // Extended week: GGGG-[W]WW (8 or 9 chars)
-  if ((len === 8 || len === 9) && str.charCodeAt(4) === 45 && str.charCodeAt(5) === 87) {
-    const y0 = str.charCodeAt(0) - 48, y1 = str.charCodeAt(1) - 48;
-    const y2 = str.charCodeAt(2) - 48, y3 = str.charCodeAt(3) - 48;
-    if (y0 < 0 || y0 > 9 || y1 < 0 || y1 > 9 || y2 < 0 || y2 > 9 || y3 < 0 || y3 > 9) {return null;}
-    const year = y0 * 1000 + y1 * 100 + y2 * 10 + y3;
-    const w1 = str.charCodeAt(6) - 48, w2 = str.charCodeAt(7) - 48;
-    if (w1 >= 0 && w1 <= 9 && w2 >= 0 && w2 <= 9) {
-      const weekNum = w1 * 10 + w2;
-      if (weekNum >= 1 && weekNum <= 53) {
-        if (len === 8) {
-          return { isoWeekYear: year, isoWeek: weekNum, _weekdayNum: 1 };
-        }
-        const wd = str.charCodeAt(8) - 48;
-        if (wd >= 1 && wd <= 7) {
-          return { isoWeekYear: year, isoWeek: weekNum, _weekdayNum: wd };
-        }
       }
     }
     return null;

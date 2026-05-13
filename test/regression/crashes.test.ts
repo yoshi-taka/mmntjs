@@ -17,6 +17,13 @@ originalMoment.suppressDeprecationWarnings = true
 const FIXED_PARSE = [
   'constructoror.',
   '',
+  // ISO week dates (W01 year boundary bug — parseCommonISOExtended
+  // ordinal check was stealing week format and returning null)
+  '2008-W01',
+  '2009-W01',
+  '2008-W01-3',
+  '2008W01',
+  '2008W013',
 ]
 
 test.each(FIXED_PARSE)('FIXED (parse): %s', (input) => {
