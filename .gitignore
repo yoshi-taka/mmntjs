@@ -4,6 +4,5 @@
 crash-*
 dist/
 node_modules/
-src.snapshot/
 **/*.bak
 coverage/

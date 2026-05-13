@@ -6,7 +6,6 @@
     "dist/",
     "test/moment/",
     "test/helpers/",
-    "test/qunit.js",
-    "src.snapshot/"
+    "test/qunit.js"
   ]
 }
