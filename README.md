@@ -31,6 +31,26 @@ npx mmntjs migrate --check ./src     # dry run first
 npx mmntjs migrate --apply ./src     # apply codemod
 ```
 
+### Option C: Gradual migration (coexistence mode)
+
+Migrate file by file — `moment` and `mmntjs` can coexist in the same project:
+
+```sh
+npm install mmntjs
+```
+
+```js
+// file-a.js — not yet migrated
+import moment from "moment";       // still on moment.js
+
+// file-b.js — migrated
+import moment from "mmntjs";       // now on mmntjs
+```
+
+This works because the two runtimes don't conflict — you can move module by module at your own pace. No need for a big-bang switch.
+
+> **Tip**: Start with `mmntjs audit ./src` to identify which files use only compatible APIs. Those are your safest first candidates.
+
 ### As a standalone library
 
 ```sh

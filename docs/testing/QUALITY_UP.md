@@ -23,11 +23,13 @@
 - 固定済みは削除、未解決は `test/regression/` に回帰テスト化
 - ddmin で最小化してから登録
 
-## Phase 2: ミューテーション拡充
+## Phase 2: ミューテーション拡充 ✅
 
-- 対象ファイル拡大: `parse.ts`, `duration.ts`, `format.ts`, `parse-format.ts`, `locale.ts`
-- operator 追加: 境界値オフバイワン, nullチェック削除, 早期return削除, 条件反転
+- 対象ファイル拡大: `parse.ts`, `duration.ts`, `format-tokens.ts`, `display/format.ts`, `units.ts`
+- operator 追加: 境界値オフバイワン, 符号反転, 丸め変更, 条件反転, 早期return削除
 - survival rate 自動集計
+- Mutation count: 12 → 20 (8 new operators)
+- Survival rate: 100% (20/20 killed)
 
 ## Phase 3: ファズ corpus & 辞書
 
