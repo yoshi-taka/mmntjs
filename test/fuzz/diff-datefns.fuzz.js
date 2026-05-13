@@ -15,7 +15,9 @@ const moment = _moment;
 
 export function fuzz(buf) {
   applyRandomTZ(buf);
-  if (buf.length < 4) return;
+  if (buf.length < 4) {
+    return;
+  }
   const ts = buf.readInt32LE(0);
   try {
     const m2 = moment(ts);

@@ -6,12 +6,16 @@ const moment = _moment;
 
 export function fuzz(buf) {
   applyRandomTZ(buf);
-  if (buf.length < 4) return;
+  if (buf.length < 4) {
+    return;
+  }
   const ts = buf.readInt32LE(0);
   try {
     const m2 = moment(ts);
     const dj = dayjs(ts);
-    if (!dj.isValid()) return;
+    if (!dj.isValid()) {
+      return;
+    }
 
     const m2Val = m2.valueOf();
     const djVal = dj.valueOf();
@@ -31,7 +35,9 @@ export function fuzz(buf) {
       const unit = units[buf.length >= 9 ? buf[8] % units.length : 0];
       const m2Add = m2.clone().add(amount, unit);
       const djAdd = dj.add(amount, unit);
-      if (!djAdd.isValid()) return;
+      if (!djAdd.isValid()) {
+        return;
+      }
       if (m2Add.valueOf() !== djAdd.valueOf()) {
         throw new Error(
           `add(${amount}, ${unit}) mismatch for ts=${ts}: moment2=${m2Add.valueOf()}, dayjs=${djAdd.valueOf()}`,

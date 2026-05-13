@@ -6,12 +6,16 @@ const moment = _moment;
 
 export function fuzz(buf) {
   applyRandomTZ(buf);
-  if (buf.length < 4) return;
+  if (buf.length < 4) {
+    return;
+  }
   const ts = buf.readInt32LE(0);
   try {
     const m2 = moment(ts);
     const dt = DateTime.fromMillis(ts);
-    if (!dt.isValid) return;
+    if (!dt.isValid) {
+      return;
+    }
 
     const m2Val = m2.valueOf();
     const dtVal = dt.toMillis();
@@ -41,7 +45,9 @@ export function fuzz(buf) {
       if (luxonUnit) {
         const m2Add = m2.clone().add(amount, unit);
         const dtAdd = dt.plus({ [luxonUnit]: amount });
-        if (!dtAdd.isValid) return;
+        if (!dtAdd.isValid) {
+          return;
+        }
         if (m2Add.valueOf() !== dtAdd.toMillis()) {
           throw new Error(
             `add(${amount}, ${unit}) mismatch for ts=${ts}: moment2=${m2Add.valueOf()}, luxon=${dtAdd.toMillis()}`,

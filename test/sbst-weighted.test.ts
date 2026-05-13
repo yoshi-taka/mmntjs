@@ -167,7 +167,9 @@ describe("SBST: coverage-guided weighted tests", () => {
           fc.constantFrom(0, -1, 1, NaN, Infinity, -Infinity),
         ),
         (unit, value) => {
-          if (typeof value !== "number") {return;}
+          if (typeof value !== "number") {
+            return;
+          }
           const d2 = moment.duration(value, unit);
           const dOrig = originalMoment.duration(value, unit);
           expect(d2.isValid()).toBe(dOrig.isValid());
@@ -191,11 +193,15 @@ describe("SBST: coverage-guided weighted tests", () => {
         ),
         fc.constantFrom("add", "subtract"),
         (date, unit, amount, op) => {
-          if (typeof amount !== "number" || !Number.isFinite(amount)) {return;}
+          if (typeof amount !== "number" || !Number.isFinite(amount)) {
+            return;
+          }
           const d = date.getTime();
           const m2 = moment(d);
           const mOrig = originalMoment(d);
-          if (!m2.isValid() || !mOrig.isValid()) {return;}
+          if (!m2.isValid() || !mOrig.isValid()) {
+            return;
+          }
           const result2 = m2[op](amount, unit);
           const resultOrig = mOrig[op](amount, unit);
           expect(result2.isValid()).toBe(resultOrig.isValid());

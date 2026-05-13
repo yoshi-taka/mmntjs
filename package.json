@@ -66,7 +66,7 @@
     "bench:mem": "bun test/bench-mem.ts",
     "snapshot:save": "bash scripts/snapshot.sh save",
     "snapshot:compare": "bash scripts/snapshot.sh compare",
-    "lint": "oxlint --type-aware --type-check src test",
+    "lint": "oxfmt src test && oxlint --type-aware --type-check src test",
     "fmt": "oxfmt src test",
     "knip": "knip",
     "fallow": "fallow",

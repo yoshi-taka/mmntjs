@@ -131,7 +131,7 @@ describe("SBST: adversarial tests", () => {
             "\\Y\\E\\S",
             "[[]]",
             "[[[",
-            `Y${  "Y".repeat(20)}`,
+            `Y${"Y".repeat(20)}`,
             "S".repeat(10),
             " ",
             "  ",
@@ -248,10 +248,14 @@ describe("SBST: adversarial tests", () => {
           fc.constantFrom(NaN, Infinity, -Infinity),
         ),
         (ms) => {
-          if (typeof ms !== "number") {return;}
+          if (typeof ms !== "number") {
+            return;
+          }
           const d2 = moment.duration(ms);
           const dOrig = originalMoment.duration(ms);
-          if (!d2.isValid() || !dOrig.isValid()) {return;}
+          if (!d2.isValid() || !dOrig.isValid()) {
+            return;
+          }
           expect(d2.humanize()).toBe(dOrig.humanize());
           expect(d2.humanize(true)).toBe(dOrig.humanize(true));
         },
@@ -280,7 +284,9 @@ describe("SBST: adversarial tests", () => {
         ),
         fc.constantFrom("seconds", "days", "months", "years"),
         (offset, unit) => {
-          if (typeof offset !== "number" || !Number.isFinite(offset)) {return;}
+          if (typeof offset !== "number" || !Number.isFinite(offset)) {
+            return;
+          }
           const base = moment();
           const m2 = base.clone().add(offset, unit).clone();
           const mOrig = base.clone().add(offset, unit).clone();
@@ -325,13 +331,22 @@ describe("SBST: adversarial tests", () => {
       fc.property(
         fc.constantFrom(new Date(0), new Date(8.64e15), new Date(-8.64e15)),
         fc.constantFrom(new Date(0), new Date(8.64e15), new Date(-8.64e15)),
-        fc.constantFrom("year" as const, "month" as const, "day" as const, "hour" as const, "minute" as const, "second" as const),
+        fc.constantFrom(
+          "year" as const,
+          "month" as const,
+          "day" as const,
+          "hour" as const,
+          "minute" as const,
+          "second" as const,
+        ),
         (a: Date, b: Date, unit: string) => {
           const m2a = moment(a);
           const m2b = moment(b);
           const mOriga = originalMoment(a);
           const mOrigb = originalMoment(b);
-          if (!m2a.isValid() || !m2b.isValid() || !mOriga.isValid() || !mOrigb.isValid()) {return;}
+          if (!m2a.isValid() || !m2b.isValid() || !mOriga.isValid() || !mOrigb.isValid()) {
+            return;
+          }
           expect(m2a.diff(m2b, unit)).toBe(mOriga.diff(mOrigb, unit));
         },
       ),
