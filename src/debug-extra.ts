@@ -45,15 +45,7 @@ type DebugMoment = Moment & {
 };
 
 function toArrayDebugMoment(m: DebugMoment): number[] {
-  return [
-    m.year(),
-    m.month(),
-    m.date(),
-    m.hour(),
-    m.minute(),
-    m.second(),
-    m.millisecond(),
-  ];
+  return [m.year(), m.month(), m.date(), m.hour(), m.minute(), m.second(), m.millisecond()];
 }
 
 function asDebugMoment(m: Moment): DebugMoment {
@@ -103,7 +95,9 @@ function inspectDebugMoment(m: DebugMoment): string {
 }
 
 function toStringDebugMoment(m: DebugMoment): string {
-  if (!m._isValid) {return "Invalid date";}
+  if (!m._isValid) {
+    return "Invalid date";
+  }
   return m.format("ddd MMM DD YYYY HH:mm:ss [GMT]ZZ");
 }
 
@@ -145,14 +139,20 @@ function parsingFlagsDebugMoment(m: DebugMoment): Record<string, unknown> {
       result[publicKey] = value;
     }
   }
-  if (m._invalidEra !== undefined) {result.invalidEra = m._invalidEra;}
-  if (m._tooBusyWith !== undefined) {result.tooBusyWith = m._tooBusyWith;}
+  if (m._invalidEra !== undefined) {
+    result.invalidEra = m._invalidEra;
+  }
+  if (m._tooBusyWith !== undefined) {
+    result.tooBusyWith = m._tooBusyWith;
+  }
   return result;
 }
 
 function invalidAtDebugMoment(m: DebugMoment): number {
   const overflow = m._overflow;
-  if (overflow === undefined || overflow < 0) {return -1;}
+  if (overflow === undefined || overflow < 0) {
+    return -1;
+  }
   return overflow;
 }
 
@@ -181,9 +181,12 @@ export function toISOStringKeepOffsetMoment(m: DebugMoment): string {
   const sign = offset >= 0 ? "+" : "-";
   const absOffset = Math.abs(offset);
   const offsetStr = `${sign}${zeroFill(Math.floor(absOffset / 60), 2)}:${zeroFill(absOffset % 60, 2)}`;
-  const yearStr = year >= 0
-    ? (year >= 10000 ? `+${zeroFill(year, 6)}` : zeroFill(year, 4))
-    : `-${zeroFill(-year, 6)}`;
+  const yearStr =
+    year >= 0
+      ? year >= 10000
+        ? `+${zeroFill(year, 6)}`
+        : zeroFill(year, 4)
+      : `-${zeroFill(-year, 6)}`;
   return `${yearStr}-${month}-${day}T${hour}:${min}:${sec}.${ms}${offsetStr}`;
 }
 
@@ -197,8 +200,11 @@ export function toISOStringUtcMoment(m: DebugMoment): string {
   const min = zeroFill(utcDate.getUTCMinutes(), 2);
   const sec = zeroFill(utcDate.getUTCSeconds(), 2);
   const ms = zeroFill(utcDate.getUTCMilliseconds(), 3);
-  const yearStr = year >= 0
-    ? (year >= 10000 ? `+${zeroFill(year, 6)}` : zeroFill(year, 4))
-    : `-${zeroFill(-year, 6)}`;
+  const yearStr =
+    year >= 0
+      ? year >= 10000
+        ? `+${zeroFill(year, 6)}`
+        : zeroFill(year, 4)
+      : `-${zeroFill(-year, 6)}`;
   return `${yearStr}-${month}-${day}T${hour}:${min}:${sec}.${ms}Z`;
 }

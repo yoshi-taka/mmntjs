@@ -186,8 +186,16 @@ Phase 4 で追加した UT を、実装都合ではなく `moment/` の moment.j
 - 全11 fuzz ハーネスに `applyRandomTZ(buf)` 組込み
 - `test:hard` に `TZ=Asia/Tokyo bun run fuzz:quick` 追加 (両TZでのファズ実行)
 
-## Phase 7: SBST 本格化
+## Phase 7: SBST 本格化 ✅
 
-- カバレッジガイド付き weighted arbitrary
-- 既存プロパティテストに SBST モード追加
-- adversarial testing (NaN, overflow, 極値)
+- `test/sbst-weighted.test.ts`: カバレッジガイド付き weighted arbitrary を8種類実装
+  - パース互換トークン (26種、重み付け)
+  - ロケールトークン / タイムゾーントークン / ISO週トークン / 四半期トークン
+  - デュレーションユニット / 演算ユニット (mapToConstant で重み制御)
+  - エスケープ文字・エッジフォーマット
+- `test/sbst-adversarial.test.ts`: adversarial testing 11テスト
+  - NaN/Infinity 全コンストラクタ位置、極端な年・フォーマット文字列
+  - 空オブジェクト/null/undefined、無効ロケール
+  - `isMoment`/`isDate`/`isDuration` 非 Moment 値
+  - 極値間の diff、無効 moment への連鎖的操作
+- 全22テスト、`TZ=UTC` / `TZ=Asia/Tokyo` 両方で pass

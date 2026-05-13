@@ -1,5 +1,11 @@
 import { afterAll, beforeAll, describe, test, expect } from "bun:test";
-import { parseString, parseArray, parseObject, parseTwoDigitYear, setParseTwoDigitYear } from "../src/parse";
+import {
+  parseString,
+  parseArray,
+  parseObject,
+  parseTwoDigitYear,
+  setParseTwoDigitYear,
+} from "../src/parse";
 import { defineLocale, getLocale } from "../src/locale";
 import type { ParseLocale } from "../src/parse-locale";
 
@@ -20,13 +26,55 @@ const variantLocaleName = "parse-main-coverage-variant";
 beforeAll(() => {
   defineLocale(objectLocaleName, {
     months: {
-      standalone: ["jan-base", "feb-base", "mar-base", "apr-base", "may-base", "jun-base", "jul-base", "aug-base", "sep-base", "oct-base", "nov-base", "dec-base"],
-      format: ["janvfmt", "fevfmt", "marfmt", "aprfmt", "mayfmt", "junfmt", "julfmt", "augfmt", "sepfmt", "octfmt", "novfmt", "decfmt"],
+      standalone: [
+        "jan-base",
+        "feb-base",
+        "mar-base",
+        "apr-base",
+        "may-base",
+        "jun-base",
+        "jul-base",
+        "aug-base",
+        "sep-base",
+        "oct-base",
+        "nov-base",
+        "dec-base",
+      ],
+      format: [
+        "janvfmt",
+        "fevfmt",
+        "marfmt",
+        "aprfmt",
+        "mayfmt",
+        "junfmt",
+        "julfmt",
+        "augfmt",
+        "sepfmt",
+        "octfmt",
+        "novfmt",
+        "decfmt",
+      ],
     },
     monthsShort: ["j1", "f1", "m1", "a1", "m2", "j2", "j3", "a2", "s1", "o1", "n1", "d1"],
     weekdays: {
-      standalone: ["sundayobj", "mondayobj", "tuesdayobj", "wednesdayobj", "thursdayobj", "fridayobj", "saturdayobj"],
-      format: ["sundayfmt", "mondayfmt", "tuesdayfmt", "wednesdayfmt", "thursdayfmt", "fridayfmt", "saturdayfmt"],
+      standalone: [
+        "sundayobj",
+        "mondayobj",
+        "tuesdayobj",
+        "wednesdayobj",
+        "thursdayobj",
+        "fridayobj",
+        "saturdayobj",
+      ],
+      format: [
+        "sundayfmt",
+        "mondayfmt",
+        "tuesdayfmt",
+        "wednesdayfmt",
+        "thursdayfmt",
+        "fridayfmt",
+        "saturdayfmt",
+      ],
     },
     weekdaysShort: {
       standalone: ["suo", "moo", "tuo", "weo", "tho", "fro", "sao"],
@@ -43,26 +91,76 @@ beforeAll(() => {
 
   defineLocale(functionLocaleName, {
     months(this: unknown, m?: { month: () => number }): string[] | string {
-      const standalone = ["janbase", "febbase", "marbase", "aprbase", "maybase", "junbase", "julbase", "augbase", "sepbase", "octbase", "novbase", "decbase"];
-      const format = ["janfun", "febfun", "marfun", "aprfun", "mayfun", "junfun", "julfun", "augfun", "sepfun", "octfun", "novfun", "decfun"];
-      if (!m) {return standalone;}
+      const standalone = [
+        "janbase",
+        "febbase",
+        "marbase",
+        "aprbase",
+        "maybase",
+        "junbase",
+        "julbase",
+        "augbase",
+        "sepbase",
+        "octbase",
+        "novbase",
+        "decbase",
+      ];
+      const format = [
+        "janfun",
+        "febfun",
+        "marfun",
+        "aprfun",
+        "mayfun",
+        "junfun",
+        "julfun",
+        "augfun",
+        "sepfun",
+        "octfun",
+        "novfun",
+        "decfun",
+      ];
+      if (!m) {
+        return standalone;
+      }
       return format[m.month()];
     },
     weekdays(this: unknown, m?: { day: () => number }): string[] | string {
       const names = ["sunfun", "monfun", "tuefun", "wedfun", "thufun", "frifun", "satfun"];
-      if (!m) {return names;}
+      if (!m) {
+        return names;
+      }
       return names[m.day()];
     },
   } as unknown as Record<string, unknown>);
 
   defineLocale(apostropheLocaleName, {
-    months: ["jan", "feb", "mar", "lʼavril", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"],
+    months: [
+      "jan",
+      "feb",
+      "mar",
+      "lʼavril",
+      "may",
+      "jun",
+      "jul",
+      "aug",
+      "sep",
+      "oct",
+      "nov",
+      "dec",
+    ],
   } as unknown as Record<string, unknown>);
 
   defineLocale(eraLocaleName, {
     eras: [
       { since: "2019-05-01", offset: 1, name: "Reiwa", narrow: "R", abbr: "RW" },
-      { since: "0001-01-01", until: "2019-04-30", offset: 1, name: "Common", narrow: "C", abbr: "AD" },
+      {
+        since: "0001-01-01",
+        until: "2019-04-30",
+        offset: 1,
+        name: "Common",
+        narrow: "C",
+        abbr: "AD",
+      },
     ],
     eraYearOrdinalRegex: /(first|\d+)e/,
     eraYearOrdinalParse(input: string, match: RegExpMatchArray): number {
@@ -71,8 +169,34 @@ beforeAll(() => {
   } as unknown as Record<string, unknown>);
 
   defineLocale(variantLocaleName, {
-    months: ["januaryx", "februaryx", "marchx", "aprilx", "mayx", "junex", "julyx", "augustx", "septemberx", "octoberx", "novemberx", "decemberx"],
-    monthsShort: ["jan.", "feb.", "mar.", "apr.", "may.", "jun.", "jul.", "aug.", "sep.", "oct.", "nov.", "dec."],
+    months: [
+      "januaryx",
+      "februaryx",
+      "marchx",
+      "aprilx",
+      "mayx",
+      "junex",
+      "julyx",
+      "augustx",
+      "septemberx",
+      "octoberx",
+      "novemberx",
+      "decemberx",
+    ],
+    monthsShort: [
+      "jan.",
+      "feb.",
+      "mar.",
+      "apr.",
+      "may.",
+      "jun.",
+      "jul.",
+      "aug.",
+      "sep.",
+      "oct.",
+      "nov.",
+      "dec.",
+    ],
     weekdays: ["sunʼday", "monʼday", "tueʼsday", "wedʼday", "thuʼday", "friʼday", "satʼday"],
     weekdaysShort: ["sunʼd", "monʼd", "tueʼd", "wedʼd", "thuʼd", "friʼd", "satʼd"],
     weekdaysMin: ["suʼ", "moʼ", "tuʼ", "weʼ", "thʼ", "frʼ", "saʼ"],
@@ -105,14 +229,30 @@ function check(input: string, fmt: string, exp: ParsedExpectation, strict?: bool
     return;
   }
   expect(result).toBeDefined();
-  if (exp.year !== undefined) {expect(result!.year).toBe(exp.year);}
-  if (exp.month !== undefined) {expect(result!.month).toBe(exp.month);}
-  if (exp.day !== undefined) {expect(result!.day).toBe(exp.day);}
-  if (exp.hour !== undefined) {expect(result!.hour).toBe(exp.hour);}
-  if (exp.minute !== undefined) {expect(result!.minute).toBe(exp.minute);}
-  if (exp.second !== undefined) {expect(result!.second).toBe(exp.second);}
-  if (exp.millisecond !== undefined) {expect(result!.millisecond).toBe(exp.millisecond);}
-  if (exp.offset !== undefined) {expect(result!.offset).toBe(exp.offset);}
+  if (exp.year !== undefined) {
+    expect(result!.year).toBe(exp.year);
+  }
+  if (exp.month !== undefined) {
+    expect(result!.month).toBe(exp.month);
+  }
+  if (exp.day !== undefined) {
+    expect(result!.day).toBe(exp.day);
+  }
+  if (exp.hour !== undefined) {
+    expect(result!.hour).toBe(exp.hour);
+  }
+  if (exp.minute !== undefined) {
+    expect(result!.minute).toBe(exp.minute);
+  }
+  if (exp.second !== undefined) {
+    expect(result!.second).toBe(exp.second);
+  }
+  if (exp.millisecond !== undefined) {
+    expect(result!.millisecond).toBe(exp.millisecond);
+  }
+  if (exp.offset !== undefined) {
+    expect(result!.offset).toBe(exp.offset);
+  }
 }
 
 describe("parseMain parseString", () => {
@@ -136,22 +276,59 @@ describe("parseMain parseString", () => {
 
   describe("time tokens", () => {
     test("HH:mm:ss", () => {
-      check("2024-01-15 10:30:45", "YYYY-MM-DD HH:mm:ss", { year: 2024, month: 0, day: 15, hour: 10, minute: 30, second: 45 });
+      check("2024-01-15 10:30:45", "YYYY-MM-DD HH:mm:ss", {
+        year: 2024,
+        month: 0,
+        day: 15,
+        hour: 10,
+        minute: 30,
+        second: 45,
+      });
     });
     test("HH:mm", () => {
-      check("2024-01-15 10:30", "YYYY-MM-DD HH:mm", { year: 2024, month: 0, day: 15, hour: 10, minute: 30 });
+      check("2024-01-15 10:30", "YYYY-MM-DD HH:mm", {
+        year: 2024,
+        month: 0,
+        day: 15,
+        hour: 10,
+        minute: 30,
+      });
     });
     test("H:m", () => {
-      check("2024-01-15 9:5", "YYYY-MM-DD H:m", { year: 2024, month: 0, day: 15, hour: 9, minute: 5 });
+      check("2024-01-15 9:5", "YYYY-MM-DD H:m", {
+        year: 2024,
+        month: 0,
+        day: 15,
+        hour: 9,
+        minute: 5,
+      });
     });
     test("A (AM)", () => {
-      check("2024-01-15 10:30 AM", "YYYY-MM-DD hh:mm A", { year: 2024, month: 0, day: 15, hour: 10, minute: 30 });
+      check("2024-01-15 10:30 AM", "YYYY-MM-DD hh:mm A", {
+        year: 2024,
+        month: 0,
+        day: 15,
+        hour: 10,
+        minute: 30,
+      });
     });
     test("A (PM)", () => {
-      check("2024-01-15 10:30 PM", "YYYY-MM-DD hh:mm A", { year: 2024, month: 0, day: 15, hour: 22, minute: 30 });
+      check("2024-01-15 10:30 PM", "YYYY-MM-DD hh:mm A", {
+        year: 2024,
+        month: 0,
+        day: 15,
+        hour: 22,
+        minute: 30,
+      });
     });
     test("a (pm)", () => {
-      check("2024-01-15 10:30 pm", "YYYY-MM-DD hh:mm a", { year: 2024, month: 0, day: 15, hour: 22, minute: 30 });
+      check("2024-01-15 10:30 pm", "YYYY-MM-DD hh:mm a", {
+        year: 2024,
+        month: 0,
+        day: 15,
+        hour: 22,
+        minute: 30,
+      });
     });
     test("SSS ms", () => {
       check("2024-01-15 10:30:45.123", "YYYY-MM-DD HH:mm:ss.SSS", { millisecond: 123 });
@@ -200,32 +377,45 @@ describe("parseMain parseString", () => {
     });
     test("MMMM rejects custom object format names in strict mode", () => {
       const r = parseString("janvfmt 15 2024", "MMMM DD YYYY", namedLoc(objectLocaleName), true);
-      expect(r).toEqual(expect.objectContaining({ _unusedTokens: expect.arrayContaining(["MMMM"]) }));
+      expect(r).toEqual(
+        expect.objectContaining({ _unusedTokens: expect.arrayContaining(["MMMM"]) }),
+      );
     });
     test("MMM rejects custom function month names in strict mode", () => {
       const r = parseString("janfun 15 2024", "MMM DD YYYY", namedLoc(functionLocaleName), true);
-      expect(r).toEqual(expect.objectContaining({ _unusedTokens: expect.arrayContaining(["MMM"]) }));
+      expect(r).toEqual(
+        expect.objectContaining({ _unusedTokens: expect.arrayContaining(["MMM"]) }),
+      );
     });
     test("exact apostrophe month names are accepted", () => {
-      const r = parseString("lʼavril 15 2024", "MMMM DD YYYY", namedLoc(apostropheLocaleName), true);
+      const r = parseString(
+        "lʼavril 15 2024",
+        "MMMM DD YYYY",
+        namedLoc(apostropheLocaleName),
+        true,
+      );
       expect(r!.month).toBe(3);
     });
     test("MMMM does not fall back to English names for custom locales in strict mode", () => {
       const r = parseString("January 15 2024", "MMMM DD YYYY", namedLoc(objectLocaleName), true);
-      expect(r).toEqual(expect.objectContaining({ _unusedTokens: expect.arrayContaining(["MMMM"]) }));
+      expect(r).toEqual(
+        expect.objectContaining({ _unusedTokens: expect.arrayContaining(["MMMM"]) }),
+      );
     });
     test("MMM does not fall back to English short names for custom locales in strict mode", () => {
       const r = parseString("Jan 15 2024", "MMM DD YYYY", namedLoc(objectLocaleName), true);
-      expect(r).toEqual(expect.objectContaining({ _unusedTokens: expect.arrayContaining(["MMM"]) }));
+      expect(r).toEqual(
+        expect.objectContaining({ _unusedTokens: expect.arrayContaining(["MMM"]) }),
+      );
     });
     test("non-strict MMMM consumes unknown word and leaves month undefined", () => {
       const r = parseString("Blarg 15 2024", "MMMM DD YYYY", enLoc(), false);
       expect(r).toEqual(expect.objectContaining({ month: undefined, day: 15, year: 2024 }));
     });
     test("month tokens accept no-period short variants", () => {
-      expect(parseString("jan 15 2024", "MMMM DD YYYY", namedLoc(variantLocaleName), false)).toEqual(
-        expect.objectContaining({ month: 0, day: 15, year: 2024 }),
-      );
+      expect(
+        parseString("jan 15 2024", "MMMM DD YYYY", namedLoc(variantLocaleName), false),
+      ).toEqual(expect.objectContaining({ month: 0, day: 15, year: 2024 }));
       expect(parseString("jan 15 2024", "MMM DD YYYY", namedLoc(variantLocaleName), true)).toEqual(
         expect.objectContaining({ month: 0, day: 15, year: 2024 }),
       );
@@ -357,7 +547,9 @@ describe("parseMain parseString", () => {
       );
     });
     test("weekday name token uses locale function data", () => {
-      expect(parseString("wedfun", "dddd", namedLoc(functionLocaleName), true)!._weekdayNum).toBe(3);
+      expect(parseString("wedfun", "dddd", namedLoc(functionLocaleName), true)!._weekdayNum).toBe(
+        3,
+      );
     });
     test("weekday tokens do not accept apostrophe variants in strict mode", () => {
       expect(parseString("sun'day", "dddd", namedLoc(variantLocaleName), true)).toEqual(
@@ -428,17 +620,21 @@ describe("parseMain parseString", () => {
     });
     test("strict failure records remaining token and literal", () => {
       const r = parseString("2024/", "YYYY-MM-DD", enLoc(), true);
-      expect(r).toEqual(expect.objectContaining({
-        _unusedTokens: expect.arrayContaining(["MM", "-", "DD"]),
-      }));
+      expect(r).toEqual(
+        expect.objectContaining({
+          _unusedTokens: expect.arrayContaining(["MM", "-", "DD"]),
+        }),
+      );
     });
     test("strict whitespace literal mismatch is tracked", () => {
       const r = parseString("2024@01", "YYYY MM", enLoc(), true);
-      expect(r).toEqual(expect.objectContaining({
-        _unusedInput: expect.arrayContaining(["@"]),
-        year: 2024,
-        month: 0,
-      }));
+      expect(r).toEqual(
+        expect.objectContaining({
+          _unusedInput: expect.arrayContaining(["@"]),
+          year: 2024,
+          month: 0,
+        }),
+      );
     });
   });
 
@@ -502,9 +698,11 @@ describe("parseMain parseString", () => {
     });
     test("strict N only accepts era abbreviations", () => {
       const r = parseString("Reiwa 2", "N y", namedLoc(eraLocaleName), true);
-      expect(r).toEqual(expect.objectContaining({
-        _unusedTokens: expect.arrayContaining(["N"]),
-      }));
+      expect(r).toEqual(
+        expect.objectContaining({
+          _unusedTokens: expect.arrayContaining(["N"]),
+        }),
+      );
     });
     test("NNNNN matches narrow era names", () => {
       const r = parseString("R 2", "NNNNN y", namedLoc(eraLocaleName), true);
@@ -530,9 +728,11 @@ describe("parseMain parseString", () => {
     });
     test("strict d token rejects weekday outside 0-6", () => {
       const r = parseString("7", "d", enLoc(), true);
-      expect(r).toEqual(expect.objectContaining({
-        _unusedTokens: expect.arrayContaining(["d"]),
-      }));
+      expect(r).toEqual(
+        expect.objectContaining({
+          _unusedTokens: expect.arrayContaining(["d"]),
+        }),
+      );
     });
     test("non-strict d token consumes unknown word", () => {
       const r = parseString("weekday", "d", enLoc(), false);
@@ -582,7 +782,11 @@ describe("parseString ISO auto-detection (no format)", () => {
     expect(r).toBeDefined();
   });
   test("RFC 2822 with comments auto", () => {
-    const r = parseString("(Init Comment) Tue,\n 1 Nov              2016 (Split\n Comment)  07:23:45 +0000 (GMT)", undefined, enLoc());
+    const r = parseString(
+      "(Init Comment) Tue,\n 1 Nov              2016 (Split\n Comment)  07:23:45 +0000 (GMT)",
+      undefined,
+      enLoc(),
+    );
     expect(r).toBeDefined();
     expect(r!.year).toBe(2016);
     expect(r!.month).toBe(10);
@@ -675,7 +879,9 @@ describe("parseArray", () => {
   });
   test("out-of-range year uses constructor", () => {
     const r = parseArray([10000, 0, 1]);
-    expect(r).toEqual(expect.objectContaining({ year: 10000, month: 0, day: 1, _useConstructor: true }));
+    expect(r).toEqual(
+      expect.objectContaining({ year: 10000, month: 0, day: 1, _useConstructor: true }),
+    );
   });
   test("empty array returns null", () => {
     expect(parseArray([])).toBeNull();
@@ -688,22 +894,39 @@ describe("parseArray", () => {
 
 describe("parseObject", () => {
   test("basic fields", () => {
-    expect(parseObject({ year: 2024, month: 0, day: 15 })).toEqual({ year: 2024, month: 0, day: 15 });
+    expect(parseObject({ year: 2024, month: 0, day: 15 })).toEqual({
+      year: 2024,
+      month: 0,
+      day: 15,
+    });
   });
   test("aliases", () => {
     expect(parseObject({ y: 2024, M: 0, d: 15 })).toEqual({ year: 2024, month: 0, day: 15 });
   });
   test("date alias", () => {
-    expect(parseObject({ year: 2024, month: 0, date: 15 })).toEqual({ year: 2024, month: 0, day: 15 });
+    expect(parseObject({ year: 2024, month: 0, date: 15 })).toEqual({
+      year: 2024,
+      month: 0,
+      day: 15,
+    });
   });
   test("string values are coerced", () => {
-    expect(parseObject({ years: "2014", months: "7", date: "31" })).toEqual({ year: 2014, month: 7, day: 31 });
+    expect(parseObject({ years: "2014", months: "7", date: "31" })).toEqual({
+      year: 2014,
+      month: 7,
+      day: 31,
+    });
   });
   test("null value ignored", () => {
     expect(parseObject({ year: null })).toEqual({});
   });
   test("all time fields", () => {
-    expect(parseObject({ hour: 10, minute: 30, second: 45, millisecond: 500 })).toEqual({ hour: 10, minute: 30, second: 45, millisecond: 500 });
+    expect(parseObject({ hour: 10, minute: 30, second: 45, millisecond: 500 })).toEqual({
+      hour: 10,
+      minute: 30,
+      second: 45,
+      millisecond: 500,
+    });
   });
 });
 

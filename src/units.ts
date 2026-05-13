@@ -17,21 +17,57 @@ export const DAY = 15;
 export const INVALID_UNIT = -1;
 
 const _aliases: Record<string, string> = {
-  Y: "year", y: "year", years: "year", year: "year",
-  M: "month", months: "month", month: "month", Mo: "month",
-  D: "date", d: "day", days: "day", day: "day", date: "date", dates: "date",
-  h: "hour", hours: "hour", hour: "hour",
-  m: "minute", minutes: "minute", minute: "minute",
-  s: "second", seconds: "second", second: "second",
-  ms: "millisecond", milliseconds: "millisecond", millisecond: "millisecond",
-  w: "week", W: "isoWeek", weeks: "week", week: "week",
-  weekday: "weekday", weekdays: "weekday", e: "weekday",
-  isoWeek: "isoWeek", isoWeeks: "isoWeek",
-  isoWeekday: "isoWeekday", isoWeekdays: "isoWeekday", E: "isoWeekday",
-  quarter: "quarter", quarters: "quarter", Q: "quarter",
-  dayOfYear: "dayOfYear", dayOfYears: "dayOfYear", doy: "dayOfYear", DDD: "dayOfYear",
-  gg: "weekYear", weekYear: "weekYear", weekYears: "weekYear",
-  GG: "isoWeekYear", isoWeekYear: "isoWeekYear", isoWeekYears: "isoWeekYear",
+  Y: "year",
+  y: "year",
+  years: "year",
+  year: "year",
+  M: "month",
+  months: "month",
+  month: "month",
+  Mo: "month",
+  D: "date",
+  d: "day",
+  days: "day",
+  day: "day",
+  date: "date",
+  dates: "date",
+  h: "hour",
+  hours: "hour",
+  hour: "hour",
+  m: "minute",
+  minutes: "minute",
+  minute: "minute",
+  s: "second",
+  seconds: "second",
+  second: "second",
+  ms: "millisecond",
+  milliseconds: "millisecond",
+  millisecond: "millisecond",
+  w: "week",
+  W: "isoWeek",
+  weeks: "week",
+  week: "week",
+  weekday: "weekday",
+  weekdays: "weekday",
+  e: "weekday",
+  isoWeek: "isoWeek",
+  isoWeeks: "isoWeek",
+  isoWeekday: "isoWeekday",
+  isoWeekdays: "isoWeekday",
+  E: "isoWeekday",
+  quarter: "quarter",
+  quarters: "quarter",
+  Q: "quarter",
+  dayOfYear: "dayOfYear",
+  dayOfYears: "dayOfYear",
+  doy: "dayOfYear",
+  DDD: "dayOfYear",
+  gg: "weekYear",
+  weekYear: "weekYear",
+  weekYears: "weekYear",
+  GG: "isoWeekYear",
+  isoWeekYear: "isoWeekYear",
+  isoWeekYears: "isoWeekYear",
 };
 
 const _nmap: Record<string, string> = {};
@@ -42,7 +78,7 @@ for (const key of Object.keys(_aliases)) {
 export const units: Record<string, string> = _aliases;
 
 export function normalizeUnits(unit: string): string | undefined {
-  return unit ? (_aliases[unit] || _nmap[unit.toLowerCase()]) : undefined;
+  return unit ? _aliases[unit] || _nmap[unit.toLowerCase()] : undefined;
 }
 
 const _unitCodes: Record<string, number> = {
@@ -73,27 +109,39 @@ for (const key of Object.keys(_aliases)) {
 }
 
 export function normalizeUnitCode(unit: string): number {
-  if (!unit) {return INVALID_UNIT;}
+  if (!unit) {
+    return INVALID_UNIT;
+  }
   const exact = _codeAliases[unit];
   return exact;
 }
 
 export function isLeapYear(y: number): boolean {
-  if (!isFinite(y)) {return false;}
-  if ((y & 3) !== 0) {return false;}
-  if (y % 100 !== 0) {return true;}
+  if (!isFinite(y)) {
+    return false;
+  }
+  if ((y & 3) !== 0) {
+    return false;
+  }
+  if (y % 100 !== 0) {
+    return true;
+  }
   return (y & 15) === 0;
 }
 
 const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
 export function daysInMonth(year: number, month: number): number {
-  if (isNaN(year) || isNaN(month)) {return NaN;}
+  if (isNaN(year) || isNaN(month)) {
+    return NaN;
+  }
   if (month < 0 || month > 11) {
     const adj = month % 12;
     year += Math.floor(month / 12);
     month = adj < 0 ? adj + 12 : adj;
   }
-  if (month === 1) {return isLeapYear(year) ? 29 : 28;}
+  if (month === 1) {
+    return isLeapYear(year) ? 29 : 28;
+  }
   return DAYS_IN_MONTH[month];
 }

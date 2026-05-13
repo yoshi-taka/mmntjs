@@ -1,24 +1,28 @@
 import { MomentLite } from "../moment-lite";
-import {
-  isMoment,
-  isDate,
-  isArray,
-} from "../utils";
+import { isMoment, isDate, isArray } from "../utils";
 
-type LiteMomentTarget = ((input?: unknown, format?: unknown, localeOrStrict?: unknown, fourthArg?: unknown) => MomentLite) & Record<string, unknown>;
+type LiteMomentTarget = ((
+  input?: unknown,
+  format?: unknown,
+  localeOrStrict?: unknown,
+  fourthArg?: unknown,
+) => MomentLite) &
+  Record<string, unknown>;
 
 export type LiteCoreApiDeps = {
   getMomentNowFunction: () => (() => number) | undefined;
   setMomentNowFunction: (fn: (() => number) | undefined) => void;
   parseTwoDigitYearInternal: (str: string) => number;
   setParseTwoDigitYear: (fn: ((str: string) => number) | undefined) => void;
-  momentUTC: (input?: unknown, format?: unknown, localeOrStrict?: unknown, fourthArg?: unknown) => MomentLite;
+  momentUTC: (
+    input?: unknown,
+    format?: unknown,
+    localeOrStrict?: unknown,
+    fourthArg?: unknown,
+  ) => MomentLite;
 };
 
-export function registerLiteCoreApi(
-  target: LiteMomentTarget,
-  deps: LiteCoreApiDeps,
-): void {
+export function registerLiteCoreApi(target: LiteMomentTarget, deps: LiteCoreApiDeps): void {
   const momentRecord = target as unknown as Record<string, unknown>;
   momentRecord.fn = MomentLite.prototype;
   momentRecord.prototype = MomentLite.prototype;
@@ -54,7 +58,11 @@ export function registerLiteCoreApi(
     return target(ts * 1000);
   };
   momentRecord.invalid = function (input?: unknown): MomentLite {
-    const config: Record<string, unknown> = { _d: new Date(NaN), _isValid: false, _userInvalidated: input === undefined };
+    const config: Record<string, unknown> = {
+      _d: new Date(NaN),
+      _isValid: false,
+      _userInvalidated: input === undefined,
+    };
     if (
       typeof input === "object" &&
       input !== null &&
@@ -71,7 +79,12 @@ export function registerLiteCoreApi(
     }
     return new MomentLite(config as never);
   };
-  momentRecord.utc = function (input?: unknown, format?: unknown, localeOrStrict?: unknown, fourthArg?: unknown): MomentLite {
+  momentRecord.utc = function (
+    input?: unknown,
+    format?: unknown,
+    localeOrStrict?: unknown,
+    fourthArg?: unknown,
+  ): MomentLite {
     return deps.momentUTC(input, format, localeOrStrict, fourthArg);
   };
   (momentRecord.utc as Record<string, unknown>).parseTwoDigitYear = deps.parseTwoDigitYearInternal;

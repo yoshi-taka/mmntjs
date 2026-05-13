@@ -40,7 +40,7 @@ function getDayOfYear(d: Date, utc: boolean): number {
   const year = utc ? d.getUTCFullYear() : d.getFullYear();
   const nonLeap = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
   const leap = [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
-  return day + (((year % 4 === 0 && year % 100 !== 0) || year % 400 === 0) ? leap : nonLeap)[month];
+  return day + ((year % 4 === 0 && year % 100 !== 0) || year % 400 === 0 ? leap : nonLeap)[month];
 }
 
 function getLocaleWeek(d: Date, utc: boolean, dow: number, doy: number): number {
@@ -64,21 +64,31 @@ function getLocaleWeekYear(d: Date, utc: boolean, dow: number, doy: number): num
   const weekOffset = firstWeekOffset(year, dow, doy, utc);
   const dayOfYear = getDayOfYear(d, utc);
   const week = Math.floor((dayOfYear - weekOffset - 1) / 7) + 1;
-  if (week < 1) {return year - 1;}
-  if (week > weeksInYear(year, dow, doy, utc)) {return year + 1;}
+  if (week < 1) {
+    return year - 1;
+  }
+  if (week > weeksInYear(year, dow, doy, utc)) {
+    return year + 1;
+  }
   return year;
 }
 
 export function localeWeekday(m: LocaleAwareMoment, d?: number): number | Moment {
   m._ensureFields();
-  const weekConfig = (m._getLocale()._config as Record<string, unknown>).week as { dow: number; doy?: number } | undefined ?? { dow: 0 };
+  const weekConfig = ((m._getLocale()._config as Record<string, unknown>).week as
+    | { dow: number; doy?: number }
+    | undefined) ?? { dow: 0 };
   const dow = weekConfig.dow;
   if (d !== undefined) {
     const current = m.$W;
     const weekday = (current - dow + 7) % 7;
     const diff = d - weekday;
     const dt = m._getD();
-    if (m._isUTC) { dt.setUTCDate(dt.getUTCDate() + diff); } else { dt.setDate(dt.getDate() + diff); }
+    if (m._isUTC) {
+      dt.setUTCDate(dt.getUTCDate() + diff);
+    } else {
+      dt.setDate(dt.getDate() + diff);
+    }
     m._d = dt;
     m._t = dt.getTime();
     m._refreshFields();
@@ -88,13 +98,19 @@ export function localeWeekday(m: LocaleAwareMoment, d?: number): number | Moment
 }
 
 export function localeWeek(m: LocaleAwareMoment, w?: number): number | Moment {
-  const weekConfig = (m._getLocale()._config as Record<string, unknown>).week as { dow: number; doy: number } | undefined ?? { dow: 0, doy: 6 };
+  const weekConfig = ((m._getLocale()._config as Record<string, unknown>).week as
+    | { dow: number; doy: number }
+    | undefined) ?? { dow: 0, doy: 6 };
   const { dow, doy } = weekConfig;
   if (w !== undefined) {
     const current = getLocaleWeek(m._getD(), m._isUTC, dow, doy);
     const diff = w - current;
     const d = m._getD();
-    if (m._isUTC) { d.setUTCDate(d.getUTCDate() + diff * 7); } else { d.setDate(d.getDate() + diff * 7); }
+    if (m._isUTC) {
+      d.setUTCDate(d.getUTCDate() + diff * 7);
+    } else {
+      d.setDate(d.getDate() + diff * 7);
+    }
     m._d = d;
     m._t = d.getTime();
     m._refreshFields();
@@ -104,13 +120,17 @@ export function localeWeek(m: LocaleAwareMoment, w?: number): number | Moment {
 }
 
 export function localeWeekYear(m: LocaleAwareMoment, y?: number): number | Moment {
-  const weekConfig = (m._getLocale()._config as Record<string, unknown>).week as { dow: number; doy: number } | undefined ?? { dow: 0, doy: 6 };
+  const weekConfig = ((m._getLocale()._config as Record<string, unknown>).week as
+    | { dow: number; doy: number }
+    | undefined) ?? { dow: 0, doy: 6 };
   const { dow, doy } = weekConfig;
   if (y !== undefined) {
     let currentWeek = getLocaleWeek(m._getD(), m._isUTC, dow, doy);
     const currentDay = m.weekday();
     const maxWeek = weeksInYear(y, dow, doy, m._isUTC);
-    if (currentWeek > maxWeek) {currentWeek = maxWeek;}
+    if (currentWeek > maxWeek) {
+      currentWeek = maxWeek;
+    }
     const jan1 = m._isUTC ? new Date(Date.UTC(y, 0, 1)) : new Date(y, 0, 1);
     const fwd = 7 + dow - doy;
     const fwdDate = m._isUTC ? new Date(Date.UTC(y, 0, fwd)) : new Date(y, 0, fwd);
@@ -146,7 +166,9 @@ export function lang(
   locale: string | string[] | false | undefined,
   getCurrentLocale: () => string,
 ): string | Moment {
-  if (locale === undefined) {return m._l ?? getCurrentLocale();}
+  if (locale === undefined) {
+    return m._l ?? getCurrentLocale();
+  }
   if (locale === false) {
     m._l = undefined;
     m._locale = undefined;
@@ -154,7 +176,9 @@ export function lang(
   }
   if (Array.isArray(locale)) {
     for (const l of locale) {
-      if (m._trySetLocale(l)) {return m;}
+      if (m._trySetLocale(l)) {
+        return m;
+      }
     }
     return m;
   }
@@ -177,7 +201,9 @@ export function localeMethod(
   }
   if (Array.isArray(locale)) {
     for (const l of locale) {
-      if (m._trySetLocale(l)) {return m;}
+      if (m._trySetLocale(l)) {
+        return m;
+      }
     }
     return m;
   }

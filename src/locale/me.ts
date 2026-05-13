@@ -2,112 +2,102 @@ import type { Moment } from "../moment-class";
 import type { LocaleSpec } from "./en";
 
 const translator = {
-    words: {
-        //Different grammatical cases
-        ss: ['sekund', 'sekunda', 'sekundi'],
-        m: ['jedan minut', 'jednog minuta'],
-        mm: ['minut', 'minuta', 'minuta'],
-        h: ['jedan sat', 'jednog sata'],
-        hh: ['sat', 'sata', 'sati'],
-        dd: ['dan', 'dana', 'dana'],
-        MM: ['mjesec', 'mjeseca', 'mjeseci'],
-        yy: ['godina', 'godine', 'godina'],
-    },
-    correctGrammaticalCase: function (number: number, wordKey: string[]) {
-        return number === 1
-            ? wordKey[0]
-            : number >= 2 && number <= 4
-              ? wordKey[1]
-              : wordKey[2];
-    },
-    translate: function (number: number, withoutSuffix: boolean, key: string) {
-        const wordKey = (translator.words as Record<string, string[]>)[key];
-        if (key.length === 1) {
-            return withoutSuffix ? wordKey[0] : wordKey[1];
-        } else {
-            return (
-                `${number 
-                } ${ 
-                translator.correctGrammaticalCase(number, wordKey)}`
-            );
-        }
-    },
+  words: {
+    //Different grammatical cases
+    ss: ["sekund", "sekunda", "sekundi"],
+    m: ["jedan minut", "jednog minuta"],
+    mm: ["minut", "minuta", "minuta"],
+    h: ["jedan sat", "jednog sata"],
+    hh: ["sat", "sata", "sati"],
+    dd: ["dan", "dana", "dana"],
+    MM: ["mjesec", "mjeseca", "mjeseci"],
+    yy: ["godina", "godine", "godina"],
+  },
+  correctGrammaticalCase: function (number: number, wordKey: string[]) {
+    return number === 1 ? wordKey[0] : number >= 2 && number <= 4 ? wordKey[1] : wordKey[2];
+  },
+  translate: function (number: number, withoutSuffix: boolean, key: string) {
+    const wordKey = (translator.words as Record<string, string[]>)[key];
+    if (key.length === 1) {
+      return withoutSuffix ? wordKey[0] : wordKey[1];
+    } else {
+      return `${number} ${translator.correctGrammaticalCase(number, wordKey)}`;
+    }
+  },
 };
 
 export const meLocale: LocaleSpec = {
-    months: 'januar_februar_mart_april_maj_jun_jul_avgust_septembar_oktobar_novembar_decembar'.split(
-        '_'
-    ),
-    monthsShort: 'jan._feb._mar._apr._maj_jun_jul_avg._sep._okt._nov._dec.'.split('_'),
-    monthsParseExact: true,
-    weekdays: 'nedjelja_ponedjeljak_utorak_srijeda_četvrtak_petak_subota'.split(
-        '_'
-    ),
-    weekdaysShort: 'ned._pon._uto._sri._čet._pet._sub.'.split('_'),
-    weekdaysMin: 'ne_po_ut_sr_če_pe_su'.split('_'),
-    weekdaysParseExact: true,
-    longDateFormat: {
-      LT: "H:mm",
-      LTS: "H:mm:ss",
-      L: "DD.MM.YYYY",
-      LL: "D. MMMM YYYY",
-      LLL: "D. MMMM YYYY H:mm",
-      LLLL: "dddd, D. MMMM YYYY H:mm"
+  months: "januar_februar_mart_april_maj_jun_jul_avgust_septembar_oktobar_novembar_decembar".split(
+    "_",
+  ),
+  monthsShort: "jan._feb._mar._apr._maj_jun_jul_avg._sep._okt._nov._dec.".split("_"),
+  monthsParseExact: true,
+  weekdays: "nedjelja_ponedjeljak_utorak_srijeda_četvrtak_petak_subota".split("_"),
+  weekdaysShort: "ned._pon._uto._sri._čet._pet._sub.".split("_"),
+  weekdaysMin: "ne_po_ut_sr_če_pe_su".split("_"),
+  weekdaysParseExact: true,
+  longDateFormat: {
+    LT: "H:mm",
+    LTS: "H:mm:ss",
+    L: "DD.MM.YYYY",
+    LL: "D. MMMM YYYY",
+    LLL: "D. MMMM YYYY H:mm",
+    LLLL: "dddd, D. MMMM YYYY H:mm",
+  },
+  calendar: {
+    sameDay: "[danas u] LT",
+    nextDay: "[sjutra u] LT",
+    nextWeek: function (this: Moment) {
+      switch (this.day()) {
+        case 0:
+          return "[u] [nedjelju] [u] LT";
+        case 3:
+          return "[u] [srijedu] [u] LT";
+        case 6:
+          return "[u] [subotu] [u] LT";
+        case 1:
+        case 2:
+        case 4:
+        case 5:
+          return "[u] dddd [u] LT";
+      }
+      return "";
     },
-    calendar: {
-      sameDay: "[danas u] LT",
-      nextDay: "[sjutra u] LT",
-      nextWeek: function (this: Moment) {
-            switch (this.day()) {
-                case 0:
-                    return '[u] [nedjelju] [u] LT';
-                case 3:
-                    return '[u] [srijedu] [u] LT';
-                case 6:
-                    return '[u] [subotu] [u] LT';
-                case 1:
-                case 2:
-                case 4:
-                case 5:
-                    return '[u] dddd [u] LT';
-            }
-            return "";
-        },
-      lastDay: "[juče u] LT",
-      lastWeek: function (this: Moment) {
-            const lastWeekDays = [
-                '[prošle] [nedjelje] [u] LT',
-                '[prošlog] [ponedjeljka] [u] LT',
-                '[prošlog] [utorka] [u] LT',
-                '[prošle] [srijede] [u] LT',
-                '[prošlog] [četvrtka] [u] LT',
-                '[prošlog] [petka] [u] LT',
-                '[prošle] [subote] [u] LT',
-            ];
-            return lastWeekDays[this.day()];
-        },
-      sameElse: "L"
+    lastDay: "[juče u] LT",
+    lastWeek: function (this: Moment) {
+      const lastWeekDays = [
+        "[prošle] [nedjelje] [u] LT",
+        "[prošlog] [ponedjeljka] [u] LT",
+        "[prošlog] [utorka] [u] LT",
+        "[prošle] [srijede] [u] LT",
+        "[prošlog] [četvrtka] [u] LT",
+        "[prošlog] [petka] [u] LT",
+        "[prošle] [subote] [u] LT",
+      ];
+      return lastWeekDays[this.day()];
     },
-    relativeTime: {
-      future: "za %s",
-      past: "prije %s",
-      s: "nekoliko sekundi",
-      ss: (number, withoutSuffix, key, _isFuture) => translator.translate(number, withoutSuffix, key),
-      m: (number, withoutSuffix, key, _isFuture) => translator.translate(number, withoutSuffix, key),
-      mm: (number, withoutSuffix, key, _isFuture) => translator.translate(number, withoutSuffix, key),
-      h: (number, withoutSuffix, key, _isFuture) => translator.translate(number, withoutSuffix, key),
-      hh: (number, withoutSuffix, key, _isFuture) => translator.translate(number, withoutSuffix, key),
-      d: "dan",
-      dd: (number, withoutSuffix, key, _isFuture) => translator.translate(number, withoutSuffix, key),
-      M: "mjesec",
-      MM: (number, withoutSuffix, key, _isFuture) => translator.translate(number, withoutSuffix, key),
-      y: "godinu",
-      yy: (number, withoutSuffix, key, _isFuture) => translator.translate(number, withoutSuffix, key)
-    },
-    dayOfMonthOrdinalParse: /\d{1,2}\./,
-    ordinal: "%d.",
-    week: {
-      dow: 1,
-      doy: 7
-    }
-  };
+    sameElse: "L",
+  },
+  relativeTime: {
+    future: "za %s",
+    past: "prije %s",
+    s: "nekoliko sekundi",
+    ss: (number, withoutSuffix, key, _isFuture) => translator.translate(number, withoutSuffix, key),
+    m: (number, withoutSuffix, key, _isFuture) => translator.translate(number, withoutSuffix, key),
+    mm: (number, withoutSuffix, key, _isFuture) => translator.translate(number, withoutSuffix, key),
+    h: (number, withoutSuffix, key, _isFuture) => translator.translate(number, withoutSuffix, key),
+    hh: (number, withoutSuffix, key, _isFuture) => translator.translate(number, withoutSuffix, key),
+    d: "dan",
+    dd: (number, withoutSuffix, key, _isFuture) => translator.translate(number, withoutSuffix, key),
+    M: "mjesec",
+    MM: (number, withoutSuffix, key, _isFuture) => translator.translate(number, withoutSuffix, key),
+    y: "godinu",
+    yy: (number, withoutSuffix, key, _isFuture) => translator.translate(number, withoutSuffix, key),
+  },
+  dayOfMonthOrdinalParse: /\d{1,2}\./,
+  ordinal: "%d.",
+  week: {
+    dow: 1,
+    doy: 7,
+  },
+};

@@ -1,8 +1,14 @@
 import type { Moment } from "../moment-class";
 
 export interface LocaleSpec {
-  months?: string[] | ((m: Moment, format?: string) => string[] | string) | { format: string[]; standalone: string[]; isFormat?: RegExp };
-  monthsShort?: string[] | ((m: Moment, format?: string) => string[] | string) | { format: string[]; standalone: string[]; isFormat?: RegExp };
+  months?:
+    | string[]
+    | ((m: Moment, format?: string) => string[] | string)
+    | { format: string[]; standalone: string[]; isFormat?: RegExp };
+  monthsShort?:
+    | string[]
+    | ((m: Moment, format?: string) => string[] | string)
+    | { format: string[]; standalone: string[]; isFormat?: RegExp };
   monthsParse?: RegExp[];
   monthsRegex?: RegExp;
   monthsShortRegex?: RegExp;
@@ -12,9 +18,18 @@ export interface LocaleSpec {
   shortMonthsParse?: RegExp[];
   monthsParseExact?: boolean;
   fullWeekdaysParse?: boolean | RegExp[];
-  weekdays?: string[] | ((m: Moment, format?: string) => string[] | string) | { format: string[]; standalone: string[]; isFormat?: RegExp };
-  weekdaysShort?: string[] | ((m: Moment, format?: string) => string[]) | { format: string[]; standalone: string[]; isFormat?: RegExp };
-  weekdaysMin?: string[] | ((m: Moment, format?: string) => string[]) | { format: string[]; standalone: string[]; isFormat?: RegExp };
+  weekdays?:
+    | string[]
+    | ((m: Moment, format?: string) => string[] | string)
+    | { format: string[]; standalone: string[]; isFormat?: RegExp };
+  weekdaysShort?:
+    | string[]
+    | ((m: Moment, format?: string) => string[])
+    | { format: string[]; standalone: string[]; isFormat?: RegExp };
+  weekdaysMin?:
+    | string[]
+    | ((m: Moment, format?: string) => string[])
+    | { format: string[]; standalone: string[]; isFormat?: RegExp };
   weekdaysParse?: RegExp[];
   shortWeekdaysParse?: RegExp[];
   minWeekdaysParse?: RegExp[];
@@ -157,17 +172,17 @@ export const enLocale: LocaleSpec = {
     const s = n % 10;
     const t = n % 100;
     if (t === 11 || t === 12 || t === 13) {
-      return `${n  }th`;
+      return `${n}th`;
     }
     switch (s) {
       case 1:
-        return `${n  }st`;
+        return `${n}st`;
       case 2:
-        return `${n  }nd`;
+        return `${n}nd`;
       case 3:
-        return `${n  }rd`;
+        return `${n}rd`;
       default:
-        return `${n  }th`;
+        return `${n}th`;
     }
   },
 

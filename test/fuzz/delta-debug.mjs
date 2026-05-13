@@ -13,115 +13,133 @@
  *   bun test/fuzz/delta-debug.mjs crash-yyy operations
  */
 
-import { readFileSync, writeFileSync } from 'node:fs'
-import { resolve, dirname } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { readFileSync, writeFileSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // ── ddmin algorithm ──────────────────────────────────────────────
 
 function ddmin(input, test) {
-  if (input.length === 0) {return input}
+  if (input.length === 0) {
+    return input;
+  }
 
-  let n = 2
-  const active = input.slice()
+  let n = 2;
+  const active = input.slice();
 
   while (active.length > 1) {
-    const step = Math.max(1, Math.floor(active.length / n))
-    let start = 0
-    let reduced = false
+    const step = Math.max(1, Math.floor(active.length / n));
+    let start = 0;
+    let reduced = false;
 
     while (start < active.length) {
-      const end = Math.min(start + step, active.length)
-      const candidate = active.slice(0, start).concat(active.slice(end))
+      const end = Math.min(start + step, active.length);
+      const candidate = active.slice(0, start).concat(active.slice(end));
 
       if (candidate.length < active.length && test(candidate)) {
-        active.splice(start, end - start)
-        n = Math.max(2, n - 1)
-        reduced = true
-        break
+        active.splice(start, end - start);
+        n = Math.max(2, n - 1);
+        reduced = true;
+        break;
       }
-      start = end
+      start = end;
     }
 
     if (!reduced) {
-      if (n >= active.length) {break}
-      n = Math.min(n * 2, active.length)
+      if (n >= active.length) {
+        break;
+      }
+      n = Math.min(n * 2, active.length);
     }
   }
 
-  return active
+  return active;
 }
 
 // ── Fuzz harnesses ───────────────────────────────────────────────
 
-import moment from '../../dist/index.js'
-import origMoment from '../../moment/moment.js'
+import moment from "../../dist/index.js";
+import origMoment from "../../moment/moment.js";
 
 function fuzzParse(buf) {
-  const str = buf.toString('utf-8')
-  const m2 = moment(str)
-  const mo = origMoment(str)
-  if (m2.isValid() !== mo.isValid()) {return true}
-  if (m2.isValid()) {
-    if (m2.valueOf() !== mo.valueOf()) {return true}
-    if (m2.format('YYYY-MM-DD HH:mm:ss') !== mo.format('YYYY-MM-DD HH:mm:ss')) {return true}
+  const str = buf.toString("utf-8");
+  const m2 = moment(str);
+  const mo = origMoment(str);
+  if (m2.isValid() !== mo.isValid()) {
+    return true;
   }
-  return false
+  if (m2.isValid()) {
+    if (m2.valueOf() !== mo.valueOf()) {
+      return true;
+    }
+    if (m2.format("YYYY-MM-DD HH:mm:ss") !== mo.format("YYYY-MM-DD HH:mm:ss")) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function fuzzUtc(buf) {
-  const str = buf.toString('utf-8')
-  const m2 = moment.utc(str)
-  const mo = origMoment.utc(str)
-  if (m2.isValid() !== mo.isValid()) {return true}
-  if (m2.isValid()) {
-    if (m2.valueOf() !== mo.valueOf()) {return true}
-    if (m2.format('YYYY-MM-DD HH:mm:ss.SSS') !== mo.format('YYYY-MM-DD HH:mm:ss.SSS')) {return true}
-    if (m2.toISOString() !== mo.toISOString()) {return true}
+  const str = buf.toString("utf-8");
+  const m2 = moment.utc(str);
+  const mo = origMoment.utc(str);
+  if (m2.isValid() !== mo.isValid()) {
+    return true;
   }
-  return false
+  if (m2.isValid()) {
+    if (m2.valueOf() !== mo.valueOf()) {
+      return true;
+    }
+    if (m2.format("YYYY-MM-DD HH:mm:ss.SSS") !== mo.format("YYYY-MM-DD HH:mm:ss.SSS")) {
+      return true;
+    }
+    if (m2.toISOString() !== mo.toISOString()) {
+      return true;
+    }
+  }
+  return false;
 }
 
-const harnesses = { parse: fuzzParse, utc: fuzzUtc }
+const harnesses = { parse: fuzzParse, utc: fuzzUtc };
 
 // ── Main ─────────────────────────────────────────────────────────
 
-const [crashPath, harnessName = 'parse'] = process.argv.slice(2)
+const [crashPath, harnessName = "parse"] = process.argv.slice(2);
 
 if (!crashPath) {
-  console.error('Usage: bun test/fuzz/delta-debug.mjs <crash-file> [harness]')
-  console.error('  harness: parse (default), utc')
-  process.exit(1)
+  console.error("Usage: bun test/fuzz/delta-debug.mjs <crash-file> [harness]");
+  console.error("  harness: parse (default), utc");
+  process.exit(1);
 }
 
-const harness = harnesses[harnessName]
+const harness = harnesses[harnessName];
 if (!harness) {
-  console.error(`Unknown harness: ${harnessName}. Available: ${Object.keys(harnesses).join(', ')}`)
-  process.exit(1)
+  console.error(`Unknown harness: ${harnessName}. Available: ${Object.keys(harnesses).join(", ")}`);
+  process.exit(1);
 }
 
-const absPath = resolve(process.cwd(), crashPath)
-const original = readFileSync(absPath)
+const absPath = resolve(process.cwd(), crashPath);
+const original = readFileSync(absPath);
 
-console.log(`Input: ${JSON.stringify(original.toString())} (${original.length} bytes)`)
+console.log(`Input: ${JSON.stringify(original.toString())} (${original.length} bytes)`);
 
 // Confirm it reproduces
 if (!harness(original)) {
-  console.log('Input does NOT reproduce the failure. Nothing to minimize.')
-  process.exit(0)
+  console.log("Input does NOT reproduce the failure. Nothing to minimize.");
+  process.exit(0);
 }
 
-const result = ddmin([...original], (candidate) => harness(Buffer.from(candidate)))
-const resultBuf = Buffer.from(result)
+const result = ddmin([...original], (candidate) => harness(Buffer.from(candidate)));
+const resultBuf = Buffer.from(result);
 
-console.log(`Result: ${JSON.stringify(resultBuf.toString())} (${resultBuf.length} bytes)`)
+console.log(`Result: ${JSON.stringify(resultBuf.toString())} (${resultBuf.length} bytes)`);
 
 if (resultBuf.length < original.length) {
-  const outPath = `${absPath}.min`
-  writeFileSync(outPath, resultBuf)
-  console.log(`Minimized crash written to: ${outPath}`)
+  const outPath = `${absPath}.min`;
+  writeFileSync(outPath, resultBuf);
+  console.log(`Minimized crash written to: ${outPath}`);
 } else {
-  console.log('Already minimal.')
+  console.log("Already minimal.");
 }

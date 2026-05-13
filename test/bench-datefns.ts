@@ -8,15 +8,23 @@ interface BenchCase {
 }
 
 function micros(ns: number): string {
-  if (ns < 1000) {return `${ns.toFixed(0)  }ns`;}
-  if (ns < 1_000_000) {return `${(ns / 1000).toFixed(2)  }\u03BCs`;}
-  return `${(ns / 1_000_000).toFixed(3)  }ms`;
+  if (ns < 1000) {
+    return `${ns.toFixed(0)}ns`;
+  }
+  if (ns < 1_000_000) {
+    return `${(ns / 1000).toFixed(2)}\u03BCs`;
+  }
+  return `${(ns / 1_000_000).toFixed(3)}ms`;
 }
 
 function run(name: string, fn: () => void, iterations: number): number {
-  for (let i = 0; i < Math.min(iterations, 100); i++) {fn();}
+  for (let i = 0; i < Math.min(iterations, 100); i++) {
+    fn();
+  }
   const start = process.hrtime.bigint();
-  for (let i = 0; i < iterations; i++) {fn();}
+  for (let i = 0; i < iterations; i++) {
+    fn();
+  }
   const end = process.hrtime.bigint();
   return Number(end - start) / iterations;
 }
@@ -91,10 +99,7 @@ const CASES: BenchCase[] = [
     run: () => {
       const a = mmntjs("2024-06-15");
       const b = new Date(2024, 5, 15);
-      return [
-        () => a.startOf("month"),
-        () => new Date(b.getFullYear(), b.getMonth(), 1),
-      ];
+      return [() => a.startOf("month"), () => new Date(b.getFullYear(), b.getMonth(), 1)];
     },
   },
   {
@@ -104,10 +109,7 @@ const CASES: BenchCase[] = [
       const b = mmntjs("2024-07-01");
       const c = new Date(2024, 5, 15);
       const d = new Date(2024, 6, 1);
-      return [
-        () => a.diff(b, "days"),
-        () => Math.round((d.getTime() - c.getTime()) / 86400000),
-      ];
+      return [() => a.diff(b, "days"), () => Math.round((d.getTime() - c.getTime()) / 86400000)];
     },
   },
 ];
@@ -117,23 +119,31 @@ const results: { name: string; mmntjs: number; datefns: number; ratio: string }[
 
 for (const c of CASES) {
   const [fnMoment2, fnDatefns] = c.run();
-  const tMoment2 = run(`${c.name  } (mmntjs)`, fnMoment2, ITER);
-  const tDatefns = run(`${c.name  } (date-fns)`, fnDatefns, ITER);
-  const ratio = (tDatefns / tMoment2 * 100).toFixed(1);
+  const tMoment2 = run(`${c.name} (mmntjs)`, fnMoment2, ITER);
+  const tDatefns = run(`${c.name} (date-fns)`, fnDatefns, ITER);
+  const ratio = ((tDatefns / tMoment2) * 100).toFixed(1);
   results.push({ name: c.name, mmntjs: tMoment2, datefns: tDatefns, ratio });
 }
 
-console.log(`\nBenchmark results (${  ITER  } iterations each):\n`);
-console.log("\u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510");
-console.log("\u2502 Operation                                    \u2502 mmntjs    \u2502 date-fns   \u2502 %        \u2502");
-console.log("\u2502\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524");
+console.log(`\nBenchmark results (${ITER} iterations each):\n`);
+console.log(
+  "\u250C\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510",
+);
+console.log(
+  "\u2502 Operation                                    \u2502 mmntjs    \u2502 date-fns   \u2502 %        \u2502",
+);
+console.log(
+  "\u2502\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2524",
+);
 
 for (const r of results) {
   const name = r.name.padEnd(44).slice(0, 44);
   const m2 = micros(r.mmntjs).padStart(10);
   const df = micros(r.datefns).padStart(10);
-  const pct = (`${r.ratio  }%`).padStart(6);
+  const pct = `${r.ratio}%`.padStart(6);
   console.log(`\u2502 ${name} \u2502 ${m2} \u2502 ${df} \u2502 ${pct} \u2502`);
 }
 
-console.log("\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518");
+console.log(
+  "\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518",
+);

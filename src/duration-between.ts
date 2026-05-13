@@ -22,12 +22,11 @@ export function diffMomentsForDuration(
   }
 
   if (from.valueOf() <= to.valueOf()) {
-    let months =
-      to.month() -
-      from.month() +
-      (to.year() - from.year()) * 12;
+    let months = to.month() - from.month() + (to.year() - from.year()) * 12;
     const adjusted = from.clone().add(months, "months");
-    if (adjusted.valueOf() > to.valueOf()) {months--;}
+    if (adjusted.valueOf() > to.valueOf()) {
+      months--;
+    }
     const base = from.clone().add(months, "months");
     const ms = to.valueOf() - base.valueOf();
     return {
@@ -37,12 +36,11 @@ export function diffMomentsForDuration(
     };
   }
 
-  let months =
-    from.month() -
-    to.month() +
-    (from.year() - to.year()) * 12;
+  let months = from.month() - to.month() + (from.year() - to.year()) * 12;
   const adjusted = to.clone().add(months, "months");
-  if (adjusted.valueOf() > from.valueOf()) {months--;}
+  if (adjusted.valueOf() > from.valueOf()) {
+    months--;
+  }
   const base = to.clone().add(months, "months");
   const ms = -(from.valueOf() - base.valueOf());
   return {

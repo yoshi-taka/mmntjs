@@ -12,7 +12,15 @@ describe("debug-extra moment methods", () => {
   describe("toObject", () => {
     test("valid moment", () => {
       const obj = moment("2024-01-15 10:30:45.500").toObject();
-      expect(obj).toEqual({ years: 2024, months: 0, date: 15, hours: 10, minutes: 30, seconds: 45, milliseconds: 500 });
+      expect(obj).toEqual({
+        years: 2024,
+        months: 0,
+        date: 15,
+        hours: 10,
+        minutes: 30,
+        seconds: 45,
+        milliseconds: 500,
+      });
     });
   });
 
@@ -60,7 +68,25 @@ describe("debug-extra moment methods", () => {
 
     test("all flag fields are present", () => {
       const flags = moment("2024-01-15").parsingFlags();
-      const keys = ["overflow", "unusedTokens", "unusedInput", "charsLeftOver", "empty", "nullInput", "invalidMonth", "invalidFormat", "userInvalidated", "iso", "parsedDateParts", "meridiem", "rfc2822", "weekdayMismatch", "isAmPm", "isParseZone", "bigHour"];
+      const keys = [
+        "overflow",
+        "unusedTokens",
+        "unusedInput",
+        "charsLeftOver",
+        "empty",
+        "nullInput",
+        "invalidMonth",
+        "invalidFormat",
+        "userInvalidated",
+        "iso",
+        "parsedDateParts",
+        "meridiem",
+        "rfc2822",
+        "weekdayMismatch",
+        "isAmPm",
+        "isParseZone",
+        "bigHour",
+      ];
       for (const key of keys) {
         expect(flags).toHaveProperty(key);
       }

@@ -1,5 +1,10 @@
 import { afterAll, beforeAll, describe, test, expect } from "bun:test";
-import { parseString, enableCustomFormatParsing, parseTwoDigitYear, setParseTwoDigitYear } from "../src/parse-format";
+import {
+  parseString,
+  enableCustomFormatParsing,
+  parseTwoDigitYear,
+  setParseTwoDigitYear,
+} from "../src/parse-format";
 import { defineLocale, getLocale } from "../src/locale";
 import type { ParseLocale } from "../src/parse-locale";
 
@@ -41,14 +46,30 @@ function check(input: string, fmt: string, exp: ParsedExpectation) {
     return;
   }
   expect(result).toBeDefined();
-  if (exp.year !== undefined) {expect(result!.year).toBe(exp.year);}
-  if (exp.month !== undefined) {expect(result!.month).toBe(exp.month);}
-  if (exp.day !== undefined) {expect(result!.day).toBe(exp.day);}
-  if (exp.hour !== undefined) {expect(result!.hour).toBe(exp.hour);}
-  if (exp.minute !== undefined) {expect(result!.minute).toBe(exp.minute);}
-  if (exp.second !== undefined) {expect(result!.second).toBe(exp.second);}
-  if (exp.millisecond !== undefined) {expect(result!.millisecond).toBe(exp.millisecond);}
-  if (exp.offset !== undefined) {expect(result!.offset).toBe(exp.offset);}
+  if (exp.year !== undefined) {
+    expect(result!.year).toBe(exp.year);
+  }
+  if (exp.month !== undefined) {
+    expect(result!.month).toBe(exp.month);
+  }
+  if (exp.day !== undefined) {
+    expect(result!.day).toBe(exp.day);
+  }
+  if (exp.hour !== undefined) {
+    expect(result!.hour).toBe(exp.hour);
+  }
+  if (exp.minute !== undefined) {
+    expect(result!.minute).toBe(exp.minute);
+  }
+  if (exp.second !== undefined) {
+    expect(result!.second).toBe(exp.second);
+  }
+  if (exp.millisecond !== undefined) {
+    expect(result!.millisecond).toBe(exp.millisecond);
+  }
+  if (exp.offset !== undefined) {
+    expect(result!.offset).toBe(exp.offset);
+  }
 }
 
 describe("parseFormat parseString", () => {
@@ -57,13 +78,55 @@ describe("parseFormat parseString", () => {
     setParseTwoDigitYear(undefined);
     defineLocale(objectLocaleName, {
       months: {
-        standalone: ["jan-base", "feb-base", "mar-base", "apr-base", "may-base", "jun-base", "jul-base", "aug-base", "sep-base", "oct-base", "nov-base", "dec-base"],
-        format: ["janvfmt", "fevfmt", "marfmt", "aprfmt", "mayfmt", "junfmt", "julfmt", "augfmt", "sepfmt", "octfmt", "novfmt", "decfmt"],
+        standalone: [
+          "jan-base",
+          "feb-base",
+          "mar-base",
+          "apr-base",
+          "may-base",
+          "jun-base",
+          "jul-base",
+          "aug-base",
+          "sep-base",
+          "oct-base",
+          "nov-base",
+          "dec-base",
+        ],
+        format: [
+          "janvfmt",
+          "fevfmt",
+          "marfmt",
+          "aprfmt",
+          "mayfmt",
+          "junfmt",
+          "julfmt",
+          "augfmt",
+          "sepfmt",
+          "octfmt",
+          "novfmt",
+          "decfmt",
+        ],
       },
       monthsShort: ["j1", "f1", "m1", "a1", "m2", "j2", "j3", "a2", "s1", "o1", "n1", "d1"],
       weekdays: {
-        standalone: ["sundayobj", "mondayobj", "tuesdayobj", "wednesdayobj", "thursdayobj", "fridayobj", "saturdayobj"],
-        format: ["sundayfmt", "mondayfmt", "tuesdayfmt", "wednesdayfmt", "thursdayfmt", "fridayfmt", "saturdayfmt"],
+        standalone: [
+          "sundayobj",
+          "mondayobj",
+          "tuesdayobj",
+          "wednesdayobj",
+          "thursdayobj",
+          "fridayobj",
+          "saturdayobj",
+        ],
+        format: [
+          "sundayfmt",
+          "mondayfmt",
+          "tuesdayfmt",
+          "wednesdayfmt",
+          "thursdayfmt",
+          "fridayfmt",
+          "saturdayfmt",
+        ],
       },
       weekdaysShort: {
         standalone: ["suo", "moo", "tuo", "weo", "tho", "fro", "sao"],
@@ -79,19 +142,62 @@ describe("parseFormat parseString", () => {
     } as unknown as Record<string, unknown>);
     defineLocale(functionLocaleName, {
       months(this: unknown, m?: { month: () => number }): string[] | string {
-        const standalone = ["janbase", "febbase", "marbase", "aprbase", "maybase", "junbase", "julbase", "augbase", "sepbase", "octbase", "novbase", "decbase"];
-        const format = ["janfun", "febfun", "marfun", "aprfun", "mayfun", "junfun", "julfun", "augfun", "sepfun", "octfun", "novfun", "decfun"];
-        if (!m) {return standalone;}
+        const standalone = [
+          "janbase",
+          "febbase",
+          "marbase",
+          "aprbase",
+          "maybase",
+          "junbase",
+          "julbase",
+          "augbase",
+          "sepbase",
+          "octbase",
+          "novbase",
+          "decbase",
+        ];
+        const format = [
+          "janfun",
+          "febfun",
+          "marfun",
+          "aprfun",
+          "mayfun",
+          "junfun",
+          "julfun",
+          "augfun",
+          "sepfun",
+          "octfun",
+          "novfun",
+          "decfun",
+        ];
+        if (!m) {
+          return standalone;
+        }
         return format[m.month()];
       },
       weekdays(this: unknown, m?: { day: () => number }): string[] | string {
         const names = ["sunfun", "monfun", "tuefun", "wedfun", "thufun", "frifun", "satfun"];
-        if (!m) {return names;}
+        if (!m) {
+          return names;
+        }
         return names[m.day()];
       },
     } as unknown as Record<string, unknown>);
     defineLocale(apostropheLocaleName, {
-      months: ["jan", "feb", "mar", "lʼavril", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"],
+      months: [
+        "jan",
+        "feb",
+        "mar",
+        "lʼavril",
+        "may",
+        "jun",
+        "jul",
+        "aug",
+        "sep",
+        "oct",
+        "nov",
+        "dec",
+      ],
     } as unknown as Record<string, unknown>);
   });
 
@@ -129,31 +235,76 @@ describe("parseFormat parseString", () => {
 
   describe("time tokens", () => {
     test("HH:mm:ss", () => {
-      check("2024-01-15 10:30:45", "YYYY-MM-DD HH:mm:ss", { year: 2024, month: 0, day: 15, hour: 10, minute: 30, second: 45 });
+      check("2024-01-15 10:30:45", "YYYY-MM-DD HH:mm:ss", {
+        year: 2024,
+        month: 0,
+        day: 15,
+        hour: 10,
+        minute: 30,
+        second: 45,
+      });
     });
 
     test("HH:mm", () => {
-      check("2024-01-15 10:30", "YYYY-MM-DD HH:mm", { year: 2024, month: 0, day: 15, hour: 10, minute: 30 });
+      check("2024-01-15 10:30", "YYYY-MM-DD HH:mm", {
+        year: 2024,
+        month: 0,
+        day: 15,
+        hour: 10,
+        minute: 30,
+      });
     });
 
     test("H:m", () => {
-      check("2024-01-15 9:5", "YYYY-MM-DD H:m", { year: 2024, month: 0, day: 15, hour: 9, minute: 5 });
+      check("2024-01-15 9:5", "YYYY-MM-DD H:m", {
+        year: 2024,
+        month: 0,
+        day: 15,
+        hour: 9,
+        minute: 5,
+      });
     });
 
     test("A (AM)", () => {
-      check("2024-01-15 10:30 AM", "YYYY-MM-DD hh:mm A", { year: 2024, month: 0, day: 15, hour: 10, minute: 30 });
+      check("2024-01-15 10:30 AM", "YYYY-MM-DD hh:mm A", {
+        year: 2024,
+        month: 0,
+        day: 15,
+        hour: 10,
+        minute: 30,
+      });
     });
 
     test("A (PM)", () => {
-      check("2024-01-15 10:30 PM", "YYYY-MM-DD hh:mm A", { year: 2024, month: 0, day: 15, hour: 22, minute: 30 });
+      check("2024-01-15 10:30 PM", "YYYY-MM-DD hh:mm A", {
+        year: 2024,
+        month: 0,
+        day: 15,
+        hour: 22,
+        minute: 30,
+      });
     });
 
     test("a (pm)", () => {
-      check("2024-01-15 10:30 pm", "YYYY-MM-DD hh:mm a", { year: 2024, month: 0, day: 15, hour: 22, minute: 30 });
+      check("2024-01-15 10:30 pm", "YYYY-MM-DD hh:mm a", {
+        year: 2024,
+        month: 0,
+        day: 15,
+        hour: 22,
+        minute: 30,
+      });
     });
 
     test("SSS milliseconds", () => {
-      check("2024-01-15 10:30:45.123", "YYYY-MM-DD HH:mm:ss.SSS", { year: 2024, month: 0, day: 15, hour: 10, minute: 30, second: 45, millisecond: 123 });
+      check("2024-01-15 10:30:45.123", "YYYY-MM-DD HH:mm:ss.SSS", {
+        year: 2024,
+        month: 0,
+        day: 15,
+        hour: 10,
+        minute: 30,
+        second: 45,
+        millisecond: 123,
+      });
     });
 
     test("S milliseconds (single digit)", () => {
@@ -163,11 +314,23 @@ describe("parseFormat parseString", () => {
 
   describe("timezone tokens", () => {
     test("Z (+HH:mm)", () => {
-      check("2024-01-15T10:30:00+05:30", "YYYY-MM-DDTHH:mm:ssZ", { year: 2024, month: 0, day: 15, hour: 10, minute: 30, second: 0, offset: 330 });
+      check("2024-01-15T10:30:00+05:30", "YYYY-MM-DDTHH:mm:ssZ", {
+        year: 2024,
+        month: 0,
+        day: 15,
+        hour: 10,
+        minute: 30,
+        second: 0,
+        offset: 330,
+      });
     });
 
     test("ZZ (+HHmm)", () => {
-      check("2024-01-15T10:30:00+0530", "YYYY-MM-DDTHH:mm:ssZZ", { hour: 10, minute: 30, offset: 330 });
+      check("2024-01-15T10:30:00+0530", "YYYY-MM-DDTHH:mm:ssZZ", {
+        hour: 10,
+        minute: 30,
+        offset: 330,
+      });
     });
 
     test("Z (UTC)", () => {
@@ -190,16 +353,25 @@ describe("parseFormat parseString", () => {
 
     test("MMMM rejects custom object format names in strict mode", () => {
       const r = parseString("janvfmt 15 2024", "MMMM DD YYYY", namedLoc(objectLocaleName), true);
-      expect(r).toEqual(expect.objectContaining({ _unusedTokens: expect.arrayContaining(["MMMM"]) }));
+      expect(r).toEqual(
+        expect.objectContaining({ _unusedTokens: expect.arrayContaining(["MMMM"]) }),
+      );
     });
 
     test("MMM rejects custom function month names in strict mode", () => {
       const r = parseString("janfun 15 2024", "MMM DD YYYY", namedLoc(functionLocaleName), true);
-      expect(r).toEqual(expect.objectContaining({ _unusedTokens: expect.arrayContaining(["MMM"]) }));
+      expect(r).toEqual(
+        expect.objectContaining({ _unusedTokens: expect.arrayContaining(["MMM"]) }),
+      );
     });
 
     test("exact apostrophe month names are accepted", () => {
-      const r = parseString("lʼavril 15 2024", "MMMM DD YYYY", namedLoc(apostropheLocaleName), true);
+      const r = parseString(
+        "lʼavril 15 2024",
+        "MMMM DD YYYY",
+        namedLoc(apostropheLocaleName),
+        true,
+      );
       expect(r!.month).toBe(3);
     });
   });
@@ -293,18 +465,22 @@ describe("parseFormat parseString", () => {
 
     test("strict failure records remaining token and literal", () => {
       const r = parseString("2024/", "YYYY-MM-DD", enLoc(), true);
-      expect(r).toEqual(expect.objectContaining({
-        _unusedTokens: expect.arrayContaining(["MM", "-", "DD"]),
-      }));
+      expect(r).toEqual(
+        expect.objectContaining({
+          _unusedTokens: expect.arrayContaining(["MM", "-", "DD"]),
+        }),
+      );
     });
 
     test("strict whitespace literal mismatch is tracked", () => {
       const r = parseString("2024@01", "YYYY MM", enLoc(), true);
-      expect(r).toEqual(expect.objectContaining({
-        _unusedInput: expect.arrayContaining(["@"]),
-        year: 2024,
-        month: 0,
-      }));
+      expect(r).toEqual(
+        expect.objectContaining({
+          _unusedInput: expect.arrayContaining(["@"]),
+          year: 2024,
+          month: 0,
+        }),
+      );
     });
   });
 
@@ -418,7 +594,11 @@ describe("parseFormat parseString", () => {
 
   describe("additional format tokens", () => {
     test("Z with negative offset", () => {
-      check("2024-01-15T10:30:00-05:00", "YYYY-MM-DDTHH:mm:ssZ", { hour: 10, minute: 30, offset: -300 });
+      check("2024-01-15T10:30:00-05:00", "YYYY-MM-DDTHH:mm:ssZ", {
+        hour: 10,
+        minute: 30,
+        offset: -300,
+      });
     });
     test("Z (compact -HHmm)", () => {
       check("2024-01-15T10:30:00-0500", "YYYY-MM-DDTHH:mm:ssZZ", { offset: -300 });

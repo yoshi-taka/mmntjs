@@ -2,7 +2,9 @@ export function zeroFill(num: number, targetLength: number): string {
   const sign = num < 0 ? "-" : "";
   const abs = Math.abs(num).toString();
   const padding = targetLength - abs.length;
-  if (padding <= 0) {return sign + abs;}
+  if (padding <= 0) {
+    return sign + abs;
+  }
   return sign + "0".repeat(padding) + abs;
 }
 
@@ -23,7 +25,10 @@ export function isDate(input: unknown): input is Date {
 }
 
 export function isMoment(input: unknown): input is { _isAMomentObject: boolean } {
-  const momentLike = typeof input === "object" && input !== null ? (input as { _isAMomentObject: boolean }) : undefined;
+  const momentLike =
+    typeof input === "object" && input !== null
+      ? (input as { _isAMomentObject: boolean })
+      : undefined;
   return momentLike?._isAMomentObject === true;
 }
 
@@ -45,7 +50,9 @@ export function isFunction(input: unknown): input is Function {
 
 export function isObjectEmpty(obj: object): boolean {
   for (const k in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, k)) {return false;}
+    if (Object.prototype.hasOwnProperty.call(obj, k)) {
+      return false;
+    }
   }
   return true;
 }
@@ -54,7 +61,11 @@ export function hasOwnProp(obj: object, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(obj, key);
 }
 
-export function extend(a: Record<string, unknown>, b: Record<string, unknown>, ...others: Record<string, unknown>[]): Record<string, unknown> {
+export function extend(
+  a: Record<string, unknown>,
+  b: Record<string, unknown>,
+  ...others: Record<string, unknown>[]
+): Record<string, unknown> {
   for (const source of others) {
     for (const key in source) {
       if (hasOwnProp(source, key)) {
@@ -155,7 +166,9 @@ export class LruMap<K, V> {
     this.map.set(key, value);
     if (this.map.size > this.max) {
       const oldest = this.map.keys().next().value;
-      if (oldest !== undefined) {this.map.delete(oldest);}
+      if (oldest !== undefined) {
+        this.map.delete(oldest);
+      }
     }
   }
 

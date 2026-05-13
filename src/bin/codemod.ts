@@ -50,7 +50,9 @@ function scanFiles(dir: string) {
     let count = 0;
     for (const pattern of IMPORT_PATTERNS) {
       const matches = content.match(pattern.from);
-      if (matches) {count += matches.length;}
+      if (matches) {
+        count += matches.length;
+      }
     }
     if (count > 0) {
       results.total += count;

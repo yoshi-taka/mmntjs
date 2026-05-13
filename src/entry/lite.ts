@@ -1,7 +1,4 @@
-import {
-  isMoment,
-  isDate,
-} from "../utils";
+import { isMoment, isDate } from "../utils";
 import {
   moment,
   momentUTC,

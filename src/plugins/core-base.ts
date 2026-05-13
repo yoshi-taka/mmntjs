@@ -5,16 +5,17 @@ import {
   setUpdateOffsetCallback,
   getUpdateOffsetCallback,
 } from "../moment-class";
-import {
-  isMoment,
-  isDate,
-  isArray,
-  hasOwnProp,
-} from "../utils";
+import { isMoment, isDate, isArray, hasOwnProp } from "../utils";
 import { normalizeUnits } from "../units";
 import { isDuration } from "../duration";
 
-type CoreMomentTarget = ((input?: unknown, format?: unknown, localeOrStrict?: unknown, fourthArg?: unknown) => Moment) & Record<string, unknown>;
+type CoreMomentTarget = ((
+  input?: unknown,
+  format?: unknown,
+  localeOrStrict?: unknown,
+  fourthArg?: unknown,
+) => Moment) &
+  Record<string, unknown>;
 
 export type CoreApiDeps = {
   getMomentNowFunction: () => (() => number) | undefined;
@@ -24,10 +25,7 @@ export type CoreApiDeps = {
   setParseTwoDigitYear: (fn: ((str: string) => number) | undefined) => void;
 };
 
-export function registerBaseCoreApi(
-  target: CoreMomentTarget,
-  deps: CoreApiDeps,
-): void {
+export function registerBaseCoreApi(target: CoreMomentTarget, deps: CoreApiDeps): void {
   const momentRecord = target as unknown as Record<string, unknown>;
   momentRecord.fn = Moment.prototype;
   momentRecord.prototype = Moment.prototype;
@@ -77,24 +75,38 @@ export function registerBaseCoreApi(
     if (typeof amount === "number") {
       if (unit) {
         const norm = normalizeUnits(unit);
-        if (!norm) {return null;}
+        if (!norm) {
+          return null;
+        }
         switch (norm) {
-          case "year": return { ms: 0, days: 0, months: amount * 12 };
-          case "month": return { ms: 0, days: 0, months: amount };
-          case "quarter": return { ms: 0, days: 0, months: amount * 3 };
-          case "week": return { ms: 0, days: amount * 7, months: 0 };
+          case "year":
+            return { ms: 0, days: 0, months: amount * 12 };
+          case "month":
+            return { ms: 0, days: 0, months: amount };
+          case "quarter":
+            return { ms: 0, days: 0, months: amount * 3 };
+          case "week":
+            return { ms: 0, days: amount * 7, months: 0 };
           case "date":
-          case "day": return { ms: 0, days: amount, months: 0 };
-          case "hour": return { ms: Math.round(amount * 3600000), days: 0, months: 0 };
-          case "minute": return { ms: Math.round(amount * 60000), days: 0, months: 0 };
-          case "second": return { ms: Math.round(amount * 1000), days: 0, months: 0 };
-          case "millisecond": return { ms: Math.round(amount), days: 0, months: 0 };
+          case "day":
+            return { ms: 0, days: amount, months: 0 };
+          case "hour":
+            return { ms: Math.round(amount * 3600000), days: 0, months: 0 };
+          case "minute":
+            return { ms: Math.round(amount * 60000), days: 0, months: 0 };
+          case "second":
+            return { ms: Math.round(amount * 1000), days: 0, months: 0 };
+          case "millisecond":
+            return { ms: Math.round(amount), days: 0, months: 0 };
         }
       }
       return { ms: amount, days: 0, months: 0 };
     }
-    if (typeof amount === "object" && amount !== null) { // eslint-disable-line no-unnecessary-condition
-      let ms = 0, days = 0, months = 0;
+    if (typeof amount === "object" && amount !== null) {
+      // eslint-disable-line no-unnecessary-condition
+      let ms = 0,
+        days = 0,
+        months = 0;
       if (isDuration(amount)) {
         ms = amount._milliseconds;
         days = amount._days;
@@ -102,21 +114,43 @@ export function registerBaseCoreApi(
         return { ms, days, months };
       }
       for (const key in amount as Record<string, unknown>) {
-        if (!hasOwnProp(amount, key)) {continue;}
+        if (!hasOwnProp(amount, key)) {
+          continue;
+        }
         const norm = normalizeUnits(key);
-        if (!norm) {continue;}
+        if (!norm) {
+          continue;
+        }
         const v = Number((amount as Record<string, unknown>)[key]) || 0;
         switch (norm) {
-          case "year": months += v * 12; break;
-          case "month": months += v; break;
-          case "quarter": months += v * 3; break;
-          case "week": days += v * 7; break;
+          case "year":
+            months += v * 12;
+            break;
+          case "month":
+            months += v;
+            break;
+          case "quarter":
+            months += v * 3;
+            break;
+          case "week":
+            days += v * 7;
+            break;
           case "date":
-          case "day": days += v; break;
-          case "hour": ms += Math.round(v * 3600000); break;
-          case "minute": ms += Math.round(v * 60000); break;
-          case "second": ms += Math.round(v * 1000); break;
-          case "millisecond": ms += Math.round(v); break;
+          case "day":
+            days += v;
+            break;
+          case "hour":
+            ms += Math.round(v * 3600000);
+            break;
+          case "minute":
+            ms += Math.round(v * 60000);
+            break;
+          case "second":
+            ms += Math.round(v * 1000);
+            break;
+          case "millisecond":
+            ms += Math.round(v);
+            break;
         }
       }
       return { ms, days, months };
@@ -124,7 +158,11 @@ export function registerBaseCoreApi(
     return null;
   });
   momentRecord.invalid = function (input?: unknown): Moment {
-    const config: Record<string, unknown> = { _d: new Date(NaN), _isValid: false, _userInvalidated: input === undefined };
+    const config: Record<string, unknown> = {
+      _d: new Date(NaN),
+      _isValid: false,
+      _userInvalidated: input === undefined,
+    };
     if (
       typeof input === "object" &&
       input !== null &&

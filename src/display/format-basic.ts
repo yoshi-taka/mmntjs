@@ -1,12 +1,66 @@
 import type { FormattableMoment } from "./types";
 
 const PAD2 = [
-  "00", "01", "02", "03", "04", "05", "06", "07", "08", "09",
-  "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
-  "20", "21", "22", "23", "24", "25", "26", "27", "28", "29",
-  "30", "31", "32", "33", "34", "35", "36", "37", "38", "39",
-  "40", "41", "42", "43", "44", "45", "46", "47", "48", "49",
-  "50", "51", "52", "53", "54", "55", "56", "57", "58", "59",
+  "00",
+  "01",
+  "02",
+  "03",
+  "04",
+  "05",
+  "06",
+  "07",
+  "08",
+  "09",
+  "10",
+  "11",
+  "12",
+  "13",
+  "14",
+  "15",
+  "16",
+  "17",
+  "18",
+  "19",
+  "20",
+  "21",
+  "22",
+  "23",
+  "24",
+  "25",
+  "26",
+  "27",
+  "28",
+  "29",
+  "30",
+  "31",
+  "32",
+  "33",
+  "34",
+  "35",
+  "36",
+  "37",
+  "38",
+  "39",
+  "40",
+  "41",
+  "42",
+  "43",
+  "44",
+  "45",
+  "46",
+  "47",
+  "48",
+  "49",
+  "50",
+  "51",
+  "52",
+  "53",
+  "54",
+  "55",
+  "56",
+  "57",
+  "58",
+  "59",
 ];
 
 const TOKENS = ["YYYY", "SSS", "MM", "DD", "HH", "mm", "ss"] as const;
@@ -19,7 +73,7 @@ function pad3(n: number): string {
   return n < 10 ? `00${n}` : n < 100 ? `0${n}` : String(n);
 }
 
-function getTokenValue(m: FormattableMoment, token: typeof TOKENS[number]): string {
+function getTokenValue(m: FormattableMoment, token: (typeof TOKENS)[number]): string {
   const raw = m as unknown as {
     $y: number;
     $M: number;
@@ -53,11 +107,15 @@ export function formatMomentBasic(m: FormattableMoment, format: string): string 
     _dirty: boolean;
     _ensureFields: () => void;
   };
-  if (!raw._isValid) {return "Invalid date";}
-  if (raw._dirty) {raw._ensureFields();}
+  if (!raw._isValid) {
+    return "Invalid date";
+  }
+  if (raw._dirty) {
+    raw._ensureFields();
+  }
 
   let out = "";
-  for (let i = 0; i < format.length;) {
+  for (let i = 0; i < format.length; ) {
     let matched = false;
     for (const token of TOKENS) {
       if (format.startsWith(token, i)) {
@@ -67,7 +125,9 @@ export function formatMomentBasic(m: FormattableMoment, format: string): string 
         break;
       }
     }
-    if (matched) {continue;}
+    if (matched) {
+      continue;
+    }
 
     out += format[i];
     i++;

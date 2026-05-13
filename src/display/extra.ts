@@ -7,51 +7,65 @@ import {
   type MomentInput,
 } from "../moment-class";
 import type { FormattableMoment } from "./types";
-import {
-  isArray,
-  isObject,
-  hasOwnProp,
-} from "../utils";
+import { isArray, isObject, hasOwnProp } from "../utils";
 
 const calendarKeys = ["sameDay", "nextDay", "nextWeek", "lastDay", "lastWeek", "sameElse"];
 
 function isCalendarFormatObject(obj: Record<string, unknown>): boolean {
   for (const key of calendarKeys) {
-    if (hasOwnProp(obj, key)) {return true;}
+    if (hasOwnProp(obj, key)) {
+      return true;
+    }
   }
   return false;
 }
 
 export function formatFromNow(m: Moment, pref?: boolean): string {
-  if (!m._isValid) {return localeInvalidDate(m._getLocale());}
+  if (!m._isValid) {
+    return localeInvalidDate(m._getLocale());
+  }
   return formatFrom(m, new Date(), pref);
 }
 
 export function formatFrom(m: Moment, input: MomentInput, pref?: boolean): string {
-  if (!m._isValid) {return localeInvalidDate(m._getLocale());}
+  if (!m._isValid) {
+    return localeInvalidDate(m._getLocale());
+  }
   let other: Moment;
   if (input === undefined || input === null) {
     other = new Moment({ _d: new Date(), _dClone: false });
   } else {
     other = momentFromAnything(input);
   }
-  if (!other._isValid) {return localeInvalidDate(m._getLocale());}
+  if (!other._isValid) {
+    return localeInvalidDate(m._getLocale());
+  }
   const dur = new Duration({ to: m, from: other });
-  if (m._l) {dur.locale(m._l);}
+  if (m._l) {
+    dur.locale(m._l);
+  }
   return dur.humanize(!pref);
 }
 
 export function formatToNow(m: Moment, pref?: boolean): string {
-  if (!m._isValid) {return localeInvalidDate(m._getLocale());}
+  if (!m._isValid) {
+    return localeInvalidDate(m._getLocale());
+  }
   return formatTo(m, new Date(), pref);
 }
 
 export function formatTo(m: Moment, input: MomentInput, pref?: boolean): string {
-  if (!m._isValid) {return localeInvalidDate(m._getLocale());}
+  if (!m._isValid) {
+    return localeInvalidDate(m._getLocale());
+  }
   const other = momentFromAnything(input);
-  if (!other._isValid) {return localeInvalidDate(m._getLocale());}
+  if (!other._isValid) {
+    return localeInvalidDate(m._getLocale());
+  }
   const dur = new Duration({ from: m, to: other });
-  if (m._l) {dur.locale(m._l);}
+  if (m._l) {
+    dur.locale(m._l);
+  }
   return dur.humanize(!pref);
 }
 
@@ -94,13 +108,21 @@ export function formatCalendar(m: Moment, ref?: MomentInput, opts?: object): str
       ? thisDay - thatDay
       : thisDay - Math.floor((reference.valueOf() + thisOff * 60000) / 86400000);
 
-    if (dayDiff < -6) {key = "sameElse";}
-    else if (dayDiff < -1) {key = "lastWeek";}
-    else if (dayDiff < 0) {key = "lastDay";}
-    else if (dayDiff < 1) {key = "sameDay";}
-    else if (dayDiff < 2) {key = "nextDay";}
-    else if (dayDiff < 7) {key = "nextWeek";}
-    else {key = "sameElse";}
+    if (dayDiff < -6) {
+      key = "sameElse";
+    } else if (dayDiff < -1) {
+      key = "lastWeek";
+    } else if (dayDiff < 0) {
+      key = "lastDay";
+    } else if (dayDiff < 1) {
+      key = "sameDay";
+    } else if (dayDiff < 2) {
+      key = "nextDay";
+    } else if (dayDiff < 7) {
+      key = "nextWeek";
+    } else {
+      key = "sameElse";
+    }
   }
 
   let formatString: unknown;
@@ -121,6 +143,11 @@ export function formatCalendar(m: Moment, ref?: MomentInput, opts?: object): str
   }
 
   const formatter = getFormatMomentCallback();
-  if (!formatter) {throw new Error("mmntjs formatter is not initialized");}
-  return formatter(m as unknown as FormattableMoment, typeof formatString === "string" ? formatString : "L");
+  if (!formatter) {
+    throw new Error("mmntjs formatter is not initialized");
+  }
+  return formatter(
+    m as unknown as FormattableMoment,
+    typeof formatString === "string" ? formatString : "L",
+  );
 }

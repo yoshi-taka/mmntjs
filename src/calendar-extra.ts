@@ -18,7 +18,9 @@ function dayOfWeek(y: number, m: number, d: number): number {
   const t = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
   let year = y;
   year -= m < 2 ? 1 : 0;
-  return (year + Math.floor(year / 4) - Math.floor(year / 100) + Math.floor(year / 400) + t[m] + d) % 7;
+  return (
+    (year + Math.floor(year / 4) - Math.floor(year / 100) + Math.floor(year / 400) + t[m] + d) % 7
+  );
 }
 
 function firstWeekOffset(year: number, dow: number, doy: number, _utc: boolean): number {
@@ -58,7 +60,9 @@ function getISOWeekNumber(d: Date, utc: boolean): number {
     week += weeksInYear(year - 1, 1, 4, utc);
   } else {
     const yearWeeks = weeksInYear(year, 1, 4, utc);
-    if (week > yearWeeks) {return 1;}
+    if (week > yearWeeks) {
+      return 1;
+    }
   }
   return week;
 }
@@ -69,8 +73,12 @@ function getISOWeekYear(d: Date, utc: boolean): number {
   const weekOffset = firstWeekOffset(year, 1, 4, utc);
   const dayOfYear = getDayOfYear(d, utc);
   const week = Math.floor((dayOfYear - weekOffset - 1) / 7) + 1;
-  if (week < 1) {return year - 1;}
-  if (week > weeksInYear(year, 1, 4, utc)) {return year + 1;}
+  if (week < 1) {
+    return year - 1;
+  }
+  if (week > weeksInYear(year, 1, 4, utc)) {
+    return year + 1;
+  }
   return year;
 }
 
@@ -96,7 +104,9 @@ export function isoWeekdayMoment(m: CalendarAwareMoment, d?: unknown): number | 
         sun: 7,
       };
       target = map[target.toLowerCase()];
-      if (target === undefined) {return m;} // eslint-disable-line no-unnecessary-condition
+      if (target === undefined) {
+        return m;
+      } // eslint-disable-line no-unnecessary-condition
     }
     const currentIso = m.$W === 0 ? 7 : m.$W;
     const diff = Number(target) - currentIso;
@@ -162,9 +172,11 @@ export function isoWeekYearMoment(m: CalendarAwareMoment, y?: number): number | 
     let currentWeek = getISOWeekNumber(m._getD(), m._isUTC);
     const currentDay = isoWeekdayMoment(m) as number;
     const maxWeek = weeksInYear(y, 1, 4, m._isUTC);
-    if (currentWeek > maxWeek) {currentWeek = maxWeek;}
+    if (currentWeek > maxWeek) {
+      currentWeek = maxWeek;
+    }
     const jan4 = m._isUTC ? new Date(Date.UTC(y, 0, 4)) : new Date(y, 0, 4);
-    const jan4Day = m._isUTC ? (jan4.getUTCDay() || 7) : (jan4.getDay() || 7);
+    const jan4Day = m._isUTC ? jan4.getUTCDay() || 7 : jan4.getDay() || 7;
     const mondayOfWeek1 = m._isUTC
       ? new Date(Date.UTC(y, 0, 4 - (jan4Day - 1)))
       : new Date(y, 0, 4 - (jan4Day - 1));
@@ -188,21 +200,31 @@ export function isoWeeksInISOWeekYearMoment(m: CalendarAwareMoment): number {
   return weeksInYear(getISOWeekYear(m._getD(), m._isUTC), 1, 4, m._isUTC);
 }
 
-export function calendarCompareMoment(left: CalendarAwareMoment, right: CalendarAwareMoment, unit: string): number {
+export function calendarCompareMoment(
+  left: CalendarAwareMoment,
+  right: CalendarAwareMoment,
+  unit: string,
+): number {
   switch (unit) {
     case "quarter": {
       const d = left.year() - right.year();
-      if (d !== 0) {return d;}
+      if (d !== 0) {
+        return d;
+      }
       return left.quarter() - right.quarter();
     }
     case "week": {
       const d = left.weekYear() - right.weekYear();
-      if (d !== 0) {return d;}
+      if (d !== 0) {
+        return d;
+      }
       return left.week() - right.week();
     }
     case "isoWeek": {
       const d = left.isoWeekYear() - right.isoWeekYear();
-      if (d !== 0) {return d;}
+      if (d !== 0) {
+        return d;
+      }
       return left.isoWeek() - right.isoWeek();
     }
     default:

@@ -1,23 +1,9 @@
-import type {
-  Moment} from "../moment-class";
-import {
-  momentProperties
-} from "../moment-class";
+import type { Moment } from "../moment-class";
+import { momentProperties } from "../moment-class";
 import { Duration, isDuration as checkIsDuration, type DurationLike } from "../duration";
-import {
-  isMoment,
-  isArray,
-} from "../utils";
-import {
-  parseTwoDigitYear as parseTwoDigitYearInternal,
-  setParseTwoDigitYear,
-} from "../parse";
-import {
-  moment,
-  nowFn,
-  getMomentNowFunction,
-  setMomentNowFunction,
-} from "../core/factory";
+import { isMoment, isArray } from "../utils";
+import { parseTwoDigitYear as parseTwoDigitYearInternal, setParseTwoDigitYear } from "../parse";
+import { moment, nowFn, getMomentNowFunction, setMomentNowFunction } from "../core/factory";
 import { normalizeUnits as normUnits } from "../units";
 import { registerBaseCoreApi, type CoreApiDeps } from "./core-base";
 
@@ -66,7 +52,9 @@ export function registerCoreApi(
     return m.parseZone();
   };
   momentRecord.min = function (...args: unknown[]): Moment {
-    if (args.length === 0) {return target();}
+    if (args.length === 0) {
+      return target();
+    }
     let inputList = args;
     if (args.length === 1 && isArray(args[0]) && !isMoment(args[0])) {
       inputList = args[0];
@@ -87,7 +75,9 @@ export function registerCoreApi(
     return bestInvalid ?? best!;
   };
   momentRecord.max = function (...args: unknown[]): Moment {
-    if (args.length === 0) {return target();}
+    if (args.length === 0) {
+      return target();
+    }
     let inputList = args;
     if (args.length === 1 && isArray(args[0]) && !isMoment(args[0])) {
       inputList = args[0];

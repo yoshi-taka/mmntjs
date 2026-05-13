@@ -1,12 +1,5 @@
 import { test, expect, describe, mock } from "bun:test";
-import {
-  mkdtempSync,
-  writeFileSync,
-  rmSync,
-  readFileSync,
-  mkdirSync,
-  existsSync,
-} from "node:fs";
+import { mkdtempSync, writeFileSync, rmSync, readFileSync, mkdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { scanMomentUsages } from "../src/bin/moment-usage";
 import { runReport } from "../src/bin/report";
@@ -234,7 +227,10 @@ describe("runCheck", () => {
   test("detects moment imports", () => {
     const d = tmpDir();
     try {
-      addFiles(d, { "a.ts": "const moment = require('moment');", "b.ts": "const m = require('moment');" });
+      addFiles(d, {
+        "a.ts": "const moment = require('moment');",
+        "b.ts": "const m = require('moment');",
+      });
       const out = capture(() => runCheck(d));
       const joined = out.join("\n");
       expect(joined).toMatch(/Found 2 moment import/);
@@ -280,7 +276,10 @@ describe("runApply", () => {
   test("replaces locale import paths", () => {
     const d = tmpDir();
     try {
-      addFiles(d, { "a.ts": "import ja from 'moment/locale/ja';", "b.ts": "require('moment/locale/de');" });
+      addFiles(d, {
+        "a.ts": "import ja from 'moment/locale/ja';",
+        "b.ts": "require('moment/locale/de');",
+      });
       capture(() => runApply(d));
       const a = readFileSync(join(d, "a.ts"), "utf-8");
       const b = readFileSync(join(d, "b.ts"), "utf-8");
@@ -363,7 +362,10 @@ describe("runInit", () => {
     try {
       writeFileSync(
         join(d, "package.json"),
-        JSON.stringify({ name: "test", devDependencies: { "@types/moment": "^1.0.0", typescript: "^5.0.0" } }),
+        JSON.stringify({
+          name: "test",
+          devDependencies: { "@types/moment": "^1.0.0", typescript: "^5.0.0" },
+        }),
         "utf-8",
       );
       capture(() => runInit(d));

@@ -12,7 +12,10 @@ const momentPath = join(projectRoot, "moment", "moment.js").replaceAll("\\", "\\
 const momentJaPath = join(projectRoot, "moment", "locale", "ja.js").replaceAll("\\", "\\\\");
 const momentDePath = join(projectRoot, "moment", "locale", "de.js").replaceAll("\\", "\\\\");
 const bmmntjsLitePath = join(projectRoot, "src", "lite.ts").replaceAll("\\", "\\\\");
-const bmmntjsFormatParsePath = join(projectRoot, "src", "plugin", "format-parse.ts").replaceAll("\\", "\\\\");
+const bmmntjsFormatParsePath = join(projectRoot, "src", "plugin", "format-parse.ts").replaceAll(
+  "\\",
+  "\\\\",
+);
 const bmmntjsJaPath = join(projectRoot, "src", "locale", "ja.ts").replaceAll("\\", "\\\\");
 const bmmntjsDePath = join(projectRoot, "src", "locale", "de.ts").replaceAll("\\", "\\\\");
 const bmmntjsLocalePath = join(projectRoot, "src", "locale.ts").replaceAll("\\", "\\\\");
@@ -85,5 +88,7 @@ for (const scenario of scenarios) {
 const nameWidth = Math.max(...rows.map((row) => row.name.length));
 for (const row of rows) {
   const name = row.name.padEnd(nameWidth, " ");
-  console.log(`${name}  raw=${String(row.raw).padStart(7, " ")}  gzip=${String(row.gzip).padStart(6, " ")}`);
+  console.log(
+    `${name}  raw=${String(row.raw).padStart(7, " ")}  gzip=${String(row.gzip).padStart(6, " ")}`,
+  );
 }

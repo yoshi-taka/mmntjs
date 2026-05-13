@@ -25,7 +25,9 @@ test("array-of-formats edge cases stay aligned with moment.js", () => {
     const m2 = moment(entry.input, entry.formats);
     const orig = originalMoment(entry.input, entry.formats);
     expect((m2 as unknown as Record<string, unknown>)._f).toBe(entry.expectedFormat);
-    expect((m2 as unknown as Record<string, unknown>)._f).toBe((orig as unknown as Record<string, unknown>)._f);
+    expect((m2 as unknown as Record<string, unknown>)._f).toBe(
+      (orig as unknown as Record<string, unknown>)._f,
+    );
     expect(m2.isValid()).toBe(orig.isValid());
     if (m2.isValid() && orig.isValid()) {
       expect(m2.valueOf()).toBe(orig.valueOf());
@@ -42,7 +44,9 @@ test("strict array-of-formats rejects partial matches the same way as moment.js"
   for (const entry of cases) {
     const m2 = moment(entry.input, entry.formats, true);
     const orig = originalMoment(entry.input, entry.formats, true);
-    expect((m2 as unknown as Record<string, unknown>)._f).toBe((orig as unknown as Record<string, unknown>)._f);
+    expect((m2 as unknown as Record<string, unknown>)._f).toBe(
+      (orig as unknown as Record<string, unknown>)._f,
+    );
   }
 });
 
@@ -56,6 +60,8 @@ test("strict single-format requires literal spaces like moment.js", () => {
     const m2 = moment(entry.input, entry.format, true);
     const orig = originalMoment(entry.input, entry.format, true);
     expect(m2.isValid()).toBe(orig.isValid());
-    expect((m2 as unknown as Record<string, unknown>)._f).toBe((orig as unknown as Record<string, unknown>)._f);
+    expect((m2 as unknown as Record<string, unknown>)._f).toBe(
+      (orig as unknown as Record<string, unknown>)._f,
+    );
   }
 });

@@ -1,77 +1,77 @@
 import type { LocaleSpec } from "./en";
 
 const months = [
-        'جنوري',
-        'فيبروري',
-        'مارچ',
-        'اپريل',
-        'مئي',
-        'جون',
-        'جولاءِ',
-        'آگسٽ',
-        'سيپٽمبر',
-        'آڪٽوبر',
-        'نومبر',
-        'ڊسمبر',
-    ],
-    days = ['آچر', 'سومر', 'اڱارو', 'اربع', 'خميس', 'جمع', 'ڇنڇر'];
+    "جنوري",
+    "فيبروري",
+    "مارچ",
+    "اپريل",
+    "مئي",
+    "جون",
+    "جولاءِ",
+    "آگسٽ",
+    "سيپٽمبر",
+    "آڪٽوبر",
+    "نومبر",
+    "ڊسمبر",
+  ],
+  days = ["آچر", "سومر", "اڱارو", "اربع", "خميس", "جمع", "ڇنڇر"];
 
 export const sdLocale: LocaleSpec = {
-    months: months,
-    monthsShort: months,
-    weekdays: days,
-    weekdaysShort: days,
-    weekdaysMin: days,
-    longDateFormat: {
-      LT: "HH:mm",
-      LTS: "HH:mm:ss",
-      L: "DD/MM/YYYY",
-      LL: "D MMMM YYYY",
-      LLL: "D MMMM YYYY HH:mm",
-      LLLL: "dddd، D MMMM YYYY HH:mm"
-    },
-    meridiemParse: /صبح|شام/,
-    isPM: function(input: string) {
-        return 'شام' === input;
-    },
-    meridiem: function (hour, _minute, _isLower) {
-        if (hour < 12) {
-            return 'صبح';
-        }
-        return 'شام';
-    },
-    calendar: {
-      sameDay: "[اڄ] LT",
-      nextDay: "[سڀاڻي] LT",
-      nextWeek: "dddd [اڳين هفتي تي] LT",
-      lastDay: "[ڪالهه] LT",
-      lastWeek: "[گزريل هفتي] dddd [تي] LT",
-      sameElse: "L"
-    },
-    relativeTime: {
-      future: "%s پوء",
-      past: "%s اڳ",
-      s: "چند سيڪنڊ",
-      ss: "%d سيڪنڊ",
-      m: "هڪ منٽ",
-      mm: "%d منٽ",
-      h: "هڪ ڪلاڪ",
-      hh: "%d ڪلاڪ",
-      d: "هڪ ڏينهن",
-      dd: "%d ڏينهن",
-      M: "هڪ مهينو",
-      MM: "%d مهينا",
-      y: "هڪ سال",
-      yy: "%d سال"
-    },
-    preparse: function (string) {
-        return string.replaceAll('،', ',');
-    },
-    postformat: function (string) {
-        return string.replaceAll(',', '،');
-    },
-    week: {
-      dow: 1,
-      doy: 4
+  months: months,
+  monthsShort: months,
+  weekdays: days,
+  weekdaysShort: days,
+  weekdaysMin: days,
+  longDateFormat: {
+    LT: "HH:mm",
+    LTS: "HH:mm:ss",
+    L: "DD/MM/YYYY",
+    LL: "D MMMM YYYY",
+    LLL: "D MMMM YYYY HH:mm",
+    LLLL: "dddd، D MMMM YYYY HH:mm",
+  },
+  meridiemParse: /صبح|شام/,
+  isPM: function (input: string) {
+    return "شام" === input;
+  },
+  meridiem: function (hour, _minute, _isLower) {
+    if (hour < 12) {
+      return "صبح";
     }
-  };
+    return "شام";
+  },
+  calendar: {
+    sameDay: "[اڄ] LT",
+    nextDay: "[سڀاڻي] LT",
+    nextWeek: "dddd [اڳين هفتي تي] LT",
+    lastDay: "[ڪالهه] LT",
+    lastWeek: "[گزريل هفتي] dddd [تي] LT",
+    sameElse: "L",
+  },
+  relativeTime: {
+    future: "%s پوء",
+    past: "%s اڳ",
+    s: "چند سيڪنڊ",
+    ss: "%d سيڪنڊ",
+    m: "هڪ منٽ",
+    mm: "%d منٽ",
+    h: "هڪ ڪلاڪ",
+    hh: "%d ڪلاڪ",
+    d: "هڪ ڏينهن",
+    dd: "%d ڏينهن",
+    M: "هڪ مهينو",
+    MM: "%d مهينا",
+    y: "هڪ سال",
+    yy: "%d سال",
+  },
+  preparse: function (string) {
+    return string.replaceAll("،", ",");
+  },
+  postformat: function (string) {
+    return string.replaceAll(",", "،");
+  },
+  week: {
+    dow: 1,
+    doy: 4,
+  },
+};

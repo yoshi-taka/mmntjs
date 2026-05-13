@@ -10,9 +10,10 @@ export function setTemporalMomentFactory(fn: (...args: unknown[]) => Moment): vo
 function getT(): unknown {
   if (!_T) {
     const g = globalThis as Record<string, unknown>;
-    _T = (typeof g.Temporal === "object" && g.Temporal !== null)
-      ? g.Temporal
-      : require("@js-temporal/polyfill").Temporal;
+    _T =
+      typeof g.Temporal === "object" && g.Temporal !== null
+        ? g.Temporal
+        : require("@js-temporal/polyfill").Temporal;
   }
   return _T;
 }
@@ -28,7 +29,9 @@ function getMoment(): (...args: unknown[]) => Moment {
 }
 
 function offsetToString(offsetMinutes: number): string {
-  if (offsetMinutes === 0) {return "UTC";}
+  if (offsetMinutes === 0) {
+    return "UTC";
+  }
   const sign = offsetMinutes >= 0 ? "+" : "-";
   const abs = Math.abs(offsetMinutes);
   const h = Math.floor(abs / 60);
@@ -41,13 +44,19 @@ export function getTemporalNamespace(): unknown {
 }
 
 export function toTemporal(m: Moment): unknown {
-  if (!m.isValid()) {throw new Error("Cannot convert invalid moment to Temporal");}
+  if (!m.isValid()) {
+    throw new Error("Cannot convert invalid moment to Temporal");
+  }
 
   const year = m.year();
   const month = m.month() + 1;
   const day = m.date();
   const T = getT() as {
-    PlainDate: new (y: number, m: number, d: number) => { year: number; month: number; day: number };
+    PlainDate: new (
+      y: number,
+      m: number,
+      d: number,
+    ) => { year: number; month: number; day: number };
     ZonedDateTime: { from(o: Record<string, unknown>): unknown };
   };
 
@@ -60,15 +69,24 @@ export function toTemporal(m: Moment): unknown {
 
   return T.ZonedDateTime.from({
     timeZone: offsetToString(m.utcOffset()),
-    year, month, day,
-    hour: m.hour(), minute: m.minute(), second: m.second(), millisecond: m.millisecond(),
+    year,
+    month,
+    day,
+    hour: m.hour(),
+    minute: m.minute(),
+    second: m.second(),
+    millisecond: m.millisecond(),
   });
 }
 
 function isTemporalInstance(t: unknown, cls: string): t is Record<string, unknown> {
   try {
-    return t != null && typeof t === "object" && (t as Record<string, unknown>).constructor.name === cls;
-  } catch { return false; }
+    return (
+      t != null && typeof t === "object" && (t as Record<string, unknown>).constructor.name === cls
+    );
+  } catch {
+    return false;
+  }
 }
 
 export function fromTemporal(t: unknown): Moment {
@@ -87,13 +105,31 @@ export function fromTemporal(t: unknown): Moment {
   }
 
   if (isTemporalInstance(t, "PlainDateTime")) {
-    return moment([t.year as number, (t.month as number) - 1, t.day as number, t.hour as number, t.minute as number, t.second as number, t.millisecond as number]);
+    return moment([
+      t.year as number,
+      (t.month as number) - 1,
+      t.day as number,
+      t.hour as number,
+      t.minute as number,
+      t.second as number,
+      t.millisecond as number,
+    ]);
   }
 
   if (isTemporalInstance(t, "PlainTime")) {
     const now = new Date();
-    return moment([now.getFullYear(), now.getMonth(), now.getDate(), t.hour as number, t.minute as number, t.second as number, t.millisecond as number]);
+    return moment([
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      t.hour as number,
+      t.minute as number,
+      t.second as number,
+      t.millisecond as number,
+    ]);
   }
 
-  throw new Error(`Unsupported Temporal type: ${typeof t === "object" && t !== null ? (t as Record<string, unknown>).constructor.name : typeof t}`);
+  throw new Error(
+    `Unsupported Temporal type: ${typeof t === "object" && t !== null ? (t as Record<string, unknown>).constructor.name : typeof t}`,
+  );
 }

@@ -5,7 +5,9 @@ export function walkSourceFiles(dir: string, visit: (filePath: string) => void):
   function walk(currentDir: string): void {
     const entries = fs.readdirSync(currentDir, { withFileTypes: true });
     for (const entry of entries) {
-      if (entry.name.startsWith(".") || entry.name === "node_modules") {continue;}
+      if (entry.name.startsWith(".") || entry.name === "node_modules") {
+        continue;
+      }
       const filePath = path.join(currentDir, entry.name);
       if (entry.isDirectory()) {
         walk(filePath);

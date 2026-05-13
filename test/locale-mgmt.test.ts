@@ -34,9 +34,12 @@ describe("moment.locale()", () => {
     moment.locale("xx-current", {
       months: "A B C D E F G H I J K L".split(" "),
     });
-    originalMoment.locale("xx-current", localeSpec({
-      months: "A B C D E F G H I J K L".split(" "),
-    }));
+    originalMoment.locale(
+      "xx-current",
+      localeSpec({
+        months: "A B C D E F G H I J K L".split(" "),
+      }),
+    );
     expect(moment.locale("xx-YY")).toBe(originalMoment.locale("xx-YY"));
     expect(moment.locale()).toBe(originalMoment.locale());
     moment.locale("xx-current", nullLocaleConfig);
@@ -119,7 +122,9 @@ describe("moment.locale() -> defineLocale null", () => {
   });
 
   test("defineLocale null on unknown locale returns en", () => {
-    expect(moment.locale("xx-ghost", nullLocaleConfig)).toBe(originalMoment.locale("xx-ghost", nullLocaleConfig));
+    expect(moment.locale("xx-ghost", nullLocaleConfig)).toBe(
+      originalMoment.locale("xx-ghost", nullLocaleConfig),
+    );
     expect(moment.locales()).not.toContain("xx-ghost");
   });
 });
@@ -246,12 +251,17 @@ describe("moment.locale() edge cases", () => {
       parentLocale: "xx-missing",
       months: "A B C D E F G H I J K L".split(" "),
     });
-    const expected = originalMoment.locale("xx-orphan", localeSpec({
-      parentLocale: "xx-missing",
-      months: "A B C D E F G H I J K L".split(" "),
-    }));
+    const expected = originalMoment.locale(
+      "xx-orphan",
+      localeSpec({
+        parentLocale: "xx-missing",
+        months: "A B C D E F G H I J K L".split(" "),
+      }),
+    );
     expect(result).toBe(expected);
-    expect(moment.locales().includes("xx-orphan")).toBe(originalMoment.locales().includes("xx-orphan"));
+    expect(moment.locales().includes("xx-orphan")).toBe(
+      originalMoment.locales().includes("xx-orphan"),
+    );
     moment.locale("xx-orphan", nullLocaleConfig);
   });
 

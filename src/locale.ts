@@ -14,36 +14,35 @@ import {
   setLocale,
 } from "./locale-runtime";
 
-export {
-  Locale,
-  getLocale,
-  getCurrentLocale,
-  setLocale,
-  hasLocale,
-  localeHasMissingParent,
-};
+export { Locale, getLocale, getCurrentLocale, setLocale, hasLocale, localeHasMissingParent };
 
 const originalLocales: Record<string, LocaleSpec | undefined> = {};
 
 function normalizeLocale(key: string): string {
-  return key ? key.toLowerCase().replaceAll('_', "-") : key;
+  return key ? key.toLowerCase().replaceAll("_", "-") : key;
 }
 
 function commonPrefix(arr1: string[], arr2: string[]): number {
   const minl = Math.min(arr1.length, arr2.length);
   for (let i = 0; i < minl; i++) {
-    if (arr1[i] !== arr2[i]) {return i;}
+    if (arr1[i] !== arr2[i]) {
+      return i;
+    }
   }
   return minl;
 }
 
 export function _findBestLocaleName(locale: string): string | null {
   const normalized = normalizeLocale(locale);
-  if (hasLocale(normalized)) {return normalized;}
+  if (hasLocale(normalized)) {
+    return normalized;
+  }
   const parts = normalized.split("-");
   for (let i = parts.length - 1; i >= 1; i--) {
     const parent = parts.slice(0, i).join("-");
-    if (hasLocale(parent)) {return parent;}
+    if (hasLocale(parent)) {
+      return parent;
+    }
   }
   return null;
 }
@@ -138,9 +137,12 @@ export function updateLocale(locale: string, config: Partial<LocaleSpec> | null)
     return getLocale(locale);
   }
 
-  const configParentLocale = (config as Partial<LocaleSpec> & { parentLocale?: string }).parentLocale;
+  const configParentLocale = (config as Partial<LocaleSpec> & { parentLocale?: string })
+    .parentLocale;
   if (configParentLocale) {
-    localeConfigs[locale] = { ...(config as Partial<LocaleSpec> & Record<string, unknown>) } as LocaleSpec;
+    localeConfigs[locale] = {
+      ...(config as Partial<LocaleSpec> & Record<string, unknown>),
+    } as LocaleSpec;
   } else {
     localeConfigs[locale] = mergeLocaleConfigs(currentConfig, config as LocaleSpec);
   }
@@ -162,7 +164,11 @@ export function getMonths(format?: string | number, index?: number): string | st
   if (format !== undefined) {
     const monthForIndex = (monthIndex: number): string => {
       if (isFunction(months)) {
-        return (months as Function).call(loc._config, { month: () => monthIndex } as { month: () => number }, format);
+        return (months as Function).call(
+          loc._config,
+          { month: () => monthIndex } as { month: () => number },
+          format,
+        );
       }
       if (Array.isArray(months)) {
         return months[monthIndex] ?? "";
@@ -170,16 +176,21 @@ export function getMonths(format?: string | number, index?: number): string | st
       if (typeof months === "object") {
         const isFmt = months.isFormat;
         const monthsInFormat = /D[oD]?(\[[^[\]]*\]|\s)+MMMM?/;
-        const useFormat = isFmt instanceof RegExp ? isFmt.test(format) : monthsInFormat.test(format);
+        const useFormat =
+          isFmt instanceof RegExp ? isFmt.test(format) : monthsInFormat.test(format);
         const list = useFormat ? months.format : months.standalone;
         return list[monthIndex] ?? "";
       }
       return "";
     };
-    if (index !== undefined) {return monthForIndex(index);}
+    if (index !== undefined) {
+      return monthForIndex(index);
+    }
     return loc._months.map((_, monthIndex) => monthForIndex(monthIndex));
   }
-  if (index !== undefined) {return loc._months[index];}
+  if (index !== undefined) {
+    return loc._months[index];
+  }
   return loc._months;
 }
 
@@ -197,17 +208,23 @@ export function getWeekdays(format?: string | number | boolean, index?: number):
   }
   if (format === true) {
     const reordered = reorderByDow(loc._weekdays, dow);
-    if (index !== undefined) {return reordered[index];}
+    if (index !== undefined) {
+      return reordered[index];
+    }
     return reordered;
   }
   if (format === "short") {
     const ws = loc.weekdaysShortArray();
-    if (index !== undefined) {return ws[index];}
+    if (index !== undefined) {
+      return ws[index];
+    }
     return ws;
   }
   if (format === "min") {
     const wm = loc.weekdaysMinArray();
-    if (index !== undefined) {return wm[index];}
+    if (index !== undefined) {
+      return wm[index];
+    }
     return wm;
   }
   if (format === "format") {
@@ -219,6 +236,8 @@ export function getWeekdays(format?: string | number | boolean, index?: number):
   if (format === "minFormat") {
     return loc._weekdays[todayIndex];
   }
-  if (index !== undefined) {return loc._weekdays[index];}
+  if (index !== undefined) {
+    return loc._weekdays[index];
+  }
   return loc._weekdays;
 }

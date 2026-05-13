@@ -6,26 +6,59 @@ function temporalParse(s: string): Record<string, unknown> | null {
   const T = (globalThis as Record<string, unknown>).Temporal as
     | {
         PlainDate: { from(s: string): { year: number; month: number; day: number } };
-        PlainDateTime: { from(s: string): { year: number; month: number; day: number; hour: number; minute: number; second: number; millisecond: number } };
-        ZonedDateTime: { from(s: string): { year: number; month: number; day: number; hour: number; minute: number; second: number; millisecond: number; offsetNanoseconds: bigint } };
+        PlainDateTime: {
+          from(s: string): {
+            year: number;
+            month: number;
+            day: number;
+            hour: number;
+            minute: number;
+            second: number;
+            millisecond: number;
+          };
+        };
+        ZonedDateTime: {
+          from(s: string): {
+            year: number;
+            month: number;
+            day: number;
+            hour: number;
+            minute: number;
+            second: number;
+            millisecond: number;
+            offsetNanoseconds: bigint;
+          };
+        };
       }
     | undefined;
-  if (!T) {return null;}
+  if (!T) {
+    return null;
+  }
 
   try {
     if (s.includes("T") || s.includes("t")) {
       try {
         const z = T.ZonedDateTime.from(s);
         return {
-          year: z.year, month: z.month, day: z.day,
-          hour: z.hour, minute: z.minute, second: z.second, millisecond: z.millisecond,
+          year: z.year,
+          month: z.month,
+          day: z.day,
+          hour: z.hour,
+          minute: z.minute,
+          second: z.second,
+          millisecond: z.millisecond,
           offset: Math.round(Number(z.offsetNanoseconds) / 6e10),
         };
       } catch {
         const d = T.PlainDateTime.from(s);
         return {
-          year: d.year, month: d.month, day: d.day,
-          hour: d.hour, minute: d.minute, second: d.second, millisecond: d.millisecond,
+          year: d.year,
+          month: d.month,
+          day: d.day,
+          hour: d.hour,
+          minute: d.minute,
+          second: d.second,
+          millisecond: d.millisecond,
         };
       }
     }
@@ -38,7 +71,9 @@ function temporalParse(s: string): Record<string, unknown> | null {
 
 function momentFields(s: string): Record<string, unknown> | null {
   const m = moment(s);
-  if (!m.isValid()) {return null;}
+  if (!m.isValid()) {
+    return null;
+  }
   const r: Record<string, unknown> = {
     year: m.year(),
     month: m.month() + 1,
@@ -59,7 +94,9 @@ function momentFields(s: string): Record<string, unknown> | null {
 
 function fieldsEqual(a: Record<string, unknown>, b: Record<string, unknown>): boolean {
   for (const k of ["year", "month", "day", "hour", "minute", "second", "millisecond", "offset"]) {
-    if (a[k] !== b[k]) {return false;}
+    if (a[k] !== b[k]) {
+      return false;
+    }
   }
   return true;
 }

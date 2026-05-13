@@ -4,7 +4,15 @@ import { defineLocale, getCurrentLocale, setLocale } from "../locale";
 // when the locale falls back to English. For example, "fr" in hr locale should
 // NOT match any weekday, but without locale data it falls back to en where "Fr"
 // matches Friday.
-const localeData: Record<string, { weekdaysMin: string[]; weekdaysShort: string[]; weekdays: string[]; calendar?: Record<string, string> }> = {
+const localeData: Record<
+  string,
+  {
+    weekdaysMin: string[];
+    weekdaysShort: string[];
+    weekdays: string[];
+    calendar?: Record<string, string>;
+  }
+> = {
   bs: {
     weekdays: "nedjelja_ponedjeljak_utorak_srijeda_četvrtak_petak_subota".split("_"),
     weekdaysShort: "ned._pon._uto._sri._čet._pet._sub.".split("_"),
@@ -120,13 +128,17 @@ const alreadyRegistered = new Set(["en", "de", "ja"]);
 export function registerTestLocales(): void {
   const prevLocale = getCurrentLocale();
   for (const [name, data] of Object.entries(localeData)) {
-    if (alreadyRegistered.has(name)) {continue;}
+    if (alreadyRegistered.has(name)) {
+      continue;
+    }
     const cfg: Record<string, unknown> = {
       weekdays: data.weekdays,
       weekdaysShort: data.weekdaysShort,
       weekdaysMin: data.weekdaysMin,
     };
-    if (data.calendar) {cfg.calendar = data.calendar;}
+    if (data.calendar) {
+      cfg.calendar = data.calendar;
+    }
     defineLocale(name, cfg);
   }
   setLocale(prevLocale);

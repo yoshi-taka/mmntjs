@@ -1,11 +1,42 @@
 import { moment, nowFn } from "../core/factory";
 import { formatMoment } from "../format";
-import { setCalendarMethodCallbacks, setDebugMethodCallbacks, setFormatMomentCallback, setLocaleRuntimeCallbacks, setLocaleMethodCallbacks } from "../moment-class";
+import {
+  setCalendarMethodCallbacks,
+  setDebugMethodCallbacks,
+  setFormatMomentCallback,
+  setLocaleRuntimeCallbacks,
+  setLocaleMethodCallbacks,
+} from "../moment-class";
 import { getCurrentLocale, getLocale, hasLocale } from "../locale-runtime";
-import { lang, localeData, localeMethod, localeWeek, localeWeekYear, localeWeekday, localeWeeksInWeekYear, localeWeeksInYear } from "../locale-extra";
-import { calendarCompareMoment, dayOfYearMoment, isoWeekdayMoment, isoWeekMoment, isoWeekYearMoment, isoWeeksInISOWeekYearMoment, isoWeeksInYearMoment } from "../calendar-extra";
+import {
+  lang,
+  localeData,
+  localeMethod,
+  localeWeek,
+  localeWeekYear,
+  localeWeekday,
+  localeWeeksInWeekYear,
+  localeWeeksInYear,
+} from "../locale-extra";
+import {
+  calendarCompareMoment,
+  dayOfYearMoment,
+  isoWeekdayMoment,
+  isoWeekMoment,
+  isoWeekYearMoment,
+  isoWeeksInISOWeekYearMoment,
+  isoWeeksInYearMoment,
+} from "../calendar-extra";
 import { endOfExtraMoment, startOfExtraMoment } from "../boundary-extra";
-import { creationDataMoment, inspectMoment, invalidAtMoment, parsingFlagsMoment, toArrayMoment, toObjectMoment, toStringMoment } from "../debug-extra";
+import {
+  creationDataMoment,
+  inspectMoment,
+  invalidAtMoment,
+  parsingFlagsMoment,
+  toArrayMoment,
+  toObjectMoment,
+  toStringMoment,
+} from "../debug-extra";
 import { registerCoreApi } from "../plugins/core";
 import { registerDisplayApi } from "../plugins/display";
 import { enableCustomFormatParsing } from "../parse";
@@ -18,10 +49,7 @@ import { Moment } from "../moment-class";
 type CoreInitMoment = typeof moment;
 type CoreInitDeps = Parameters<typeof registerCoreApi>[1];
 
-export function initializeCoreEntry(
-  target: CoreInitMoment = moment,
-  deps?: CoreInitDeps,
-): void {
+export function initializeCoreEntry(target: CoreInitMoment = moment, deps?: CoreInitDeps): void {
   setFormatMomentCallback(formatMoment);
   setLocaleRuntimeCallbacks({ getCurrentLocale, getLocale, hasLocale });
   setLocaleMethodCallbacks({
@@ -58,15 +86,14 @@ export function initializeCoreEntry(
   registerDisplayApi(target);
   registerUtcApi(target as unknown as Parameters<typeof registerUtcApi>[0], { nowFn });
   setDurationMomentResolver((input: unknown) => {
-    if (input instanceof Moment) {return input as unknown as DurationMomentLike;}
+    if (input instanceof Moment) {
+      return input as unknown as DurationMomentLike;
+    }
     return target(input) as unknown as DurationMomentLike;
   });
 }
 
-export function initializeFullEntry(
-  target: CoreInitMoment = moment,
-  deps?: CoreInitDeps,
-): void {
+export function initializeFullEntry(target: CoreInitMoment = moment, deps?: CoreInitDeps): void {
   initializeCoreEntry(target, deps);
   enableCustomFormatParsing();
   initializeLocaleEntry();

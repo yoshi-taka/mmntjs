@@ -1,5 +1,11 @@
 import type { Locale } from "./locale-runtime";
-import { getLocale, getCurrentLocale, localeInvalidDate, localePostformat, localeRelativeTime } from "./locale-runtime";
+import {
+  getLocale,
+  getCurrentLocale,
+  localeInvalidDate,
+  localePostformat,
+  localeRelativeTime,
+} from "./locale-runtime";
 import { absFloor, hasOwnProp, isObject } from "./utils";
 import { getRelTimeThreshold, getRelTimeRounding } from "./reltime";
 import { diffMomentsForDuration, type DurationMomentLike } from "./duration-between";
@@ -97,7 +103,9 @@ const unitAliasToKey: Record<string, string> = {
 
 function unitToMs(unit: string): number {
   const key = unitAliasToKey[unit];
-  if (!key) {return 0;}
+  if (!key) {
+    return 0;
+  }
   switch (key) {
     case "years":
       return 31536000000;
@@ -121,18 +129,18 @@ function unitToMs(unit: string): number {
 }
 
 export class Duration {
-  _milliseconds= 0;
-  _days= 0;
-  _months= 0;
-  _bdYears= 0;
-  _bdMonths= 0;
-  _bdDays= 0;
-  _bdHours= 0;
-  _bdMinutes= 0;
-  _bdSeconds= 0;
-  _bdMilliseconds= 0;
-  _locale= "en";
-  _isValid= true;
+  _milliseconds = 0;
+  _days = 0;
+  _months = 0;
+  _bdYears = 0;
+  _bdMonths = 0;
+  _bdDays = 0;
+  _bdHours = 0;
+  _bdMinutes = 0;
+  _bdSeconds = 0;
+  _bdMilliseconds = 0;
+  _locale = "en";
+  _isValid = true;
 
   constructor(input?: DurationLike, unit?: string) {
     this._locale = getCurrentLocale();
@@ -226,14 +234,18 @@ export class Duration {
   }
 
   private _parseISONum(s: string | undefined): number {
-    if (!s) {return 0;}
-    const parts = s.replaceAll(',', ".").split(".");
-    if (parts.length === 1) {return parseFloat(parts[0]) || 0;}
-    return parseFloat(`${parts[0]  }.${  parts[1]}`) || 0;
+    if (!s) {
+      return 0;
+    }
+    const parts = s.replaceAll(",", ".").split(".");
+    if (parts.length === 1) {
+      return parseFloat(parts[0]) || 0;
+    }
+    return parseFloat(`${parts[0]}.${parts[1]}`) || 0;
   }
 
   private _parseString(str: string): void {
-    let cleanStr = str.replaceAll(',', ".");
+    let cleanStr = str.replaceAll(",", ".");
     cleanStr = cleanStr.replaceAll(/([PpTt])\.(\d)/g, "$10.$2");
     cleanStr = cleanStr.replaceAll(/\.(\D)/g, ".0$1");
     cleanStr = cleanStr.replaceAll(/(\d)\.($|[^\d.])/g, "$1$2");
@@ -320,8 +332,10 @@ export class Duration {
         this._isValid = false;
         return;
       }
-      const from = fromVal != null ? durationMomentResolver(fromVal) : durationMomentResolver(new Date(0));
-      const to = toVal != null ? durationMomentResolver(toVal) : durationMomentResolver(new Date(0));
+      const from =
+        fromVal != null ? durationMomentResolver(fromVal) : durationMomentResolver(new Date(0));
+      const to =
+        toVal != null ? durationMomentResolver(toVal) : durationMomentResolver(new Date(0));
       const diff = diffMomentsForDuration(from, to);
       this._months = diff.months;
       this._milliseconds = diff.milliseconds;
@@ -344,22 +358,26 @@ export class Duration {
         const aliased = unitAliasToKey[key];
         if (aliased in unitIndexMap) {
           const idx = unitIndexMap[aliased];
-          if (smallestSeen < 0 || idx > smallestSeen) {smallestSeen = idx;}
+          if (smallestSeen < 0 || idx > smallestSeen) {
+            smallestSeen = idx;
+          }
         }
       }
     }
     for (const key in obj) {
       if (hasOwnProp(obj, key)) {
         const aliased = unitAliasToKey[key];
-        if (!aliased) {continue;}
+        if (!aliased) {
+          continue;
+        }
         const rawVal = (obj as Record<string, unknown>)[key];
         const val = Number(rawVal) || 0;
         const idx = unitIndexMap[aliased];
         if (
-      smallestSeen >= 0 &&
-      idx < smallestSeen &&
-      typeof rawVal === "number" &&
-      rawVal % 1 !== 0
+          smallestSeen >= 0 &&
+          idx < smallestSeen &&
+          typeof rawVal === "number" &&
+          rawVal % 1 !== 0
         ) {
           this._isValid = false;
           this._milliseconds = NaN;
@@ -391,7 +409,9 @@ export class Duration {
   }
 
   private _bubble(): void {
-    if (!this._isValid) {return;}
+    if (!this._isValid) {
+      return;
+    }
 
     let milliseconds = this._milliseconds;
     let days = this._days;
@@ -439,15 +459,21 @@ export class Duration {
   }
 
   valueOf(): number {
-    if (!this._isValid) {return NaN;}
+    if (!this._isValid) {
+      return NaN;
+    }
     const days = this._days + Math.round(monthsToDays(this._months));
     return Math.floor(days * 86400000) + this._milliseconds;
   }
 
   get(unit: string): number {
-    if (!this._isValid) {return NaN;}
+    if (!this._isValid) {
+      return NaN;
+    }
     const key = unitAliasToKey[unit];
-    if (!key) {return NaN;}
+    if (!key) {
+      return NaN;
+    }
     switch (key) {
       case "milliseconds":
         return this._bdMilliseconds;
@@ -524,7 +550,9 @@ export class Duration {
   }
 
   milliseconds(n?: number): number | this {
-    if (!this._isValid) {return NaN;}
+    if (!this._isValid) {
+      return NaN;
+    }
     if (n !== undefined) {
       this._milliseconds = n;
       this._bubble();
@@ -534,7 +562,9 @@ export class Duration {
   }
 
   seconds(n?: number): number | this {
-    if (!this._isValid) {return NaN;}
+    if (!this._isValid) {
+      return NaN;
+    }
     if (n !== undefined) {
       const diff = n - this._bdSeconds;
       this._milliseconds += diff * 1000;
@@ -545,7 +575,9 @@ export class Duration {
   }
 
   minutes(n?: number): number | this {
-    if (!this._isValid) {return NaN;}
+    if (!this._isValid) {
+      return NaN;
+    }
     if (n !== undefined) {
       const diff = n - this._bdMinutes;
       this._milliseconds += diff * 60000;
@@ -556,7 +588,9 @@ export class Duration {
   }
 
   hours(n?: number): number | this {
-    if (!this._isValid) {return NaN;}
+    if (!this._isValid) {
+      return NaN;
+    }
     if (n !== undefined) {
       const diff = n - this._bdHours;
       this._milliseconds += diff * 3600000;
@@ -567,7 +601,9 @@ export class Duration {
   }
 
   days(n?: number): number | this {
-    if (!this._isValid) {return NaN;}
+    if (!this._isValid) {
+      return NaN;
+    }
     if (n !== undefined) {
       const diff = n - this._bdDays;
       this._days += diff;
@@ -578,7 +614,9 @@ export class Duration {
   }
 
   months(n?: number): number | this {
-    if (!this._isValid) {return NaN;}
+    if (!this._isValid) {
+      return NaN;
+    }
     if (n !== undefined) {
       const diff = n - this._bdMonths;
       this._months += diff;
@@ -589,7 +627,9 @@ export class Duration {
   }
 
   years(n?: number): number | this {
-    if (!this._isValid) {return NaN;}
+    if (!this._isValid) {
+      return NaN;
+    }
     if (n !== undefined) {
       const diff = n - this._bdYears;
       this._months += diff * 12;
@@ -600,7 +640,9 @@ export class Duration {
   }
 
   weeks(n?: number): number | this {
-    if (!this._isValid) {return NaN;}
+    if (!this._isValid) {
+      return NaN;
+    }
     if (n !== undefined) {
       const diff = n - absFloor(this._bdDays / 7);
       this._days += diff * 7;
@@ -680,20 +722,32 @@ export class Duration {
     roundingMode?: "ceil" | "floor" | "trunc" | "halfExpand";
     roundingIncrement?: number;
   }): this {
-    if (!this._isValid) {return this;}
+    if (!this._isValid) {
+      return this;
+    }
     const smallestUnit = options?.smallestUnit ?? "milliseconds";
     const roundingMode = options?.roundingMode ?? "halfExpand";
     const increment = options?.roundingIncrement ?? 1;
 
-    const unitKey = unitAliasToKey[smallestUnit] ?? (smallestUnit.endsWith("s") ? smallestUnit : `${smallestUnit}s`);
+    const unitKey =
+      unitAliasToKey[smallestUnit] ??
+      (smallestUnit.endsWith("s") ? smallestUnit : `${smallestUnit}s`);
     const total = this.as(unitKey);
     const divided = total / increment;
     let rounded: number;
     switch (roundingMode) {
-      case "ceil": rounded = Math.ceil(divided); break;
-      case "floor": rounded = Math.floor(divided); break;
-      case "trunc": rounded = Math.trunc(divided); break;
-      default: rounded = Math.round(divided); break;
+      case "ceil":
+        rounded = Math.ceil(divided);
+        break;
+      case "floor":
+        rounded = Math.floor(divided);
+        break;
+      case "trunc":
+        rounded = Math.trunc(divided);
+        break;
+      default:
+        rounded = Math.round(divided);
+        break;
     }
 
     this._months = 0;
@@ -853,13 +907,17 @@ export class Duration {
   }
 
   toISOString(): string {
-    if (!this._isValid) {return localeInvalidDate(this.localeData());}
+    if (!this._isValid) {
+      return localeInvalidDate(this.localeData());
+    }
 
     let ms = this._milliseconds;
     let days = this._days;
     let months = this._months;
 
-    if (ms === 0 && days === 0 && months === 0) {return "P0D";}
+    if (ms === 0 && days === 0 && months === 0) {
+      return "P0D";
+    }
 
     const totalMs = this.valueOf();
     const overallSign = totalMs < 0;
@@ -873,15 +931,26 @@ export class Duration {
     const seconds = (msAbs % 60000) / 1000;
 
     const units: { key: string; val: number; source: "months" | "days" | "ms" }[] = [];
-    if (yearsFromMonths !== 0)
-      {units.push({ key: "Y", val: Math.abs(yearsFromMonths), source: "months" });}
-    if (remMonths !== 0) {units.push({ key: "M", val: Math.abs(remMonths), source: "months" });}
-    if (days !== 0) {units.push({ key: "D", val: Math.abs(days), source: "days" });}
+    if (yearsFromMonths !== 0) {
+      units.push({ key: "Y", val: Math.abs(yearsFromMonths), source: "months" });
+    }
+    if (remMonths !== 0) {
+      units.push({ key: "M", val: Math.abs(remMonths), source: "months" });
+    }
+    if (days !== 0) {
+      units.push({ key: "D", val: Math.abs(days), source: "days" });
+    }
 
     const timeUnits: { key: string; val: number; source: "ms" }[] = [];
-    if (hours !== 0) {timeUnits.push({ key: "H", val: hours, source: "ms" });}
-    if (minutes !== 0) {timeUnits.push({ key: "M", val: minutes, source: "ms" });}
-    if (seconds !== 0) {timeUnits.push({ key: "S", val: seconds, source: "ms" });}
+    if (hours !== 0) {
+      timeUnits.push({ key: "H", val: hours, source: "ms" });
+    }
+    if (minutes !== 0) {
+      timeUnits.push({ key: "M", val: minutes, source: "ms" });
+    }
+    if (seconds !== 0) {
+      timeUnits.push({ key: "S", val: seconds, source: "ms" });
+    }
 
     const monthsNegative = months < 0;
     const daysNegative = days < 0;
@@ -891,7 +960,7 @@ export class Duration {
     for (const u of units) {
       const rawNegative = u.source === "months" ? monthsNegative : daysNegative;
       if (rawNegative !== overallSign) {
-        dateStr += `-${  u.val  }${u.key}`;
+        dateStr += `-${u.val}${u.key}`;
       } else {
         dateStr += u.val + u.key;
       }
@@ -902,20 +971,23 @@ export class Duration {
       const secStr =
         u.key === "S"
           ? u.val === Math.floor(u.val)
-            ? `${u.val  }S`
-            : `${u.val.toFixed(3).replace(/0+$/, "")  }S`
+            ? `${u.val}S`
+            : `${u.val.toFixed(3).replace(/0+$/, "")}S`
           : u.val + u.key;
       if (msNegative !== overallSign) {
-        timeStr += `-${  secStr}`;
+        timeStr += `-${secStr}`;
       } else {
         timeStr += secStr;
       }
     }
 
-    let result = `${overallSign ? "-" : ""  }P${  dateStr}`;
-    if (timeStr) {result += `T${  timeStr}`;}
-    if (result === `${overallSign ? "-" : ""  }P` || result === "-P" || result === "P")
-      {result += "0D";}
+    let result = `${overallSign ? "-" : ""}P${dateStr}`;
+    if (timeStr) {
+      result += `T${timeStr}`;
+    }
+    if (result === `${overallSign ? "-" : ""}P` || result === "-P" || result === "P") {
+      result += "0D";
+    }
 
     return result;
   }

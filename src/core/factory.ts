@@ -1,9 +1,4 @@
-import {
-  parseString,
-  parseArray,
-  parseObject,
-  isCustomFormatParsingEnabled,
-} from "../parse";
+import { parseString, parseArray, parseObject, isCustomFormatParsingEnabled } from "../parse";
 import { createMomentFactory } from "./factory-shared";
 import { createFromFormattedStringInput } from "./factory-input-format";
 import { createFromArrayInput, createFromObjectInput } from "./factory-input-struct";

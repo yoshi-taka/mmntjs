@@ -1,5 +1,4 @@
-import type {
-  Locale} from "../locale";
+import type { Locale } from "../locale";
 import {
   getLocale,
   setLocale,
@@ -19,7 +18,9 @@ export function registerLocaleApi(): void {
   const momentRecord = moment as unknown as Record<string, unknown>;
 
   momentRecord.locale = function (locale?: string | string[], ...args: unknown[]): string | Locale {
-    if (locale === undefined) {return getCurrentLocale();}
+    if (locale === undefined) {
+      return getCurrentLocale();
+    }
     if (Array.isArray(locale)) {
       return setLocaleFromArray(locale);
     }
@@ -37,19 +38,32 @@ export function registerLocaleApi(): void {
     return getLocale(locale);
   };
   momentRecord.lang = function (locale?: string, ...args: unknown[]): string | Locale {
-    if (locale === undefined) {return (momentRecord.locale as () => string | Locale)();}
-    if (args.length > 0 && typeof args[0] === "object") {
-      return (momentRecord.locale as (locale?: string, ...args: unknown[]) => string | Locale)(locale, args[0]);
+    if (locale === undefined) {
+      return (momentRecord.locale as () => string | Locale)();
     }
-    return (momentRecord.locale as (locale?: string, ...args: unknown[]) => string | Locale)(locale);
+    if (args.length > 0 && typeof args[0] === "object") {
+      return (momentRecord.locale as (locale?: string, ...args: unknown[]) => string | Locale)(
+        locale,
+        args[0],
+      );
+    }
+    return (momentRecord.locale as (locale?: string, ...args: unknown[]) => string | Locale)(
+      locale,
+    );
   };
   momentRecord.langData = function (locale?: string): Locale {
     return (momentRecord.localeData as (locale?: string) => Locale)(locale);
   };
-  momentRecord.defineLocale = function (locale: string, config: Record<string, unknown>): Locale | void {
+  momentRecord.defineLocale = function (
+    locale: string,
+    config: Record<string, unknown>,
+  ): Locale | void {
     return defineLocale(locale, config);
   };
-  momentRecord.updateLocale = function (locale: string, config: Record<string, unknown> | null): Locale | void {
+  momentRecord.updateLocale = function (
+    locale: string,
+    config: Record<string, unknown> | null,
+  ): Locale | void {
     return updateLocale(locale, config as unknown as Partial<LocaleSpec>);
   };
   momentRecord.locales = listLocales;

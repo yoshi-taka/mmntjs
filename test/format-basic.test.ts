@@ -14,8 +14,16 @@ type BasicFields = {
 
 function makeMoment({ y, M, D, H = 0, m = 0, s = 0, ms = 0 }: BasicFields) {
   return {
-    $y: y, $M: M, $D: D, $H: H, $m: m, $s: s, $ms: ms,
-    _isValid: true, _dirty: false, _l: "en",
+    $y: y,
+    $M: M,
+    $D: D,
+    $H: H,
+    $m: m,
+    $s: s,
+    $ms: ms,
+    _isValid: true,
+    _dirty: false,
+    _l: "en",
     utcOffset: () => 0,
     localeData: () => ({ _config: {} }),
   } as FormattableMoment;
@@ -27,8 +35,15 @@ function makeInvalid() {
 
 function makeDirty(cb: () => void) {
   return {
-    $y: 2024, $M: 0, $D: 15, $H: 10, $m: 30, $s: 0, $ms: 0,
-    _isValid: true, _dirty: true,
+    $y: 2024,
+    $M: 0,
+    $D: 15,
+    $H: 10,
+    $m: 30,
+    $s: 0,
+    $ms: 0,
+    _isValid: true,
+    _dirty: true,
     _ensureFields: cb,
     _l: "en",
     utcOffset: () => 0,
@@ -43,7 +58,9 @@ describe("formatMomentBasic", () => {
 
   test("calls _ensureFields when _dirty is true", () => {
     let called = false;
-    const m = makeDirty(() => { called = true; });
+    const m = makeDirty(() => {
+      called = true;
+    });
     formatMomentBasic(m, "YYYY-MM-DD");
     expect(called).toBe(true);
   });

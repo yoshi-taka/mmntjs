@@ -3,11 +3,7 @@ import moment from "../src/index.ts";
 import originalMoment from "../moment/moment.js";
 
 test("strict ISO branch examples stay aligned with moment.js", () => {
-  const samples = [
-    "2024-01-01T1234",
-    "20240101T12:34",
-    "2024-W12T1",
-  ];
+  const samples = ["2024-01-01T1234", "20240101T12:34", "2024-W12T1"];
 
   for (const sample of samples) {
     const m2 = moment(sample, "ISO_8601", true);

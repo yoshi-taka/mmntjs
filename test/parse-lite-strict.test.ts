@@ -54,17 +54,31 @@ describe("parseString", () => {
 
   test("parses ISO extended with time", () => {
     const result = parseString("2024-01-15T10:30:00", undefined, enLocale());
-    expect(result).toEqual(expect.objectContaining({ year: 2024, month: 0, day: 15, hour: 10, minute: 30, second: 0 }));
+    expect(result).toEqual(
+      expect.objectContaining({ year: 2024, month: 0, day: 15, hour: 10, minute: 30, second: 0 }),
+    );
   });
 
   test("parses ISO extended with time and timezone", () => {
     const result = parseString("2024-01-15T10:30:00+05:30", undefined, enLocale());
-    expect(result).toEqual(expect.objectContaining({ year: 2024, month: 0, day: 15, hour: 10, minute: 30, second: 0, offset: 330 }));
+    expect(result).toEqual(
+      expect.objectContaining({
+        year: 2024,
+        month: 0,
+        day: 15,
+        hour: 10,
+        minute: 30,
+        second: 0,
+        offset: 330,
+      }),
+    );
   });
 
   test("parses ISO basic YYYYMMDDTHHmmss", () => {
     const result = parseString("20240115T103000", undefined, enLocale());
-    expect(result).toEqual(expect.objectContaining({ year: 2024, month: 0, day: 15, hour: 10, minute: 30, second: 0 }));
+    expect(result).toEqual(
+      expect.objectContaining({ year: 2024, month: 0, day: 15, hour: 10, minute: 30, second: 0 }),
+    );
   });
 
   test("parses ISO with Z offset", () => {
@@ -74,7 +88,9 @@ describe("parseString", () => {
 
   test("parses fractional seconds", () => {
     const result = parseString("2024-01-15T10:30:45.123", undefined, enLocale());
-    expect(result).toEqual(expect.objectContaining({ hour: 10, minute: 30, second: 45, millisecond: 123 }));
+    expect(result).toEqual(
+      expect.objectContaining({ hour: 10, minute: 30, second: 45, millisecond: 123 }),
+    );
   });
 
   test("parses comma fractional seconds", () => {
@@ -118,7 +134,9 @@ describe("parseString", () => {
 
   test("compact date + compact time works", () => {
     const result = parseString("20240115T103000", undefined, enLocale());
-    expect(result).toEqual(expect.objectContaining({ year: 2024, month: 0, day: 15, hour: 10, minute: 30, second: 0 }));
+    expect(result).toEqual(
+      expect.objectContaining({ year: 2024, month: 0, day: 15, hour: 10, minute: 30, second: 0 }),
+    );
   });
 
   test("parses offset in +HHMM format", () => {
@@ -160,7 +178,17 @@ describe("parseString", () => {
     registerCustomFormatParser(
       (str, fmt) => {
         if (fmt === "YYYY-MM-DD" && /^\d{4}-\d{2}-\d{2}$/.test(str)) {
-          return { year: 2024, month: 0, day: 15, _unusedTokens: [], _unusedInput: [], _charsLeftOver: 0, _empty: false, _invalidMonth: null, _parsedDateParts: [] };
+          return {
+            year: 2024,
+            month: 0,
+            day: 15,
+            _unusedTokens: [],
+            _unusedInput: [],
+            _charsLeftOver: 0,
+            _empty: false,
+            _invalidMonth: null,
+            _parsedDateParts: [],
+          };
         }
         return null;
       },

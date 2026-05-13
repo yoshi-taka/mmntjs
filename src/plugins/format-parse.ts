@@ -14,7 +14,9 @@ import { createFromFormattedStringInput } from "../core/factory-input-format";
 let registered = false;
 
 export function registerFormatParsePlugin(): void {
-  if (registered) {return;}
+  if (registered) {
+    return;
+  }
   registered = true;
   enableFormattedInputLite();
   setFormattedStringInputHandlerLite(createFromFormattedStringInput);

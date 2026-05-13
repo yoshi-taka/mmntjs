@@ -14,17 +14,36 @@ type MomentParts = {
 function makeMoment({ y, m, d, h = 0, min = 0, s = 0, ms = 0 }: MomentParts) {
   const date = new Date(y, m, d, h, min, s, ms);
   return {
-    _y: y, _m: m, _d: d,
+    _y: y,
+    _m: m,
+    _d: d,
     isValid: () => true,
     valueOf: () => date.getTime(),
     year: () => date.getFullYear(),
     month: () => date.getMonth(),
-    clone: () => makeMoment({ y: date.getFullYear(), m: date.getMonth(), d: date.getDate(), h: date.getHours(), min: date.getMinutes(), s: date.getSeconds(), ms: date.getMilliseconds() }),
+    clone: () =>
+      makeMoment({
+        y: date.getFullYear(),
+        m: date.getMonth(),
+        d: date.getDate(),
+        h: date.getHours(),
+        min: date.getMinutes(),
+        s: date.getSeconds(),
+        ms: date.getMilliseconds(),
+      }),
     add: function (amount: number, unit: string) {
       if (unit === "months") {
         const newDate = new Date(date);
         newDate.setMonth(newDate.getMonth() + amount);
-        return makeMoment({ y: newDate.getFullYear(), m: newDate.getMonth(), d: newDate.getDate(), h: newDate.getHours(), min: newDate.getMinutes(), s: newDate.getSeconds(), ms: newDate.getMilliseconds() });
+        return makeMoment({
+          y: newDate.getFullYear(),
+          m: newDate.getMonth(),
+          d: newDate.getDate(),
+          h: newDate.getHours(),
+          min: newDate.getMinutes(),
+          s: newDate.getSeconds(),
+          ms: newDate.getMilliseconds(),
+        });
       }
       throw new Error(`unsupported unit: ${unit}`);
     },

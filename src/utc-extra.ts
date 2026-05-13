@@ -3,7 +3,12 @@ import { parseString } from "./parse";
 import type { ParseLocale } from "./parse-locale";
 import type { Moment } from "./moment-class";
 
-type MomentFactory = (input?: unknown, format?: unknown, localeOrStrict?: unknown, fourthArg?: unknown) => Moment;
+type MomentFactory = (
+  input?: unknown,
+  format?: unknown,
+  localeOrStrict?: unknown,
+  fourthArg?: unknown,
+) => Moment;
 
 type UtcMoment = Moment & {
   _d?: Date;
@@ -64,12 +69,18 @@ export function utcMoment(m: UtcMoment, keepLocalTime?: boolean): Moment {
 
 function parseOffsetString(offset: string): number {
   const match = offset.match(/([+-])(\d{2}):?(\d{2})$/);
-  if (!match) {return NaN;}
+  if (!match) {
+    return NaN;
+  }
   const sign = match[1] === "+" ? 1 : -1;
   return sign * (parseInt(match[2], 10) * 60 + parseInt(match[3], 10));
 }
 
-export function utcOffsetMoment(m: UtcMoment, offset?: number | string, keepLocalTime?: boolean): number | Moment {
+export function utcOffsetMoment(
+  m: UtcMoment,
+  offset?: number | string,
+  keepLocalTime?: boolean,
+): number | Moment {
   if (offset === undefined) {
     (m as unknown as { _ensureFields: () => void })._ensureFields();
     return m._offset;
@@ -77,7 +88,9 @@ export function utcOffsetMoment(m: UtcMoment, offset?: number | string, keepLoca
   let numOffset: number;
   if (typeof offset === "string") {
     numOffset = parseOffsetString(offset);
-    if (isNaN(numOffset)) {return m;}
+    if (isNaN(numOffset)) {
+      return m;
+    }
   } else {
     numOffset = Math.abs(offset) < 16 ? offset * 60 : offset;
   }
@@ -99,7 +112,12 @@ export function utcOffsetMoment(m: UtcMoment, offset?: number | string, keepLoca
   return m;
 }
 
-export function parseZoneMoment(m: UtcMoment, input?: unknown, format?: unknown, createMoment?: MomentFactory): Moment {
+export function parseZoneMoment(
+  m: UtcMoment,
+  input?: unknown,
+  format?: unknown,
+  createMoment?: MomentFactory,
+): Moment {
   if (!m._isValid) {
     const clone = m.clone() as unknown as UtcMoment;
     clone._isParseZone = true;
@@ -121,7 +139,8 @@ export function parseZoneMoment(m: UtcMoment, input?: unknown, format?: unknown,
         clone._isUTC = true;
         clone._refreshFields();
       } else {
-        const unusedInput = (m as unknown as Record<string, unknown>)._unusedInput as string[] | undefined ?? [];
+        const unusedInput =
+          ((m as unknown as Record<string, unknown>)._unusedInput as string[] | undefined) ?? [];
         const allInput = `${String(m._i ?? "")} ${unusedInput.join("")}`; // eslint-disable-line no-unnecessary-condition
         const tzMatch = allInput.match(/([+-]\d{2}):?(\d{2})\s*$/);
         if (tzMatch) {
@@ -141,7 +160,11 @@ export function parseZoneMoment(m: UtcMoment, input?: unknown, format?: unknown,
   const next = createMoment(input) as UtcMoment;
   next._isParseZone = true;
   if (format && isString(input)) {
-    const parsed = parseString(input, format as string | string[], next._getLocale() as unknown as ParseLocale);
+    const parsed = parseString(
+      input,
+      format as string | string[],
+      next._getLocale() as unknown as ParseLocale,
+    );
     if (parsed?.offset !== undefined) {
       const d = createDateSafe(
         parsed.year ?? 0,
@@ -173,7 +196,11 @@ export function parseZoneMoment(m: UtcMoment, input?: unknown, format?: unknown,
   return next;
 }
 
-export function zoneMoment(m: UtcMoment, offset?: number | string, keepLocalTime?: boolean): number | Moment {
+export function zoneMoment(
+  m: UtcMoment,
+  offset?: number | string,
+  keepLocalTime?: boolean,
+): number | Moment {
   if (offset === undefined) {
     const off = -(utcOffsetMoment(m) as number);
     return off || 0;
@@ -191,7 +218,9 @@ export function zoneMoment(m: UtcMoment, offset?: number | string, keepLocalTime
       return utcOffsetMoment(m, Math.abs(num) < 16 ? -num * 60 : -num, keepLocalTime);
     }
     const num = Number(offset);
-    if (!isNaN(num)) {return utcOffsetMoment(m, -num, keepLocalTime);}
+    if (!isNaN(num)) {
+      return utcOffsetMoment(m, -num, keepLocalTime);
+    }
     return m;
   }
   return utcOffsetMoment(m, Math.abs(offset) < 16 ? -offset * 60 : -offset, keepLocalTime);
@@ -199,7 +228,9 @@ export function zoneMoment(m: UtcMoment, offset?: number | string, keepLocalTime
 
 export function zoneAbbrMoment(m: UtcMoment): string {
   if (m._isUTC) {
-    if (m._offset === 0) {return "UTC";}
+    if (m._offset === 0) {
+      return "UTC";
+    }
     const offset = m._offset;
     const hours = Math.floor(Math.abs(offset) / 60);
     const minutes = Math.abs(offset) % 60;
@@ -210,7 +241,9 @@ export function zoneAbbrMoment(m: UtcMoment): string {
 }
 
 export function zoneNameMoment(m: UtcMoment): string {
-  if (m._isUTC && m._offset === 0) {return "Coordinated Universal Time";}
+  if (m._isUTC && m._offset === 0) {
+    return "Coordinated Universal Time";
+  }
   return "";
 }
 
@@ -238,7 +271,9 @@ export function isDSTMoment(m: UtcMoment): boolean {
 }
 
 export function hasAlignedHourOffsetMoment(m: UtcMoment, other?: Moment): boolean {
-  if (!m._isValid) {return false;}
+  if (!m._isValid) {
+    return false;
+  }
   const otherOffset = other ? (other as unknown as UtcMoment).utcOffset() : 0;
   return (m.utcOffset() - otherOffset) % 60 === 0;
 }

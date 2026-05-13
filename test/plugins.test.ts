@@ -2,7 +2,9 @@ import { describe, test, expect } from "bun:test";
 import moment from "../src/index.ts";
 import originalMoment from "../moment/moment.js";
 
-type ParsingFlagsWithFoo = ReturnType<ReturnType<typeof moment.invalid>["parsingFlags"]> & { foo?: string };
+type ParsingFlagsWithFoo = ReturnType<ReturnType<typeof moment.invalid>["parsingFlags"]> & {
+  foo?: string;
+};
 
 describe("plugins", () => {
   describe("core-base", () => {
@@ -57,7 +59,9 @@ describe("plugins", () => {
       const o = originalMoment.invalid({ foo: "bar" } as unknown as never);
       expect(m.isValid()).toBe(false);
       expect(m.parsingFlags().userInvalidated).toBe(o.parsingFlags().userInvalidated);
-      expect((m.parsingFlags() as unknown as ParsingFlagsWithFoo).foo).toBe((o.parsingFlags() as unknown as ParsingFlagsWithFoo).foo);
+      expect((m.parsingFlags() as unknown as ParsingFlagsWithFoo).foo).toBe(
+        (o.parsingFlags() as unknown as ParsingFlagsWithFoo).foo,
+      );
     });
 
     test("moment.invalid with Date", () => {

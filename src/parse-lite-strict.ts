@@ -78,24 +78,38 @@ export function parseString(
   locale?: ParseLocale,
   strict?: boolean,
 ): ParsedData | null {
-  if (typeof str !== "string") {return null;}
-  if (!locale) {return null;}
+  if (typeof str !== "string") {
+    return null;
+  }
+  if (!locale) {
+    return null;
+  }
 
   if (format) {
-    if (!customFormatParsingEnabled) {return null;}
+    if (!customFormatParsingEnabled) {
+      return null;
+    }
     const preparsed = liteLocalePreparse(locale as never, str);
-    if (isArray(format)) {return registeredFormatsParser?.(preparsed, format, locale, strict) ?? null;}
+    if (isArray(format)) {
+      return registeredFormatsParser?.(preparsed, format, locale, strict) ?? null;
+    }
     return registeredFormatParser?.(preparsed, format, locale, strict) ?? null;
   }
 
   str = liteLocalePreparse(locale as never, str);
-  if (str.trim() === "") {return null;}
+  if (str.trim() === "") {
+    return null;
+  }
 
   const fast = parseCommonISOExtended(str);
-  if (fast) {return fast;}
+  if (fast) {
+    return fast;
+  }
 
   const iso = parseISOWithTable(str);
-  if (iso) {return iso._claimed ? ({ _claimed: true } as ParsedData) : iso;}
+  if (iso) {
+    return iso._claimed ? ({ _claimed: true } as ParsedData) : iso;
+  }
 
   return null;
 }
@@ -143,24 +157,34 @@ function parseCommonISOExtended(str: string): ParsedData | null {
   return null;
 }
 
-function parseISOWithTable(str: string): ParsedData | ({ _claimed: true } & Record<string, unknown>) | null {
+function parseISOWithTable(
+  str: string,
+): ParsedData | ({ _claimed: true } & Record<string, unknown>) | null {
   const match = EXTENDED_ISO_REGEX.exec(str) ?? BASIC_ISO_REGEX.exec(str);
-  if (!match) {return null;}
+  if (!match) {
+    return null;
+  }
   const datePart = match[1];
   const dateHasDash = datePart.includes("-", datePart.charCodeAt(0) === 45 ? 1 : 0);
   let dateFormat: string | undefined;
   let allowTime = true;
   for (const [fmt, regex, allowT] of isoDates) {
-    if (dateHasDash !== fmt.includes("-")) {continue;}
+    if (dateHasDash !== fmt.includes("-")) {
+      continue;
+    }
     if (regex.exec(datePart)) {
       dateFormat = fmt;
       allowTime = allowT !== false;
       break;
     }
   }
-  if (!dateFormat) {return null;}
+  if (!dateFormat) {
+    return null;
+  }
   if (match[3]) {
-    if (!allowTime) {return { _claimed: true } as { _claimed: true };}
+    if (!allowTime) {
+      return { _claimed: true } as { _claimed: true };
+    }
     let timeFormat: string | undefined;
     for (const [fmt, regex] of isoTimes) {
       if (regex.exec(match[3])) {
@@ -168,7 +192,9 @@ function parseISOWithTable(str: string): ParsedData | ({ _claimed: true } & Reco
         break;
       }
     }
-    if (!timeFormat) {return { _claimed: true } as { _claimed: true };}
+    if (!timeFormat) {
+      return { _claimed: true } as { _claimed: true };
+    }
     if (timeFormat.includes("SSSS")) {
       const fracPos = match[3].search(/[.,]/);
       if (fracPos >= 0) {
@@ -177,9 +203,15 @@ function parseISOWithTable(str: string): ParsedData | ({ _claimed: true } & Reco
     }
     dateFormat += `${match[2] || " "}${timeFormat}`;
   }
-  if (match[4] && !match[3]) {return { _claimed: true } as { _claimed: true };}
-  if (match[4] && !TZ_REGEX.exec(match[4])) {return { _claimed: true } as { _claimed: true };}
-  if (match[4]) {dateFormat += "Z";}
+  if (match[4] && !match[3]) {
+    return { _claimed: true } as { _claimed: true };
+  }
+  if (match[4] && !TZ_REGEX.exec(match[4])) {
+    return { _claimed: true } as { _claimed: true };
+  }
+  if (match[4]) {
+    dateFormat += "Z";
+  }
   return parseIsoTokenFormat(str, dateFormat) ?? ({ _claimed: true } as { _claimed: true });
 }
 
@@ -193,7 +225,9 @@ function parseIsoTokenFormat(str: string, format: string): ParsedData | null {
     switch (token) {
       case "YYYYYY": {
         const parsed = parseSignedYear(str, pos, 6);
-        if (!parsed) {return null;}
+        if (!parsed) {
+          return null;
+        }
         out.year = parsed.year;
         out._parsedDateParts[0] = parsed.year;
         pos = parsed.next;
@@ -202,7 +236,9 @@ function parseIsoTokenFormat(str: string, format: string): ParsedData | null {
       case "YYYY":
       case "GGGG": {
         const parsed = parseDigits(str, pos, 4);
-        if (parsed === null) {return null;}
+        if (parsed === null) {
+          return null;
+        }
         if (token === "YYYY") {
           out.year = parsed;
           out._parsedDateParts[0] = parsed;
@@ -219,7 +255,9 @@ function parseIsoTokenFormat(str: string, format: string): ParsedData | null {
       case "ss":
       case "WW": {
         const parsed = parseDigits(str, pos, 2);
-        if (parsed === null) {return null;}
+        if (parsed === null) {
+          return null;
+        }
         if (token === "MM") {
           out.month = parsed - 1;
           out._parsedDateParts[1] = out.month;
@@ -243,14 +281,18 @@ function parseIsoTokenFormat(str: string, format: string): ParsedData | null {
       }
       case "DDD": {
         const parsed = parseDigits(str, pos, 3);
-        if (parsed === null) {return null;}
+        if (parsed === null) {
+          return null;
+        }
         out.dayOfYear = parsed;
         pos += 3;
         break;
       }
       case "E": {
         const parsed = parseDigits(str, pos, 1);
-        if (parsed === null) {return null;}
+        if (parsed === null) {
+          return null;
+        }
         out._weekdayNum = parsed;
         pos += 1;
         break;
@@ -266,7 +308,9 @@ function parseIsoTokenFormat(str: string, format: string): ParsedData | null {
       case "SSSSSSSSS": {
         const digits = token.length;
         const value = str.slice(pos, pos + digits);
-        if (!/^\d+$/.test(value)) {return null;}
+        if (!/^\d+$/.test(value)) {
+          return null;
+        }
         out.millisecond = parseInt(value.slice(0, 3).padEnd(3, "0"), 10);
         out._parsedDateParts[6] = out.millisecond;
         pos += digits;
@@ -274,13 +318,17 @@ function parseIsoTokenFormat(str: string, format: string): ParsedData | null {
       }
       case "Z": {
         const offset = parseOffset(str, pos);
-        if (!offset) {return null;}
+        if (!offset) {
+          return null;
+        }
         out.offset = offset.offset;
         pos = offset.next;
         break;
       }
       default:
-        if (!str.startsWith(token, pos)) {return null;}
+        if (!str.startsWith(token, pos)) {
+          return null;
+        }
         pos += token.length;
         break;
     }
@@ -289,9 +337,33 @@ function parseIsoTokenFormat(str: string, format: string): ParsedData | null {
 }
 
 function nextIsoToken(format: string, idx: number): string {
-  const tokens = ["SSSSSSSSS", "SSSSSSSS", "SSSSSSS", "SSSSSS", "SSSSS", "SSSS", "YYYYYY", "GGGG", "YYYY", "DDD", "HH", "mm", "ss", "WW", "MM", "DD", "SSS", "SS", "S", "E", "Z"];
+  const tokens = [
+    "SSSSSSSSS",
+    "SSSSSSSS",
+    "SSSSSSS",
+    "SSSSSS",
+    "SSSSS",
+    "SSSS",
+    "YYYYYY",
+    "GGGG",
+    "YYYY",
+    "DDD",
+    "HH",
+    "mm",
+    "ss",
+    "WW",
+    "MM",
+    "DD",
+    "SSS",
+    "SS",
+    "S",
+    "E",
+    "Z",
+  ];
   for (const token of tokens) {
-    if (format.startsWith(token, idx)) {return token;}
+    if (format.startsWith(token, idx)) {
+      return token;
+    }
   }
   return format[idx] ?? "";
 }
@@ -301,7 +373,11 @@ function parseDigits(str: string, idx: number, count: number): number | null {
   return new RegExp(`^\\d{${count}}$`).test(value) ? parseInt(value, 10) : null;
 }
 
-function parseSignedYear(str: string, idx: number, digits: number): { year: number; next: number } | null {
+function parseSignedYear(
+  str: string,
+  idx: number,
+  digits: number,
+): { year: number; next: number } | null {
   let pos = idx;
   let sign = 1;
   if (str[pos] === "+" || str[pos] === "-") {
@@ -313,12 +389,18 @@ function parseSignedYear(str: string, idx: number, digits: number): { year: numb
 }
 
 function parseOffset(str: string, idx: number): { offset: number; next: number } | null {
-  if (str[idx] === "Z") {return { offset: 0, next: idx + 1 };}
+  if (str[idx] === "Z") {
+    return { offset: 0, next: idx + 1 };
+  }
   const signCh = str[idx];
-  if (signCh !== "+" && signCh !== "-") {return null;}
+  if (signCh !== "+" && signCh !== "-") {
+    return null;
+  }
   const sign = signCh === "+" ? 1 : -1;
   const hh = parseDigits(str, idx + 1, 2);
-  if (hh === null) {return null;}
+  if (hh === null) {
+    return null;
+  }
   if (str[idx + 3] === ":") {
     const mm = parseDigits(str, idx + 4, 2);
     return mm === null ? null : { offset: sign * (hh * 60 + mm), next: idx + 6 };

@@ -56,17 +56,31 @@ describe("parseString", () => {
 
   test("parses ISO extended with time", () => {
     const result = parseString("2024-01-15T10:30:00", undefined, enLocale());
-    expect(result).toEqual(expect.objectContaining({ year: 2024, month: 0, day: 15, hour: 10, minute: 30, second: 0 }));
+    expect(result).toEqual(
+      expect.objectContaining({ year: 2024, month: 0, day: 15, hour: 10, minute: 30, second: 0 }),
+    );
   });
 
   test("parses ISO extended with time and timezone", () => {
     const result = parseString("2024-01-15T10:30:00+05:30", undefined, enLocale());
-    expect(result).toEqual(expect.objectContaining({ year: 2024, month: 0, day: 15, hour: 10, minute: 30, second: 0, offset: 330 }));
+    expect(result).toEqual(
+      expect.objectContaining({
+        year: 2024,
+        month: 0,
+        day: 15,
+        hour: 10,
+        minute: 30,
+        second: 0,
+        offset: 330,
+      }),
+    );
   });
 
   test("parses ISO basic YYYYMMDDTHHmmss", () => {
     const result = parseString("20240115T103000", undefined, enLocale());
-    expect(result).toEqual(expect.objectContaining({ year: 2024, month: 0, day: 15, hour: 10, minute: 30, second: 0 }));
+    expect(result).toEqual(
+      expect.objectContaining({ year: 2024, month: 0, day: 15, hour: 10, minute: 30, second: 0 }),
+    );
   });
 
   test("parses ISO basic with offset", () => {
@@ -92,11 +106,17 @@ describe("parseString", () => {
   test("JSON date format /Date(...)/", () => {
     const ts = Date.UTC(2024, 0, 15, 0, 30, 0);
     const result = parseString(`/Date(${ts})/`, undefined, enLocale());
-    expect(result).toEqual(expect.objectContaining({
-      year: 2024, month: 0, day: 15,
-      hour: 0, minute: 30, second: 0,
-      offset: 0,
-    }));
+    expect(result).toEqual(
+      expect.objectContaining({
+        year: 2024,
+        month: 0,
+        day: 15,
+        hour: 0,
+        minute: 30,
+        second: 0,
+        offset: 0,
+      }),
+    );
   });
 
   test("JSON date format with offset", () => {
@@ -108,11 +128,17 @@ describe("parseString", () => {
   // RFC 2822
   test("parses RFC 2822 date", () => {
     const result = parseString("Mon, 15 Jan 2024 10:30:00 +0000", undefined, enLocale());
-    expect(result).toEqual(expect.objectContaining({
-      year: 2024, month: 0, day: 15,
-      hour: 10, minute: 30, second: 0,
-      offset: 0,
-    }));
+    expect(result).toEqual(
+      expect.objectContaining({
+        year: 2024,
+        month: 0,
+        day: 15,
+        hour: 10,
+        minute: 30,
+        second: 0,
+        offset: 0,
+      }),
+    );
   });
 
   test("parses RFC 2822 without day name", () => {
@@ -147,7 +173,9 @@ describe("parseString", () => {
 
   test("parses fractional seconds in time", () => {
     const result = parseString("2024-01-15T10:30:45.123", undefined, enLocale());
-    expect(result).toEqual(expect.objectContaining({ hour: 10, minute: 30, second: 45, millisecond: 123 }));
+    expect(result).toEqual(
+      expect.objectContaining({ hour: 10, minute: 30, second: 45, millisecond: 123 }),
+    );
   });
 
   test("returns null for unparseable string", () => {
@@ -164,7 +192,17 @@ describe("parseString", () => {
     registerCustomFormatParser(
       (str, fmt, _loc, _strict) => {
         if (fmt === "YYYY-MM-DD" && /^\d{4}-\d{2}-\d{2}$/.test(str)) {
-          return { year: 2024, month: 0, day: 15, _unusedTokens: [], _unusedInput: [], _charsLeftOver: 0, _empty: false, _invalidMonth: null, _parsedDateParts: [] };
+          return {
+            year: 2024,
+            month: 0,
+            day: 15,
+            _unusedTokens: [],
+            _unusedInput: [],
+            _charsLeftOver: 0,
+            _empty: false,
+            _invalidMonth: null,
+            _parsedDateParts: [],
+          };
         }
         return null;
       },
@@ -178,12 +216,34 @@ describe("parseString", () => {
 
 describe("parseArray", () => {
   test("parses [year, month, day, ...]", () => {
-    expect(parseArray([2024, 0, 15])).toEqual(expect.objectContaining({ year: 2024, month: 0, day: 15 }));
-    expect(parseArray([2024, 0, 15, 10, 30, 45, 500])).toEqual(expect.objectContaining({ year: 2024, month: 0, day: 15, hour: 10, minute: 30, second: 45, millisecond: 500 }));
+    expect(parseArray([2024, 0, 15])).toEqual(
+      expect.objectContaining({ year: 2024, month: 0, day: 15 }),
+    );
+    expect(parseArray([2024, 0, 15, 10, 30, 45, 500])).toEqual(
+      expect.objectContaining({
+        year: 2024,
+        month: 0,
+        day: 15,
+        hour: 10,
+        minute: 30,
+        second: 45,
+        millisecond: 500,
+      }),
+    );
   });
 
   test("defaults month=0, day=1, time=0", () => {
-    expect(parseArray([2024])).toEqual(expect.objectContaining({ year: 2024, month: 0, day: 1, hour: 0, minute: 0, second: 0, millisecond: 0 }));
+    expect(parseArray([2024])).toEqual(
+      expect.objectContaining({
+        year: 2024,
+        month: 0,
+        day: 1,
+        hour: 0,
+        minute: 0,
+        second: 0,
+        millisecond: 0,
+      }),
+    );
   });
 
   test("returns null for empty array", () => {
@@ -199,13 +259,26 @@ describe("parseArray", () => {
 
 describe("parseObject", () => {
   test("parses { year, month, day }", () => {
-    expect(parseObject({ year: 2024, month: 0, day: 15 })).toEqual({ year: 2024, month: 0, day: 15 });
+    expect(parseObject({ year: 2024, month: 0, day: 15 })).toEqual({
+      year: 2024,
+      month: 0,
+      day: 15,
+    });
   });
 
   test("supports alias keys", () => {
     expect(parseObject({ y: 2024, M: 0, d: 15 })).toEqual({ year: 2024, month: 0, day: 15 });
-    expect(parseObject({ years: 2024, months: 0, date: 15 })).toEqual({ year: 2024, month: 0, day: 15 });
-    expect(parseObject({ hours: 10, minutes: 30, seconds: 45, ms: 500 })).toEqual({ hour: 10, minute: 30, second: 45, millisecond: 500 });
+    expect(parseObject({ years: 2024, months: 0, date: 15 })).toEqual({
+      year: 2024,
+      month: 0,
+      day: 15,
+    });
+    expect(parseObject({ hours: 10, minutes: 30, seconds: 45, ms: 500 })).toEqual({
+      hour: 10,
+      minute: 30,
+      second: 45,
+      millisecond: 500,
+    });
   });
 
   test("ignores null/undefined values", () => {

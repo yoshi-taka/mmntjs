@@ -1,0 +1,12 @@
+{
+  "lineWidth": 120,
+  "ignorePatterns": [
+    "moment/",
+    "node_modules/",
+    "dist/",
+    "test/moment/",
+    "test/helpers/",
+    "test/qunit.js",
+    "src.snapshot/"
+  ]
+}

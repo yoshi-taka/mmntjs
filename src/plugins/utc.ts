@@ -16,16 +16,19 @@ import {
   zoneNameMoment,
 } from "../utc-extra";
 
-type UtcMomentTarget = ((input?: unknown, format?: unknown, localeOrStrict?: unknown, fourthArg?: unknown) => Moment) & Record<string, unknown>;
+type UtcMomentTarget = ((
+  input?: unknown,
+  format?: unknown,
+  localeOrStrict?: unknown,
+  fourthArg?: unknown,
+) => Moment) &
+  Record<string, unknown>;
 
 export type UtcApiDeps = {
   nowFn: () => number;
 };
 
-export function registerUtcApi(
-  target: UtcMomentTarget,
-  deps: UtcApiDeps,
-): void {
+export function registerUtcApi(target: UtcMomentTarget, deps: UtcApiDeps): void {
   setUtcMethodCallbacks({
     local: localMoment,
     utc: utcMoment,
@@ -41,7 +44,12 @@ export function registerUtcApi(
     hasAlignedHourOffset: hasAlignedHourOffsetMoment as (m: Moment, other?: MomentInput) => boolean,
   });
   const momentRecord = target as unknown as Record<string, unknown>;
-  momentRecord.utc = function (input?: unknown, format?: unknown, localeOrStrict?: unknown, fourthArg?: unknown): Moment {
+  momentRecord.utc = function (
+    input?: unknown,
+    format?: unknown,
+    localeOrStrict?: unknown,
+    fourthArg?: unknown,
+  ): Moment {
     if (input === null) {
       return new Moment({
         _dClone: false,
@@ -54,7 +62,13 @@ export function registerUtcApi(
       });
     }
     if (input === undefined) {
-      return new Moment({ _dClone: false, _d: new Date(deps.nowFn()), _isUTC: true, _offset: 0, _i: input });
+      return new Moment({
+        _dClone: false,
+        _d: new Date(deps.nowFn()),
+        _isUTC: true,
+        _offset: 0,
+        _i: input,
+      });
     }
     const m = target(input, format, localeOrStrict, fourthArg);
     const absTime = m.valueOf();

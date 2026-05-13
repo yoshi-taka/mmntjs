@@ -1,11 +1,6 @@
 import { Duration } from "../duration";
-import {
-  isMoment,
-  isDate,
-} from "../utils";
-import {
-  Locale,
-} from "../locale";
+import { isMoment, isDate } from "../utils";
+import { Locale } from "../locale";
 import { moment } from "../core/factory";
 import { initializeFullEntry } from "./init";
 import type { FullMomentStatic } from "./types";

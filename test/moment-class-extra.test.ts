@@ -36,7 +36,9 @@ describe("Moment class edge cases", () => {
 
     test("get with invalid unit returns NaN", () => {
       const m = moment("2024-01-15");
-      const expected = originalMoment("2024-01-15").get(invalidUnit) as unknown as { format: (fmt: string) => string };
+      const expected = originalMoment("2024-01-15").get(invalidUnit) as unknown as {
+        format: (fmt: string) => string;
+      };
       const actual = m.get(invalidUnit) as unknown as { format: (fmt: string) => string };
       expect(actual.format("YYYY-MM-DD")).toBe(expected.format("YYYY-MM-DD"));
     });
