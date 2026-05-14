@@ -978,24 +978,26 @@ export class Moment {
       if (isNaN(num)) {
         return this;
       }
+      const d = this._getD();
+      const utc = this._isUTC;
       const date = this.$D;
-      if (this._isUTC) {
-        this._getD().setUTCMonth(num);
+      if (utc) {
+        d.setUTCMonth(num);
       } else {
-        this._getD().setMonth(num);
+        d.setMonth(num);
       }
-      if ((this._isUTC ? this._getD().getUTCDate() : this._getD().getDate()) !== date) {
-        if (this._isUTC) {
-          this._getD().setUTCDate(0);
+      if ((utc ? d.getUTCDate() : d.getDate()) !== date) {
+        if (utc) {
+          d.setUTCDate(0);
         } else {
-          this._getD().setDate(0);
+          d.setDate(0);
         }
       }
-      this.$y = this._isUTC ? this._getD().getUTCFullYear() : this._getD().getFullYear();
-      this.$M = this._isUTC ? this._getD().getUTCMonth() : this._getD().getMonth();
-      this.$D = this._isUTC ? this._getD().getUTCDate() : this._getD().getDate();
+      this.$y = utc ? d.getUTCFullYear() : d.getFullYear();
+      this.$M = utc ? d.getUTCMonth() : d.getMonth();
+      this.$D = utc ? d.getUTCDate() : d.getDate();
       this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
-      this._t = this._getD().getTime();
+      this._t = d.getTime();
       this._updateOffset(true);
       return this;
     }
@@ -1501,6 +1503,7 @@ export class Moment {
 
   _addSimple(amount: number, unit: number): void {
     let changedDays = false;
+    const utc = this._isUTC;
 
     switch (unit) {
       case YEAR:
@@ -1531,7 +1534,7 @@ export class Moment {
             d_ = _md;
           }
         }
-        if (this._isUTC) {
+        if (utc) {
           this._t = Date.UTC(y, m, d_, this.$H, this.$m, this.$s, this.$ms);
           this._d = undefined;
           this._dirty = true;
@@ -1543,7 +1546,7 @@ export class Moment {
         this.$y = y;
         this.$M = m;
         this.$D = d_;
-        this.$W = this._isUTC ? _dayOfWeek(y, m, d_) : this._d!.getDay();
+        this.$W = utc ? _dayOfWeek(y, m, d_) : this._d!.getDay();
         break;
       }
       case ISO_WEEK:
@@ -1558,7 +1561,7 @@ export class Moment {
             ? Math.round(raw * -1) * -1
             : Math.round(raw);
         if (rounded !== 0) {
-          if (this._isUTC) {
+          if (utc) {
             this._t += rounded * 86400000;
             this._d = undefined;
           } else {
@@ -1616,16 +1619,17 @@ export class Moment {
   _applyDuration(ms: number, days: number, months: number, sign: 1 | -1): void {
     this._ensureFields();
     const d = this._getDNoEnsure();
+    const utc = this._isUTC;
     if (months) {
       const curMonth = this.$M;
       const day = this.$D;
-      if (this._isUTC) {
+      if (utc) {
         d.setUTCMonth(curMonth + sign * months);
       } else {
         d.setMonth(curMonth + sign * months);
       }
-      if ((this._isUTC ? d.getUTCDate() : d.getDate()) !== day) {
-        if (this._isUTC) {
+      if ((utc ? d.getUTCDate() : d.getDate()) !== day) {
+        if (utc) {
           d.setUTCDate(0);
         } else {
           d.setDate(0);
@@ -1633,7 +1637,7 @@ export class Moment {
       }
     }
     if (days) {
-      if (this._isUTC) {
+      if (utc) {
         d.setUTCDate(d.getUTCDate() + sign * days);
       } else {
         d.setDate(d.getDate() + sign * days);
@@ -1646,7 +1650,7 @@ export class Moment {
     if (months || ms) {
       this._refreshFields();
     } else if (days) {
-      if (this._isUTC) {
+      if (utc) {
         this.$y = d.getUTCFullYear();
         this.$M = d.getUTCMonth();
         this.$D = d.getUTCDate();
@@ -1674,107 +1678,95 @@ export class Moment {
     }
     if (typeof amount === "number") {
       if (unit !== undefined) {
-        const u = unit;
-        if (u === "day" || u === "days" || u === "d") {
-          if (this._isUTC) {
-            this._t += Math.round(amount * 86400000);
-            this._d = undefined;
-          } else {
-            const dt = this._d ?? (this._d = new Date(this._t));
-            dt.setDate(dt.getDate() + amount);
-            this._t = dt.getTime();
-          }
-          this._dirty = true;
-          return this;
-        }
-        if (u === "month" || u === "months" || u === "M") {
-          this._ensureFields();
-          const totalMonths = Number.isInteger(amount)
-            ? amount
-            : amount < 0
-              ? Math.round(-amount) * -1
-              : Math.round(amount);
-          const tm = this.$y * 12 + this.$M + totalMonths;
-          const y = Math.floor(tm / 12);
-          const m = normalizeMonth(tm);
-          let d_ = this.$D;
-          if (d_ > 28) {
-            const md =
-              m === 1
-                ? y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)
-                  ? 29
-                  : 28
-                : m === 3 || m === 5 || m === 8 || m === 10
-                  ? 30
-                  : 31;
-            if (d_ > md) {
-              d_ = md;
-            }
-          }
-          if (this._isUTC) {
-            this._t = Date.UTC(y, m, d_, this.$H, this.$m, this.$s, this.$ms);
-            this._d = undefined;
-            this._dirty = true;
-          } else {
-            const dt = this._d ?? (this._d = new Date(this._t));
-            dt.setFullYear(y, m, d_);
-            this._t = dt.getTime();
-          }
-          this.$y = y;
-          this.$M = m;
-          this.$D = d_;
-          this.$W = this._isUTC ? _dayOfWeek(y, m, d_) : this._d!.getDay();
-          if (!this._isUTC) {
-            this._offset = -this._d!.getTimezoneOffset();
-          }
-          if (isNaN(this._t)) {
-            this._isValid = false;
-          }
-          return this;
-        }
-        if (u === "second" || u === "seconds" || u === "s") {
-          this._t += Number.isInteger(amount) ? amount * 1000 : Math.round(amount * 1000);
-          this._d = undefined;
-          this._dirty = true;
-          if (isNaN(this._t)) {
-            this._isValid = false;
-          }
-          return this;
-        }
-        if (u === "minute" || u === "minutes" || u === "m") {
-          this._t += Number.isInteger(amount) ? amount * 60000 : Math.round(amount * 60000);
-          this._d = undefined;
-          this._dirty = true;
-          if (isNaN(this._t)) {
-            this._isValid = false;
-          }
-          return this;
-        }
-        if (u === "hour" || u === "hours" || u === "h") {
-          this._t += Number.isInteger(amount) ? amount * 3600000 : Math.round(amount * 3600000);
-          this._d = undefined;
-          this._dirty = true;
-          if (isNaN(this._t)) {
-            this._isValid = false;
-          }
-          return this;
-        }
-        if (u === "millisecond" || u === "milliseconds" || u === "ms") {
-          this._t += Number.isInteger(amount) ? amount : Math.round(amount);
-          this._d = undefined;
-          this._dirty = true;
-          if (isNaN(this._t)) {
-            this._isValid = false;
-          }
-          return this;
-        }
-        const code = normalizeUnitCode(u);
+        const code = normalizeUnitCode(unit);
         if (code !== undefined && code >= 0) {
-          this._addSimple(amount, code);
-          if (isNaN(this._t)) {
-            this._isValid = false;
+          switch (code) {
+            case DAY: {
+              if (this._isUTC) {
+                this._t += Math.round(amount * 86400000);
+                this._d = undefined;
+              } else {
+                const dt = this._d ?? (this._d = new Date(this._t));
+                dt.setDate(dt.getDate() + amount);
+                this._t = dt.getTime();
+              }
+              this._dirty = true;
+              return this;
+            }
+            case MONTH: {
+              this._ensureFields();
+              const totalMonths = Number.isInteger(amount)
+                ? amount
+                : amount < 0
+                  ? Math.round(-amount) * -1
+                  : Math.round(amount);
+              const tm = this.$y * 12 + this.$M + totalMonths;
+              const y = Math.floor(tm / 12);
+              const m = normalizeMonth(tm);
+              let d_ = this.$D;
+              if (d_ > 28) {
+                const md =
+                  m === 1
+                    ? y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)
+                      ? 29
+                      : 28
+                    : m === 3 || m === 5 || m === 8 || m === 10
+                      ? 30
+                      : 31;
+                if (d_ > md) {
+                  d_ = md;
+                }
+              }
+              if (this._isUTC) {
+                this._t = Date.UTC(y, m, d_, this.$H, this.$m, this.$s, this.$ms);
+                this._d = undefined;
+                this._dirty = true;
+              } else {
+                const dt = this._d ?? (this._d = new Date(this._t));
+                dt.setFullYear(y, m, d_);
+                this._t = dt.getTime();
+              }
+              this.$y = y;
+              this.$M = m;
+              this.$D = d_;
+              this.$W = this._isUTC ? _dayOfWeek(y, m, d_) : this._d!.getDay();
+              if (!this._isUTC) {
+                this._offset = -this._d!.getTimezoneOffset();
+              }
+              if (isNaN(this._t)) {
+                this._isValid = false;
+              }
+              return this;
+            }
+            case HOUR:
+              this._t += Number.isInteger(amount) ? amount * 3600000 : Math.round(amount * 3600000);
+              this._d = undefined;
+              this._dirty = true;
+              if (isNaN(this._t)) { this._isValid = false; }
+              return this;
+            case MINUTE:
+              this._t += Number.isInteger(amount) ? amount * 60000 : Math.round(amount * 60000);
+              this._d = undefined;
+              this._dirty = true;
+              if (isNaN(this._t)) { this._isValid = false; }
+              return this;
+            case SECOND:
+              this._t += Number.isInteger(amount) ? amount * 1000 : Math.round(amount * 1000);
+              this._d = undefined;
+              this._dirty = true;
+              if (isNaN(this._t)) { this._isValid = false; }
+              return this;
+            case MILLISECOND:
+              this._t += Number.isInteger(amount) ? amount : Math.round(amount);
+              this._d = undefined;
+              this._dirty = true;
+              if (isNaN(this._t)) { this._isValid = false; }
+              return this;
+            default:
+              this._addSimple(amount, code);
+              if (isNaN(this._t)) { this._isValid = false; }
+              return this;
           }
-          return this;
         }
       } else {
         this._addSimple(amount, MILLISECOND);
@@ -2180,19 +2172,21 @@ export class Moment {
 
   diff(input: MomentInput, unit?: string, float?: boolean): number {
     const other = momentFromAnything(input);
+    const isUTC = this._isUTC;
+    const otherUTC = other._isUTC;
     const code = unit ? (normalizeUnitCode(unit) ?? INVALID_UNIT) : (INVALID_UNIT as -1);
     if (code < 0) {
-      const a = this._isUTC ? this._t - this._offset * 60000 : this._t;
-      const b = other._isUTC ? other._t - other._offset * 60000 : other._t;
+      const a = isUTC ? this._t - this._offset * 60000 : this._t;
+      const b = otherUTC ? other._t - other._offset * 60000 : other._t;
       return a - b || 0;
     }
 
     switch (code) {
       case DATE:
       case DAY: {
-        const a = this._isUTC ? this._t - this._offset * 60000 : this._t;
-        const b = other._isUTC ? other._t - other._offset * 60000 : other._t;
-        if (this._isUTC && other._isUTC) {
+        const a = isUTC ? this._t - this._offset * 60000 : this._t;
+        const b = otherUTC ? other._t - other._offset * 60000 : other._t;
+        if (isUTC && otherUTC) {
           const days = Math.floor(a / 86400000) - Math.floor(b / 86400000);
           return float ? days : days || 0;
         }
@@ -2204,8 +2198,8 @@ export class Moment {
         return t || 0;
       }
       case HOUR: {
-        const a = this._isUTC ? this._t - this._offset * 60000 : this._t;
-        const b = other._isUTC ? other._t - other._offset * 60000 : other._t;
+        const a = isUTC ? this._t - this._offset * 60000 : this._t;
+        const b = otherUTC ? other._t - other._offset * 60000 : other._t;
         const r = (a - b) / 3600000;
         if (float) {
           return r;
@@ -2214,8 +2208,8 @@ export class Moment {
         return t || 0;
       }
       case MINUTE: {
-        const a = this._isUTC ? this._t - this._offset * 60000 : this._t;
-        const b = other._isUTC ? other._t - other._offset * 60000 : other._t;
+        const a = isUTC ? this._t - this._offset * 60000 : this._t;
+        const b = otherUTC ? other._t - other._offset * 60000 : other._t;
         const r = (a - b) / 60000;
         if (float) {
           return r;
@@ -2224,8 +2218,8 @@ export class Moment {
         return t || 0;
       }
       case SECOND: {
-        const a = this._isUTC ? this._t - this._offset * 60000 : this._t;
-        const b = other._isUTC ? other._t - other._offset * 60000 : other._t;
+        const a = isUTC ? this._t - this._offset * 60000 : this._t;
+        const b = otherUTC ? other._t - other._offset * 60000 : other._t;
         const r = (a - b) / 1000;
         if (float) {
           return r;
@@ -2234,8 +2228,8 @@ export class Moment {
         return t || 0;
       }
       case MILLISECOND: {
-        const a = this._isUTC ? this._t - this._offset * 60000 : this._t;
-        const b = other._isUTC ? other._t - other._offset * 60000 : other._t;
+        const a = isUTC ? this._t - this._offset * 60000 : this._t;
+        const b = otherUTC ? other._t - other._offset * 60000 : other._t;
         const diffMs = a - b || 0;
         if (float) {
           return diffMs;
@@ -2244,12 +2238,12 @@ export class Moment {
         return t || 0;
       }
       case WEEK: {
-        const a = this._isUTC ? this._t - this._offset * 60000 : this._t;
-        const b = other._isUTC ? other._t - other._offset * 60000 : other._t;
-        if (this._isUTC && other._isUTC) {
+        const a = isUTC ? this._t - this._offset * 60000 : this._t;
+        const b = otherUTC ? other._t - other._offset * 60000 : other._t;
+        if (isUTC && otherUTC) {
           const days = Math.floor(a / 86400000) - Math.floor(b / 86400000);
           const r = days / 7;
-          return float ? r : Math.trunc(r) || 0;
+          return float ? r : (Math.trunc(r) || 0);
         }
         const r = (a - b) / 604800000;
         if (float) {
@@ -2361,8 +2355,8 @@ export class Moment {
         return result || 0;
       }
       default: {
-        const a = this._isUTC ? this._t - this._offset * 60000 : this._t;
-        const b = other._isUTC ? other._t - other._offset * 60000 : other._t;
+        const a = isUTC ? this._t - this._offset * 60000 : this._t;
+        const b = otherUTC ? other._t - other._offset * 60000 : other._t;
         return a - b || 0;
       }
     }
