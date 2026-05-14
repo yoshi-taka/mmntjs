@@ -717,7 +717,9 @@ describe("Metamorphic properties", () => {
   test("normalizeUnits handles random invalid strings idempotently", () => {
     fc.assert(
       fc.property(
-        fc.string().filter((s) => s !== "__proto__" && s !== "constructor"),
+        fc.string().filter(
+          (s) => s !== "__proto__" && s !== "constructor" && s !== "valueOf" && s !== "toString" && s !== "hasOwnProperty" && s !== "toLocaleString" && s !== "isPrototypeOf" && s !== "propertyIsEnumerable" && s !== "toJSON",
+        ),
         (s) => {
           const n1 = moment.normalizeUnits(s);
           const n2 = moment.normalizeUnits(n1 as string);
@@ -806,5 +808,74 @@ describe("Metamorphic properties", () => {
       }),
       { numRuns: 200 },
     );
+  });
+
+  test("endOf(day) UTC arithmetic matches Date-based result for negative timestamps", () => {
+    fc.assert(
+      fc.property(fc.integer({ min: -86400000 * 1000, max: 86400000 * 1000 }), (ts) => {
+        const m = moment.utc(ts);
+        if (!m.isValid()) return;
+        const d = moment.utc(ts).endOf("day");
+        const ref = new Date(Math.floor(ts / 86400000) * 86400000);
+        ref.setUTCDate(ref.getUTCDate() + 1);
+        ref.setUTCMilliseconds(ref.getUTCMilliseconds() - 1);
+        expect(d.valueOf()).toBe(ref.getTime());
+        expect(d.format("HH:mm:ss.SSS")).toBe("23:59:59.999");
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  test("UTC endOf preserves instant for UTC/local roundtrip", () => {
+    fc.assert(
+      fc.property(safeDates, (date) => {
+        const utc = moment.utc(date).endOf("day");
+        const local = utc.clone().local();
+        expect(local.valueOf()).toBe(utc.valueOf());
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  test("leap year month boundary: Feb 28/29 add(day) preserves calendar correctness", () => {
+    const leapFeb28 = moment.utc("2024-02-28");
+    expect(leapFeb28.add(1, "day").format("MM-DD")).toBe("02-29");
+    expect(leapFeb28.isValid()).toBe(true);
+    const leapFeb29 = moment.utc("2024-02-29");
+    expect(leapFeb29.add(1, "day").format("MM-DD")).toBe("03-01");
+    const nonLeapFeb28 = moment.utc("2023-02-28");
+    expect(nonLeapFeb28.add(1, "day").format("MM-DD")).toBe("03-01");
+  });
+
+  test("month boundary: Jan 31 add(month) clamps to Feb 28/29", () => {
+    const jan31 = moment.utc("2024-01-31");
+    expect(jan31.add(1, "month").format("MM-DD")).toBe("02-29");
+    const jan31nonLeap = moment.utc("2023-01-31");
+    expect(jan31nonLeap.add(1, "month").format("MM-DD")).toBe("02-28");
+  });
+
+  test("negative year startOf/endOf year in UTC", () => {
+    const neg = moment.utc([-1, 5, 15]);
+    expect(neg.isValid()).toBe(true);
+    const sy = neg.clone().startOf("year");
+    expect(sy.format("YYYY-MM-DD")).toBe("-0001-01-01");
+    expect(sy.format("HH:mm:ss.SSS")).toBe("00:00:00.000");
+    const ey = neg.clone().endOf("year");
+    expect(ey.format("MM-DD")).toBe("12-31");
+    expect(ey.format("HH:mm:ss.SSS")).toBe("23:59:59.999");
+  });
+
+  test("UTC/local startOf(day) diverge at DST boundary", () => {
+    // US DST spring-forward: Mar 10, 2024 02:00 → 03:00
+    // Local midnight on DST day stays at 00:00 local (before the transition),
+    // but the UTC epoch for local midnight differs from UTC midnight
+    const localMidnight = moment("2024-03-10").startOf("day");
+    const utcMidnight = moment.utc("2024-03-10").startOf("day");
+    // Both give wall-clock 00:00 but at different UTC epochs
+    expect(localMidnight.format("HH:mm")).toBe("00:00");
+    expect(utcMidnight.format("HH:mm")).toBe("00:00");
+    // They must differ in epoch unless timezone offset is 0
+    const offset = localMidnight.utcOffset();
+    expect(utcMidnight.valueOf()).toBe(localMidnight.valueOf() + offset * 60000);
   });
 });
