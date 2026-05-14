@@ -81,9 +81,9 @@ export function createMomentFactory(deps: FactoryDeps) {
       parsed.isoWeek !== undefined &&
       parsed.year === undefined
     ) {
-      const jan4 = new Date(Date.UTC(parsed.isoWeekYear, 0, 4));
-      const dayOfJan4 = jan4.getUTCDay() || 7;
-      const week1Start = new Date(Date.UTC(parsed.isoWeekYear, 0, 4 - (dayOfJan4 - 1)));
+      const jan4 = new Date(parsed.isoWeekYear, 0, 4);
+      const dayOfJan4 = jan4.getDay() || 7;
+      const week1Start = new Date(parsed.isoWeekYear, 0, 4 - (dayOfJan4 - 1));
       const weekday = parsed._weekdayNum ?? 1;
       const d = new Date(
         week1Start.getTime() + ((parsed.isoWeek - 1) * 7 + (weekday - 1)) * 86400000,

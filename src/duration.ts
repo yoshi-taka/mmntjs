@@ -58,6 +58,10 @@ function absCeil(number: number): number {
   return Math.ceil(number);
 }
 
+function roundSym(x: number): number {
+  return x < 0 ? -Math.round(-x) : Math.round(x);
+}
+
 function daysToMonths(days: number): number {
   return (days * 4800) / 146097;
 }
@@ -462,7 +466,7 @@ export class Duration {
     if (!this._isValid) {
       return NaN;
     }
-    const days = this._days + Math.round(monthsToDays(this._months));
+    const days = this._days + roundSym(monthsToDays(this._months));
     return Math.floor(days * 86400000) + this._milliseconds;
   }
 

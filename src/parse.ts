@@ -283,9 +283,9 @@ function parseCommonISOExtended(str: string): InternalParsedData | null {
     return null;
   }
 
-  // Extended week: GGGG-[W]WW (8-10 chars) — check before ordinal (YYYY-DDD)
+  // Extended week: GGGG-[W]WW (8 or 10 chars) — check before ordinal (YYYY-DDD)
   // since both have dash at position 4, but week has 'W' at position 5
-  if (len >= 8 && len <= 10 && str.charCodeAt(4) === 45 && str.charCodeAt(5) === 87) {
+  if ((len === 8 || len === 10) && str.charCodeAt(4) === 45 && str.charCodeAt(5) === 87) {
     const y0 = str.charCodeAt(0) - 48,
       y1 = str.charCodeAt(1) - 48;
     const y2 = str.charCodeAt(2) - 48,
@@ -302,9 +302,12 @@ function parseCommonISOExtended(str: string): InternalParsedData | null {
         if (len === 8) {
           return { isoWeekYear: year, isoWeek: weekNum, _weekdayNum: 1 };
         }
-        const wd = str.charCodeAt(9) - 48;
-        if (wd >= 1 && wd <= 7) {
-          return { isoWeekYear: year, isoWeek: weekNum, _weekdayNum: wd };
+        // len === 10: expect dash separator at position 8 before weekday
+        if (str.charCodeAt(8) === 45) {
+          const wd = str.charCodeAt(9) - 48;
+          if (wd >= 1 && wd <= 7) {
+            return { isoWeekYear: year, isoWeek: weekNum, _weekdayNum: wd };
+          }
         }
       }
     }

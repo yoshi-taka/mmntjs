@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect, beforeEach } from "bun:test";
 import fc from "fast-check";
 import _moment from "../src/index.ts";
 import type { MomentStatic } from "../src/entry/types";
@@ -11,6 +11,7 @@ type MomentFn = ((...args: unknown[]) => Moment) & {
   utc(...args: unknown[]): Moment;
   parseZone(...args: unknown[]): Moment;
   duration(...args: unknown[]): Duration;
+  locale(name?: string): string;
 };
 const moment = _moment as unknown as MomentStatic;
 const originalMoment = _originalMoment as unknown as MomentFn;
@@ -79,6 +80,11 @@ const weightedQuarterTokens = fc.mapToConstant(
 );
 
 describe("SBST: coverage-guided weighted tests", () => {
+  beforeEach(() => {
+    moment.locale("en");
+    originalMoment.locale("en");
+  });
+
   test("weighted format token vs moment.js", () => {
     fc.assert(
       fc.property(
