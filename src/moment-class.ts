@@ -1571,30 +1571,26 @@ export class Moment {
         break;
       }
       case HOUR: {
-        const dt = this._d ?? (this._d = new Date(this._t));
-        dt.setTime(dt.getTime() + Math.round(amount * 3600000));
-        this._t = dt.getTime();
+        this._t += Math.round(amount * 3600000);
+        this._d = undefined;
         this._dirty = true;
         break;
       }
       case MINUTE: {
-        const dt = this._d ?? (this._d = new Date(this._t));
-        dt.setTime(dt.getTime() + Math.round(amount * 60000));
-        this._t = dt.getTime();
+        this._t += Math.round(amount * 60000);
+        this._d = undefined;
         this._dirty = true;
         break;
       }
       case SECOND: {
-        const dt = this._d ?? (this._d = new Date(this._t));
-        dt.setTime(dt.getTime() + Math.round(amount * 1000));
-        this._t = dt.getTime();
+        this._t += Math.round(amount * 1000);
+        this._d = undefined;
         this._dirty = true;
         break;
       }
       case MILLISECOND: {
-        const dt = this._d ?? (this._d = new Date(this._t));
-        dt.setTime(dt.getTime() + Math.round(amount));
-        this._t = dt.getTime();
+        this._t += Math.round(amount);
+        this._d = undefined;
         this._dirty = true;
         break;
       }
@@ -1800,15 +1796,23 @@ export class Moment {
   }
 
   subtract(amount: number | string | object, unit?: string): this {
-    if (!this._isValid) {return this;}
+    if (!this._isValid) {
+      return this;
+    }
     if (typeof amount === "number") {
-      if (unit !== undefined) return this.add(-amount, unit);
+      if (unit !== undefined) {
+        return this.add(-amount, unit);
+      }
       return this.add(-amount);
     }
     const parsed = this._parseDurationInput(amount, unit);
-    if (!parsed) {return this;}
+    if (!parsed) {
+      return this;
+    }
     this._applyDuration(parsed.ms, parsed.days, parsed.months, -1);
-    if (isNaN(this._t)) {this._isValid = false;}
+    if (isNaN(this._t)) {
+      this._isValid = false;
+    }
     return this;
   }
 

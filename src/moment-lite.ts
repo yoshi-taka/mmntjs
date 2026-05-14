@@ -1147,30 +1147,26 @@ export class MomentLite {
         break;
       }
       case HOUR: {
-        const dt = this._d ?? (this._d = new Date(this._t));
-        dt.setTime(dt.getTime() + Math.round(amount * 3600000));
-        this._t = dt.getTime();
+        this._t += Math.round(amount * 3600000);
+        this._d = undefined;
         this._dirty = true;
         break;
       }
       case MINUTE: {
-        const dt = this._d ?? (this._d = new Date(this._t));
-        dt.setTime(dt.getTime() + Math.round(amount * 60000));
-        this._t = dt.getTime();
+        this._t += Math.round(amount * 60000);
+        this._d = undefined;
         this._dirty = true;
         break;
       }
       case SECOND: {
-        const dt = this._d ?? (this._d = new Date(this._t));
-        dt.setTime(dt.getTime() + Math.round(amount * 1000));
-        this._t = dt.getTime();
+        this._t += Math.round(amount * 1000);
+        this._d = undefined;
         this._dirty = true;
         break;
       }
       case MILLISECOND: {
-        const dt = this._d ?? (this._d = new Date(this._t));
-        dt.setTime(dt.getTime() + Math.round(amount));
-        this._t = dt.getTime();
+        this._t += Math.round(amount);
+        this._d = undefined;
         this._dirty = true;
         break;
       }
@@ -1408,13 +1404,19 @@ export class MomentLite {
   }
 
   subtract(amount: number | string | object, unit?: string): this {
-    if (!this._isValid) {return this;}
+    if (!this._isValid) {
+      return this;
+    }
     if (typeof amount === "number") {
-      if (unit !== undefined) return this.add(-amount, unit);
+      if (unit !== undefined) {
+        return this.add(-amount, unit);
+      }
       return this.add(-amount);
     }
     const parsed = this._parseDurationInput(amount, unit);
-    if (!parsed) {return this;}
+    if (!parsed) {
+      return this;
+    }
     this._applyDuration(parsed.ms, parsed.days, parsed.months, -1);
     if (isNaN(this._t)) {
       this._isValid = false;
@@ -1606,19 +1608,19 @@ export class MomentLite {
       return this;
     }
     this._ensureFields();
-    const d = this._getDNoEnsure();
     const utc = this._isUTC;
 
     switch (code) {
       case YEAR:
         if (utc) {
-          d.setUTCMonth(0);
-          d.setUTCDate(1);
-          d.setUTCHours(0, 0, 0, 0);
+          this._t = Date.UTC(this.$y, 0, 1);
+          this._d = undefined;
         } else {
+          const d = this._getDNoEnsure();
           d.setDate(1);
           d.setMonth(0);
           d.setHours(0, 0, 0, 0);
+          this._t = d.getTime();
         }
         this.$M = 0;
         this.$D = 1;
@@ -1630,11 +1632,13 @@ export class MomentLite {
         break;
       case MONTH:
         if (utc) {
-          d.setUTCDate(1);
-          d.setUTCHours(0, 0, 0, 0);
+          this._t = Date.UTC(this.$y, this.$M, 1);
+          this._d = undefined;
         } else {
+          const d = this._getDNoEnsure();
           d.setDate(1);
           d.setHours(0, 0, 0, 0);
+          this._t = d.getTime();
         }
         this.$D = 1;
         this.$H = 0;
@@ -1646,9 +1650,12 @@ export class MomentLite {
       case DATE:
       case DAY:
         if (utc) {
-          d.setUTCHours(0, 0, 0, 0);
+          this._t = Math.floor(this._t / 86400000) * 86400000;
+          this._d = undefined;
         } else {
+          const d = this._getDNoEnsure();
           d.setHours(0, 0, 0, 0);
+          this._t = d.getTime();
         }
         this.$H = 0;
         this.$m = 0;
@@ -1657,9 +1664,12 @@ export class MomentLite {
         break;
       case HOUR:
         if (utc) {
-          d.setUTCMinutes(0, 0, 0);
+          this._t = Math.floor(this._t / 3600000) * 3600000;
+          this._d = undefined;
         } else {
+          const d = this._getDNoEnsure();
           d.setMinutes(0, 0, 0);
+          this._t = d.getTime();
         }
         this.$m = 0;
         this.$s = 0;
@@ -1667,25 +1677,30 @@ export class MomentLite {
         break;
       case MINUTE:
         if (utc) {
-          d.setUTCSeconds(0, 0);
+          this._t = Math.floor(this._t / 60000) * 60000;
+          this._d = undefined;
         } else {
+          const d = this._getDNoEnsure();
           d.setSeconds(0, 0);
+          this._t = d.getTime();
         }
         this.$s = 0;
         this.$ms = 0;
         break;
       case SECOND:
         if (utc) {
-          d.setUTCMilliseconds(0);
+          this._t = Math.floor(this._t / 1000) * 1000;
+          this._d = undefined;
         } else {
+          const d = this._getDNoEnsure();
           d.setMilliseconds(0);
+          this._t = d.getTime();
         }
         this.$ms = 0;
         break;
     }
-    this._t = d.getTime();
     if (!utc) {
-      this._offset = -d.getTimezoneOffset();
+      this._offset = -this._getD().getTimezoneOffset();
     }
     return this;
   }
@@ -1696,16 +1711,18 @@ export class MomentLite {
       return this;
     }
     this._ensureFields();
-    const d = this._getD();
     const utc = this._isUTC;
 
     switch (code) {
       case YEAR:
         if (utc) {
-          d.setTime(Date.UTC(this.$y, 11, 31, 23, 59, 59, 999));
+          this._t = Date.UTC(this.$y, 11, 31, 23, 59, 59, 999);
+          this._d = undefined;
         } else {
+          const d = this._getD();
           d.setFullYear(this.$y, 11, 31);
           d.setHours(23, 59, 59, 999);
+          this._t = d.getTime();
         }
         this.$M = 11;
         this.$D = 31;
@@ -1718,10 +1735,13 @@ export class MomentLite {
       case MONTH: {
         const _eomMaxDay = daysInMonth(this.$y, this.$M);
         if (utc) {
-          d.setTime(Date.UTC(this.$y, this.$M, _eomMaxDay, 23, 59, 59, 999));
+          this._t = Date.UTC(this.$y, this.$M, _eomMaxDay, 23, 59, 59, 999);
+          this._d = undefined;
         } else {
+          const d = this._getD();
           d.setFullYear(this.$y, this.$M, _eomMaxDay);
           d.setHours(23, 59, 59, 999);
+          this._t = d.getTime();
         }
         this.$D = _eomMaxDay;
         this.$H = 23;
@@ -1734,59 +1754,66 @@ export class MomentLite {
       case DATE:
       case DAY:
         if (utc) {
-          d.setUTCHours(0, 0, 0, 0);
-          d.setUTCDate(d.getUTCDate() + 1);
-          d.setUTCMilliseconds(-1);
+          this._t = (Math.floor(this._t / 86400000) + 1) * 86400000 - 1;
+          this._d = undefined;
         } else {
+          const d = this._getD();
           d.setHours(0, 0, 0, 0);
           d.setDate(d.getDate() + 1);
           d.setMilliseconds(-1);
+          this.$D = d.getDate();
+          this.$H = d.getHours();
+          this.$m = d.getMinutes();
+          this.$s = d.getSeconds();
+          this.$ms = d.getMilliseconds();
+          this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
+          this._t = d.getTime();
         }
-        this.$D = utc ? d.getUTCDate() : d.getDate();
-        this.$H = utc ? d.getUTCHours() : d.getHours();
-        this.$m = utc ? d.getUTCMinutes() : d.getMinutes();
-        this.$s = utc ? d.getUTCSeconds() : d.getSeconds();
-        this.$ms = utc ? d.getUTCMilliseconds() : d.getMilliseconds();
-        this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
         break;
       case HOUR:
         if (utc) {
-          d.setUTCMinutes(0, 0, 0);
-          d.setUTCHours(d.getUTCHours() + 1, 0, 0, -1);
+          this._t = (Math.floor(this._t / 3600000) + 1) * 3600000 - 1;
+          this._d = undefined;
         } else {
+          const d = this._getD();
           d.setMinutes(0, 0, 0);
           d.setHours(d.getHours() + 1, 0, 0, -1);
+          this.$H = d.getHours();
+          this.$m = d.getMinutes();
+          this.$s = d.getSeconds();
+          this.$ms = d.getMilliseconds();
+          this._t = d.getTime();
         }
-        this.$H = utc ? d.getUTCHours() : d.getHours();
-        this.$m = utc ? d.getUTCMinutes() : d.getMinutes();
-        this.$s = utc ? d.getUTCSeconds() : d.getSeconds();
-        this.$ms = utc ? d.getUTCMilliseconds() : d.getMilliseconds();
         break;
       case MINUTE:
         if (utc) {
-          d.setUTCSeconds(0, 0);
-          d.setUTCMinutes(d.getUTCMinutes() + 1, 0, -1);
+          this._t = (Math.floor(this._t / 60000) + 1) * 60000 - 1;
+          this._d = undefined;
         } else {
+          const d = this._getD();
           d.setSeconds(0, 0);
           d.setMinutes(d.getMinutes() + 1, 0, -1);
+          this.$m = d.getMinutes();
+          this.$s = d.getSeconds();
+          this.$ms = d.getMilliseconds();
+          this._t = d.getTime();
         }
-        this.$m = utc ? d.getUTCMinutes() : d.getMinutes();
-        this.$s = utc ? d.getUTCSeconds() : d.getSeconds();
-        this.$ms = utc ? d.getUTCMilliseconds() : d.getMilliseconds();
         break;
       case SECOND:
         if (utc) {
-          d.setUTCSeconds(d.getUTCSeconds() + 1, -1);
+          this._t = (Math.floor(this._t / 1000) + 1) * 1000 - 1;
+          this._d = undefined;
         } else {
+          const d = this._getD();
           d.setSeconds(d.getSeconds() + 1, -1);
+          this.$s = d.getSeconds();
+          this.$ms = d.getMilliseconds();
+          this._t = d.getTime();
         }
-        this.$s = utc ? d.getUTCSeconds() : d.getSeconds();
-        this.$ms = utc ? d.getUTCMilliseconds() : d.getMilliseconds();
         break;
     }
-    this._t = d.getTime();
     if (!utc) {
-      this._offset = -d.getTimezoneOffset();
+      this._offset = -this._getD().getTimezoneOffset();
     }
     return this;
   }

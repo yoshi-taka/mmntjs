@@ -966,7 +966,16 @@ describe("Metamorphic properties", () => {
   // ============================================================
 
   const startEndUnits = fc.constantFrom("year", "month", "day", "hour", "minute", "second");
-  const allUnits = fc.constantFrom("millisecond", "second", "minute", "hour", "day", "week", "month", "year");
+  const allUnits = fc.constantFrom(
+    "millisecond",
+    "second",
+    "minute",
+    "hour",
+    "day",
+    "week",
+    "month",
+    "year",
+  );
 
   test("add(0, unit) is identity", () => {
     fc.assert(
