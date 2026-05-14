@@ -751,4 +751,54 @@ describe("Metamorphic properties", () => {
       { numRuns: 200 },
     );
   });
+
+  test("add(0, unit) is identity for all boundary units", () => {
+    fc.assert(
+      fc.property(safeDates, boundaryUnits, (date, unit) => {
+        const m = moment(date);
+        const before = m.valueOf();
+        m.add(0, unit);
+        expect(m.valueOf()).toBe(before);
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  test("isAfter is transitive", () => {
+    fc.assert(
+      fc.property(safeDates, safeDates, safeDates, (a, b, c) => {
+        const ma = moment(a), mb = moment(b), mc = moment(c);
+        if (ma.isAfter(mb) && mb.isAfter(mc)) {
+          expect(ma.isAfter(mc)).toBe(true);
+        }
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  test("isBefore is transitive", () => {
+    fc.assert(
+      fc.property(safeDates, safeDates, safeDates, (a, b, c) => {
+        const ma = moment(a), mb = moment(b), mc = moment(c);
+        if (ma.isBefore(mb) && mb.isBefore(mc)) {
+          expect(ma.isBefore(mc)).toBe(true);
+        }
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  test("month-day addition commutes for safe dates (day ≤ 27)", () => {
+    fc.assert(
+      fc.property(safeDates, (date) => {
+        const m = moment(date);
+        // day must be ≤ 27 so that day+1 ≤ 28 fits any month without clamping
+        if (m.date() > 27) return;
+        const a = m.clone().add(1, "month").add(1, "day");
+        const b = m.clone().add(1, "day").add(1, "month");
+        expect(a.valueOf()).toBe(b.valueOf());
+      }),
+      { numRuns: 200 },
+    );
+  });
 });

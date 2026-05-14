@@ -1669,6 +1669,9 @@ export class Moment {
     if (!this._isValid) {
       return this;
     }
+    if (typeof amount === "number" && amount === 0) {
+      return this;
+    }
     if (typeof amount === "number") {
       if (unit !== undefined) {
         const u = unit;
@@ -2185,6 +2188,9 @@ export class Moment {
   }
 
   local(keepLocalTime?: boolean): this {
+    if (!this._isValid) {
+      return this;
+    }
     if (!localCallback) {
       throw new Error("mmntjs local() is not initialized");
     }
@@ -2192,6 +2198,9 @@ export class Moment {
   }
 
   utc(keepLocalTime?: boolean): this {
+    if (!this._isValid) {
+      return this;
+    }
     if (!utcCallback) {
       throw new Error("mmntjs utc() is not initialized");
     }
