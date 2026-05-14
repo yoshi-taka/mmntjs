@@ -1508,12 +1508,16 @@ export class MomentLite {
     switch (code) {
       case DATE:
       case DAY: {
+        if (this._isUTC && other._isUTC) {
+          const days = Math.floor(this.valueOf() / 86400000) - Math.floor(other.valueOf() / 86400000);
+          return float ? days : days || 0;
+        }
         const r = diff / 86400000;
         if (float) {
           return r;
         }
         const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
-        return Object.is(t, -0) ? 0 : t;
+        return t || 0;
       }
       case HOUR: {
         const r = diff / 3600000;
@@ -1521,7 +1525,7 @@ export class MomentLite {
           return r;
         }
         const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
-        return Object.is(t, -0) ? 0 : t;
+        return t || 0;
       }
       case MINUTE: {
         const r = diff / 60000;
@@ -1529,7 +1533,7 @@ export class MomentLite {
           return r;
         }
         const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
-        return Object.is(t, -0) ? 0 : t;
+        return t || 0;
       }
       case SECOND: {
         const r = diff / 1000;
@@ -1537,22 +1541,27 @@ export class MomentLite {
           return r;
         }
         const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
-        return Object.is(t, -0) ? 0 : t;
+        return t || 0;
       }
       case MILLISECOND: {
         if (float) {
           return diff;
         }
         const t = diff < 0 ? -Math.floor(-diff) : Math.floor(diff);
-        return Object.is(t, -0) ? 0 : t;
+        return t || 0;
       }
       case WEEK: {
+        if (this._isUTC && other._isUTC) {
+          const days = Math.floor(this.valueOf() / 86400000) - Math.floor(other.valueOf() / 86400000);
+          const r = days / 7;
+          return float ? r : (Math.trunc(r) || 0);
+        }
         const r = diff / 604800000;
         if (float) {
           return r;
         }
         const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
-        return Object.is(t, -0) ? 0 : t;
+        return t || 0;
       }
       case YEAR:
       case MONTH:
@@ -1951,6 +1960,11 @@ export class MomentLite {
       case "day":
       case "date":
       default: {
+        if (this._isUTC && other._isUTC) {
+          const thisDays = Math.floor(this._t / 86400000);
+          const otherDays = Math.floor(other._t / 86400000);
+          if (thisDays !== otherDays) return thisDays - otherDays;
+        }
         const d = this.year() - other.year();
         if (d !== 0) {
           return d;

@@ -622,3 +622,72 @@ test('negative zero', function (assert) {
         'second diff on same second is zero, not -0'
     );
 });
+
+test('UTC day diff equals exact epoch-day difference', function (assert) {
+    var a = moment.utc('2000-03-15');
+    var b = moment.utc('2000-01-01');
+    var epochDays = Math.floor(a.valueOf() / 86400000) - Math.floor(b.valueOf() / 86400000);
+    assert.equal(a.diff(b, 'days'), epochDays, 'UTC day diff matches epoch-day difference');
+    assert.equal(-b.diff(a, 'days'), epochDays, 'UTC day diff antisymmetric');
+
+    a = moment.utc('1999-12-31');
+    b = moment.utc('2000-01-01');
+    assert.equal(a.diff(b, 'days'), -1, 'UTC day diff across year boundary');
+
+    a = moment.utc('2000-03-15T12:00:00');
+    b = moment.utc('2000-03-14T00:00:00');
+    var days = a.diff(b, 'days');
+    assert.equal(days, 1, 'UTC day diff truncates time within day');
+});
+
+test('diff with month-end overflow', function (assert) {
+    // Jan 31 + 1 month = Feb 28 (clamped) — exact anchor match
+    assert.equal(moment('2019-01-31').diff('2019-02-28', 'months'), -1, 'Jan 31 to Feb 28 = -1 month');
+    assert.equal(moment('2019-02-28').diff('2019-01-31', 'months'), 1, 'Feb 28 to Jan 31 = 1 month');
+    // Jan 31 + 2 months: anchor = Mar 31, but b=Mar 28 < anchor → only 1 whole month
+    assert.equal(moment('2019-01-31').diff('2019-03-28', 'months'), -1, 'Jan 31 to Mar 28 = -1 month (clamp)');
+    // Jan 31 + 2 months: anchor = Mar 31 = b → exact 2 months
+    assert.equal(moment('2019-01-31').diff('2019-03-31', 'months'), -2, 'Jan 31 to Mar 31 = -2 months');
+    // Same day, no clamp needed
+    assert.equal(moment('2019-01-15').diff('2019-03-15', 'months'), -2, 'Jan 15 to Mar 15 = -2 months');
+    assert.equal(moment('2019-03-15').diff('2019-01-15', 'months'), 2, 'Mar 15 to Jan 15 = 2 months');
+});
+
+test('diff with DST boundaries', function (assert) {
+    // Simulate DST spring-forward using offset manipulation (works in any TZ)
+    var springBefore = moment('2019-03-10T00:00:00').utcOffset(-5, true); // EST
+    var springAfter = moment('2019-03-11T00:00:00').utcOffset(-4, true);  // EDT
+    assert.equal(springAfter.diff(springBefore, 'hours'), 23, 'spring-forward = 23 hours');
+    // epoch day diff: 23h/24h floor = 0 (different calendar days but < 1 epoch day)
+    assert.equal(springAfter.diff(springBefore, 'days'), 0, 'spring-forward day diff = 0 (23h floor)');
+    // calendar day check via isSame('day') uses year/month/date fields
+    assert.equal(springAfter.isSame(springBefore, 'day'), false, 'spring-forward: not same calendar day');
+
+    // Simulate fall-back using offset manipulation
+    var fallBefore = moment('2019-11-03T00:00:00').utcOffset(-4, true); // EDT
+    var fallAfter = moment('2019-11-04T00:00:00').utcOffset(-5, true);  // EST
+    assert.equal(fallAfter.diff(fallBefore, 'hours'), 25, 'fall-back = 25 hours');
+    assert.equal(fallAfter.diff(fallBefore, 'days'), 1, 'fall-back day diff = 1 (25h floor = 1)');
+
+    // Real TZ-dependent DST detection (follows existing test pattern)
+    var dst = dstForYear(moment().year());
+    if (dst) {
+        var a = dst.moment;
+        var b = a.clone().utc().add(12, 'hours').local();
+        assert.equal(b.diff(a, 'hours', true), 12, 'real DST hour diff unaffected');
+        assert.equal(b.diff(a, 'days', true), (12 - dst.diff) / 24, 'real DST day diff accounts for offset shift');
+    }
+});
+
+test('isBefore/isAfter agrees with diff sign for compatible units', function (assert) {
+    var a = moment('2000-06-15'), b = moment('2000-01-01');
+    assert.equal(a.isAfter(b), a.diff(b) > 0, 'isAfter agrees with diff sign');
+    assert.equal(a.isBefore(b), a.diff(b) < 0, 'isBefore agrees with diff sign');
+    assert.equal(b.isAfter(a), b.diff(a) > 0, 'isAfter agrees with diff sign (reversed)');
+    assert.equal(b.isBefore(a), b.diff(a) < 0, 'isBefore agrees with diff sign (reversed)');
+
+    a = moment('2000-01-01');
+    b = moment('2000-01-01');
+    assert.equal(a.isSame(b), true, 'isSame true for same moment');
+    assert.equal(a.diff(b), 0, 'diff is 0 for same moment');
+});

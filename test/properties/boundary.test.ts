@@ -18,20 +18,15 @@ const originalMoment = _originalMoment as unknown as MomentFn;
 
 describe("Property-based: boundary values", () => {
   test("boundary and degenerate inputs", () => {
-    fc.assert(
-      fc.property(
-        fc.constantFrom(null, undefined, 0, "", NaN, Infinity, -Infinity, false, true),
-        (input) => {
-          const m2 = moment(input as unknown);
-          const mOrig = originalMoment(input as unknown);
-          expect(m2.isValid()).toBe(mOrig.isValid());
-          if (mOrig.isValid()) {
-            expect(m2.valueOf()).toBe(mOrig.valueOf());
-          }
-        },
-      ),
-      { numRuns: 50 },
-    );
+    const cases = [null, undefined, 0, "", NaN, Infinity, -Infinity, false, true];
+    for (const input of cases) {
+      const m2 = moment(input as unknown);
+      const mOrig = originalMoment(input as unknown);
+      expect(m2.isValid()).toBe(mOrig.isValid());
+      if (mOrig.isValid()) {
+        expect(m2.valueOf()).toBe(mOrig.valueOf());
+      }
+    }
   });
 
   test("string inputs", () => {

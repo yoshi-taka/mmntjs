@@ -2049,6 +2049,7 @@ export class Moment {
           d.setMilliseconds(0);
         }
         this._t = d.getTime();
+        this.$ms = 0;
         break;
       }
     }
@@ -2296,13 +2297,16 @@ export class Moment {
       case DAY: {
         const a = this._isUTC ? this._t - this._offset * 60000 : this._t;
         const b = other._isUTC ? other._t - other._offset * 60000 : other._t;
-        const diff = a - b || 0;
-        const r = diff / 86400000;
+        if (this._isUTC && other._isUTC) {
+          const days = Math.floor(a / 86400000) - Math.floor(b / 86400000);
+          return float ? days : days || 0;
+        }
+        const r = (a - b) / 86400000;
         if (float) {
           return r;
         }
         const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
-        return Object.is(t, -0) ? 0 : t;
+        return t || 0;
       }
       case HOUR: {
         const a = this._isUTC ? this._t - this._offset * 60000 : this._t;
@@ -2312,7 +2316,7 @@ export class Moment {
           return r;
         }
         const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
-        return Object.is(t, -0) ? 0 : t;
+        return t || 0;
       }
       case MINUTE: {
         const a = this._isUTC ? this._t - this._offset * 60000 : this._t;
@@ -2322,7 +2326,7 @@ export class Moment {
           return r;
         }
         const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
-        return Object.is(t, -0) ? 0 : t;
+        return t || 0;
       }
       case SECOND: {
         const a = this._isUTC ? this._t - this._offset * 60000 : this._t;
@@ -2332,7 +2336,7 @@ export class Moment {
           return r;
         }
         const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
-        return Object.is(t, -0) ? 0 : t;
+        return t || 0;
       }
       case MILLISECOND: {
         const a = this._isUTC ? this._t - this._offset * 60000 : this._t;
@@ -2342,17 +2346,22 @@ export class Moment {
           return diffMs;
         }
         const t = diffMs < 0 ? -Math.floor(-diffMs) : Math.floor(diffMs);
-        return Object.is(t, -0) ? 0 : t;
+        return t || 0;
       }
       case WEEK: {
         const a = this._isUTC ? this._t - this._offset * 60000 : this._t;
         const b = other._isUTC ? other._t - other._offset * 60000 : other._t;
+        if (this._isUTC && other._isUTC) {
+          const days = Math.floor(a / 86400000) - Math.floor(b / 86400000);
+          const r = days / 7;
+          return float ? r : (Math.trunc(r) || 0);
+        }
         const r = (a - b) / 604800000;
         if (float) {
           return r;
         }
         const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
-        return Object.is(t, -0) ? 0 : t;
+        return t || 0;
       }
       case YEAR:
       case MONTH:
@@ -2619,6 +2628,11 @@ export class Moment {
       case "day":
       case "date":
       default: {
+        if (this._isUTC && other._isUTC) {
+          const thisDays = Math.floor(this._t / 86400000);
+          const otherDays = Math.floor(other._t / 86400000);
+          if (thisDays !== otherDays) return thisDays - otherDays;
+        }
         const d = this.year() - other.year();
         if (d !== 0) {
           return d;
