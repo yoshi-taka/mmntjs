@@ -1,5 +1,5 @@
 import type { MomentConfig } from "../moment-class";
-import { Moment, checkOverflow } from "../moment-class";
+import { Moment, checkOverflow, createSimpleMoment } from "../moment-class";
 import type { InternalParsedData } from "../types";
 import {
   isMoment,
@@ -369,30 +369,30 @@ export function createMomentFactory(deps: FactoryDeps) {
       return new Moment(cfg);
     }
     if (isDate(input)) {
-      return new Moment({ _dClone: false, _d: new Date(input.getTime()), _i: input });
+      return createSimpleMoment({ _t: input.getTime(), _i: input });
     }
     if (isNumber(input)) {
       const n = input;
       if (isNaN(n) || !isFinite(n)) {
-        return new Moment({ _dClone: false, _d: new Date(NaN), _isValid: false, _i: input });
+        return new Moment({ _dClone: false, _t: NaN, _isValid: false, _i: input });
       }
       if (format === "X") {
-        return new Moment({ _dClone: false, _d: new Date(n * 1000), _i: input, _f: "X" });
+        return createSimpleMoment({ _t: n * 1000, _i: input, _f: "X" });
       }
       if (format === "x") {
-        return new Moment({ _dClone: false, _d: new Date(n), _i: input, _f: "x" });
+        return createSimpleMoment({ _t: n, _i: input, _f: "x" });
       }
       if (format !== undefined) {
         return new Moment({
           _dClone: false,
-          _d: new Date(NaN),
+          _t: NaN,
           _isValid: false,
           _overflow: -1,
           _i: input,
           _f: format as string,
         });
       }
-      return new Moment({ _dClone: false, _d: new Date(n), _i: input });
+      return createSimpleMoment({ _t: n, _i: input });
     }
     if (isString(input)) {
       return createFromString(input, format, localeOrStrict, fourthArg);

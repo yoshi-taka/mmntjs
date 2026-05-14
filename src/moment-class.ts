@@ -2863,6 +2863,34 @@ export class Moment {
   }
 }
 
+export function createSimpleMoment(config: {
+  _t: number;
+  _i?: unknown;
+  _f?: string | string[];
+  _l?: string;
+  _isUTC?: boolean;
+  _offset?: number;
+  _isValid?: boolean;
+}): Moment {
+  const m = Object.create(Moment.prototype) as Moment;
+  m._isAMomentObject = true;
+  m._l =
+    config._l ?? (getCurrentLocaleCallback ? getCurrentLocaleCallback() : getLiteCurrentLocale());
+  m._isUTC = config._isUTC ?? false;
+  m._offset = config._offset ?? 0;
+  m._t = config._t;
+  m._d = undefined;
+  m._isValid = config._isValid ?? !isNaN(config._t);
+  m._dirty = m._isValid;
+  if (config._i !== undefined) {
+    m._i = config._i;
+  }
+  if (config._f !== undefined) {
+    m._f = config._f;
+  }
+  return m;
+}
+
 for (const key of coldFieldKeys) {
   Object.defineProperty(Moment.prototype, key, {
     get() {
@@ -2989,14 +3017,14 @@ export function momentFromAnything(input: unknown, isUTC?: boolean): Moment {
     return input;
   }
   if (isDate(input)) {
-    const m = new Moment({ _d: new Date(input.getTime()), _dClone: false });
+    const m = createSimpleMoment({ _t: input.getTime() });
     if (isUTC) {
       m.utc();
     }
     return m;
   }
   if (input === undefined || input === null) {
-    const m = new Moment({ _d: new Date(nowFn ? nowFn() : Date.now()), _dClone: false });
+    const m = createSimpleMoment({ _t: nowFn ? nowFn() : Date.now() });
     if (isUTC) {
       m.utc();
     }
@@ -3040,7 +3068,7 @@ export function momentFromAnything(input: unknown, isUTC?: boolean): Moment {
     return m;
   }
   if (typeof input === "number") {
-    const m = new Moment({ _d: new Date(input), _dClone: false });
+    const m = createSimpleMoment({ _t: input });
     if (isUTC) {
       m.utc();
     }
