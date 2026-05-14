@@ -2572,16 +2572,24 @@ export class Moment {
       return NaN;
     }
     if (u === "millisecond") {
-      return this.valueOf() - other.valueOf();
+      const a = this._isUTC ? this._t - this._offset * 60000 : this._t;
+      const b = other._isUTC ? other._t - other._offset * 60000 : other._t;
+      return a - b;
     }
     if (u === "second") {
-      return Math.floor(this.valueOf() / 1000) - Math.floor(other.valueOf() / 1000);
+      const a = this._isUTC ? this._t - this._offset * 60000 : this._t;
+      const b = other._isUTC ? other._t - other._offset * 60000 : other._t;
+      return Math.floor(a / 1000) - Math.floor(b / 1000);
     }
     if (u === "minute") {
-      return Math.floor(this.valueOf() / 60000) - Math.floor(other.valueOf() / 60000);
+      const a = this._isUTC ? this._t - this._offset * 60000 : this._t;
+      const b = other._isUTC ? other._t - other._offset * 60000 : other._t;
+      return Math.floor(a / 60000) - Math.floor(b / 60000);
     }
     if (u === "hour") {
-      return Math.floor(this.valueOf() / 3600000) - Math.floor(other.valueOf() / 3600000);
+      const a = this._isUTC ? this._t - this._offset * 60000 : this._t;
+      const b = other._isUTC ? other._t - other._offset * 60000 : other._t;
+      return Math.floor(a / 3600000) - Math.floor(b / 3600000);
     }
     switch (u) {
       case "year": {

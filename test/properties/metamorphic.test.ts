@@ -901,4 +901,54 @@ describe("Metamorphic properties", () => {
     const offset = localMidnight.utcOffset();
     expect(utcMidnight.valueOf()).toBe(localMidnight.valueOf() + offset * 60000);
   });
+
+  test("diff(a, a, unit) = 0 for all linear epoch units", () => {
+    fc.assert(
+      fc.property(safeDates, (date) => {
+        const m = moment(date);
+        expect(m.diff(m, "millisecond")).toBe(0);
+        expect(m.diff(m, "second")).toBe(0);
+        expect(m.diff(m, "minute")).toBe(0);
+        expect(m.diff(m, "hour")).toBe(0);
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  test("diff(a, b, unit) is antisymmetric for linear epoch units", () => {
+    fc.assert(
+      fc.property(safeDates, safeDates, (a, b) => {
+        const ma = moment(a), mb = moment(b);
+        const units = ["millisecond", "second", "minute", "hour", "day"];
+        for (const u of units) {
+          expect(normalizeZero(ma.diff(mb, u))).toBe(normalizeZero(-mb.diff(ma, u)));
+        }
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  test("isAfter agrees with sign of diff for linear epoch units", () => {
+    fc.assert(
+      fc.property(safeDates, safeDates, (a, b) => {
+        const ma = moment(a), mb = moment(b);
+        const d = ma.diff(mb, "millisecond");
+        if (d > 0) expect(ma.isAfter(mb)).toBe(true);
+        if (d < 0) expect(ma.isBefore(mb)).toBe(true);
+        if (d === 0) expect(ma.isSame(mb)).toBe(true);
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  test("UTC diff(day) equals exact epoch-day distance", () => {
+    fc.assert(
+      fc.property(safeDates, safeDates, (a, b) => {
+        const ma = moment.utc(a), mb = moment.utc(b);
+        const days = Math.round((ma.valueOf() - mb.valueOf()) / 86400000);
+        expect(Math.abs(ma.diff(mb, "day") - days)).toBeLessThanOrEqual(1);
+      }),
+      { numRuns: 100 },
+    );
+  });
 });
