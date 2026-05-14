@@ -116,7 +116,7 @@ const moment = require("mmntjs");
 
 The only known incompatibilities are malformed/edge-case strings discovered through fuzzing (e.g. sign-prefixed strings without delimiters). These are under active repair — see [REMAINING.md](./docs/meta/REMAINING.md) for the shortlist.
 
-> **Compatibility story**: Fuzzer found `"0000 03"` — our ISO table parser matched it but produced a different result than moment.js. Rather than piling on regex special cases, we introduced a `_claimed` sentinel: when the table parser finds a low-confidence match, it returns `_claimed: true` to delegate to the native `new Date(str)` fallback — exactly what moment.js does as its last resort. This single mechanism closed 7+ fuzz-discovered gaps without adding parser complexity.
+> **Compatibility story**: Fuzzer found `moment("0000 03")` — both engines must produce `2000-03-01` (year 2000, March 1). Our ISO table parser was matching `"0000 03"` as year-0000 month-03, a wrong answer. Rather than adding more regex special cases, we introduced a `_claimed` sentinel: when the table parser finds a low-confidence match, it returns `_claimed: true` to delegate to JavaScript's native `new Date(str)` — exactly what moment.js does as its last resort. This single mechanism closed 7+ fuzz-discovered gaps without adding parser complexity.
 
 136 locales, timezone, duration, calendar, custom format parse — all existing moment.js API surface covered.
 
