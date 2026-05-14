@@ -2191,6 +2191,10 @@ export class Moment {
     if (!this._isValid) {
       return this;
     }
+    // Already local, no keepLocalTime transform needed — skip callback entirely
+    if (!this._isUTC && !keepLocalTime) {
+      return this;
+    }
     if (!localCallback) {
       throw new Error("mmntjs local() is not initialized");
     }
@@ -2199,6 +2203,10 @@ export class Moment {
 
   utc(keepLocalTime?: boolean): this {
     if (!this._isValid) {
+      return this;
+    }
+    // Already pure UTC (offset 0), no keepLocalTime transform needed — skip callback
+    if (this._isUTC && this._offset === 0 && !keepLocalTime) {
       return this;
     }
     if (!utcCallback) {

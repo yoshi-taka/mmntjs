@@ -767,7 +767,9 @@ describe("Metamorphic properties", () => {
   test("isAfter is transitive", () => {
     fc.assert(
       fc.property(safeDates, safeDates, safeDates, (a, b, c) => {
-        const ma = moment(a), mb = moment(b), mc = moment(c);
+        const ma = moment(a),
+          mb = moment(b),
+          mc = moment(c);
         if (ma.isAfter(mb) && mb.isAfter(mc)) {
           expect(ma.isAfter(mc)).toBe(true);
         }
@@ -779,7 +781,9 @@ describe("Metamorphic properties", () => {
   test("isBefore is transitive", () => {
     fc.assert(
       fc.property(safeDates, safeDates, safeDates, (a, b, c) => {
-        const ma = moment(a), mb = moment(b), mc = moment(c);
+        const ma = moment(a),
+          mb = moment(b),
+          mc = moment(c);
         if (ma.isBefore(mb) && mb.isBefore(mc)) {
           expect(ma.isBefore(mc)).toBe(true);
         }
@@ -793,7 +797,9 @@ describe("Metamorphic properties", () => {
       fc.property(safeDates, (date) => {
         const m = moment(date);
         // day must be ≤ 27 so that day+1 ≤ 28 fits any month without clamping
-        if (m.date() > 27) return;
+        if (m.date() > 27) {
+          return;
+        }
         const a = m.clone().add(1, "month").add(1, "day");
         const b = m.clone().add(1, "day").add(1, "month");
         expect(a.valueOf()).toBe(b.valueOf());
