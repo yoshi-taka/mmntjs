@@ -717,9 +717,20 @@ describe("Metamorphic properties", () => {
   test("normalizeUnits handles random invalid strings idempotently", () => {
     fc.assert(
       fc.property(
-        fc.string().filter(
-          (s) => s !== "__proto__" && s !== "constructor" && s !== "valueOf" && s !== "toString" && s !== "hasOwnProperty" && s !== "toLocaleString" && s !== "isPrototypeOf" && s !== "propertyIsEnumerable" && s !== "toJSON",
-        ),
+        fc
+          .string()
+          .filter(
+            (s) =>
+              s !== "__proto__" &&
+              s !== "constructor" &&
+              s !== "valueOf" &&
+              s !== "toString" &&
+              s !== "hasOwnProperty" &&
+              s !== "toLocaleString" &&
+              s !== "isPrototypeOf" &&
+              s !== "propertyIsEnumerable" &&
+              s !== "toJSON",
+          ),
         (s) => {
           const n1 = moment.normalizeUnits(s);
           const n2 = moment.normalizeUnits(n1 as string);
@@ -814,7 +825,9 @@ describe("Metamorphic properties", () => {
     fc.assert(
       fc.property(fc.integer({ min: -86400000 * 1000, max: 86400000 * 1000 }), (ts) => {
         const m = moment.utc(ts);
-        if (!m.isValid()) return;
+        if (!m.isValid()) {
+          return;
+        }
         const d = moment.utc(ts).endOf("day");
         const ref = new Date(Math.floor(ts / 86400000) * 86400000);
         ref.setUTCDate(ref.getUTCDate() + 1);
@@ -863,6 +876,16 @@ describe("Metamorphic properties", () => {
     const ey = neg.clone().endOf("year");
     expect(ey.format("MM-DD")).toBe("12-31");
     expect(ey.format("HH:mm:ss.SSS")).toBe("23:59:59.999");
+  });
+
+  test("_dayOfWeek returns valid range 0-6 for negative years", () => {
+    const neg = moment.utc([-2500, 0, 1]); // 2501 BC
+    expect(neg.isValid()).toBe(true);
+    expect(neg.day()).toBeGreaterThanOrEqual(0);
+    expect(neg.day()).toBeLessThan(7);
+    // ISO weekday also valid
+    expect(neg.isoWeekday()).toBeGreaterThanOrEqual(1);
+    expect(neg.isoWeekday()).toBeLessThanOrEqual(7);
   });
 
   test("UTC/local startOf(day) diverge at DST boundary", () => {
