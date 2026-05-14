@@ -116,6 +116,8 @@ const moment = require("mmntjs");
 
 The only known incompatibilities are malformed/edge-case strings discovered through fuzzing (e.g. sign-prefixed strings without delimiters). These are under active repair — see [REMAINING.md](./docs/meta/REMAINING.md) for the shortlist.
 
+> **Compatibility story**: Fuzzer found `"0000 03"` — our ISO table parser matched it but produced a different result than moment.js. Rather than piling on regex special cases, we introduced a `_claimed` sentinel: when the table parser finds a low-confidence match, it returns `_claimed: true` to delegate to the native `new Date(str)` fallback — exactly what moment.js does as its last resort. This single mechanism closed 7+ fuzz-discovered gaps without adding parser complexity.
+
 136 locales, timezone, duration, calendar, custom format parse — all existing moment.js API surface covered.
 
 Runs on Node 16+, browsers (IIFE/CDN), Bun, and Deno. CJS and ESM both supported.
@@ -137,12 +139,13 @@ Also outperforms upstream moment.js in 28/30. Several hot-path operations outper
 
 | Operation | mmntjs | date-fns | vs moment.js |
 |-----------|--------:|---------:|-------------:|
-| format YYYY-MM-DD | **43 ns** | 1.10 us (25.4x) | 413 ns (9.6x) |
-| parse ISO string | **522 ns** | 1.21 us (2.3x) | 4.10 us (7.9x) |
-| diff in days | **22 ns** | 836 ns (38.2x) | 413 ns (18.8x) |
-| get day of year | **17 ns** | 1.17 us (68.8x) | — |
-| moment() / new Date() | **37 ns** | 34 ns (0.9x) | 280 ns (7.6x) |
-| startOf month | **12 ns** | 73 ns (6.1x) | — |
+| format YYYY-MM-DD | **41 ns** | 1.10 us (26.8x) | 411 ns (10.0x) |
+| parse ISO string | **379 ns** | 979 ns (2.6x) | 4.10 us (10.8x) |
+| diff in days | **19 ns** | 826 ns (43.5x) | 557 ns (29.3x) |
+| add 1 second | **12 ns** | 95 ns (7.9x) | — |
+| get day of year | **17 ns** | 1.13 us (66.4x) | — |
+| moment() / new Date() | **38 ns** | 33 ns (0.9x) | 267 ns (7.0x) |
+| startOf month | **11 ns** | 73 ns (6.6x) | — |
 
 The main remaining regression is raw `moment()` construction overhead from compatibility wrapping. (wrapper overhead for moment.js API compatibility, negligible in real apps that reuse Moment objects).
 
