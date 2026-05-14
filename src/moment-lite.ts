@@ -4,6 +4,7 @@ import { isObject, isDate, isMoment, hasOwnProp, zeroFill, createDateSafe } from
 import {
   normalizeUnits,
   normalizeUnitCode,
+  normalizeMonth,
   daysInMonth,
   isLeapYear,
   YEAR,
@@ -1093,7 +1094,7 @@ export class MomentLite {
             : Math.round(rawMonths);
         const tm = this.$y * 12 + this.$M + totalMonths;
         const y = Math.floor(tm / 12);
-        const m = ((tm % 12) + 12) % 12;
+        const m = normalizeMonth(tm);
         let d_ = this.$D;
         if (d_ > 28) {
           const _md =
@@ -1343,7 +1344,7 @@ export class MomentLite {
               : Math.round(amount);
           const tm = this.$y * 12 + this.$M + totalMonths;
           const y = Math.floor(tm / 12);
-          const m = ((tm % 12) + 12) % 12;
+          const m = normalizeMonth(tm);
           let d_ = this.$D;
           if (d_ > 28) {
             const md =
@@ -1407,84 +1408,13 @@ export class MomentLite {
   }
 
   subtract(amount: number | string | object, unit?: string): this {
-    if (!this._isValid) {
-      return this;
-    }
+    if (!this._isValid) {return this;}
     if (typeof amount === "number") {
-      if (unit !== undefined) {
-        const u = unit;
-        if (u === "day" || u === "days" || u === "d") {
-          const dt = this._d ?? (this._d = new Date(this._t));
-          dt.setDate(dt.getDate() - amount);
-          this._t = dt.getTime();
-          this._dirty = true;
-          return this;
-        }
-        if (u === "month" || u === "months" || u === "M") {
-          this._ensureFields();
-          const totalMonths = Number.isInteger(amount)
-            ? -amount
-            : amount < 0
-              ? Math.round(-amount) * -1
-              : -Math.round(amount);
-          const tm = this.$y * 12 + this.$M + totalMonths;
-          const y = Math.floor(tm / 12);
-          const m = ((tm % 12) + 12) % 12;
-          let d_ = this.$D;
-          if (d_ > 28) {
-            const md =
-              m === 1
-                ? y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)
-                  ? 29
-                  : 28
-                : m === 3 || m === 5 || m === 8 || m === 10
-                  ? 30
-                  : 31;
-            if (d_ > md) {
-              d_ = md;
-            }
-          }
-          if (this._isUTC) {
-            this._t = Date.UTC(y, m, d_, this.$H, this.$m, this.$s, this.$ms);
-            this._d = undefined;
-            this._dirty = true;
-          } else {
-            const dt = this._d ?? (this._d = new Date(this._t));
-            dt.setFullYear(y, m, d_);
-            this._t = dt.getTime();
-          }
-          this.$y = y;
-          this.$M = m;
-          this.$D = d_;
-          this.$W = this._isUTC ? _dayOfWeek(y, m, d_) : this._d!.getDay();
-          if (!this._isUTC) {
-            this._offset = -this._d!.getTimezoneOffset();
-          }
-          if (isNaN(this._t)) {
-            this._isValid = false;
-          }
-          return this;
-        }
-        const code = normalizeUnitCode(u);
-        if (code !== undefined && code >= 0) {
-          this._addSimple(-amount, code);
-          if (isNaN(this._t)) {
-            this._isValid = false;
-          }
-          return this;
-        }
-      } else {
-        this._addSimple(-amount, MILLISECOND);
-        if (isNaN(this._t)) {
-          this._isValid = false;
-        }
-        return this;
-      }
+      if (unit !== undefined) return this.add(-amount, unit);
+      return this.add(-amount);
     }
     const parsed = this._parseDurationInput(amount, unit);
-    if (!parsed) {
-      return this;
-    }
+    if (!parsed) {return this;}
     this._applyDuration(parsed.ms, parsed.days, parsed.months, -1);
     if (isNaN(this._t)) {
       this._isValid = false;
@@ -1509,7 +1439,8 @@ export class MomentLite {
       case DATE:
       case DAY: {
         if (this._isUTC && other._isUTC) {
-          const days = Math.floor(this.valueOf() / 86400000) - Math.floor(other.valueOf() / 86400000);
+          const days =
+            Math.floor(this.valueOf() / 86400000) - Math.floor(other.valueOf() / 86400000);
           return float ? days : days || 0;
         }
         const r = diff / 86400000;
@@ -1552,9 +1483,10 @@ export class MomentLite {
       }
       case WEEK: {
         if (this._isUTC && other._isUTC) {
-          const days = Math.floor(this.valueOf() / 86400000) - Math.floor(other.valueOf() / 86400000);
+          const days =
+            Math.floor(this.valueOf() / 86400000) - Math.floor(other.valueOf() / 86400000);
           const r = days / 7;
-          return float ? r : (Math.trunc(r) || 0);
+          return float ? r : Math.trunc(r) || 0;
         }
         const r = diff / 604800000;
         if (float) {
@@ -1963,7 +1895,9 @@ export class MomentLite {
         if (this._isUTC && other._isUTC) {
           const thisDays = Math.floor(this._t / 86400000);
           const otherDays = Math.floor(other._t / 86400000);
-          if (thisDays !== otherDays) return thisDays - otherDays;
+          if (thisDays !== otherDays) {
+            return thisDays - otherDays;
+          }
         }
         const d = this.year() - other.year();
         if (d !== 0) {
@@ -2313,7 +2247,7 @@ function anchorMs(
 ): number {
   const tm = year * 12 + month + n;
   const y = Math.floor(tm / 12);
-  const m = ((tm % 12) + 12) % 12;
+  const m = normalizeMonth(tm);
   const maxDay = daysInMonth(y, m);
   const d = day > maxDay ? maxDay : day;
   if (utc) {

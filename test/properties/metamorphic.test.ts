@@ -918,7 +918,8 @@ describe("Metamorphic properties", () => {
   test("diff(a, b, unit) is antisymmetric for linear epoch units", () => {
     fc.assert(
       fc.property(safeDates, safeDates, (a, b) => {
-        const ma = moment(a), mb = moment(b);
+        const ma = moment(a),
+          mb = moment(b);
         const units = ["millisecond", "second", "minute", "hour", "day"];
         for (const u of units) {
           expect(normalizeZero(ma.diff(mb, u))).toBe(normalizeZero(-mb.diff(ma, u)));
@@ -931,11 +932,18 @@ describe("Metamorphic properties", () => {
   test("isAfter agrees with sign of diff for linear epoch units", () => {
     fc.assert(
       fc.property(safeDates, safeDates, (a, b) => {
-        const ma = moment(a), mb = moment(b);
+        const ma = moment(a),
+          mb = moment(b);
         const d = ma.diff(mb, "millisecond");
-        if (d > 0) expect(ma.isAfter(mb)).toBe(true);
-        if (d < 0) expect(ma.isBefore(mb)).toBe(true);
-        if (d === 0) expect(ma.isSame(mb)).toBe(true);
+        if (d > 0) {
+          expect(ma.isAfter(mb)).toBe(true);
+        }
+        if (d < 0) {
+          expect(ma.isBefore(mb)).toBe(true);
+        }
+        if (d === 0) {
+          expect(ma.isSame(mb)).toBe(true);
+        }
       }),
       { numRuns: 100 },
     );
@@ -944,9 +952,112 @@ describe("Metamorphic properties", () => {
   test("UTC diff(day) equals exact epoch-day distance", () => {
     fc.assert(
       fc.property(safeDates, safeDates, (a, b) => {
-        const ma = moment.utc(a), mb = moment.utc(b);
+        const ma = moment.utc(a),
+          mb = moment.utc(b);
         const days = Math.round((ma.valueOf() - mb.valueOf()) / 86400000);
         expect(Math.abs(ma.diff(mb, "day") - days)).toBeLessThanOrEqual(1);
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  // ============================================================
+  // Category-theoretic invariants
+  // ============================================================
+
+  const startEndUnits = fc.constantFrom("year", "month", "day", "hour", "minute", "second");
+  const allUnits = fc.constantFrom("millisecond", "second", "minute", "hour", "day", "week", "month", "year");
+
+  test("add(0, unit) is identity", () => {
+    fc.assert(
+      fc.property(safeDates, allUnits, (date, unit) => {
+        const m = moment(date);
+        const before = m.valueOf();
+        const result = m.add(0, unit);
+        expect(result).toBe(m);
+        expect(result.valueOf()).toBe(before);
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  test("startOf(idempotent) = startOf", () => {
+    fc.assert(
+      fc.property(safeDates, startEndUnits, (date, unit) => {
+        const once = moment(date).startOf(unit);
+        const twice = moment(date).startOf(unit).startOf(unit);
+        expect(twice.valueOf()).toBe(once.valueOf());
+        expect(twice.format()).toBe(once.format());
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  test("utc is idempotent", () => {
+    fc.assert(
+      fc.property(safeDates, (date) => {
+        const m = moment(date);
+        const once = m.clone().utc();
+        const twice = m.clone().utc().utc();
+        expect(twice.valueOf()).toBe(once.valueOf());
+        expect(twice._isUTC).toBe(true);
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  test("clone preserves valueOf", () => {
+    fc.assert(
+      fc.property(safeDates, (date) => {
+        const m = moment(date);
+        const c = m.clone();
+        expect(c.valueOf()).toBe(m.valueOf());
+        expect(c).not.toBe(m);
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  test("subtract(n, unit) = add(-n, unit) for linear units", () => {
+    fc.assert(
+      fc.property(safeDates, fc.integer({ min: -1000, max: 1000 }), shiftUnits, (date, n, unit) => {
+        const m1 = moment(date).subtract(n, unit);
+        const m2 = moment(date).add(-n, unit);
+        expect(m1.valueOf()).toBe(m2.valueOf());
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  test("add composes for linear epoch units", () => {
+    fc.assert(
+      fc.property(safeDates, fc.integer(), fc.integer(), (date, a, b) => {
+        const sequential = moment(date).add(a, "millisecond").add(b, "millisecond");
+        const combined = moment(date).add(a + b, "millisecond");
+        expect(sequential.valueOf()).toBe(combined.valueOf());
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  test("month add is non-linear (month-end clamping)", () => {
+    const jan31 = moment([2019, 0, 31]);
+    const feb28 = jan31.clone().add(1, "month");
+    const oneMonthMs = 86400000 * 31;
+    expect(feb28.valueOf()).not.toBe(jan31.valueOf() + oneMonthMs);
+    // But it should be Feb 28 (clamped)
+    expect(feb28.date()).toBe(28);
+    expect(feb28.month()).toBe(1);
+  });
+
+  test("local is idempotent", () => {
+    fc.assert(
+      fc.property(safeDates, (date) => {
+        const m = moment.utc(date);
+        const once = m.clone().local();
+        const twice = m.clone().local().local();
+        expect(twice.valueOf()).toBe(once.valueOf());
+        expect(twice._isUTC).toBe(false);
       }),
       { numRuns: 100 },
     );

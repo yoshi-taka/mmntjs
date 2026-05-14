@@ -127,7 +127,11 @@ export function normalizeUnitCode(unit: string): UnitCode | undefined {
   if (!unit) {
     return INVALID_UNIT;
   }
-  return _codeAliases[unit];
+  return _codeAliases[unit] ?? _codeNmap[unit.toLowerCase()];
+}
+
+export function normalizeMonth(m: number): number {
+  return ((m % 12) + 12) % 12;
 }
 
 export function isLeapYear(y: number): boolean {
