@@ -57,6 +57,7 @@ export function startOfExtraMoment(m: BoundaryAwareMoment, code: UnitCode): void
       m.$s = 0;
       m.$ms = 0;
       m.$W = dayOfWeek(m.$y, m.$M, m.$D);
+      m._t = d.getTime();
       break;
     case WEEK: {
       const weekCfg = ((m._getLocale()._config as Record<string, unknown>).week as
@@ -80,6 +81,7 @@ export function startOfExtraMoment(m: BoundaryAwareMoment, code: UnitCode): void
       m.$s = 0;
       m.$ms = 0;
       m.$W = dow;
+      m._t = d.getTime();
       break;
     }
     case ISO_WEEK: {
@@ -100,6 +102,7 @@ export function startOfExtraMoment(m: BoundaryAwareMoment, code: UnitCode): void
       m.$s = 0;
       m.$ms = 0;
       m.$W = 1;
+      m._t = d.getTime();
       break;
     }
   }
@@ -125,6 +128,7 @@ export function endOfExtraMoment(m: BoundaryAwareMoment, code: UnitCode): void {
       m.$s = 59;
       m.$ms = 999;
       m.$W = dayOfWeek(m.$y, endMonth, endDay);
+      m._t = d.getTime();
       break;
     }
     case WEEK: {
@@ -149,6 +153,7 @@ export function endOfExtraMoment(m: BoundaryAwareMoment, code: UnitCode): void {
       m.$s = 59;
       m.$ms = 999;
       m.$W = dow;
+      m._t = d.getTime();
       break;
     }
     case ISO_WEEK: {
@@ -169,6 +174,7 @@ export function endOfExtraMoment(m: BoundaryAwareMoment, code: UnitCode): void {
       m.$s = 59;
       m.$ms = 999;
       m.$W = 1;
+      m._t = d.getTime();
       break;
     }
   }

@@ -365,7 +365,11 @@ const coldFieldKeys: (keyof MomentCold)[] = [
 function _dayOfWeek(y: number, m: number, d: number): number {
   const t = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
   y -= m < 3 ? 1 : 0;
-  return (((y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) + t[m] + d) | 0) % 7 + 7) % 7;
+  return (
+    ((((y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) + t[m] + d) | 0) % 7) +
+      7) %
+    7
+  );
 }
 
 function daysInYear(year: number): number {
