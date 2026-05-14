@@ -52,35 +52,6 @@ const EXTENDED_ISO_REGEX =
 const BASIC_ISO_REGEX =
   /^\s*((?:[+-]\d{6}|\d{4})(?:\d\d\d\d|W\d\d\d|W\d\d|\d\d\d|\d\d|))(?:(T| )(\d\d(?:\d\d(?:\d\d(?:[.,]\d+)?)?)?)([+-]\d\d(?::?\d\d)?|\s*Z)?)?$/;
 
-const isoDates = [
-  ["YYYYYY-MM-DD", /[+-]\d{6}-\d\d-\d\d/],
-  ["YYYY-MM-DD", /\d{4}-\d\d-\d\d/],
-  ["GGGG-[W]WW-E", /\d{4}-W\d\d-\d/],
-  ["GGGG-[W]WW", /\d{4}-W\d\d/, false],
-  ["YYYY-DDD", /\d{4}-\d{3}/],
-  ["YYYY-MM", /\d{4}-\d\d/, false],
-  ["YYYYYYMMDD", /[+-]\d{10}/],
-  ["YYYYMMDD", /\d{8}/],
-  ["GGGG[W]WWE", /\d{4}W\d{3}/],
-  ["GGGG[W]WW", /\d{4}W\d{2}/, false],
-  ["YYYYDDD", /\d{7}/],
-  ["YYYYMM", /\d{6}/, false],
-  ["YYYY", /\d{4}/, false],
-] as const satisfies [formatToken: string, regex: RegExp, allowTime?: boolean][];
-const isoTimes = [
-  ["HH:mm:ss.SSSS", /\d\d:\d\d:\d\d\.\d+/],
-  ["HH:mm:ss,SSSS", /\d\d:\d\d:\d\d,\d+/],
-  ["HH:mm:ss", /\d\d:\d\d:\d\d/],
-  ["HH:mm", /\d\d:\d\d/],
-  ["HHmmss.SSSS", /\d\d\d\d\d\d\.\d+/],
-  ["HHmmss,SSSS", /\d\d\d\d\d\d,\d+/],
-  ["HHmmss", /\d\d\d\d\d\d/],
-  ["HHmm", /\d\d\d\d/],
-  ["HH", /\d\d/],
-] as const satisfies [formatToken: string, regex: RegExp][];
-
-const TZ_REGEX = /Z|[+-]\d\d(?::?\d\d)?/;
-
 const RFC_2822_REGEX =
   /^\s*((?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s)?(\d{1,2})\s(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s(\d{2,4})\s(\d{2}):(\d{2})(?::(\d{2}))?\s(?:([+-]\d{4})|(UTC|GMT|EST|EDT|CST|CDT|MST|MDT|PST|PDT|[A-IK-Za-ik-z]))?/;
 
@@ -136,7 +107,15 @@ export function parseString(
   str = localePreparse(locObj as never, str);
   const trimmed = str;
 
-  if (trimmed.trim() === "") {
+  let blank = true;
+  for (let i = 0; i < trimmed.length; i++) {
+    const c = trimmed.charCodeAt(i);
+    if (c !== 0x20 && c !== 0x09 && c !== 0x0a && c !== 0x0d && c !== 0x0c) {
+      blank = false;
+      break;
+    }
+  }
+  if (blank) {
     return null;
   }
 
@@ -348,6 +327,7 @@ function parseCommonISO(str: string): InternalParsedData | null {
     len !== 23 &&
     len !== 24 &&
     len !== 25 &&
+    len !== 28 &&
     len !== 29
   ) {
     return null;
@@ -437,27 +417,51 @@ function parseCommonISO(str: string): InternalParsedData | null {
       offset = 0;
       pos++;
     } else if (tz === 43 || tz === 45) {
-      if (pos + 6 !== len || str.charCodeAt(pos + 3) !== 58) {
+      const offLen = len - pos;
+      if (offLen === 6) {
+        if (str.charCodeAt(pos + 3) !== 58) {
+          return null;
+        }
+        const offH0 = str.charCodeAt(pos + 1) - 48,
+          offH1 = str.charCodeAt(pos + 2) - 48;
+        const offM0 = str.charCodeAt(pos + 4) - 48,
+          offM1 = str.charCodeAt(pos + 5) - 48;
+        if (
+          offH0 < 0 ||
+          offH0 > 9 ||
+          offH1 < 0 ||
+          offH1 > 9 ||
+          offM0 < 0 ||
+          offM0 > 9 ||
+          offM1 < 0 ||
+          offM1 > 9
+        ) {
+          return null;
+        }
+        offset = (tz === 43 ? 1 : -1) * ((offH0 * 10 + offH1) * 60 + (offM0 * 10 + offM1));
+        pos += 6;
+      } else if (offLen === 5) {
+        const offH0 = str.charCodeAt(pos + 1) - 48,
+          offH1 = str.charCodeAt(pos + 2) - 48;
+        const offM0 = str.charCodeAt(pos + 3) - 48,
+          offM1 = str.charCodeAt(pos + 4) - 48;
+        if (
+          offH0 < 0 ||
+          offH0 > 9 ||
+          offH1 < 0 ||
+          offH1 > 9 ||
+          offM0 < 0 ||
+          offM0 > 9 ||
+          offM1 < 0 ||
+          offM1 > 9
+        ) {
+          return null;
+        }
+        offset = (tz === 43 ? 1 : -1) * ((offH0 * 10 + offH1) * 60 + (offM0 * 10 + offM1));
+        pos += 5;
+      } else {
         return null;
       }
-      const offH0 = str.charCodeAt(pos + 1) - 48,
-        offH1 = str.charCodeAt(pos + 2) - 48;
-      const offM0 = str.charCodeAt(pos + 4) - 48,
-        offM1 = str.charCodeAt(pos + 5) - 48;
-      if (
-        offH0 < 0 ||
-        offH0 > 9 ||
-        offH1 < 0 ||
-        offH1 > 9 ||
-        offM0 < 0 ||
-        offM0 > 9 ||
-        offM1 < 0 ||
-        offM1 > 9
-      ) {
-        return null;
-      }
-      offset = (tz === 43 ? 1 : -1) * ((offH0 * 10 + offH1) * 60 + (offM0 * 10 + offM1));
-      pos += 6;
     } else {
       return null;
     }
@@ -481,7 +485,11 @@ function parseCommonISO(str: string): InternalParsedData | null {
 }
 
 function stripRFC2822Comments(str: string): string {
-  let result = "";
+  // Fast path: no comments, just normalize whitespace
+  if (!str.includes("(")) {
+    return str.replaceAll(/\s+/g, " ").trim();
+  }
+  const parts: string[] = [];
   let depth = 0;
   for (const ch of str) {
     if (ch === "(") {
@@ -492,11 +500,39 @@ function stripRFC2822Comments(str: string): string {
         depth = 0;
       }
     } else if (depth === 0) {
-      result += ch;
+      parts.push(ch);
     }
   }
-  return result.replaceAll(/\s+/g, " ").trim();
+  return parts.join("").replaceAll(/\s+/g, " ").trim();
 }
+
+const RFC_MONTH_MAP: Record<string, number | undefined> = {
+  Jan: 0,
+  Feb: 1,
+  Mar: 2,
+  Apr: 3,
+  May: 4,
+  Jun: 5,
+  Jul: 6,
+  Aug: 7,
+  Sep: 8,
+  Oct: 9,
+  Nov: 10,
+  Dec: 11,
+};
+
+const RFC_TZ_MAP: Record<string, number | undefined> = {
+  UTC: 0,
+  GMT: 0,
+  EST: -300,
+  EDT: -240,
+  CST: -360,
+  CDT: -300,
+  MST: -420,
+  MDT: -360,
+  PST: -480,
+  PDT: -420,
+};
 
 function parseRFC2822(match: RegExpMatchArray): InternalParsedData | null {
   const day = parseInt(match[2], 10);
@@ -507,22 +543,7 @@ function parseRFC2822(match: RegExpMatchArray): InternalParsedData | null {
   const second = match[7] ? parseInt(match[7], 10) : 0;
   const tzStr = match[8] || match[9];
 
-  const monthMap: Record<string, number | undefined> = {
-    Jan: 0,
-    Feb: 1,
-    Mar: 2,
-    Apr: 3,
-    May: 4,
-    Jun: 5,
-    Jul: 6,
-    Aug: 7,
-    Sep: 8,
-    Oct: 9,
-    Nov: 10,
-    Dec: 11,
-  };
-
-  const month = monthMap[monthStr];
+  const month = RFC_MONTH_MAP[monthStr];
   if (month === undefined) {
     return null;
   }
@@ -534,20 +555,8 @@ function parseRFC2822(match: RegExpMatchArray): InternalParsedData | null {
 
   let offset = 0;
   if (tzStr) {
-    const tzMap: Record<string, number | undefined> = {
-      UTC: 0,
-      GMT: 0,
-      EST: -300,
-      EDT: -240,
-      CST: -360,
-      CDT: -300,
-      MST: -420,
-      MDT: -360,
-      PST: -480,
-      PDT: -420,
-    };
-    if (tzMap[tzStr] !== undefined) {
-      offset = tzMap[tzStr];
+    if (RFC_TZ_MAP[tzStr] !== undefined) {
+      offset = RFC_TZ_MAP[tzStr];
     } else if (tzStr.length === 5) {
       const sign = tzStr[0] === "+" ? 1 : -1;
       const tzHour = parseInt(tzStr.substring(1, 3), 10);
@@ -574,6 +583,95 @@ function parseRFC2822(match: RegExpMatchArray): InternalParsedData | null {
   };
 }
 
+function classifyISODatePart(datePart: string): [fmt: string, allowTime: boolean] | null {
+  const len = datePart.length;
+  const ch0 = datePart.charCodeAt(0);
+  const hasDash = datePart.includes("-", ch0 === 45 ? 1 : 0);
+
+  if (hasDash) {
+    if (len === 13) {
+      return ["YYYYYY-MM-DD", true];
+    }
+    if (len === 10) {
+      if (datePart.charCodeAt(5) === 87) {
+        return ["GGGG-[W]WW-E", true];
+      }
+      return ["YYYY-MM-DD", true];
+    }
+    if (len === 8) {
+      if (datePart.charCodeAt(5) === 87) {
+        return ["GGGG-[W]WW", false];
+      }
+      return ["YYYY-DDD", true];
+    }
+    if (len === 7) {
+      return ["YYYY-MM", false];
+    }
+    return null;
+  }
+
+  if (len === 12 && (ch0 === 43 || ch0 === 45)) {
+    return ["YYYYYYMMDD", true];
+  }
+  if (len === 8) {
+    if (datePart.charCodeAt(4) === 87) {
+      return ["GGGG[W]WWE", true];
+    }
+    return ["YYYYMMDD", true];
+  }
+  if (len === 7) {
+    if (datePart.charCodeAt(4) === 87) {
+      return ["GGGG[W]WW", false];
+    }
+    return ["YYYYDDD", true];
+  }
+  if (len === 6) {
+    return ["YYYYMM", false];
+  }
+  if (len === 4) {
+    return ["YYYY", false];
+  }
+  return null;
+}
+
+function classifyISOTimePart(timePart: string): string | null {
+  const len = timePart.length;
+  const hasColon = len > 2 && timePart.charCodeAt(2) === 58;
+
+  if (hasColon) {
+    if (timePart.includes(".")) {
+      return "HH:mm:ss.SSSS";
+    }
+    if (timePart.includes(",")) {
+      return "HH:mm:ss,SSSS";
+    }
+    if (len === 8) {
+      return "HH:mm:ss";
+    }
+    if (len === 5) {
+      return "HH:mm";
+    }
+    return null;
+  }
+
+  if (timePart.includes(".")) {
+    return "HHmmss.SSSS";
+  }
+  if (timePart.includes(",")) {
+    return "HHmmss,SSSS";
+  }
+  if (len === 6) {
+    return "HHmmss";
+  }
+  if (len === 4) {
+    return "HHmm";
+  }
+  if (len === 2) {
+    return "HH";
+  }
+  return null;
+}
+
 function parseISOWithTable(str: string, locale?: ParseLocale): InternalParsedData | null {
   const match = EXTENDED_ISO_REGEX.exec(str) ?? BASIC_ISO_REGEX.exec(str);
   if (!match) {
@@ -581,39 +679,17 @@ function parseISOWithTable(str: string, locale?: ParseLocale): InternalParsedDat
   }
 
   const datePart = match[1];
-  let dateFormat: string | undefined;
-  let allowTime = true;
-
-  const dateHasDash = datePart.includes("-", datePart.charCodeAt(0) === 45 ? 1 : 0);
-
-  for (const [fmt, regex, allowT] of isoDates) {
-    if (dateHasDash !== fmt.includes("-")) {
-      continue;
-    }
-    if (regex.exec(datePart)) {
-      dateFormat = fmt;
-      if (allowT === false) {
-        allowTime = false;
-      }
-      break;
-    }
-  }
-
-  if (!dateFormat) {
+  const classified = classifyISODatePart(datePart);
+  if (!classified) {
     return null;
   }
+  let [dateFormat, allowTime] = classified;
 
   if (match[3]) {
     if (!allowTime) {
       return { _claimed: true };
     }
-    let timeFormat: string | undefined;
-    for (const [fmt, regex] of isoTimes) {
-      if (regex.exec(match[3])) {
-        timeFormat = fmt;
-        break;
-      }
-    }
+    let timeFormat = classifyISOTimePart(match[3]);
     if (!timeFormat) {
       return { _claimed: true };
     }
@@ -630,8 +706,13 @@ function parseISOWithTable(str: string, locale?: ParseLocale): InternalParsedDat
     if (!match[3]) {
       return { _claimed: true };
     }
-    const tzMatch = match[4].match(TZ_REGEX);
-    if (tzMatch) {
+    const tzStr = match[4].trim();
+    if (
+      tzStr === "Z" ||
+      tzStr === "z" ||
+      tzStr.charCodeAt(0) === 43 ||
+      tzStr.charCodeAt(0) === 45
+    ) {
       dateFormat += "Z";
     } else {
       return { _claimed: true };
