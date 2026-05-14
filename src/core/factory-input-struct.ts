@@ -1,4 +1,5 @@
 import { Moment, checkOverflow } from "../moment-class";
+import type { InternalParsedData } from "../types";
 import { isObjectEmpty, createDate, createDateSafe } from "../utils";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -36,7 +37,7 @@ export function createFromArrayInput(
 
 export function createFromObjectInput(
   obj: Record<string, unknown>,
-  parseObject: (obj: Record<string, unknown>) => Record<string, unknown>,
+  parseObject: (obj: Record<string, unknown>) => InternalParsedData,
   nowFn: () => number,
 ): Moment {
   const parsed = parseObject(obj);

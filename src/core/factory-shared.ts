@@ -1,5 +1,6 @@
 import type { MomentConfig } from "../moment-class";
 import { Moment, checkOverflow } from "../moment-class";
+import type { InternalParsedData } from "../types";
 import {
   isMoment,
   isDate,
@@ -46,7 +47,7 @@ type ArrayInputHandler = (
 ) => Moment;
 type ObjectInputHandler = (
   obj: Record<string, unknown>,
-  parseObject: (obj: Record<string, unknown>) => Record<string, unknown>,
+  parseObject: (obj: Record<string, unknown>) => InternalParsedData,
   nowFn: () => number,
 ) => Moment;
 
@@ -58,7 +59,7 @@ export type FactoryDeps = {
     strict?: boolean,
   ) => ParsedDataLike | null;
   parseArray?: (arr: unknown[]) => ParsedDataLike | null;
-  parseObject?: (obj: Record<string, unknown>) => Record<string, unknown>;
+  parseObject?: (obj: Record<string, unknown>) => InternalParsedData;
   isCustomFormatParsingEnabled: () => boolean;
   supportsFormattedInput?: boolean | (() => boolean);
   createFromFormattedStringInput?: FormattedStringInputHandler;
