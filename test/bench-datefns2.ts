@@ -1,5 +1,4 @@
-// @ts-expect-error TypeScript errors are intentional for compatibility
-import mmntjs from "../mmntjs";
+import mmntjs from "mmntjs";
 import {
   parseISO,
   getDayOfYear,

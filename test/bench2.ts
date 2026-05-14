@@ -1,5 +1,4 @@
-// @ts-expect-error Benchmark setup requires loose types
-import mmntjs from "../mmntjs";
+import mmntjs from "mmntjs";
 import moment from "../moment/moment.js";
 
 function micros(ns: number): string {

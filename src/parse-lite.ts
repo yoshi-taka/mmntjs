@@ -164,33 +164,51 @@ function emptyParsed(): ParsedData {
   };
 }
 
+function digitsAt(str: string, idx: number, count: number): boolean {
+  for (let i = 0; i < count; i++) {
+    const c = str.charCodeAt(idx + i);
+    if (c < 48 || c > 57) return false;
+  }
+  return true;
+}
+function numAt(str: string, idx: number, count: number): number {
+  let v = 0;
+  for (let i = 0; i < count; i++) v = v * 10 + (str.charCodeAt(idx + i) - 48);
+  return v;
+}
+
+/** hot path: charCodeAt scan — zero regex/slice/parseInt allocation */
 function parseCommonISOExtended(str: string): ParsedData | null {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+  const len = str.length;
+  const c0 = str.charCodeAt(0);
+  if (c0 < 48 || c0 > 57) return null;
+  if (len === 10 && str.charCodeAt(4) === 45 && str.charCodeAt(7) === 45 &&
+      digitsAt(str, 1, 3) && digitsAt(str, 5, 2) && digitsAt(str, 8, 2)) {
     const out = emptyParsed();
-    out.year = parseInt(str.slice(0, 4), 10);
-    out.month = parseInt(str.slice(5, 7), 10) - 1;
-    out.day = parseInt(str.slice(8, 10), 10);
+    out.year = numAt(str, 0, 4);
+    out.month = numAt(str, 5, 2) - 1;
+    out.day = numAt(str, 8, 2);
     out._parsedDateParts = [out.year, out.month, out.day];
     return out;
   }
-  if (/^\d{8}$/.test(str)) {
+  if (len === 8 && digitsAt(str, 0, 8)) {
     const out = emptyParsed();
-    out.year = parseInt(str.slice(0, 4), 10);
-    out.month = parseInt(str.slice(4, 6), 10) - 1;
-    out.day = parseInt(str.slice(6, 8), 10);
+    out.year = numAt(str, 0, 4);
+    out.month = numAt(str, 4, 2) - 1;
+    out.day = numAt(str, 6, 2);
     out._parsedDateParts = [out.year, out.month, out.day];
     return out;
   }
-  if (/^\d{4}-\d{3}$/.test(str)) {
+  if (len === 8 && str.charCodeAt(4) === 45 && digitsAt(str, 0, 4) && digitsAt(str, 5, 3)) {
     const out = emptyParsed();
-    out.year = parseInt(str.slice(0, 4), 10);
-    out.dayOfYear = parseInt(str.slice(5, 8), 10);
+    out.year = numAt(str, 0, 4);
+    out.dayOfYear = numAt(str, 5, 3);
     return out;
   }
-  if (/^\d{7}$/.test(str)) {
+  if (len === 7 && digitsAt(str, 0, 7)) {
     const out = emptyParsed();
-    out.year = parseInt(str.slice(0, 4), 10);
-    out.dayOfYear = parseInt(str.slice(4, 7), 10);
+    out.year = numAt(str, 0, 4);
+    out.dayOfYear = numAt(str, 4, 3);
     return out;
   }
   return null;
@@ -373,41 +391,55 @@ function parseIsoTokenFormat(str: string, format: string): ParsedData | null {
   return pos === str.length ? out : null;
 }
 
-function nextIsoToken(format: string, idx: number): string {
+/** hot path: pre-built first-char lookup — avoids linear scan per token */
+const _isoTokenByChar: Record<string, string[] | undefined> = {};
+{
   const tokens = [
-    "SSSSSSSSS",
-    "SSSSSSSS",
-    "SSSSSSS",
-    "SSSSSS",
-    "SSSSS",
-    "SSSS",
-    "YYYYYY",
-    "GGGG",
-    "YYYY",
-    "DDD",
-    "HH",
-    "mm",
-    "ss",
-    "WW",
-    "MM",
-    "DD",
-    "SSS",
-    "SS",
-    "S",
-    "E",
-    "Z",
+    "SSSSSSSSS", "SSSSSSSS", "SSSSSSS", "SSSSSS", "SSSSS", "SSSS",
+    "YYYYYY", "GGGG", "YYYY", "DDD", "HH", "mm", "ss", "WW", "MM", "DD",
+    "SSS", "SS", "S", "E", "Z",
   ];
-  for (const token of tokens) {
-    if (format.startsWith(token, idx)) {
-      return token;
+  // build longest-first per first char
+  for (const t of tokens) {
+    const c = t[0];
+    let list = _isoTokenByChar[c];
+    if (!list) {
+      list = [];
+      _isoTokenByChar[c] = list;
+    }
+    list.push(t);
+  }
+  for (const c of Object.keys(_isoTokenByChar)) {
+    _isoTokenByChar[c]!.sort((a, b) => b.length - a.length);
+  }
+}
+
+function nextIsoToken(format: string, idx: number): string {
+  const candidates = _isoTokenByChar[format[idx]];
+  if (candidates) {
+    for (const token of candidates) {
+      if (format.startsWith(token, idx)) {
+        return token;
+      }
     }
   }
   return format[idx] ?? "";
 }
 
+/** hot path: charCodeAt scan — zero RegExp or slice allocation */
 function parseDigits(str: string, idx: number, count: number): number | null {
-  const value = str.slice(idx, idx + count);
-  return new RegExp(`^\\d{${count}}$`).test(value) ? parseInt(value, 10) : null;
+  if (idx + count > str.length) {
+    return null;
+  }
+  let value = 0;
+  for (let i = 0; i < count; i++) {
+    const c = str.charCodeAt(idx + i);
+    if (c < 48 || c > 57) {
+      return null;
+    }
+    value = value * 10 + (c - 48);
+  }
+  return value;
 }
 
 function parseSignedYear(

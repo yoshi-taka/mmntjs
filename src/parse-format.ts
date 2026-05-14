@@ -1278,12 +1278,8 @@ function hD(ctx: ParseCtx): void {
 
 function hDo(ctx: ParseCtx): void {
   const remaining = ctx.str.slice(ctx.strIdx);
-  const ordinalParse = ctx.loc._config.dayOfMonthOrdinalParse;
-  let match: RegExpMatchArray | null = null;
-  if (ordinalParse instanceof RegExp) {
-    match = remaining.match(new RegExp(`^(?:${ordinalParse.source})`));
-  }
-  match ??= remaining.match(/^(\d{1,2})(?:st|nd|rd|th)?/i);
+  const ordinalRe = getOrdinalRegex(ctx.loc);
+  let match = remaining.match(ordinalRe);
   if (!match) {
     ctx.failed = true;
     return;
@@ -1476,7 +1472,7 @@ function hS(ctx: ParseCtx): void {
   const remaining = ctx.str.slice(ctx.strIdx);
   const match = timedMatch(
     remaining,
-    new RegExp(`^(\\d{1,${maxDigits}})`),
+    S_DIGIT_RE[maxDigits - 1] ?? /^(\d{1,9})/,
     ctx.strict ? maxDigits : undefined,
     ctx.strict,
   );
@@ -1929,21 +1925,14 @@ function hN(ctx: ParseCtx): void {
     const names = (
       ctx.strict
         ? eras.map((e) => e.abbr).filter(Boolean)
-        : [
-            ...new Set(
-              eras.flatMap((e) =>
-                [e.abbr, e.name, e.narrow].filter(Boolean),
-              ),
-            ),
-          ]
+        : [...new Set(eras.flatMap((e) => [e.abbr, e.name, e.narrow].filter(Boolean)))]
     ) as string[];
     const regex = new RegExp(`^(${names.map(escapeRegex).join("|")})`);
     const nMatch = remaining.match(regex);
     if (nMatch) {
       const matchedName = nMatch[1];
       const era = eras.find(
-        (e) =>
-          e.abbr === matchedName || e.name === matchedName || e.narrow === matchedName,
+        (e) => e.abbr === matchedName || e.name === matchedName || e.narrow === matchedName,
       );
       if (era) {
         ctx.result._era = era;
@@ -1981,9 +1970,7 @@ function hNNNNN(ctx: ParseCtx): void {
   const erasNarrow = ctx.loc._config.eras;
   if (erasNarrow && Array.isArray(erasNarrow)) {
     const eras = erasNarrow as Record<string, unknown>[];
-    const names = eras
-      .map((e) => e.narrow)
-      .filter(Boolean) as string[];
+    const names = eras.map((e) => e.narrow).filter(Boolean) as string[];
     const regex = new RegExp(`^(${names.map(escapeRegex).join("|")})`);
     const nMatch = remaining.match(regex);
     if (nMatch) {
@@ -2276,6 +2263,35 @@ function hd(ctx: ParseCtx): void {
     }
   }
   ctx.failed = true;
+}
+
+// -------------------------------------------------------------------------
+// HOT PATH — cached regex for S (sub-second) token
+// Avoids `new RegExp` per token parse.
+// -------------------------------------------------------------------------
+const S_DIGIT_RE: RegExp[] = [];
+for (let d = 1; d <= 9; d++) {
+  S_DIGIT_RE.push(new RegExp(`^(\\d{1,${d}})`));
+}
+
+// -------------------------------------------------------------------------
+// HOT PATH — ordinal regex cache per locale _abbr
+// Avoids `new RegExp` per Do token parse.
+// -------------------------------------------------------------------------
+const _ordinalRegexCache = new Map<string, RegExp>();
+
+function getOrdinalRegex(loc: ParseLocale): RegExp {
+  const key = loc._abbr ?? "en";
+  let cached = _ordinalRegexCache.get(key);
+  if (!cached) {
+    const ordinalParse = loc._config.dayOfMonthOrdinalParse;
+    cached =
+      ordinalParse instanceof RegExp
+        ? new RegExp(`^(?:${ordinalParse.source})`)
+        : /^(\d{1,2})(?:st|nd|rd|th)?/i;
+    _ordinalRegexCache.set(key, cached);
+  }
+  return cached;
 }
 
 // ===== Dispatch Table =====

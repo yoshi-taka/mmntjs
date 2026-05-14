@@ -1,5 +1,4 @@
-// @ts-expect-error: no types for ../mmntjs
-import mmntjs from "../mmntjs";
+import mmntjs from "mmntjs";
 import { defineLocale } from "../src/locale";
 import { frLocale } from "../src/locale/fr";
 defineLocale("fr", frLocale);

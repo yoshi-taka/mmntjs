@@ -1,5 +1,4 @@
-// @ts-expect-error: no types for ../mmntjs
-import mmntjs from "../mmntjs";
+import mmntjs from "mmntjs";
 import { _localeCache } from "../src/locale-runtime";
 import { setLocale } from "../src/locale";
 import { format } from "date-fns";
