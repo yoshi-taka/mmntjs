@@ -555,7 +555,9 @@ describe("Metamorphic properties", () => {
         const shifted = moment(date).add(duration);
         // day/week 加算は local time の setDate を使うため、タイムゾーン変遷を跨ぐと
         // duration.valueOf() の純粋ミリ秒計算と最大1日差が出る
-        expect(Math.abs(shifted.valueOf() - moment(date).valueOf() - duration.valueOf())).toBeLessThanOrEqual(86400000);
+        expect(
+          Math.abs(shifted.valueOf() - moment(date).valueOf() - duration.valueOf()),
+        ).toBeLessThanOrEqual(86400000);
       }),
       { numRuns: 200 },
     );
