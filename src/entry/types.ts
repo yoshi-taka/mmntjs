@@ -5,7 +5,7 @@
 // -------------------------------------------------------------------------
 
 import type { Duration } from "../duration";
-import type { Locale } from "../locale";
+import type { Locale } from "../locale-runtime";
 import type { Moment } from "../moment-class";
 import type { MomentLite } from "../moment-lite";
 import type { NormalizedUnit, RelTimeRoundingFn, RelTimeThresholdKey } from "../types";
