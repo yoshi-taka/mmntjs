@@ -45,19 +45,14 @@ export function createFromObjectInput(
     return new Moment({ _dClone: false, _t: nowFn(), _i: obj });
   }
   const now = new Date(nowFn());
-  const year = parsed.year !== undefined ? parsed.year : now.getFullYear();
-  const month =
-    parsed.month !== undefined ? parsed.month : parsed.year !== undefined ? 0 : now.getMonth();
+  const year = parsed.year ?? now.getFullYear();
+  const month = parsed.month ?? (parsed.year !== undefined ? 0 : now.getMonth());
   const day =
-    parsed.day !== undefined
-      ? parsed.day
-      : parsed.year !== undefined || parsed.month !== undefined
-        ? 1
-        : now.getDate();
-  const hour = parsed.hour !== undefined ? parsed.hour : 0;
-  const minute = parsed.minute !== undefined ? parsed.minute : 0;
-  const second = parsed.second !== undefined ? parsed.second : 0;
-  const ms = parsed.millisecond !== undefined ? parsed.millisecond : 0;
+    parsed.day ?? (parsed.year !== undefined || parsed.month !== undefined ? 1 : now.getDate());
+  const hour = parsed.hour ?? 0;
+  const minute = parsed.minute ?? 0;
+  const second = parsed.second ?? 0;
+  const ms = parsed.millisecond ?? 0;
   const overflow = checkOverflow({ year, month, day, hour, minute, second, millisecond: ms });
   const d = createDate(year, month, day, hour, minute, second, ms);
   if (overflow >= 0) {
