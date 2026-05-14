@@ -246,6 +246,14 @@ export class MomentLite {
     return this._d;
   }
 
+  private _getDNoEnsure(): Date {
+    if (this._d) {
+      return this._d;
+    }
+    this._d = new Date(this._t);
+    return this._d;
+  }
+
   private _refreshFields(): void {
     if (this._isUTC) {
       if (this._d) {
@@ -1128,17 +1136,12 @@ export class MomentLite {
           if (this._isUTC) {
             this._t += rounded * 86400000;
             this._d = undefined;
-            this._dirty = true;
           } else {
             const dt = this._d ?? (this._d = new Date(this._t));
             dt.setDate(dt.getDate() + rounded);
             this._t = dt.getTime();
-            this.$y = dt.getFullYear();
-            this.$M = dt.getMonth();
-            this.$D = dt.getDate();
-            this.$W = dt.getDay();
-            this._offset = -dt.getTimezoneOffset();
           }
+          this._dirty = true;
         }
         break;
       }
@@ -1146,28 +1149,28 @@ export class MomentLite {
         const dt = this._d ?? (this._d = new Date(this._t));
         dt.setTime(dt.getTime() + Math.round(amount * 3600000));
         this._t = dt.getTime();
-        this._refreshFields();
+        this._dirty = true;
         break;
       }
       case MINUTE: {
         const dt = this._d ?? (this._d = new Date(this._t));
         dt.setTime(dt.getTime() + Math.round(amount * 60000));
         this._t = dt.getTime();
-        this._refreshFields();
+        this._dirty = true;
         break;
       }
       case SECOND: {
         const dt = this._d ?? (this._d = new Date(this._t));
         dt.setTime(dt.getTime() + Math.round(amount * 1000));
         this._t = dt.getTime();
-        this._refreshFields();
+        this._dirty = true;
         break;
       }
       case MILLISECOND: {
         const dt = this._d ?? (this._d = new Date(this._t));
         dt.setTime(dt.getTime() + Math.round(amount));
         this._t = dt.getTime();
-        this._refreshFields();
+        this._dirty = true;
         break;
       }
     }
@@ -1267,7 +1270,8 @@ export class MomentLite {
   }
 
   private _applyDuration(ms: number, days: number, months: number, sign: 1 | -1): void {
-    const d = this._getD();
+    this._ensureFields();
+    const d = this._getDNoEnsure();
     if (months) {
       const curMonth = this.$M;
       const day = this.$D;
@@ -1295,8 +1299,23 @@ export class MomentLite {
       d.setTime(d.getTime() + sign * ms);
     }
     this._t = d.getTime();
-    this._refreshFields();
-    if (isNaN(d.getTime())) {
+    if (months || ms) {
+      this._refreshFields();
+    } else if (days) {
+      if (this._isUTC) {
+        this.$y = d.getUTCFullYear();
+        this.$M = d.getUTCMonth();
+        this.$D = d.getUTCDate();
+        this.$W = d.getUTCDay();
+      } else {
+        this.$y = d.getFullYear();
+        this.$M = d.getMonth();
+        this.$D = d.getDate();
+        this.$W = d.getDay();
+        this._offset = -d.getTimezoneOffset();
+      }
+    }
+    if (isNaN(this._t)) {
       this._isValid = false;
     }
   }
@@ -1305,11 +1324,67 @@ export class MomentLite {
     if (!this._isValid) {
       return this;
     }
+    if (typeof amount === "number") {
+      if (unit !== undefined) {
+        const u = unit;
+        if (u === "day" || u === "days" || u === "d") {
+          const dt = this._d ?? (this._d = new Date(this._t));
+          dt.setDate(dt.getDate() + amount);
+          this._t = dt.getTime();
+          this._dirty = true;
+          return this;
+        }
+        if (u === "month" || u === "months" || u === "M") {
+          this._ensureFields();
+          const totalMonths = Number.isInteger(amount) ? amount : amount < 0 ? Math.round(-amount) * -1 : Math.round(amount);
+          const tm = this.$y * 12 + this.$M + totalMonths;
+          const y = Math.floor(tm / 12);
+          const m = ((tm % 12) + 12) % 12;
+          let d_ = this.$D;
+          if (d_ > 28) {
+            const md = m === 1 ? (y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0) ? 29 : 28)
+              : m === 3 || m === 5 || m === 8 || m === 10 ? 30 : 31;
+            if (d_ > md) {d_ = md;}
+          }
+          if (this._isUTC) {
+            this._t = Date.UTC(y, m, d_, this.$H, this.$m, this.$s, this.$ms);
+            this._d = undefined;
+            this._dirty = true;
+          } else {
+            const dt = this._d ?? (this._d = new Date(this._t));
+            dt.setFullYear(y, m, d_);
+            this._t = dt.getTime();
+          }
+          this.$y = y;
+          this.$M = m;
+          this.$D = d_;
+          this.$W = this._isUTC ? _dayOfWeek(y, m, d_) : this._d!.getDay();
+          if (!this._isUTC) {
+            this._offset = -this._d!.getTimezoneOffset();
+          }
+          if (isNaN(this._t)) {this._isValid = false;}
+          return this;
+        }
+        const code = normalizeUnitCode(u);
+        if (code !== undefined && code >= 0) {
+          this._addSimple(amount, code);
+          if (isNaN(this._t)) {this._isValid = false;}
+          return this;
+        }
+      } else {
+        this._addSimple(amount, MILLISECOND);
+        if (isNaN(this._t)) {this._isValid = false;}
+        return this;
+      }
+    }
     const parsed = this._parseDurationInput(amount, unit);
     if (!parsed) {
       return this;
     }
     this._applyDuration(parsed.ms, parsed.days, parsed.months, 1);
+    if (isNaN(this._t)) {
+      this._isValid = false;
+    }
     return this;
   }
 
@@ -1317,11 +1392,67 @@ export class MomentLite {
     if (!this._isValid) {
       return this;
     }
+    if (typeof amount === "number") {
+      if (unit !== undefined) {
+        const u = unit;
+        if (u === "day" || u === "days" || u === "d") {
+          const dt = this._d ?? (this._d = new Date(this._t));
+          dt.setDate(dt.getDate() - amount);
+          this._t = dt.getTime();
+          this._dirty = true;
+          return this;
+        }
+        if (u === "month" || u === "months" || u === "M") {
+          this._ensureFields();
+          const totalMonths = Number.isInteger(amount) ? -amount : amount < 0 ? Math.round(-amount) * -1 : -Math.round(amount);
+          const tm = this.$y * 12 + this.$M + totalMonths;
+          const y = Math.floor(tm / 12);
+          const m = ((tm % 12) + 12) % 12;
+          let d_ = this.$D;
+          if (d_ > 28) {
+            const md = m === 1 ? (y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0) ? 29 : 28)
+              : m === 3 || m === 5 || m === 8 || m === 10 ? 30 : 31;
+            if (d_ > md) {d_ = md;}
+          }
+          if (this._isUTC) {
+            this._t = Date.UTC(y, m, d_, this.$H, this.$m, this.$s, this.$ms);
+            this._d = undefined;
+            this._dirty = true;
+          } else {
+            const dt = this._d ?? (this._d = new Date(this._t));
+            dt.setFullYear(y, m, d_);
+            this._t = dt.getTime();
+          }
+          this.$y = y;
+          this.$M = m;
+          this.$D = d_;
+          this.$W = this._isUTC ? _dayOfWeek(y, m, d_) : this._d!.getDay();
+          if (!this._isUTC) {
+            this._offset = -this._d!.getTimezoneOffset();
+          }
+          if (isNaN(this._t)) {this._isValid = false;}
+          return this;
+        }
+        const code = normalizeUnitCode(u);
+        if (code !== undefined && code >= 0) {
+          this._addSimple(-amount, code);
+          if (isNaN(this._t)) {this._isValid = false;}
+          return this;
+        }
+      } else {
+        this._addSimple(-amount, MILLISECOND);
+        if (isNaN(this._t)) {this._isValid = false;}
+        return this;
+      }
+    }
     const parsed = this._parseDurationInput(amount, unit);
     if (!parsed) {
       return this;
     }
     this._applyDuration(parsed.ms, parsed.days, parsed.months, -1);
+    if (isNaN(this._t)) {
+      this._isValid = false;
+    }
     return this;
   }
 
@@ -1498,7 +1629,7 @@ export class MomentLite {
       return this;
     }
     this._ensureFields();
-    const d = this._getD();
+    const d = this._getDNoEnsure();
     const utc = this._isUTC;
 
     switch (code) {

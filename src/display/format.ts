@@ -139,12 +139,34 @@ function formatOffset(offset: number): string {
   return `${sign + PAD2[Math.floor(abs / 60)]}:${PAD2[abs % 60]}`;
 }
 
+const enMonths = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+const enMonthsShort = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+const enWeekdays = [
+  "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
+];
+const enWeekdaysShort = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function fmt12H(h: number): number {
+  return h % 12 || 12;
+}
+
+function fmtAmPm(h: number): string {
+  return h < 12 ? "AM" : "PM";
+}
+
 function formatCommonEn(m: FormattableMoment, format: string): string | undefined {
   const raw = m as unknown as {
     _l: string;
     $y: number;
     $M: number;
     $D: number;
+    $W: number;
     $H: number;
     $m: number;
     $s: number;
@@ -175,6 +197,26 @@ function formatCommonEn(m: FormattableMoment, format: string): string | undefine
       return `${datePart} ${PAD2[raw.$H]}:${PAD2[raw.$m]}:${PAD2[raw.$s]}.${pad3(raw.$ms)}`;
     case "YYYY-MM-DDTHH:mm:ss.SSSZ":
       return `${datePart}T${PAD2[raw.$H]}:${PAD2[raw.$m]}:${PAD2[raw.$s]}.${pad3(raw.$ms)}${formatOffset(m.utcOffset())}`;
+    case "LT":
+      return `${fmt12H(raw.$H)}:${PAD2[raw.$m]} ${fmtAmPm(raw.$H)}`;
+    case "LTS":
+      return `${fmt12H(raw.$H)}:${PAD2[raw.$m]}:${PAD2[raw.$s]} ${fmtAmPm(raw.$H)}`;
+    case "L":
+      return `${PAD2[raw.$M + 1]}/${PAD2[raw.$D]}/${padYear(y)}`;
+    case "l":
+      return `${raw.$M + 1}/${raw.$D}/${padYear(y)}`;
+    case "LL":
+      return `${enMonths[raw.$M]} ${raw.$D}, ${padYear(y)}`;
+    case "ll":
+      return `${enMonthsShort[raw.$M]} ${raw.$D}, ${padYear(y)}`;
+    case "LLL":
+      return `${enMonths[raw.$M]} ${raw.$D}, ${padYear(y)} ${fmt12H(raw.$H)}:${PAD2[raw.$m]} ${fmtAmPm(raw.$H)}`;
+    case "lll":
+      return `${enMonthsShort[raw.$M]} ${raw.$D}, ${padYear(y)} ${fmt12H(raw.$H)}:${PAD2[raw.$m]} ${fmtAmPm(raw.$H)}`;
+    case "LLLL":
+      return `${enWeekdays[raw.$W]}, ${enMonths[raw.$M]} ${raw.$D}, ${padYear(y)} ${fmt12H(raw.$H)}:${PAD2[raw.$m]} ${fmtAmPm(raw.$H)}`;
+    case "llll":
+      return `${enWeekdaysShort[raw.$W]}, ${enMonthsShort[raw.$M]} ${raw.$D}, ${padYear(y)} ${fmt12H(raw.$H)}:${PAD2[raw.$m]} ${fmtAmPm(raw.$H)}`;
   }
   return undefined;
 }
