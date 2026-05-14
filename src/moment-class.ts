@@ -1720,6 +1720,42 @@ export class Moment {
           }
           return this;
         }
+        if (u === "second" || u === "seconds" || u === "s") {
+          this._t += Math.round(amount * 1000);
+          this._d = undefined;
+          this._dirty = true;
+          if (isNaN(this._t)) {
+            this._isValid = false;
+          }
+          return this;
+        }
+        if (u === "minute" || u === "minutes" || u === "m") {
+          this._t += Math.round(amount * 60000);
+          this._d = undefined;
+          this._dirty = true;
+          if (isNaN(this._t)) {
+            this._isValid = false;
+          }
+          return this;
+        }
+        if (u === "hour" || u === "hours" || u === "h") {
+          this._t += Math.round(amount * 3600000);
+          this._d = undefined;
+          this._dirty = true;
+          if (isNaN(this._t)) {
+            this._isValid = false;
+          }
+          return this;
+        }
+        if (u === "millisecond" || u === "milliseconds" || u === "ms") {
+          this._t += Math.round(amount);
+          this._d = undefined;
+          this._dirty = true;
+          if (isNaN(this._t)) {
+            this._isValid = false;
+          }
+          return this;
+        }
         const code = normalizeUnitCode(u);
         if (code !== undefined && code >= 0) {
           this._addSimple(amount, code);
@@ -1801,6 +1837,42 @@ export class Moment {
           if (!this._isUTC) {
             this._offset = -this._d!.getTimezoneOffset();
           }
+          if (isNaN(this._t)) {
+            this._isValid = false;
+          }
+          return this;
+        }
+        if (u === "second" || u === "seconds" || u === "s") {
+          this._t -= Math.round(amount * 1000);
+          this._d = undefined;
+          this._dirty = true;
+          if (isNaN(this._t)) {
+            this._isValid = false;
+          }
+          return this;
+        }
+        if (u === "minute" || u === "minutes" || u === "m") {
+          this._t -= Math.round(amount * 60000);
+          this._d = undefined;
+          this._dirty = true;
+          if (isNaN(this._t)) {
+            this._isValid = false;
+          }
+          return this;
+        }
+        if (u === "hour" || u === "hours" || u === "h") {
+          this._t -= Math.round(amount * 3600000);
+          this._d = undefined;
+          this._dirty = true;
+          if (isNaN(this._t)) {
+            this._isValid = false;
+          }
+          return this;
+        }
+        if (u === "millisecond" || u === "milliseconds" || u === "ms") {
+          this._t -= Math.round(amount);
+          this._d = undefined;
+          this._dirty = true;
           if (isNaN(this._t)) {
             this._isValid = false;
           }
