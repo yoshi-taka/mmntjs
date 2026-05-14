@@ -13,7 +13,7 @@
 | TurboFan / JIT | Enabled (default). Warming paths reach TurboFan-optimized code by ~1000 calls. Cold values capture Ignition-tier performance |
 | Variance | Typical CV < 5% for warm measurements. Cold measurements have higher variance (~20-30%) due to JIT compilation, Shape allocation, and cache priming |
 | Format fast path | `format()` numbers reflect en-locale fast path where applicable |
-| Date | 2026-05-07 |
+| Date | 2026-05-15 |
 
 Unless noted, tables below use **Bun** as the runtime. Bun's JSC engine contributes to absolute speed; the relative advantage over date-fns and moment.js is cross-validated on Node.js 26 (V8) in the [cross-runtime section](#runtime-comparison-bun-vs-node-26).
 
@@ -21,32 +21,32 @@ Unless noted, tables below use **Bun** as the runtime. Bun's JSC engine contribu
 
 ```
 Operation                           warm mom    warm m2       %
-moment()                                280ns       52ns   18.5%
-moment([y,M,d])                         430ns      260ns   60.5%
-moment('ISO string')                   4.10us      277ns    6.8%
-moment(Date)                            212ns       60ns   28.4%
-format('YYYY-MM-DD')                    413ns       35ns    8.4%
-format('dddd, MMMM Do YYYY, h:mm:ss a') 957ns      876ns   91.6%
-format('LL')                            499ns      531ns  106.4%
-getters (7 fields)                      208ns       27ns   12.8%
-setters (year,month,date)               258ns      147ns   57.1%
-add(1,'day')                            323ns       57ns   17.6%
-add(1,'month')                          670ns      372ns   55.6%
-subtract(7,'days').add(1,'month')       673ns      165ns   24.5%
-isBefore/isAfter/isSame                 184ns       33ns   17.7%
-isBetween                              1.24us       80ns    6.4%
-diff('days')                            413ns       18ns    4.3%
-diff('months')                         1.44us       23ns    1.6%
-startOf('month').endOf('month')         370ns      331ns   89.5%
-startOf('week').startOf('year')         328ns       78ns   23.9%
-clone                                    60ns       32ns   53.4%
-moment.duration(12345)                  157ns       91ns   57.7%
-moment.duration(7,'days')               151ns       58ns   38.8%
-valueOf / unix                           17ns        8ns   45.0%
-daysInMonth / isLeapYear                 88ns       15ns   17.5%
-moment.utc('ISO string')               2.14us      254ns   11.9%
-format('HH:mm:ss')                      416ns       47ns   11.3%
-add(1,'year')                           589ns       11ns    1.9%
+moment()                                267ns       48ns   17.8%
+moment([y,M,d])                         576ns      366ns   63.5%
+moment('ISO string')                   4.10us      450ns   11.0%
+moment(Date)                            210ns       33ns   15.8%
+format('YYYY-MM-DD')                    411ns       33ns    8.0%
+format('dddd, MMMM Do YYYY, h:mm:ss a') 910ns      857ns   94.1%
+format('LL')                            516ns       46ns    8.9%
+getters (7 fields)                      197ns       36ns   18.2%
+setters (year,month,date)               243ns      152ns   62.8%
+add(1,'day')                            319ns       46ns   14.5%
+add(1,'month')                          687ns      376ns   54.7%
+subtract(7,'days').add(1,'month')       598ns      156ns   26.1%
+isBefore/isAfter/isSame                 181ns       30ns   16.4%
+isBetween                              1.08us      134ns   12.3%
+diff('days')                            557ns       18ns    3.2%
+diff('months')                         1.80us       82ns    4.6%
+startOf('month').endOf('month')         411ns      317ns   77.0%
+startOf('week').startOf('year')         412ns      154ns   37.5%
+clone                                    76ns       34ns   44.9%
+moment.duration(12345)                  179ns       96ns   53.8%
+moment.duration(7,'days')               150ns       63ns   42.2%
+valueOf / unix                           17ns        7ns   42.8%
+daysInMonth / isLeapYear                109ns       17ns   15.7%
+moment.utc('ISO string')               2.47us      457ns   18.5%
+format('HH:mm:ss')                      422ns       40ns    9.5%
+add(1,'year')                           645ns      357ns   55.3%
 ```
 
 (`%` = moment2 / moment x 100. Lower = moment2 faster)
