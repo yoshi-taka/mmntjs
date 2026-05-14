@@ -57,28 +57,28 @@ add(1,'year')                           645ns      357ns   55.3%
 
 ```
 Operation                           warm m2      warm df       %
-parse ISO string                       522ns      1.21us ~231.0%
-get day of year                         17ns      1.17us ~6882.6%
-add 1 day                               74ns        81ns ~110.0%
-format YYYY-MM-DD                       43ns      1.10us ~2536.9%
-lightFormat YYYY-MM-DD                  30ns       544ns ~1810.7%
-isAfter                                 15ns       127ns  ~846.7%
-startOf month                           12ns        73ns  ~621.2%
-diff in days                            22ns       836ns ~3823.2%
-moment() / new Date()                   37ns        34ns   ~93.9%
-startOf year                            80ns        80ns   ~99.6%
-endOf month                             72ns        86ns  ~119.8%
-add 1 month                            102ns       194ns  ~189.3%
-add 1 second                            46ns        88ns  ~188.9%
-add 1 ms                                51ns        79ns  ~154.6%
-sub 1 day                               63ns        73ns  ~114.6%
-diff in months                          84ns       100ns  ~119.5%
-format HH:mm:ss                         35ns       925ns ~2608.7%
-lightFormat HH:mm:ss                    63ns       412ns  ~653.6%
-isBefore                                13ns       127ns ~1007.3%
-daysInMonth                             14ns       267ns ~1931.0%
-isLeapYear                               6ns        41ns  ~707.8%
-set year                                47ns       114ns  ~244.8%
+parse ISO string                       379ns       979ns ~258.5%
+get day of year                         17ns      1.13us ~6579.3%
+add 1 day                               46ns        78ns ~168.2%
+format YYYY-MM-DD                       41ns      1.10us ~2711.5%
+lightFormat YYYY-MM-DD                  37ns       526ns ~1421.1%
+isAfter                                 15ns       130ns  ~854.8%
+startOf month                           11ns        73ns  ~634.6%
+diff in days                            19ns       826ns ~4409.8%
+moment() / new Date()                   38ns        33ns   ~88.9%
+startOf year                            86ns        83ns   ~96.5%
+endOf month                             76ns        86ns  ~113.0%
+add 1 month                             81ns       193ns  ~237.5%
+add 1 second                            12ns        95ns  ~766.5%
+add 1 ms                                16ns        80ns  ~494.2%
+sub 1 day                               44ns        69ns  ~157.3%
+diff in months                          77ns        90ns  ~116.9%
+format HH:mm:ss                         33ns       865ns ~2628.8%
+lightFormat HH:mm:ss                    49ns       425ns  ~868.8%
+isBefore                                13ns       127ns ~1003.1%
+daysInMonth                             14ns       255ns ~1879.6%
+isLeapYear                               7ns        35ns  ~537.3%
+set year                                48ns       100ns  ~209.7%
 ```
 
 (`%` = df / m2 x 100. Higher = moment2 faster. `>100` = moment2 wins.)
