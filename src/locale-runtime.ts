@@ -340,6 +340,9 @@ export function localeInvalidDate(loc: Locale): string {
   return loc._config.invalidDate ?? enLocale.invalidDate ?? "Invalid date";
 }
 
+// Idempotence: localePreparse(loc, localePreparse(loc, s)) ≡ localePreparse(loc, s)
+//   For locales defining both preparse and postformat,
+//   localePreparse(loc, localePostformat(loc, s)) should approach identity (roundtrip law).
 export function localePreparse(loc: Locale, str: string): string {
   const fn = loc._config.preparse;
   if (fn) {
@@ -348,6 +351,8 @@ export function localePreparse(loc: Locale, str: string): string {
   return str;
 }
 
+// Idempotence: localePostformat(loc, localePostformat(loc, s)) ≡ localePostformat(loc, s)
+//   Inverse of localePreparse when both are defined.
 export function localePostformat(loc: Locale, str: string): string {
   const fn = loc._config.postformat;
   if (fn) {

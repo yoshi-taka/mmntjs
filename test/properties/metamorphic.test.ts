@@ -647,4 +647,108 @@ describe("Metamorphic properties", () => {
       { numRuns: 200 },
     );
   });
+
+  test("normalizeUnits is idempotent for all unit aliases", () => {
+    fc.assert(
+      fc.property(
+        fc.constantFrom(
+          "year",
+          "y",
+          "Y",
+          "years",
+          "month",
+          "M",
+          "months",
+          "Mo",
+          "date",
+          "D",
+          "dates",
+          "day",
+          "d",
+          "days",
+          "hour",
+          "h",
+          "hours",
+          "minute",
+          "m",
+          "minutes",
+          "second",
+          "s",
+          "seconds",
+          "millisecond",
+          "ms",
+          "milliseconds",
+          "week",
+          "w",
+          "weeks",
+          "isoWeek",
+          "W",
+          "isoWeeks",
+          "weekday",
+          "e",
+          "weekdays",
+          "isoWeekday",
+          "E",
+          "isoWeekdays",
+          "quarter",
+          "Q",
+          "quarters",
+          "dayOfYear",
+          "DDD",
+          "doy",
+          "dayOfYears",
+          "weekYear",
+          "gg",
+          "weekYears",
+          "isoWeekYear",
+          "GG",
+          "isoWeekYears",
+        ),
+        (alias) => {
+          const n1 = moment.normalizeUnits(alias);
+          const n2 = moment.normalizeUnits(n1 as string);
+          expect(n2).toBe(n1);
+        },
+      ),
+      { numRuns: 200 },
+    );
+  });
+
+  test("normalizeUnits handles random invalid strings idempotently", () => {
+    fc.assert(
+      fc.property(
+        fc.string().filter((s) => s !== "__proto__" && s !== "constructor"),
+        (s) => {
+          const n1 = moment.normalizeUnits(s);
+          const n2 = moment.normalizeUnits(n1 as string);
+          expect(n2).toBe(n1);
+        },
+      ),
+      { numRuns: 200 },
+    );
+  });
+
+  test("invalid moment stays invalid after startOf/endOf for all boundary units", () => {
+    fc.assert(
+      fc.property(fc.constantFrom("year", "quarter", "month", "week", "isoWeek", "day"), (unit) => {
+        const base = moment.invalid();
+        expect(base.isValid()).toBe(false);
+        expect(base.clone().startOf(unit).isValid()).toBe(false);
+        expect(base.clone().endOf(unit).isValid()).toBe(false);
+      }),
+      { numRuns: 50 },
+    );
+  });
+
+  test("ISO format roundtrip preserves the instant", () => {
+    fc.assert(
+      fc.property(safeDates, (date) => {
+        const original = moment(date);
+        const formatted = original.format("YYYY-MM-DDTHH:mm:ss.SSSZ");
+        const restored = moment(formatted);
+        expect(restored.valueOf()).toBe(original.valueOf());
+      }),
+      { numRuns: 200 },
+    );
+  });
 });

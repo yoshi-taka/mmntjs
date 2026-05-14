@@ -85,6 +85,9 @@ for (const key of Object.keys(_aliases)) {
 
 export const units: Record<string, string> = _aliases as unknown as Record<string, string>;
 
+// Idempotence: normalizeUnits(normalizeUnits(x)) ≡ normalizeUnits(x)
+//   because every NormalizedUnit is a key in _aliases mapping to itself.
+// Retraction: normalizeUnits maps UnitAlias → NormalizedUnit (the canonical representative).
 export function normalizeUnits(unit: string): NormalizedUnit | undefined {
   return unit
     ? ((_aliases as Record<string, NormalizedUnit | undefined>)[unit] ?? _nmap[unit.toLowerCase()])
@@ -118,6 +121,8 @@ for (const key of Object.keys(_aliases)) {
   _codeNmap[key.toLowerCase()] = code;
 }
 
+// Composition: normalizeUnitCode ∘ normalizeUnits ≡ normalizeUnitCode on UnitAlias domain.
+//   normalizeUnitCode returns a numeric code — further calls with the same string are idempotent.
 export function normalizeUnitCode(unit: string): UnitCode | undefined {
   if (!unit) {
     return INVALID_UNIT;

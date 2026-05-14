@@ -1910,6 +1910,10 @@ export class Moment {
     if (code < 0) {
       return this;
     }
+    // Invalid state propagation: invalid.startOf(u) stays invalid (match moment.js behavior)
+    if (!this._isValid) {
+      return this;
+    }
     this._ensureFields();
     if (!updateOffsetCallback) {
       if (code === MONTH) {
@@ -2032,6 +2036,10 @@ export class Moment {
   endOf(unit: string): this {
     const code = normalizeUnitCode(unit) ?? INVALID_UNIT;
     if (code < 0) {
+      return this;
+    }
+    // Invalid state propagation: invalid.endOf(u) stays invalid (match moment.js behavior)
+    if (!this._isValid) {
       return this;
     }
     this._ensureFields();
