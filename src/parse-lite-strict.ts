@@ -129,17 +129,13 @@ function emptyParsed(): ParsedData {
 function digitsAt(str: string, idx: number, count: number): boolean {
   for (let i = 0; i < count; i++) {
     const c = str.charCodeAt(idx + i);
-    if (c < 48 || c > 57) {
-      return false;
-    }
+    if (c < 48 || c > 57) return false;
   }
   return true;
 }
 function numAt(str: string, idx: number, count: number): number {
   let v = 0;
-  for (let i = 0; i < count; i++) {
-    v = v * 10 + (str.charCodeAt(idx + i) - 48);
-  }
+  for (let i = 0; i < count; i++) v = v * 10 + (str.charCodeAt(idx + i) - 48);
   return v;
 }
 
@@ -147,17 +143,9 @@ function numAt(str: string, idx: number, count: number): number {
 function parseCommonISOExtended(str: string): ParsedData | null {
   const len = str.length;
   const c0 = str.charCodeAt(0);
-  if (c0 < 48 || c0 > 57) {
-    return null;
-  }
-  if (
-    len === 10 &&
-    str.charCodeAt(4) === 45 &&
-    str.charCodeAt(7) === 45 &&
-    digitsAt(str, 1, 3) &&
-    digitsAt(str, 5, 2) &&
-    digitsAt(str, 8, 2)
-  ) {
+  if (c0 < 48 || c0 > 57) return null;
+  if (len === 10 && str.charCodeAt(4) === 45 && str.charCodeAt(7) === 45 &&
+      digitsAt(str, 1, 3) && digitsAt(str, 5, 2) && digitsAt(str, 8, 2)) {
     const out = emptyParsed();
     out.year = numAt(str, 0, 4);
     out.month = numAt(str, 5, 2) - 1;
@@ -369,27 +357,9 @@ function parseIsoTokenFormat(str: string, format: string): ParsedData | null {
 const _isoTokenByChar: Record<string, string[] | undefined> = {};
 {
   const tokens = [
-    "SSSSSSSSS",
-    "SSSSSSSS",
-    "SSSSSSS",
-    "SSSSSS",
-    "SSSSS",
-    "SSSS",
-    "YYYYYY",
-    "GGGG",
-    "YYYY",
-    "DDD",
-    "HH",
-    "mm",
-    "ss",
-    "WW",
-    "MM",
-    "DD",
-    "SSS",
-    "SS",
-    "S",
-    "E",
-    "Z",
+    "SSSSSSSSS", "SSSSSSSS", "SSSSSSS", "SSSSSS", "SSSSS", "SSSS",
+    "YYYYYY", "GGGG", "YYYY", "DDD", "HH", "mm", "ss", "WW", "MM", "DD",
+    "SSS", "SS", "S", "E", "Z",
   ];
   for (const t of tokens) {
     const c = t[0];

@@ -1380,7 +1380,9 @@ export class MomentLite {
             }
             default:
               this._addSimple(amount, code);
-              if (isNaN(this._t)) { this._isValid = false; }
+              if (isNaN(this._t)) {
+                this._isValid = false;
+              }
               return this;
           }
         }

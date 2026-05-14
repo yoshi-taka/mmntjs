@@ -1742,29 +1742,39 @@ export class Moment {
               this._t += Number.isInteger(amount) ? amount * 3600000 : Math.round(amount * 3600000);
               this._d = undefined;
               this._dirty = true;
-              if (isNaN(this._t)) { this._isValid = false; }
+              if (isNaN(this._t)) {
+                this._isValid = false;
+              }
               return this;
             case MINUTE:
               this._t += Number.isInteger(amount) ? amount * 60000 : Math.round(amount * 60000);
               this._d = undefined;
               this._dirty = true;
-              if (isNaN(this._t)) { this._isValid = false; }
+              if (isNaN(this._t)) {
+                this._isValid = false;
+              }
               return this;
             case SECOND:
               this._t += Number.isInteger(amount) ? amount * 1000 : Math.round(amount * 1000);
               this._d = undefined;
               this._dirty = true;
-              if (isNaN(this._t)) { this._isValid = false; }
+              if (isNaN(this._t)) {
+                this._isValid = false;
+              }
               return this;
             case MILLISECOND:
               this._t += Number.isInteger(amount) ? amount : Math.round(amount);
               this._d = undefined;
               this._dirty = true;
-              if (isNaN(this._t)) { this._isValid = false; }
+              if (isNaN(this._t)) {
+                this._isValid = false;
+              }
               return this;
             default:
               this._addSimple(amount, code);
-              if (isNaN(this._t)) { this._isValid = false; }
+              if (isNaN(this._t)) {
+                this._isValid = false;
+              }
               return this;
           }
         }
@@ -2243,7 +2253,7 @@ export class Moment {
         if (isUTC && otherUTC) {
           const days = Math.floor(a / 86400000) - Math.floor(b / 86400000);
           const r = days / 7;
-          return float ? r : (Math.trunc(r) || 0);
+          return float ? r : Math.trunc(r) || 0;
         }
         const r = (a - b) / 604800000;
         if (float) {
@@ -2518,8 +2528,8 @@ export class Moment {
       case "date":
       default: {
         if (this._isUTC && other._isUTC) {
-          const thisDays = Math.floor(this._t / 86400000);
-          const otherDays = Math.floor(other._t / 86400000);
+          const thisDays = Math.floor((this._t - this._offset * 60000) / 86400000);
+          const otherDays = Math.floor((other._t - other._offset * 60000) / 86400000);
           if (thisDays !== otherDays) {
             return thisDays - otherDays;
           }
