@@ -86,7 +86,9 @@ for (const key of Object.keys(_aliases)) {
 export const units: Record<string, string> = _aliases as unknown as Record<string, string>;
 
 export function normalizeUnits(unit: string): NormalizedUnit | undefined {
-  return unit ? (_aliases as Record<string, NormalizedUnit | undefined>)[unit] ?? _nmap[unit.toLowerCase()] : undefined;
+  return unit
+    ? ((_aliases as Record<string, NormalizedUnit | undefined>)[unit] ?? _nmap[unit.toLowerCase()])
+    : undefined;
 }
 
 const _unitCodes: Record<NormalizedUnit, UnitCode> = {

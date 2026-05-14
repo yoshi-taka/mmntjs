@@ -841,10 +841,7 @@ export class Duration {
     const yearsVal = monthsVal / 12;
 
     const rrf = getRelTimeRounding();
-    const roundFn =
-      rrf === true || !rrf
-        ? Math.round
-        : rrf;
+    const roundFn = rrf === true || !rrf ? Math.round : rrf;
     const seconds = roundFn(Math.abs(secondsVal));
     const minutes = roundFn(Math.abs(minutesVal));
     const hours = roundFn(Math.abs(hoursVal));

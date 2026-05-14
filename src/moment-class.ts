@@ -11,6 +11,7 @@
 // -------------------------------------------------------------------------
 
 import type { Locale } from "./locale-runtime";
+import type { UnitCode } from "./types";
 import { getLiteCurrentLocale, getLiteLocale, hasLiteLocale } from "./locale-lite";
 import { isArray, isObject, isDate, isMoment, hasOwnProp, zeroFill, createDateSafe } from "./utils";
 import {
@@ -66,8 +67,8 @@ let isoWeekYearCallback: ((m: Moment, y?: number) => number | Moment) | undefine
 let isoWeeksInYearCallback: ((m: Moment) => number) | undefined;
 let isoWeeksInISOWeekYearCallback: ((m: Moment) => number) | undefined;
 let calendarCompareCallback: ((left: Moment, right: Moment, unit: string) => number) | undefined;
-let startOfExtraCallback: ((m: Moment, code: number) => void) | undefined;
-let endOfExtraCallback: ((m: Moment, code: number) => void) | undefined;
+let startOfExtraCallback: ((m: Moment, code: UnitCode) => void) | undefined;
+let endOfExtraCallback: ((m: Moment, code: UnitCode) => void) | undefined;
 let toArrayCallback: ((m: Moment) => number[]) | undefined;
 let inspectCallback: ((m: Moment) => string) | undefined;
 let creationDataCallback: ((m: Moment) => Record<string, unknown>) | undefined;
@@ -210,8 +211,8 @@ export function setCalendarMethodCallbacks(callbacks: {
   isoWeeksInYear?: ((m: Moment) => number) | undefined;
   isoWeeksInISOWeekYear?: ((m: Moment) => number) | undefined;
   compare?: ((left: Moment, right: Moment, unit: string) => number) | undefined;
-  startOfExtra?: ((m: Moment, code: number) => void) | undefined;
-  endOfExtra?: ((m: Moment, code: number) => void) | undefined;
+  startOfExtra?: ((m: Moment, code: UnitCode) => void) | undefined;
+  endOfExtra?: ((m: Moment, code: UnitCode) => void) | undefined;
 }): void {
   isoWeekdayCallback = callbacks.isoWeekday;
   dayOfYearCallback = callbacks.dayOfYear;
@@ -1676,15 +1677,27 @@ export class Moment {
         }
         if (u === "month" || u === "months" || u === "M") {
           this._ensureFields();
-          const totalMonths = Number.isInteger(amount) ? amount : amount < 0 ? Math.round(-amount) * -1 : Math.round(amount);
+          const totalMonths = Number.isInteger(amount)
+            ? amount
+            : amount < 0
+              ? Math.round(-amount) * -1
+              : Math.round(amount);
           const tm = this.$y * 12 + this.$M + totalMonths;
           const y = Math.floor(tm / 12);
           const m = ((tm % 12) + 12) % 12;
           let d_ = this.$D;
           if (d_ > 28) {
-            const md = m === 1 ? (y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0) ? 29 : 28)
-              : m === 3 || m === 5 || m === 8 || m === 10 ? 30 : 31;
-            if (d_ > md) {d_ = md;}
+            const md =
+              m === 1
+                ? y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)
+                  ? 29
+                  : 28
+                : m === 3 || m === 5 || m === 8 || m === 10
+                  ? 30
+                  : 31;
+            if (d_ > md) {
+              d_ = md;
+            }
           }
           if (this._isUTC) {
             this._t = Date.UTC(y, m, d_, this.$H, this.$m, this.$s, this.$ms);
@@ -1702,18 +1715,24 @@ export class Moment {
           if (!this._isUTC) {
             this._offset = -this._d!.getTimezoneOffset();
           }
-          if (isNaN(this._t)) {this._isValid = false;}
+          if (isNaN(this._t)) {
+            this._isValid = false;
+          }
           return this;
         }
         const code = normalizeUnitCode(u);
         if (code !== undefined && code >= 0) {
           this._addSimple(amount, code);
-          if (isNaN(this._t)) {this._isValid = false;}
+          if (isNaN(this._t)) {
+            this._isValid = false;
+          }
           return this;
         }
       } else {
         this._addSimple(amount, MILLISECOND);
-        if (isNaN(this._t)) {this._isValid = false;}
+        if (isNaN(this._t)) {
+          this._isValid = false;
+        }
         return this;
       }
     }
@@ -1744,15 +1763,27 @@ export class Moment {
         }
         if (u === "month" || u === "months" || u === "M") {
           this._ensureFields();
-          const totalMonths = Number.isInteger(amount) ? -amount : amount < 0 ? Math.round(-amount) * -1 : -Math.round(amount);
+          const totalMonths = Number.isInteger(amount)
+            ? -amount
+            : amount < 0
+              ? Math.round(-amount) * -1
+              : -Math.round(amount);
           const tm = this.$y * 12 + this.$M + totalMonths;
           const y = Math.floor(tm / 12);
           const m = ((tm % 12) + 12) % 12;
           let d_ = this.$D;
           if (d_ > 28) {
-            const md = m === 1 ? (y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0) ? 29 : 28)
-              : m === 3 || m === 5 || m === 8 || m === 10 ? 30 : 31;
-            if (d_ > md) {d_ = md;}
+            const md =
+              m === 1
+                ? y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)
+                  ? 29
+                  : 28
+                : m === 3 || m === 5 || m === 8 || m === 10
+                  ? 30
+                  : 31;
+            if (d_ > md) {
+              d_ = md;
+            }
           }
           if (this._isUTC) {
             this._t = Date.UTC(y, m, d_, this.$H, this.$m, this.$s, this.$ms);
@@ -1770,18 +1801,24 @@ export class Moment {
           if (!this._isUTC) {
             this._offset = -this._d!.getTimezoneOffset();
           }
-          if (isNaN(this._t)) {this._isValid = false;}
+          if (isNaN(this._t)) {
+            this._isValid = false;
+          }
           return this;
         }
         const code = normalizeUnitCode(u);
         if (code !== undefined && code >= 0) {
           this._addSimple(-amount, code);
-          if (isNaN(this._t)) {this._isValid = false;}
+          if (isNaN(this._t)) {
+            this._isValid = false;
+          }
           return this;
         }
       } else {
         this._addSimple(-amount, MILLISECOND);
-        if (isNaN(this._t)) {this._isValid = false;}
+        if (isNaN(this._t)) {
+          this._isValid = false;
+        }
         return this;
       }
     }
@@ -3035,13 +3072,13 @@ export function momentFromAnything(input: unknown, isUTC?: boolean): Moment {
     const parsed = parseObject(obj);
     if (parsed.year != null || parsed.month != null || parsed.day != null) {
       const now = new Date();
-      const y = parsed.year != null ? (parsed.year) : now.getFullYear();
-      const mo = (parsed.month) ?? 0;
-      const d = (parsed.day) ?? 1;
-      const h = (parsed.hour) ?? 0;
-      const min = (parsed.minute) ?? 0;
-      const s = (parsed.second) ?? 0;
-      const ms = (parsed.millisecond) ?? 0;
+      const y = parsed.year ?? now.getFullYear();
+      const mo = parsed.month ?? 0;
+      const d = parsed.day ?? 1;
+      const h = parsed.hour ?? 0;
+      const min = parsed.minute ?? 0;
+      const s = parsed.second ?? 0;
+      const ms = parsed.millisecond ?? 0;
       return new Moment({ _d: new Date(y, mo, d, h, min, s, ms), _i: input, _dClone: false });
     }
     const m = new Moment(input);

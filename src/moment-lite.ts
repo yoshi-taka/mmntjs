@@ -1336,15 +1336,27 @@ export class MomentLite {
         }
         if (u === "month" || u === "months" || u === "M") {
           this._ensureFields();
-          const totalMonths = Number.isInteger(amount) ? amount : amount < 0 ? Math.round(-amount) * -1 : Math.round(amount);
+          const totalMonths = Number.isInteger(amount)
+            ? amount
+            : amount < 0
+              ? Math.round(-amount) * -1
+              : Math.round(amount);
           const tm = this.$y * 12 + this.$M + totalMonths;
           const y = Math.floor(tm / 12);
           const m = ((tm % 12) + 12) % 12;
           let d_ = this.$D;
           if (d_ > 28) {
-            const md = m === 1 ? (y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0) ? 29 : 28)
-              : m === 3 || m === 5 || m === 8 || m === 10 ? 30 : 31;
-            if (d_ > md) {d_ = md;}
+            const md =
+              m === 1
+                ? y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)
+                  ? 29
+                  : 28
+                : m === 3 || m === 5 || m === 8 || m === 10
+                  ? 30
+                  : 31;
+            if (d_ > md) {
+              d_ = md;
+            }
           }
           if (this._isUTC) {
             this._t = Date.UTC(y, m, d_, this.$H, this.$m, this.$s, this.$ms);
@@ -1362,18 +1374,24 @@ export class MomentLite {
           if (!this._isUTC) {
             this._offset = -this._d!.getTimezoneOffset();
           }
-          if (isNaN(this._t)) {this._isValid = false;}
+          if (isNaN(this._t)) {
+            this._isValid = false;
+          }
           return this;
         }
         const code = normalizeUnitCode(u);
         if (code !== undefined && code >= 0) {
           this._addSimple(amount, code);
-          if (isNaN(this._t)) {this._isValid = false;}
+          if (isNaN(this._t)) {
+            this._isValid = false;
+          }
           return this;
         }
       } else {
         this._addSimple(amount, MILLISECOND);
-        if (isNaN(this._t)) {this._isValid = false;}
+        if (isNaN(this._t)) {
+          this._isValid = false;
+        }
         return this;
       }
     }
@@ -1404,15 +1422,27 @@ export class MomentLite {
         }
         if (u === "month" || u === "months" || u === "M") {
           this._ensureFields();
-          const totalMonths = Number.isInteger(amount) ? -amount : amount < 0 ? Math.round(-amount) * -1 : -Math.round(amount);
+          const totalMonths = Number.isInteger(amount)
+            ? -amount
+            : amount < 0
+              ? Math.round(-amount) * -1
+              : -Math.round(amount);
           const tm = this.$y * 12 + this.$M + totalMonths;
           const y = Math.floor(tm / 12);
           const m = ((tm % 12) + 12) % 12;
           let d_ = this.$D;
           if (d_ > 28) {
-            const md = m === 1 ? (y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0) ? 29 : 28)
-              : m === 3 || m === 5 || m === 8 || m === 10 ? 30 : 31;
-            if (d_ > md) {d_ = md;}
+            const md =
+              m === 1
+                ? y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)
+                  ? 29
+                  : 28
+                : m === 3 || m === 5 || m === 8 || m === 10
+                  ? 30
+                  : 31;
+            if (d_ > md) {
+              d_ = md;
+            }
           }
           if (this._isUTC) {
             this._t = Date.UTC(y, m, d_, this.$H, this.$m, this.$s, this.$ms);
@@ -1430,18 +1460,24 @@ export class MomentLite {
           if (!this._isUTC) {
             this._offset = -this._d!.getTimezoneOffset();
           }
-          if (isNaN(this._t)) {this._isValid = false;}
+          if (isNaN(this._t)) {
+            this._isValid = false;
+          }
           return this;
         }
         const code = normalizeUnitCode(u);
         if (code !== undefined && code >= 0) {
           this._addSimple(-amount, code);
-          if (isNaN(this._t)) {this._isValid = false;}
+          if (isNaN(this._t)) {
+            this._isValid = false;
+          }
           return this;
         }
       } else {
         this._addSimple(-amount, MILLISECOND);
-        if (isNaN(this._t)) {this._isValid = false;}
+        if (isNaN(this._t)) {
+          this._isValid = false;
+        }
         return this;
       }
     }

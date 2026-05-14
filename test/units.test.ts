@@ -3,7 +3,7 @@ import { normalizeUnits, normalizeUnitCode, isLeapYear, daysInMonth } from "../s
 
 describe("normalizeUnits", () => {
   test("recognizes all unit aliases", () => {
-    const cases: [string, string][] = [
+    const cases: [string, string | undefined][] = [
       ["year", "year"],
       ["years", "year"],
       ["y", "year"],
@@ -55,7 +55,7 @@ describe("normalizeUnits", () => {
       ["GG", "isoWeekYear"],
     ];
     for (const [input, expected] of cases) {
-      expect(normalizeUnits(input)).toBe(expected);
+      expect(normalizeUnits(input)).toBe(expected as ReturnType<typeof normalizeUnits>);
     }
   });
 
