@@ -88,7 +88,7 @@ describe("normalizeUnitCode", () => {
 
   test("returns INVALID_UNIT for unknown input", () => {
     expect(normalizeUnitCode("")).toBe(-1);
-    expect(normalizeUnitCode("foo")).toBeUndefined();
+    expect(normalizeUnitCode("foo")).toBe(-1);
   });
 });
 

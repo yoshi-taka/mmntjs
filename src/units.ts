@@ -123,11 +123,11 @@ for (const key of Object.keys(_aliases)) {
 
 // Composition: normalizeUnitCode ∘ normalizeUnits ≡ normalizeUnitCode on UnitAlias domain.
 //   normalizeUnitCode returns a numeric code — further calls with the same string are idempotent.
-export function normalizeUnitCode(unit: string): UnitCode | undefined {
+export function normalizeUnitCode(unit: string): UnitCode {
   if (!unit) {
     return INVALID_UNIT;
   }
-  return _codeAliases[unit] ?? _codeNmap[unit.toLowerCase()];
+  return _codeAliases[unit] ?? _codeNmap[unit.toLowerCase()] ?? INVALID_UNIT;
 }
 
 export function euclideanModulo(value: number, mod: number): number {

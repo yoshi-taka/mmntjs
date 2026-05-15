@@ -1342,7 +1342,7 @@ export class MomentLite {
     if (typeof amount === "number") {
       if (unit !== undefined) {
         const code = normalizeUnitCode(unit);
-        if (code !== undefined && code >= 0) {
+        if (code >= 0) {
           switch (code) {
             case DAY: {
               const dt = this._d ?? (this._d = new Date(this._t));
@@ -1452,7 +1452,7 @@ export class MomentLite {
       return diff;
     }
 
-    const code = normalizeUnitCode(unit) ?? -1;
+    const code = normalizeUnitCode(unit);
     if (code < 0) {
       return NaN;
     }
@@ -1624,7 +1624,7 @@ export class MomentLite {
   }
 
   startOf(unit: string): this {
-    const code = normalizeUnitCode(unit) ?? -1;
+    const code = normalizeUnitCode(unit);
     if (code < 0) {
       return this;
     }
@@ -1727,7 +1727,7 @@ export class MomentLite {
   }
 
   endOf(unit: string): this {
-    const code = normalizeUnitCode(unit) ?? -1;
+    const code = normalizeUnitCode(unit);
     if (code < 0) {
       return this;
     }

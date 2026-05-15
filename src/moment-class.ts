@@ -1666,7 +1666,7 @@ export class Moment {
     if (typeof amount === "number") {
       if (unit !== undefined) {
         const code = normalizeUnitCode(unit);
-        if (code !== undefined && code >= 0) {
+        if (code >= 0) {
           switch (code) {
             case DAY: {
               if (this._isUTC) {
@@ -1804,11 +1804,10 @@ export class Moment {
   }
 
   startOf(unit: string): this {
-    const code = normalizeUnitCode(unit) ?? INVALID_UNIT;
+    const code = normalizeUnitCode(unit);
     if (code < 0) {
       return this;
     }
-    // Invalid state propagation: invalid.startOf(u) stays invalid (match moment.js behavior)
     if (!this._isValid) {
       return this;
     }
@@ -1947,7 +1946,7 @@ export class Moment {
   }
 
   endOf(unit: string): this {
-    const code = normalizeUnitCode(unit) ?? INVALID_UNIT;
+    const code = normalizeUnitCode(unit);
     if (code < 0) {
       return this;
     }
@@ -2172,7 +2171,7 @@ export class Moment {
     const other = momentFromAnything(input);
     const isUTC = this._isUTC;
     const otherUTC = other._isUTC;
-    const code = unit ? (normalizeUnitCode(unit) ?? INVALID_UNIT) : (INVALID_UNIT as -1);
+    const code = unit ? normalizeUnitCode(unit) : (INVALID_UNIT as -1);
     if (code < 0) {
       const a = isUTC ? this._t - this._offset * 60000 : this._t;
       const b = otherUTC ? other._t - other._offset * 60000 : other._t;
