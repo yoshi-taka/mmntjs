@@ -22,7 +22,13 @@ function median(values: number[]): number {
   return sorted[Math.floor(sorted.length / 2)];
 }
 
-function sample(name: string, fn: () => void, iterations = 4000, warmup = 500, runs = 5): BenchResult {
+function sample(
+  name: string,
+  fn: () => void,
+  iterations = 4000,
+  warmup = 500,
+  runs = 5,
+): BenchResult {
   const samples: number[] = [];
   for (let i = 0; i < runs; i++) {
     samples.push(run(fn, iterations, warmup));
@@ -80,7 +86,15 @@ assertRatio("invalid parse complexity", parseGrowth, 12);
 assertRatio("month normalization complexity", monthGrowth, 3.5);
 
 console.log("bench regression guard");
-for (const result of [utcStart, utcEnd, utcDiff, shortInvalid, longInvalid, monthSmall, monthLarge]) {
+for (const result of [
+  utcStart,
+  utcEnd,
+  utcDiff,
+  shortInvalid,
+  longInvalid,
+  monthSmall,
+  monthLarge,
+]) {
   console.log(`${result.name}: ${result.nsPerOp.toFixed(1)}ns`);
 }
 console.log(`invalid parse growth: ${parseGrowth.toFixed(2)}x`);
