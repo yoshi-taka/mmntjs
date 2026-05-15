@@ -3,12 +3,15 @@ import type { LiteLocale as Locale } from "./locale-lite";
 import { isObject, isDate, isMoment, hasOwnProp, zeroFill, createDateSafe } from "./utils";
 import {
   endOfUnitEpoch,
+  euclideanModulo,
   floorUnitEpoch,
   normalizeUnits,
   normalizeUnitCode,
   normalizeMonth,
   daysInMonth,
+  daysInMonthFast,
   isLeapYear,
+  ymdToEpochDays,
   YEAR,
   MONTH,
   DATE,
@@ -142,7 +145,10 @@ function getDayOfYear(d: Date, utc: boolean): number {
 function _dayOfWeek(y: number, m: number, d: number): number {
   const t = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
   y -= m < 3 ? 1 : 0;
-  return ((y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) + t[m] + d) | 0) % 7;
+  return euclideanModulo(
+    (y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) + t[m] + d) | 0,
+    7,
+  );
 }
 
 function valueOfInput(input: unknown): number {
@@ -277,15 +283,15 @@ export class MomentLite {
         const t = this._t;
         const totalDays = Math.floor(t / 86400000);
         const totalSec = Math.floor(t / 1000);
-        this.$W = (((totalDays + 4) % 7) + 7) % 7;
+        this.$W = euclideanModulo(totalDays + 4, 7);
         const [y, M, D] = MomentLite._epochDaysToYMD(totalDays);
         this.$y = y;
         this.$M = M;
         this.$D = D;
-        this.$H = ((Math.floor(totalSec / 3600) % 24) + 24) % 24;
-        this.$m = ((Math.floor(totalSec / 60) % 60) + 60) % 60;
-        this.$s = ((totalSec % 60) + 60) % 60;
-        this.$ms = ((t % 1000) + 1000) % 1000;
+        this.$H = euclideanModulo(Math.floor(totalSec / 3600), 24);
+        this.$m = euclideanModulo(Math.floor(totalSec / 60), 60);
+        this.$s = euclideanModulo(totalSec, 60);
+        this.$ms = euclideanModulo(t, 1000);
       }
     } else {
       const d = this._getD();
@@ -1117,7 +1123,12 @@ export class MomentLite {
           }
         }
         if (this._isUTC) {
-          this._t = Date.UTC(y, m, d_, this.$H, this.$m, this.$s, this.$ms);
+          this._t =
+            ymdToEpochDays(y, m, d_) * 86400000 +
+            this.$H * 3600000 +
+            this.$m * 60000 +
+            this.$s * 1000 +
+            this.$ms;
           this._d = undefined;
           this._dirty = true;
         } else {
@@ -1623,7 +1634,7 @@ export class MomentLite {
     switch (code) {
       case YEAR:
         if (utc) {
-          this._t = Date.UTC(this.$y, 0, 1);
+          this._t = ymdToEpochDays(this.$y, 0, 1) * 86400000;
           this._d = undefined;
         } else {
           const d = this._getDNoEnsure();
@@ -1642,7 +1653,7 @@ export class MomentLite {
         break;
       case MONTH:
         if (utc) {
-          this._t = Date.UTC(this.$y, this.$M, 1);
+          this._t = ymdToEpochDays(this.$y, this.$M, 1) * 86400000;
           this._d = undefined;
         } else {
           const d = this._getDNoEnsure();
@@ -1726,7 +1737,7 @@ export class MomentLite {
     switch (code) {
       case YEAR:
         if (utc) {
-          this._t = Date.UTC(this.$y, 11, 31, 23, 59, 59, 999);
+          this._t = (ymdToEpochDays(this.$y, 11, 31) + 1) * 86400000 - 1;
           this._d = undefined;
         } else {
           const d = this._getD();
@@ -1743,9 +1754,9 @@ export class MomentLite {
         this.$W = _dayOfWeek(this.$y, 11, 31);
         break;
       case MONTH: {
-        const _eomMaxDay = daysInMonth(this.$y, this.$M);
+        const _eomMaxDay = daysInMonthFast(this.$y, this.$M);
         if (utc) {
-          this._t = Date.UTC(this.$y, this.$M, _eomMaxDay, 23, 59, 59, 999);
+          this._t = (ymdToEpochDays(this.$y, this.$M, _eomMaxDay) + 1) * 86400000 - 1;
           this._d = undefined;
         } else {
           const d = this._getD();

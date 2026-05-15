@@ -131,8 +131,7 @@ export function normalizeUnitCode(unit: string): UnitCode | undefined {
 }
 
 export function euclideanModulo(value: number, mod: number): number {
-  const remainder = value % mod;
-  return remainder < 0 ? remainder + mod : remainder;
+  return ((value % mod) + mod) % mod;
 }
 
 export function normalizeMonth(m: number): number {
@@ -149,6 +148,22 @@ export function floorUnitIndex(value: number, unitMs: number): number {
 
 export function endOfUnitEpoch(value: number, unitMs: number): number {
   return value + (unitMs - 1) - euclideanModulo(value, unitMs);
+}
+
+/** Inverse of _epochDaysToYMD: year-month-day (0-indexed month) → epoch days.
+ *
+ *  Howard Hinnant algorithm (days_from_civil). Supports all epochs
+ *  including negative years. Replaces Date.UTC in UTC calendar paths
+ *  with pure integer arithmetic — no Date allocation, no DST risk.
+ */
+export function ymdToEpochDays(y: number, m: number, d: number): number {
+  const ya = y - (m <= 1 ? 1 : 0);
+  const era = Math.floor(ya / 400);
+  const yoe = ya - era * 400;
+  const mp = m >= 2 ? m - 2 : m + 10;
+  const doy = Math.floor((153 * mp + 2) / 5) + d - 1;
+  const doe = yoe * 365 + Math.floor(yoe / 4) - Math.floor(yoe / 100) + doy;
+  return era * 146097 + doe - 719468;
 }
 
 export function isLeapYear(y: number): boolean {
