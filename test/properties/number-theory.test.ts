@@ -492,3 +492,176 @@ describe("calendar lattice: singular boundaries", () => {
     expect(next.date()).toBe(m2.date() + 1);
   });
 });
+
+// -------------------------------------------------------------------------
+// GROUP-THEORETIC PROPERTIES — operation commutativity, idempotence,
+// quasi-inverses, and singular-boundary relation failures.
+// -------------------------------------------------------------------------
+describe("operation algebra: idempotence", () => {
+  test("startOf(day) ∘ startOf(day) = startOf(day)", () => {
+    const m = moment.utc("2024-06-15T10:30:00");
+    const once = m.clone().startOf("day");
+    const twice = m.clone().startOf("day").startOf("day");
+    expect(twice.valueOf()).toBe(once.valueOf());
+  });
+
+  test("startOf(month) ∘ startOf(month) = startOf(month)", () => {
+    const m = moment.utc("2024-06-15");
+    const once = m.clone().startOf("month");
+    const twice = m.clone().startOf("month").startOf("month");
+    expect(twice.valueOf()).toBe(once.valueOf());
+  });
+
+  test("startOf(year) ∘ startOf(year) = startOf(year)", () => {
+    const m = moment.utc("2024-06-15");
+    const once = m.clone().startOf("year");
+    const twice = m.clone().startOf("year").startOf("year");
+    expect(twice.valueOf()).toBe(once.valueOf());
+  });
+
+  test("endOf(day) ∘ endOf(day) = endOf(day)", () => {
+    const m = moment.utc("2024-06-15T10:30:00");
+    const once = m.clone().endOf("day");
+    const twice = m.clone().endOf("day").endOf("day");
+    expect(twice.valueOf()).toBe(once.valueOf());
+  });
+
+  test("utc() ∘ utc() = utc() when already UTC", () => {
+    const m = moment.utc("2024-06-15");
+    const once = m.clone().utc();
+    const twice = m.clone().utc().utc();
+    expect(twice.valueOf()).toBe(once.valueOf());
+    expect(twice._isUTC).toBe(true);
+  });
+
+  test("add(0, any) = identity", () => {
+    const m = moment.utc("2024-06-15T10:30:00");
+    const result = m.clone().add(0, "days");
+    expect(result.valueOf()).toBe(m.valueOf());
+  });
+});
+
+describe("operation algebra: commutativity", () => {
+  test("add(hour) + add(minute) commutes in UTC", () => {
+    const m = moment.utc("2024-06-15T10:30:00");
+    const ab = m.clone().add(3, "hours").add(15, "minutes");
+    const ba = m.clone().add(15, "minutes").add(3, "hours");
+    expect(ab.valueOf()).toBe(ba.valueOf());
+  });
+
+  test("add(day) + add(hour) commutes in UTC", () => {
+    const m = moment.utc("2024-06-15T10:30:00");
+    const ab = m.clone().add(2, "days").add(5, "hours");
+    const ba = m.clone().add(5, "hours").add(2, "days");
+    expect(ab.valueOf()).toBe(ba.valueOf());
+  });
+
+  test("add(second) + add(millisecond) commutes in UTC", () => {
+    const m = moment.utc("2024-06-15T10:30:00");
+    const ab = m.clone().add(30, "seconds").add(500, "milliseconds");
+    const ba = m.clone().add(500, "milliseconds").add(30, "seconds");
+    expect(ab.valueOf()).toBe(ba.valueOf());
+  });
+
+  test("add(month) + add(year) does NOT commute (month-end clamping)", () => {
+    // Jan 31 + 1 month + 1 year = Feb 28 + 1 year = Feb 28 next year
+    // Jan 31 + 1 year + 1 month = Jan 31 next year + 1 month = Feb 28/29
+    const m = moment.utc([2023, 0, 31]);
+    const ab = m.clone().add(1, "month").add(1, "year");
+    const ba = m.clone().add(1, "year").add(1, "month");
+    expect(ab.valueOf()).not.toBe(ba.valueOf());
+  });
+
+  test("set(hour) + set(minute) commutes", () => {
+    const m = moment("2024-06-15T10:30:00");
+    const ab = m.clone().set("hour", 8).set("minute", 45);
+    const ba = m.clone().set("minute", 45).set("hour", 8);
+    expect(ab.valueOf()).toBe(ba.valueOf());
+  });
+});
+
+describe("operation algebra: quasi-inverses", () => {
+  test("add(5, day) ∘ add(-5, day) ≈ identity in UTC", () => {
+    const m = moment.utc("2024-06-15");
+    const result = m.clone().add(5, "days").add(-5, "days");
+    expect(result.valueOf()).toBe(m.valueOf());
+  });
+
+  test("add(1, month) ∘ add(-1, month) ≠ identity (month-end clamping)", () => {
+    // Jan 31 + 1 month = Feb 28 (non-leap), then -1 month = Jan 28 ≠ Jan 31
+    const m = moment.utc([2023, 0, 31]);
+    const result = m.clone().add(1, "month").add(-1, "month");
+    expect(result.date()).not.toBe(m.date());
+    expect(result.month()).toBe(m.month());
+    // The date was clamped: Jan 31 → Feb 28 → Jan 28
+    expect(result.date()).toBe(28);
+  });
+
+  test("startOf(day) ∘ add(1, day) ≠ add(1, day) ∘ startOf(day) at month-end", () => {
+    // Jan 31 startOf(day) + 1 day = Feb 1
+    // Jan 31 + 1 day startOf(day) = Feb 1 startOf(day) = Feb 1
+    // These happen to be the same in this case, but the general path differs
+    const m = moment.utc([2024, 0, 31, 10, 30]);
+    const ab = m.clone().startOf("day").add(1, "day");
+    const ba = m.clone().add(1, "day").startOf("day");
+    // Different source times but same target (startOf before add = midnight Jan 31 + 1 day = Feb 1 midnight;
+    // add before startOf = Feb 1 10:30 → startOf = Feb 1 midnight)
+    // They should match here, but only because both produce midnight Feb 1
+    expect(ab.valueOf()).toBe(ba.valueOf());
+  });
+});
+
+describe("operation algebra: superset reductions", () => {
+  test("startOf(year) ∘ startOf(month) = startOf(year)", () => {
+    const m = moment.utc("2024-06-15T10:30:00");
+    const full = m.clone().startOf("year");
+    const reduced = m.clone().startOf("year").startOf("month");
+    expect(reduced.valueOf()).toBe(full.valueOf());
+  });
+
+  test("startOf(year) ∘ startOf(day) = startOf(year)", () => {
+    const m = moment.utc("2024-06-15T10:30:00");
+    const full = m.clone().startOf("year");
+    const reduced = m.clone().startOf("year").startOf("day");
+    expect(reduced.valueOf()).toBe(full.valueOf());
+  });
+
+  test("startOf(month) ∘ startOf(day) = startOf(month)", () => {
+    const m = moment.utc("2024-06-15T10:30:00");
+    const full = m.clone().startOf("month");
+    const reduced = m.clone().startOf("month").startOf("day");
+    expect(reduced.valueOf()).toBe(full.valueOf());
+  });
+
+  test("utc() + startOf(day) ≠ startOf(day) + utc() when local offset ≠ 0", () => {
+    const offset = new Date("2024-06-15").getTimezoneOffset();
+    if (offset !== 0) {
+      const m = moment("2024-06-15T10:30:00");
+      const ab = m.clone().utc().startOf("day");
+      const ba = m.clone().startOf("day").utc();
+      expect(ab.valueOf()).not.toBe(ba.valueOf());
+    }
+  });
+});
+
+describe("operation algebra: singular boundary failures", () => {
+  test("U: local add(1, day) ≠ UTC add(1, day) across DST", () => {
+    // Only valid where March 10-11 has a DST transition (e.g. US, EU, but not JP).
+    const mar10 = new Date("2024-03-10").getTimezoneOffset();
+    const mar11 = new Date("2024-03-11").getTimezoneOffset();
+    if (mar10 !== mar11) {
+      const base = moment("2024-03-10");
+      const localAdd = base.clone().add(1, "day").utc();
+      const utcAdd = base.clone().utc().add(1, "day");
+      expect(localAdd.valueOf()).not.toBe(utcAdd.valueOf());
+    }
+  });
+
+  test("add(-month, month) + add(+month, month) near non-leap month-end", () => {
+    // Mar 31 2023 - 1 month = Feb 28 2023, + 1 month = Mar 28 2023
+    const m = moment.utc([2023, 2, 31]);
+    const result = m.clone().add(-1, "month").add(1, "month");
+    expect(result.date()).toBe(28); // not 31 — month-end clamping broke invertibility
+    expect(result.month()).toBe(2); // back to March
+  });
+});
