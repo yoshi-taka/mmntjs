@@ -51,7 +51,7 @@ add(1,'year')                           644ns      336ns   52.2%
 
 (`%` = moment2 / moment x 100. Lower = moment2 faster)
 
-**moment2 wins 28/30 operations.** Only `format('LL')` (~3% slower) and `format('dddd, ...')` (~18% slower) are close. Typical gains: **5-60x**.
+**moment2 wins 28/30 operations.** Only `format('dddd, MMMM Do YYYY, h:mm:ss a')` (~18% slower, locale-dependent tokens) is a regression. Typical gains: **5-60x**.
 
 ## moment2 vs date-fns
 

@@ -147,7 +147,7 @@ Also outperforms upstream moment.js in 28/30. Several hot-path operations outper
 | moment() / new Date() | **38 ns** | 34 ns (0.9x) | 352 ns (9.3x) |
 | startOf month | **16 ns** | 75 ns (4.7x) | — |
 
-The main remaining regression is raw `moment()` construction overhead from compatibility wrapping. (wrapper overhead for moment.js API compatibility, negligible in real apps that reuse Moment objects).
+The main remaining regression is raw `moment()` construction overhead from compatibility wrapping (wrapper overhead for moment.js API compatibility, negligible in real apps that reuse Moment objects), and complex locale-dependent formats like `format('dddd, MMMM Do YYYY, h:mm:ss a')` (~18% slower than moment.js).
 
 Representative Bun microbenchmarks on Apple Silicon. ns-scale results use median-of-repeated warmed runs after warmup — see [BENCHMARKS.md](./docs/perf/BENCHMARKS.md) for methodology, noise markers, and caveats.
 
