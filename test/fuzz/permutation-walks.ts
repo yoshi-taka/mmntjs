@@ -42,22 +42,46 @@ export const BOUNDARY_DATES = [
 // Walk A: DST-crossing day add
 export const WALK_A: Walk[] = [
   // A1: quasi-inverse of add(day) across DST
-  [{ t: "addDay", n: 1 }, { t: "addDay", n: -1 }],
+  [
+    { t: "addDay", n: 1 },
+    { t: "addDay", n: -1 },
+  ],
   // A2: commutativity of add(day) + add(hour)
-  [{ t: "addDay", n: 1 }, { t: "addHour", n: 1 }],
-  [{ t: "addHour", n: 1 }, { t: "addDay", n: 1 }],
+  [
+    { t: "addDay", n: 1 },
+    { t: "addHour", n: 1 },
+  ],
+  [
+    { t: "addHour", n: 1 },
+    { t: "addDay", n: 1 },
+  ],
 ];
 
 // Walk B: Month-end clamping
 export const WALK_B: Walk[] = [
   // B1: quasi-inverse of add(month)
-  [{ t: "addMonth", n: 1 }, { t: "addMonth", n: -1 }],
-  [{ t: "addMonth", n: -1 }, { t: "addMonth", n: 1 }],
+  [
+    { t: "addMonth", n: 1 },
+    { t: "addMonth", n: -1 },
+  ],
+  [
+    { t: "addMonth", n: -1 },
+    { t: "addMonth", n: 1 },
+  ],
   // B2: commutativity of add(month) + add(day)
-  [{ t: "addMonth", n: 1 }, { t: "addDay", n: 1 }],
-  [{ t: "addDay", n: 1 }, { t: "addMonth", n: 1 }],
+  [
+    { t: "addMonth", n: 1 },
+    { t: "addDay", n: 1 },
+  ],
+  [
+    { t: "addDay", n: 1 },
+    { t: "addMonth", n: 1 },
+  ],
   // B3: chained month add
-  [{ t: "addMonth", n: 3 }, { t: "addMonth", n: -3 }],
+  [
+    { t: "addMonth", n: 3 },
+    { t: "addMonth", n: -3 },
+  ],
 ];
 
 // Walk C: Mode switching
@@ -116,17 +140,36 @@ export const WALK_E: Walk[] = [
 
 // ---- Walk application ----
 
-export function applyWalk(m: { add: Function; startOf: Function; utc: Function; local: Function; date: Function }, ops: Op[]): void {
+export function applyWalk(
+  m: { add: Function; startOf: Function; utc: Function; local: Function; date: Function },
+  ops: Op[],
+): void {
   for (const op of ops) {
     switch (op.t) {
-      case "addDay":   m.add(op.n, "day"); break;
-      case "addMonth": m.add(op.n, "month"); break;
-      case "addHour":  m.add(op.n, "hour"); break;
-      case "startOfDay":   m.startOf("day"); break;
-      case "startOfMonth": m.startOf("month"); break;
-      case "utc":   m.utc(); break;
-      case "local": m.local(); break;
-      case "setDate": m.date(op.n); break;
+      case "addDay":
+        m.add(op.n, "day");
+        break;
+      case "addMonth":
+        m.add(op.n, "month");
+        break;
+      case "addHour":
+        m.add(op.n, "hour");
+        break;
+      case "startOfDay":
+        m.startOf("day");
+        break;
+      case "startOfMonth":
+        m.startOf("month");
+        break;
+      case "utc":
+        m.utc();
+        break;
+      case "local":
+        m.local();
+        break;
+      case "setDate":
+        m.date(op.n);
+        break;
     }
   }
 }
