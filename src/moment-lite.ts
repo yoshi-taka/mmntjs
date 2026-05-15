@@ -33,6 +33,13 @@ const MINUTE_MS = 60000;
 const HOUR_MS = 3600000;
 const DAY_MS = 86400000;
 
+const TIME_UNIT_MS: Record<number, number> = {
+  [HOUR]: HOUR_MS,
+  [MINUTE]: MINUTE_MS,
+  [SECOND]: SECOND_MS,
+  [MILLISECOND]: 1,
+};
+
 export type MomentInput =
   | MomentLite
   | Date
@@ -1164,26 +1171,11 @@ export class MomentLite {
         }
         break;
       }
-      case HOUR: {
-        this._t += Math.round(amount * 3600000);
-        this._d = undefined;
-        this._dirty = true;
-        break;
-      }
-      case MINUTE: {
-        this._t += Math.round(amount * 60000);
-        this._d = undefined;
-        this._dirty = true;
-        break;
-      }
-      case SECOND: {
-        this._t += Math.round(amount * 1000);
-        this._d = undefined;
-        this._dirty = true;
-        break;
-      }
+      case HOUR:
+      case MINUTE:
+      case SECOND:
       case MILLISECOND: {
-        this._t += Math.round(amount);
+        this._t += Math.round(amount * TIME_UNIT_MS[unit]);
         this._d = undefined;
         this._dirty = true;
         break;
@@ -1472,24 +1464,10 @@ export class MomentLite {
         const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
         return t || 0;
       }
-      case HOUR: {
-        const r = diff / 3600000;
-        if (float) {
-          return r;
-        }
-        const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
-        return t || 0;
-      }
-      case MINUTE: {
-        const r = diff / 60000;
-        if (float) {
-          return r;
-        }
-        const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
-        return t || 0;
-      }
+      case HOUR:
+      case MINUTE:
       case SECOND: {
-        const r = diff / 1000;
+        const r = diff / TIME_UNIT_MS[code];
         if (float) {
           return r;
         }

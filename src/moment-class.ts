@@ -119,6 +119,13 @@ const MINUTE_MS = 60000;
 const HOUR_MS = 3600000;
 const DAY_MS = 86400000;
 
+const TIME_UNIT_MS: Record<number, number> = {
+  [HOUR]: HOUR_MS,
+  [MINUTE]: MINUTE_MS,
+  [SECOND]: SECOND_MS,
+  [MILLISECOND]: 1,
+};
+
 export {
   getRelTimeRounding,
   setRelTimeRounding,
@@ -1552,26 +1559,11 @@ export class Moment {
         }
         break;
       }
-      case HOUR: {
-        this._t += Math.round(amount * 3600000);
-        this._d = undefined;
-        this._dirty = true;
-        break;
-      }
-      case MINUTE: {
-        this._t += Math.round(amount * 60000);
-        this._d = undefined;
-        this._dirty = true;
-        break;
-      }
-      case SECOND: {
-        this._t += Math.round(amount * 1000);
-        this._d = undefined;
-        this._dirty = true;
-        break;
-      }
+      case HOUR:
+      case MINUTE:
+      case SECOND:
       case MILLISECOND: {
-        this._t += Math.round(amount);
+        this._t += Math.round(amount * TIME_UNIT_MS[unit]);
         this._d = undefined;
         this._dirty = true;
         break;
@@ -1724,37 +1716,18 @@ export class Moment {
               return this;
             }
             case HOUR:
-              this._t += Number.isInteger(amount) ? amount * 3600000 : Math.round(amount * 3600000);
-              this._d = undefined;
-              this._dirty = true;
-              if (isNaN(this._t)) {
-                this._isValid = false;
-              }
-              return this;
             case MINUTE:
-              this._t += Number.isInteger(amount) ? amount * 60000 : Math.round(amount * 60000);
-              this._d = undefined;
-              this._dirty = true;
-              if (isNaN(this._t)) {
-                this._isValid = false;
-              }
-              return this;
             case SECOND:
-              this._t += Number.isInteger(amount) ? amount * 1000 : Math.round(amount * 1000);
+            case MILLISECOND: {
+              const ms = TIME_UNIT_MS[code];
+              this._t += Number.isInteger(amount) ? amount * ms : Math.round(amount * ms);
               this._d = undefined;
               this._dirty = true;
               if (isNaN(this._t)) {
                 this._isValid = false;
               }
               return this;
-            case MILLISECOND:
-              this._t += Number.isInteger(amount) ? amount : Math.round(amount);
-              this._d = undefined;
-              this._dirty = true;
-              if (isNaN(this._t)) {
-                this._isValid = false;
-              }
-              return this;
+            }
             default:
               this._addSimple(amount, code);
               if (isNaN(this._t)) {
@@ -2194,30 +2167,12 @@ export class Moment {
         const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
         return t || 0;
       }
-      case HOUR: {
-        const a = isUTC ? this._t - this._offset * 60000 : this._t;
-        const b = otherUTC ? other._t - other._offset * 60000 : other._t;
-        const r = (a - b) / 3600000;
-        if (float) {
-          return r;
-        }
-        const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
-        return t || 0;
-      }
-      case MINUTE: {
-        const a = isUTC ? this._t - this._offset * 60000 : this._t;
-        const b = otherUTC ? other._t - other._offset * 60000 : other._t;
-        const r = (a - b) / 60000;
-        if (float) {
-          return r;
-        }
-        const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
-        return t || 0;
-      }
+      case HOUR:
+      case MINUTE:
       case SECOND: {
         const a = isUTC ? this._t - this._offset * 60000 : this._t;
         const b = otherUTC ? other._t - other._offset * 60000 : other._t;
-        const r = (a - b) / 1000;
+        const r = (a - b) / TIME_UNIT_MS[code];
         if (float) {
           return r;
         }
