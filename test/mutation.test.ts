@@ -106,6 +106,7 @@ function makeMutations(mutations: Mutation[]) {
 }
 
 const nonZeroInt = (min: number, max: number) => fc.integer({ min, max }).filter((n) => n !== 0);
+const positiveInt = (min: number, max: number) => fc.integer({ min, max }).filter((n) => n > 0);
 
 const distinctDatePair = () =>
   fc
@@ -201,7 +202,9 @@ makeMutations([
       const d = input as Date;
       return (
         mutatedMoment(d).isBefore(new Date(d.getTime() + 86400000), "day") ===
-        originalMoment(d).isBefore(new Date(d.getTime() + 86400000), "day")
+          originalMoment(d).isBefore(new Date(d.getTime() + 86400000), "day") &&
+        mutatedMoment(new Date(d.getTime() + 86400000)).isBefore(d, "day") ===
+          originalMoment(new Date(d.getTime() + 86400000)).isBefore(d, "day")
       );
     },
   },
@@ -271,14 +274,23 @@ makeMutations([
   {
     name: "endOf: no -1ms",
     file: "src/moment-class.ts",
-    patterns: [[/d\.setMilliseconds\(-1\)/g, "d.setMilliseconds(0)"]],
+    patterns: [
+      [
+        /this\._t = \(Math\.floor\(this\._t \/ 86400000\) \+ 1\) \* 86400000 - 1;/g,
+        "this._t = (Math.floor(this._t / 86400000) + 1) * 86400000;",
+      ],
+    ],
     inputs: fc.date({ noInvalidDate: true }),
     testFn: (input: unknown) => {
       return (
-        mutatedMoment(input).endOf("day").format("HH:mm:ss.SSS") ===
-        originalMoment(input as Date)
+        (mutatedMoment as unknown as Record<string, (x: unknown) => Moment>)
+          .utc(input)
           .endOf("day")
-          .format("HH:mm:ss.SSS")
+          .valueOf() ===
+        (originalMoment as unknown as Record<string, (x: unknown) => Moment>)
+          .utc(input as Date)
+          .endOf("day")
+          .valueOf()
       );
     },
   },
@@ -291,7 +303,7 @@ makeMutations([
         "this._applyDuration(parsed.ms, parsed.days, parsed.months, 1);",
       ],
     ],
-    inputs: fc.tuple(fc.date({ noInvalidDate: true }), nonZeroInt(-30, 30)),
+    inputs: fc.tuple(fc.date({ noInvalidDate: true }), positiveInt(1, 30)),
     testFn: (input: unknown) => {
       const [date, n] = input as [unknown, unknown];
       return (

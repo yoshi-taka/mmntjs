@@ -147,7 +147,14 @@ export function isLeapYear(y: number): boolean {
   return (y & 15) === 0;
 }
 
-const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] as const;
+
+export function daysInMonthFast(year: number, month0to11: number): number {
+  if (month0to11 === 1) {
+    return isLeapYear(year) ? 29 : 28;
+  }
+  return DAYS_IN_MONTH[month0to11];
+}
 
 export function daysInMonth(year: number, month: number): number {
   if (isNaN(year) || isNaN(month)) {
@@ -158,8 +165,5 @@ export function daysInMonth(year: number, month: number): number {
     year += Math.floor(month / 12);
     month = adj < 0 ? adj + 12 : adj;
   }
-  if (month === 1) {
-    return isLeapYear(year) ? 29 : 28;
-  }
-  return DAYS_IN_MONTH[month];
+  return daysInMonthFast(year, month);
 }

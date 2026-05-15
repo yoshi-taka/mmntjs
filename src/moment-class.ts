@@ -31,6 +31,7 @@ import {
   normalizeUnits,
   normalizeMonth,
   daysInMonth,
+  daysInMonthFast,
   isLeapYear,
 } from "./units";
 import { parseString, parseArray, parseObject, type ParsedData } from "./parse";
@@ -363,6 +364,36 @@ const coldFieldKeys: (keyof MomentCold)[] = [
   "_tooBusyWith",
 ];
 
+function isCoreMomentConfigKey(key: string): boolean {
+  switch (key) {
+    case "_d":
+    case "_dClone":
+    case "_isValid":
+    case "_isUTC":
+    case "_offset":
+    case "_t":
+    case "_i":
+    case "_f":
+    case "_l":
+    case "_strict":
+      return true;
+    default:
+      return false;
+  }
+}
+
+function hasExtraColdConfig(c: MomentConfig): boolean {
+  for (const key in c) {
+    if (!hasOwnProp(c, key)) {
+      continue;
+    }
+    if (key.charCodeAt(0) === 95 && !isCoreMomentConfigKey(key)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function _dayOfWeek(y: number, m: number, d: number): number {
   const t = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
   y -= m < 3 ? 1 : 0;
@@ -556,22 +587,7 @@ export class Moment {
     if (c._strict !== undefined) {
       this._strict = c._strict;
     }
-    const hasExtraCold = Object.keys(c).some(
-      (key) =>
-        key.startsWith("_") &&
-        ![
-          "_d",
-          "_dClone",
-          "_isValid",
-          "_isUTC",
-          "_offset",
-          "_t",
-          "_i",
-          "_f",
-          "_l",
-          "_strict",
-        ].includes(key),
-    );
+    const hasExtraCold = hasExtraColdConfig(c);
     if (
       c._overflow !== undefined ||
       c._empty !== undefined ||
@@ -583,11 +599,11 @@ export class Moment {
       c._parsedDateParts !== undefined ||
       hasExtraCold
     ) {
-      this._initCold(c);
+      this._initCold(c, hasExtraCold);
     }
   }
 
-  _initCold(c: MomentConfig): void {
+  _initCold(c: MomentConfig, hasExtraCold = false): void {
     const hasErrorCold =
       (c._overflow !== undefined && c._overflow >= 0) ||
       c._empty === true ||
@@ -609,22 +625,7 @@ export class Moment {
       c._isParseZone !== undefined ||
       c._tooBusyWith !== undefined ||
       c._parsedDateParts !== undefined ||
-      Object.keys(c).some(
-        (key) =>
-          key.startsWith("_") &&
-          ![
-            "_d",
-            "_dClone",
-            "_isValid",
-            "_isUTC",
-            "_offset",
-            "_t",
-            "_i",
-            "_f",
-            "_l",
-            "_strict",
-          ].includes(key),
-      )
+      hasExtraCold
     ) {
       const cold: Record<string, unknown> = {};
       if (c._overflow !== undefined) {
@@ -683,37 +684,9 @@ export class Moment {
       }
       for (const [key, value] of Object.entries(c)) {
         if (
-          key.startsWith("_") &&
-          ![
-            "_d",
-            "_dClone",
-            "_isValid",
-            "_isUTC",
-            "_offset",
-            "_t",
-            "_i",
-            "_f",
-            "_l",
-            "_strict",
-            "_overflow",
-            "_parsedDateParts",
-            "_unusedTokens",
-            "_unusedInput",
-            "_charsLeftOver",
-            "_empty",
-            "_nullInput",
-            "_invalidMonth",
-            "_invalidFormat",
-            "_weekdayMismatch",
-            "_iso",
-            "_rfc2822",
-            "_invalidEra",
-            "_bigHour",
-            "_meridiem",
-            "_isParseZone",
-            "_userInvalidated",
-            "_tooBusyWith",
-          ].includes(key) &&
+          key.charCodeAt(0) === 95 &&
+          !isCoreMomentConfigKey(key) &&
+          !(key in cold) &&
           value !== undefined
         ) {
           cold[key] = value;
@@ -1522,14 +1495,7 @@ export class Moment {
         const m = normalizeMonth(tm);
         let d_ = this.$D;
         if (d_ > 28) {
-          const _md =
-            m === 1
-              ? y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)
-                ? 29
-                : 28
-              : m === 3 || m === 5 || m === 8 || m === 10
-                ? 30
-                : 31;
+          const _md = daysInMonthFast(y, m);
           if (d_ > _md) {
             d_ = _md;
           }
@@ -1713,14 +1679,7 @@ export class Moment {
               const m = normalizeMonth(tm);
               let d_ = this.$D;
               if (d_ > 28) {
-                const md =
-                  m === 1
-                    ? y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)
-                      ? 29
-                      : 28
-                    : m === 3 || m === 5 || m === 8 || m === 10
-                      ? 30
-                      : 31;
+                const md = daysInMonthFast(y, m);
                 if (d_ > md) {
                   d_ = md;
                 }
@@ -1998,7 +1957,7 @@ export class Moment {
         this.$W = _dayOfWeek(this.$y, 11, 31);
         break;
       case MONTH: {
-        const _eomMaxDay = daysInMonth(this.$y, this.$M);
+        const _eomMaxDay = daysInMonthFast(this.$y, this.$M);
         if (utc) {
           this._t = Date.UTC(this.$y, this.$M, _eomMaxDay, 23, 59, 59, 999);
           this._d = undefined;

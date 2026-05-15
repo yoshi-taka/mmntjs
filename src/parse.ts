@@ -198,7 +198,7 @@ function parseCommonISOExtended(str: string): InternalParsedData | null {
         doy1 = str.charCodeAt(6) - 48;
       if (doy3 >= 0 && doy3 <= 9 && doy2 >= 0 && doy2 <= 9 && doy1 >= 0 && doy1 <= 9) {
         const dayOfYear = doy3 * 100 + doy2 * 10 + doy1;
-        if (dayOfYear >= 1 && dayOfYear <= 366) {
+        if (dayOfYear >= 0 && dayOfYear <= 366) {
           return { year, dayOfYear };
         }
       }
@@ -308,7 +308,7 @@ function parseCommonISOExtended(str: string): InternalParsedData | null {
       d3 = str.charCodeAt(7) - 48;
     if (d1 >= 0 && d1 <= 9 && d2 >= 0 && d2 <= 9 && d3 >= 0 && d3 <= 9) {
       const dayOfYear = d1 * 100 + d2 * 10 + d3;
-      if (dayOfYear >= 1 && dayOfYear <= 366) {
+      if (dayOfYear >= 0 && dayOfYear <= 366) {
         return { year, dayOfYear };
       }
     }
@@ -484,7 +484,6 @@ function parseCommonISO(str: string): InternalParsedData | null {
   };
 }
 
-
 function parseTwo(str: string, idx: number): { v: number; len: number } | null {
   if (idx >= str.length) {
     return null;
@@ -595,10 +594,19 @@ interface ParseCtx {
   strict: boolean;
   loc: ParseLocale;
   result: ParsedData;
-  _seenUnusedTokens: Set<string>;
+  _seenUnusedTokens?: Set<string>;
   failed: boolean;
   tokenIndex: number;
   tokens: FormatToken[];
+}
+
+function getSeenUnusedTokens(ctx: ParseCtx): Set<string> {
+  let seen = ctx._seenUnusedTokens;
+  if (!seen) {
+    seen = new Set<string>();
+    ctx._seenUnusedTokens = seen;
+  }
+  return seen;
 }
 
 type TokenHandler = (ctx: ParseCtx) => void;
@@ -2145,8 +2153,8 @@ function parseWithFormat(
     _parsedDateParts: [] as number[],
     _meridiem: undefined as string | undefined,
   };
-  const _seenUnusedTokens = new Set<string>();
-  const deferredWhitespaceLiterals: string[] = [];
+  let deferredWhitespaceLiterals: string[] | undefined;
+  let charsLeftOver = 0;
 
   let strIdx = 0;
   let failed = false;
@@ -2158,7 +2166,7 @@ function parseWithFormat(
     strict: strict ?? false,
     loc,
     result,
-    _seenUnusedTokens,
+    _seenUnusedTokens: undefined,
     failed: false,
     tokenIndex,
     tokens,
@@ -2219,8 +2227,9 @@ function parseWithFormat(
               }
               if (skipIdx > 0) {
                 result._unusedInput.push(str.substring(strIdx, strIdx + skipIdx));
+                charsLeftOver += skipIdx;
                 strIdx += skipIdx;
-                deferredWhitespaceLiterals.push(val);
+                (deferredWhitespaceLiterals ??= []).push(val);
               } else {
                 result._unusedTokens.push(val);
               }
@@ -2269,6 +2278,7 @@ function parseWithFormat(
               }
               if (hasAlphaNum) {
                 result._unusedInput.push(str.substring(strIdx, sepIdx));
+                charsLeftOver += sepIdx - strIdx;
               }
             }
             strIdx = sepIdx + trimmedVal.length;
@@ -2287,6 +2297,7 @@ function parseWithFormat(
             if (!hasAlphaBefore) {
               if (matchIdx > strIdx) {
                 result._unusedInput.push(str.substring(strIdx, matchIdx));
+                charsLeftOver += matchIdx - strIdx;
               }
               strIdx = matchIdx + trimmedVal.length;
             }
@@ -2340,6 +2351,7 @@ function parseWithFormat(
           }
           if (skipIdx > 0) {
             result._unusedInput.push(str.substring(strIdx, strIdx + skipIdx));
+            charsLeftOver += skipIdx;
             strIdx += skipIdx;
           }
         } else if ((ch0 < 48 || ch0 > 57) && canHandleSign) {
@@ -2354,6 +2366,7 @@ function parseWithFormat(
             }
             if (skipIdx > 0) {
               result._unusedInput.push(str.substring(strIdx, strIdx + skipIdx));
+              charsLeftOver += skipIdx;
               strIdx += skipIdx;
             }
           }
@@ -2391,6 +2404,7 @@ function parseWithFormat(
           }
           if (skipIdx > 0) {
             result._unusedInput.push(str.substring(strIdx, strIdx + skipIdx));
+            charsLeftOver += skipIdx;
             strIdx += skipIdx;
           }
         }
@@ -2407,6 +2421,7 @@ function parseWithFormat(
           }
           if (skipIdx > 0) {
             result._unusedInput.push(str.substring(strIdx, strIdx + skipIdx));
+            charsLeftOver += skipIdx;
             strIdx += skipIdx;
           }
         }
@@ -2428,14 +2443,19 @@ function parseWithFormat(
         for (let j = tokenIndex; j < tokens.length; j++) {
           const t = tokens[j];
           if (t.type === "token") {
-            if (!_seenUnusedTokens.has(t.name!)) {
-              _seenUnusedTokens.add(t.name!);
+            const seenUnusedTokens = getSeenUnusedTokens(ctx);
+            if (!seenUnusedTokens.has(t.name!)) {
+              seenUnusedTokens.add(t.name!);
               result._unusedTokens.push(t.name!);
             }
-            if (j === tokenIndex && deferredWhitespaceLiterals.length > 0) {
+            if (
+              j === tokenIndex &&
+              deferredWhitespaceLiterals &&
+              deferredWhitespaceLiterals.length > 0
+            ) {
               for (const literal of deferredWhitespaceLiterals) {
-                if (!_seenUnusedTokens.has(literal)) {
-                  _seenUnusedTokens.add(literal);
+                if (!seenUnusedTokens.has(literal)) {
+                  seenUnusedTokens.add(literal);
                   result._unusedTokens.push(literal);
                 }
               }
@@ -2443,14 +2463,20 @@ function parseWithFormat(
             }
           } else if (t.value?.trim()) {
             const trimmed = t.value.trim();
-            if (!_seenUnusedTokens.has(trimmed)) {
-              _seenUnusedTokens.add(trimmed);
+            const seenUnusedTokens = getSeenUnusedTokens(ctx);
+            if (!seenUnusedTokens.has(trimmed)) {
+              seenUnusedTokens.add(trimmed);
               result._unusedTokens.push(trimmed);
             }
-          } else if (t.value && deferredWhitespaceLiterals.length > 0) {
+          } else if (
+            t.value &&
+            deferredWhitespaceLiterals &&
+            deferredWhitespaceLiterals.length > 0
+          ) {
+            const seenUnusedTokens = getSeenUnusedTokens(ctx);
             for (const literal of deferredWhitespaceLiterals) {
-              if (!_seenUnusedTokens.has(literal)) {
-                _seenUnusedTokens.add(literal);
+              if (!seenUnusedTokens.has(literal)) {
+                seenUnusedTokens.add(literal);
                 result._unusedTokens.push(literal);
               }
             }
@@ -2471,6 +2497,7 @@ function parseWithFormat(
       const skipMatch = str.slice(strIdx).match(/^[^\p{L}\d]+/u);
       if (skipMatch) {
         result._unusedInput.push(skipMatch[0]);
+        charsLeftOver += skipMatch[0].length;
         strIdx += skipMatch[0].length;
       }
     }
@@ -2515,9 +2542,10 @@ function parseWithFormat(
     const rest = str.substring(strIdx);
     if (rest) {
       result._unusedInput.push(rest);
+      charsLeftOver += rest.length;
     }
   }
-  result._charsLeftOver = result._unusedInput.reduce((a: number, s: string) => a + s.length, 0);
+  result._charsLeftOver = charsLeftOver;
   result._empty =
     result.year === undefined &&
     result.month === undefined &&
@@ -2541,14 +2569,16 @@ function parseWithFormat(
       for (let j = tokenIndex; j < tokens.length; j++) {
         const t = tokens[j];
         if (t.type === "token") {
-          if (!_seenUnusedTokens.has(t.name!)) {
-            _seenUnusedTokens.add(t.name!);
+          const seenUnusedTokens = getSeenUnusedTokens(ctx);
+          if (!seenUnusedTokens.has(t.name!)) {
+            seenUnusedTokens.add(t.name!);
             result._unusedTokens.push(t.name!);
           }
         } else if (t.value?.trim()) {
           const trimmed = t.value.trim();
-          if (!_seenUnusedTokens.has(trimmed)) {
-            _seenUnusedTokens.add(trimmed);
+          const seenUnusedTokens = getSeenUnusedTokens(ctx);
+          if (!seenUnusedTokens.has(trimmed)) {
+            seenUnusedTokens.add(trimmed);
             result._unusedTokens.push(trimmed);
           }
         }
@@ -2642,7 +2672,6 @@ function parseWithFormats(
   }
   return best;
 }
-
 
 function stripRFC2822Comments(str: string): string {
   // Fast path: no comments, just normalize whitespace
