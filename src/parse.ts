@@ -344,16 +344,10 @@ function parseCommonISOExtended(str: string): InternalParsedData | null {
 
 function parseCommonISO(str: string): InternalParsedData | null {
   const len = str.length;
-  if (
-    len !== 10 &&
-    len !== 19 &&
-    len !== 20 &&
-    len !== 23 &&
-    len !== 24 &&
-    len !== 25 &&
-    len !== 28 &&
-    len !== 29
-  ) {
+  // Length 10 = date only (YYYY-MM-DD). Lengths 19-29 = date + time + optional
+  // fractional seconds + optional timezone. The charCode parsing below validates
+  // the actual structure — any length 19-29 follows the same deterministic path.
+  if (len !== 10 && (len < 19 || len > 29)) {
     return null;
   }
   if (str.charCodeAt(4) !== 45 || str.charCodeAt(7) !== 45) {
