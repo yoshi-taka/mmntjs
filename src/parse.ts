@@ -2937,6 +2937,19 @@ function parseISOWithTable(str: string, locale?: ParseLocale): InternalParsedDat
     parseStr = parseStr.slice(1);
   }
 
+  // Try parseCommonISO fast path before falling through to token dispatch.
+  // This avoids parseWithFormat overhead for common YYYY-MM-DD[ HH:mm:ss[...]] patterns.
+  if (
+    dateFormat === "YYYY-MM-DD" ||
+    dateFormat.startsWith("YYYY-MM-DDTHH:mm:ss") ||
+    dateFormat.startsWith("YYYY-MM-DD HH:mm:ss")
+  ) {
+    const parsed = parseCommonISO(parseStr);
+    if (parsed) {
+      return parsed;
+    }
+  }
+
   const result = parseWithFormat(parseStr, dateFormat, locale);
   if (!result) {
     return { _claimed: true };
