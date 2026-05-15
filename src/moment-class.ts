@@ -1606,6 +1606,14 @@ export class Moment {
     }
   }
 
+  _updateOffset(_keepTime?: boolean): void {
+    // hot path: called after every mutation via _dirty flag
+    // _keepTime is accepted for Moment.js compat but unused internally
+    if (typeof updateOffsetCallback === "function") {
+      updateOffsetCallback(this);
+    }
+  }
+
   _parseDurationInput(
     amount: number | string | object,
     unit?: string,
@@ -2576,6 +2584,32 @@ export class Moment {
     return this._compareCalendarValues(other, unit ?? "millisecond") >= 0;
   }
 
+  isBefore(input: MomentInput, unit?: string): boolean {
+    const other = momentFromAnything(input);
+    if (!this._isValid || !other._isValid) {
+      return false;
+    }
+    if (unit) {
+      return this._compareCalendarValues(other, unit) < 0;
+    }
+    const a = this._isUTC ? this._t - this._offset * 60000 : this._t;
+    const b = other._isUTC ? other._t - other._offset * 60000 : other._t;
+    return a < b;
+  }
+
+  isAfter(input: MomentInput, unit?: string): boolean {
+    const other = momentFromAnything(input);
+    if (!this._isValid || !other._isValid) {
+      return false;
+    }
+    if (unit) {
+      return this._compareCalendarValues(other, unit) > 0;
+    }
+    const a = this._isUTC ? this._t - this._offset * 60000 : this._t;
+    const b = other._isUTC ? other._t - other._offset * 60000 : other._t;
+    return a > b;
+  }
+
   isBetween(from: MomentInput, to: MomentInput, unit?: string, inclusivity?: string): boolean {
     const fromM = momentFromAnything(from);
     const toM = momentFromAnything(to);
@@ -2901,45 +2935,11 @@ export class Moment {
     return invalidAtCallback(this);
   }
 
-  isBefore(input: MomentInput, unit?: string): boolean {
-    const other = momentFromAnything(input);
-    if (!this._isValid || !other._isValid) {
-      return false;
-    }
-    if (unit) {
-      return this._compareCalendarValues(other, unit) < 0;
-    }
-    const a = this._isUTC ? this._t - this._offset * 60000 : this._t;
-    const b = other._isUTC ? other._t - other._offset * 60000 : other._t;
-    return a < b;
-  }
-
   toObject(): Record<string, number> {
     if (!toObjectCallback) {
       throw new Error("mmntjs toObject() is not initialized");
     }
     return toObjectCallback(this);
-  }
-
-  isAfter(input: MomentInput, unit?: string): boolean {
-    const other = momentFromAnything(input);
-    if (!this._isValid || !other._isValid) {
-      return false;
-    }
-    if (unit) {
-      return this._compareCalendarValues(other, unit) > 0;
-    }
-    const a = this._isUTC ? this._t - this._offset * 60000 : this._t;
-    const b = other._isUTC ? other._t - other._offset * 60000 : other._t;
-    return a > b;
-  }
-
-  _updateOffset(_keepTime?: boolean): void {
-    // hot path: called after every mutation via _dirty flag
-    // _keepTime is accepted for Moment.js compat but unused internally
-    if (typeof updateOffsetCallback === "function") {
-      updateOffsetCallback(this);
-    }
   }
 
   toIsoString(): string {

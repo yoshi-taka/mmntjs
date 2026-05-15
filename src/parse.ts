@@ -484,519 +484,6 @@ function parseCommonISO(str: string): InternalParsedData | null {
   };
 }
 
-function stripRFC2822Comments(str: string): string {
-  // Fast path: no comments, just normalize whitespace
-  if (!str.includes("(")) {
-    return str.replaceAll(/\s+/g, " ").trim();
-  }
-  const parts: string[] = [];
-  let depth = 0;
-  for (const ch of str) {
-    if (ch === "(") {
-      depth++;
-    } else if (ch === ")") {
-      depth--;
-      if (depth < 0) {
-        depth = 0;
-      }
-    } else if (depth === 0) {
-      parts.push(ch);
-    }
-  }
-  return parts.join("").replaceAll(/\s+/g, " ").trim();
-}
-
-const RFC_MONTH_MAP: Record<string, number | undefined> = {
-  Jan: 0,
-  Feb: 1,
-  Mar: 2,
-  Apr: 3,
-  May: 4,
-  Jun: 5,
-  Jul: 6,
-  Aug: 7,
-  Sep: 8,
-  Oct: 9,
-  Nov: 10,
-  Dec: 11,
-};
-
-const RFC_TZ_MAP: Record<string, number | undefined> = {
-  UTC: 0,
-  GMT: 0,
-  EST: -300,
-  EDT: -240,
-  CST: -360,
-  CDT: -300,
-  MST: -420,
-  MDT: -360,
-  PST: -480,
-  PDT: -420,
-};
-
-function parseRFC2822(match: RegExpMatchArray): InternalParsedData | null {
-  const day = parseInt(match[2], 10);
-  const monthStr = match[3];
-  const yearStr = match[4];
-  const hour = parseInt(match[5], 10);
-  const minute = parseInt(match[6], 10);
-  const second = match[7] ? parseInt(match[7], 10) : 0;
-  const tzStr = match[8] || match[9];
-
-  const month = RFC_MONTH_MAP[monthStr];
-  if (month === undefined) {
-    return null;
-  }
-
-  let year = parseInt(yearStr, 10);
-  if (yearStr.length === 2) {
-    year = year > 68 ? 1900 + year : 2000 + year;
-  }
-
-  let offset = 0;
-  if (tzStr) {
-    if (RFC_TZ_MAP[tzStr] !== undefined) {
-      offset = RFC_TZ_MAP[tzStr];
-    } else if (tzStr.length === 5) {
-      const sign = tzStr[0] === "+" ? 1 : -1;
-      const tzHour = parseInt(tzStr.substring(1, 3), 10);
-      const tzMin = parseInt(tzStr.substring(3, 5), 10);
-      offset = sign * (tzHour * 60 + tzMin);
-    }
-  }
-
-  const weekday = match[1]
-    ? WEEKDAY_NAMES_MAP[match[1].replaceAll(/[,\s]/g, "").toLowerCase().substring(0, 3)]
-    : undefined;
-
-  return {
-    year,
-    month,
-    day,
-    hour,
-    minute,
-    second,
-    millisecond: 0,
-    offset,
-    _weekdayName: weekday as unknown as string,
-    _rfc2822: true,
-  };
-}
-
-function classifyISODatePart(datePart: string): [fmt: string, allowTime: boolean] | null {
-  const len = datePart.length;
-  const ch0 = datePart.charCodeAt(0);
-  const hasDash = datePart.includes("-", ch0 === 45 ? 1 : 0);
-
-  if (hasDash) {
-    if (len === 13) {
-      return ["YYYYYY-MM-DD", true];
-    }
-    if (len === 10) {
-      if (datePart.charCodeAt(5) === 87) {
-        return ["GGGG-[W]WW-E", true];
-      }
-      return ["YYYY-MM-DD", true];
-    }
-    if (len === 8) {
-      if (datePart.charCodeAt(5) === 87) {
-        return ["GGGG-[W]WW", false];
-      }
-      return ["YYYY-DDD", true];
-    }
-    if (len === 7) {
-      return ["YYYY-MM", false];
-    }
-    return null;
-  }
-
-  if (len === 12 && (ch0 === 43 || ch0 === 45)) {
-    return ["YYYYYYMMDD", true];
-  }
-  if (len === 8) {
-    if (datePart.charCodeAt(4) === 87) {
-      return ["GGGG[W]WWE", true];
-    }
-    return ["YYYYMMDD", true];
-  }
-  if (len === 7) {
-    if (datePart.charCodeAt(4) === 87) {
-      return ["GGGG[W]WW", false];
-    }
-    return ["YYYYDDD", true];
-  }
-  if (len === 6) {
-    return ["YYYYMM", false];
-  }
-  if (len === 4) {
-    return ["YYYY", false];
-  }
-  return null;
-}
-
-function classifyISOTimePart(timePart: string): string | null {
-  const len = timePart.length;
-  const hasColon = len > 2 && timePart.charCodeAt(2) === 58;
-
-  if (hasColon) {
-    if (timePart.includes(".")) {
-      return "HH:mm:ss.SSSS";
-    }
-    if (timePart.includes(",")) {
-      return "HH:mm:ss,SSSS";
-    }
-    if (len === 8) {
-      return "HH:mm:ss";
-    }
-    if (len === 5) {
-      return "HH:mm";
-    }
-    return null;
-  }
-
-  if (timePart.includes(".")) {
-    return "HHmmss.SSSS";
-  }
-  if (timePart.includes(",")) {
-    return "HHmmss,SSSS";
-  }
-  if (len === 6) {
-    return "HHmmss";
-  }
-  if (len === 4) {
-    return "HHmm";
-  }
-  if (len === 2) {
-    return "HH";
-  }
-  return null;
-}
-
-function parseISOWithTable(str: string, locale?: ParseLocale): InternalParsedData | null {
-  const match = EXTENDED_ISO_REGEX.exec(str) ?? BASIC_ISO_REGEX.exec(str);
-  if (!match) {
-    return null;
-  }
-
-  const datePart = match[1];
-  const classified = classifyISODatePart(datePart);
-  if (!classified) {
-    return null;
-  }
-  let [dateFormat, allowTime] = classified;
-
-  if (match[3]) {
-    if (!allowTime) {
-      return { _claimed: true };
-    }
-    let timeFormat = classifyISOTimePart(match[3]);
-    if (!timeFormat) {
-      return { _claimed: true };
-    }
-    if (timeFormat.includes("SSSS")) {
-      const fracPos = match[3].search(/[.,]/);
-      if (fracPos >= 0) {
-        timeFormat = timeFormat.replace("SSSS", "S".repeat(match[3].length - fracPos - 1));
-      }
-    }
-    dateFormat = dateFormat + (match[2] || " ") + timeFormat;
-  }
-
-  if (match[4]) {
-    if (!match[3]) {
-      return { _claimed: true };
-    }
-    const tzStr = match[4].trim();
-    if (
-      tzStr === "Z" ||
-      tzStr === "z" ||
-      tzStr.charCodeAt(0) === 43 ||
-      tzStr.charCodeAt(0) === 45
-    ) {
-      dateFormat += "Z";
-    } else {
-      return { _claimed: true };
-    }
-  }
-
-  let parseStr = str;
-  const ch0 = parseStr.charCodeAt(0);
-  if (
-    (ch0 === 43 || ch0 === 45) &&
-    datePart.charCodeAt(0) === ch0 &&
-    !dateFormat.startsWith("YYYYYY")
-  ) {
-    parseStr = parseStr.slice(1);
-  }
-
-  const result = parseWithFormat(parseStr, dateFormat, locale);
-  if (!result) {
-    return { _claimed: true };
-  }
-  if (result._weekdayNum !== undefined && (result._weekdayNum < 1 || result._weekdayNum > 7)) {
-    return { _claimed: true };
-  }
-  if (dateFormat.includes("DDD") && result.year !== undefined && result.dayOfYear === undefined) {
-    return { _claimed: true };
-  }
-  return result as InternalParsedData;
-}
-
-const monthNames: Record<string, number> = {
-  jan: 0,
-  feb: 1,
-  mar: 2,
-  apr: 3,
-  may: 4,
-  jun: 5,
-  jul: 6,
-  aug: 7,
-  sep: 8,
-  oct: 9,
-  nov: 10,
-  dec: 11,
-  january: 0,
-  february: 1,
-  march: 2,
-  april: 3,
-  june: 5,
-  july: 6,
-  august: 7,
-  september: 8,
-  october: 9,
-  november: 10,
-  december: 11,
-};
-
-function getLocaleMonthsFull(loc: ParseLocale): string[] {
-  if ((loc as CachedParseLocale)._monthsCache !== undefined) {
-    return (loc as CachedParseLocale)._monthsCache as string[];
-  }
-  const months = localeMonths(loc as never);
-  const monthsArr = Array.isArray(months) ? months : [];
-  const lower = monthsArr.map((m: string) => m.toLowerCase());
-  const allFull = [...new Set(lower)];
-  (loc as CachedParseLocale)._monthsCache = lower;
-  (loc as CachedParseLocale)._monthsStrictRegex = new RegExp(
-    `^(${sortByLengthDesc(allFull).map(escapeRegex).join("|")})`,
-    "i",
-  );
-  const monthsShort = localeMonthsShort(loc as never);
-  const shortArr = Array.isArray(monthsShort) ? monthsShort : [];
-  const shortLower = shortArr.map((m: string) => m.toLowerCase());
-  // Strip trailing periods from short months for matching
-  const shortNoPeriod = shortLower
-    .map((m: string) => m.replace(/\.$/, ""))
-    .filter((m) => m.length > 0);
-  const all = [...new Set([...allFull, ...shortLower, ...shortNoPeriod])];
-  (loc as CachedParseLocale)._monthsRegex = new RegExp(
-    `^(${sortByLengthDesc(all).map(escapeRegex).join("|")})`,
-    "i",
-  );
-  return lower;
-}
-
-function getLocaleMonthsFullRegex(loc: ParseLocale, strict?: boolean): RegExp {
-  if (strict) {
-    if ((loc as CachedParseLocale)._monthsStrictRegex !== undefined) {
-      return (loc as CachedParseLocale)._monthsStrictRegex as RegExp;
-    }
-    getLocaleMonthsFull(loc);
-    return (loc as CachedParseLocale)._monthsStrictRegex as RegExp;
-  }
-  if ((loc as CachedParseLocale)._monthsRegex !== undefined) {
-    return (loc as CachedParseLocale)._monthsRegex as RegExp;
-  }
-  getLocaleMonthsFull(loc);
-  return (loc as CachedParseLocale)._monthsRegex as RegExp;
-}
-
-function getLocaleMonthsShort(loc: ParseLocale): string[] {
-  if ((loc as CachedParseLocale)._monthsShortCache !== undefined) {
-    return (loc as CachedParseLocale)._monthsShortCache as string[];
-  }
-  const monthsShort = localeMonthsShort(loc as never);
-  let shortArr = Array.isArray(monthsShort) ? monthsShort : [];
-  const lower = shortArr.map((m: string) => m.toLowerCase());
-  (loc as CachedParseLocale)._monthsShortCache = lower;
-  const noPeriod = lower.map((m) => m.replace(/\.$/, "")).filter((m) => m.length > 0);
-  const allStrict = [...new Set([...lower, ...noPeriod])];
-  (loc as CachedParseLocale)._monthsShortStrictRegex = new RegExp(
-    `^(${sortByLengthDesc(allStrict).map(escapeRegex).join("|")})`,
-    "i",
-  );
-  if (lower.length === 0) {
-    return getLocaleMonthsFull(loc);
-  }
-  return lower;
-}
-
-function getLocaleMonthsShortRegex(loc: ParseLocale, strict?: boolean): RegExp {
-  if (strict) {
-    if ((loc as CachedParseLocale)._monthsShortStrictRegex !== undefined) {
-      return (loc as CachedParseLocale)._monthsShortStrictRegex as RegExp;
-    }
-    getLocaleMonthsShort(loc);
-    return (loc as CachedParseLocale)._monthsShortStrictRegex as RegExp;
-  }
-  if ((loc as CachedParseLocale)._monthsShortRegex !== undefined) {
-    return (loc as CachedParseLocale)._monthsShortRegex as RegExp;
-  }
-  const shortList = getLocaleMonthsShort(loc);
-  const fullList = getLocaleMonthsFull(loc);
-  const noPeriod = shortList.map((m) => m.replace(/\.$/, "")).filter((m) => m.length > 0);
-  const all = [...new Set([...shortList, ...fullList, ...noPeriod])];
-  (loc as CachedParseLocale)._monthsShortRegex = new RegExp(
-    `^(${sortByLengthDesc(all).map(escapeRegex).join("|")})`,
-    "i",
-  );
-  return (loc as CachedParseLocale)._monthsShortRegex as RegExp;
-}
-
-function sortByLengthDesc(arr: string[]): string[] {
-  return [...arr].sort((a, b) => b.length - a.length);
-}
-
-function allowsEnglishNameFallback(loc: ParseLocale): boolean {
-  const abbr = (loc as CachedParseLocale)._abbr;
-  return typeof abbr === "string" && abbr.startsWith("en");
-}
-
-function hasWordContinuation(remaining: string, matchedLength: number): boolean {
-  return /^[\p{L}\p{N}'\u02BC]/u.test(remaining.slice(matchedLength));
-}
-
-function getLocaleWeekdaysFull(loc: ParseLocale): string[] {
-  if ((loc as CachedParseLocale)._weekdaysCache !== undefined) {
-    return (loc as CachedParseLocale)._weekdaysCache as string[];
-  }
-  const cfg = (loc as CachedParseLocale)._config;
-  let names: string[] = [];
-  if (Array.isArray(cfg.weekdays)) {
-    names = cfg.weekdays;
-  } else if (typeof cfg.weekdays === "object" && cfg.weekdays !== null) {
-    const standalone =
-      ((cfg.weekdays as Record<string, unknown>).standalone as string[] | undefined) ?? [];
-    const format = ((cfg.weekdays as Record<string, unknown>).format as string[] | undefined) ?? [];
-    names = [...new Set([...standalone, ...format])];
-  } else if (typeof cfg.weekdays === "function") {
-    for (let i = 0; i < 7; i++) {
-      try {
-        const r = cfg.weekdays({ day: () => i } as { day: () => number }, "dddd");
-        if (typeof r === "string") {
-          names.push(r);
-        }
-      } catch {}
-    }
-  }
-  const lower = names.map((m: string) => m.toLowerCase());
-  (loc as CachedParseLocale)._weekdaysCache = lower;
-  const all = [...new Set(lower)];
-  (loc as CachedParseLocale)._weekdaysRegex = new RegExp(
-    `^(${sortByLengthDesc(all).map(escapeRegex).join("|")})`,
-    "i",
-  );
-  return lower;
-}
-
-function getLocaleWeekdaysFullRegex(loc: ParseLocale): RegExp {
-  if ((loc as CachedParseLocale)._weekdaysRegex !== undefined) {
-    return (loc as CachedParseLocale)._weekdaysRegex as RegExp;
-  }
-  getLocaleWeekdaysFull(loc);
-  return (loc as CachedParseLocale)._weekdaysRegex as RegExp;
-}
-
-function getLocaleWeekdaysShort(loc: ParseLocale): string[] {
-  if ((loc as CachedParseLocale)._weekdaysShortCache !== undefined) {
-    return (loc as CachedParseLocale)._weekdaysShortCache as string[];
-  }
-  const cfg = (loc as CachedParseLocale)._config;
-  let names: string[] = [];
-  if (Array.isArray(cfg.weekdaysShort)) {
-    names = cfg.weekdaysShort;
-  } else if (typeof cfg.weekdaysShort === "object" && cfg.weekdaysShort !== null) {
-    const standalone =
-      ((cfg.weekdaysShort as Record<string, unknown>).standalone as string[] | undefined) ?? [];
-    const format =
-      ((cfg.weekdaysShort as Record<string, unknown>).format as string[] | undefined) ?? [];
-    names = [...new Set([...standalone, ...format])];
-  } else {
-    return getLocaleWeekdaysShort(loc);
-  }
-  const lower = names.map((m: string) => m.toLowerCase());
-  (loc as CachedParseLocale)._weekdaysShortCache = lower;
-  const all = [...new Set(lower)];
-  (loc as CachedParseLocale)._weekdaysShortRegex = new RegExp(
-    `^(${sortByLengthDesc(all).map(escapeRegex).join("|")})`,
-    "i",
-  );
-  return lower;
-}
-
-function getLocaleWeekdaysShortRegex(loc: ParseLocale): RegExp {
-  if ((loc as CachedParseLocale)._weekdaysShortRegex !== undefined) {
-    return (loc as CachedParseLocale)._weekdaysShortRegex as RegExp;
-  }
-  getLocaleWeekdaysShort(loc);
-  return (loc as CachedParseLocale)._weekdaysShortRegex as RegExp;
-}
-
-function getLocaleWeekdaysMin(loc: ParseLocale): string[] {
-  if ((loc as CachedParseLocale)._weekdaysMinCache !== undefined) {
-    return (loc as CachedParseLocale)._weekdaysMinCache as string[];
-  }
-  const cfg = (loc as CachedParseLocale)._config;
-  let names: string[] = [];
-  if (Array.isArray(cfg.weekdaysMin)) {
-    names = cfg.weekdaysMin;
-  } else if (typeof cfg.weekdaysMin === "object" && cfg.weekdaysMin !== null) {
-    const standalone =
-      ((cfg.weekdaysMin as Record<string, unknown>).standalone as string[] | undefined) ?? [];
-    const format =
-      ((cfg.weekdaysMin as Record<string, unknown>).format as string[] | undefined) ?? [];
-    names = [...new Set([...standalone, ...format])];
-  } else {
-    return getLocaleWeekdaysShort(loc);
-  }
-  const lower = names.map((m: string) => m.toLowerCase());
-  (loc as CachedParseLocale)._weekdaysMinCache = lower;
-  const all = [...new Set(lower)];
-  (loc as CachedParseLocale)._weekdaysMinRegex = new RegExp(
-    `^(${sortByLengthDesc(all).map(escapeRegex).join("|")})`,
-    "i",
-  );
-  return lower;
-}
-
-function getLocaleWeekdaysMinRegex(loc: ParseLocale): RegExp {
-  if ((loc as CachedParseLocale)._weekdaysMinRegex !== undefined) {
-    return (loc as CachedParseLocale)._weekdaysMinRegex as RegExp;
-  }
-  getLocaleWeekdaysMin(loc);
-  return (loc as CachedParseLocale)._weekdaysMinRegex as RegExp;
-}
-
-function timedMatch(
-  remaining: string,
-  pattern: RegExp,
-  exactLen?: number,
-  strict?: boolean,
-): RegExpMatchArray | null {
-  const match = remaining.match(pattern);
-  if (!match) {
-    return null;
-  }
-  if (strict && exactLen !== undefined && match[1].length !== exactLen) {
-    return null;
-  }
-  if (strict && exactLen === undefined && match[1].length > 2) {
-    return null;
-  }
-  return match;
-}
-
-const expandedFormatCache = new LruMap<string, string>(500);
 
 function parseTwo(str: string, idx: number): { v: number; len: number } | null {
   if (idx >= str.length) {
@@ -3156,6 +2643,520 @@ function parseWithFormats(
   return best;
 }
 
+
+function stripRFC2822Comments(str: string): string {
+  // Fast path: no comments, just normalize whitespace
+  if (!str.includes("(")) {
+    return str.replaceAll(/\s+/g, " ").trim();
+  }
+  const parts: string[] = [];
+  let depth = 0;
+  for (const ch of str) {
+    if (ch === "(") {
+      depth++;
+    } else if (ch === ")") {
+      depth--;
+      if (depth < 0) {
+        depth = 0;
+      }
+    } else if (depth === 0) {
+      parts.push(ch);
+    }
+  }
+  return parts.join("").replaceAll(/\s+/g, " ").trim();
+}
+
+const RFC_MONTH_MAP: Record<string, number | undefined> = {
+  Jan: 0,
+  Feb: 1,
+  Mar: 2,
+  Apr: 3,
+  May: 4,
+  Jun: 5,
+  Jul: 6,
+  Aug: 7,
+  Sep: 8,
+  Oct: 9,
+  Nov: 10,
+  Dec: 11,
+};
+
+const RFC_TZ_MAP: Record<string, number | undefined> = {
+  UTC: 0,
+  GMT: 0,
+  EST: -300,
+  EDT: -240,
+  CST: -360,
+  CDT: -300,
+  MST: -420,
+  MDT: -360,
+  PST: -480,
+  PDT: -420,
+};
+
+function parseRFC2822(match: RegExpMatchArray): InternalParsedData | null {
+  const day = parseInt(match[2], 10);
+  const monthStr = match[3];
+  const yearStr = match[4];
+  const hour = parseInt(match[5], 10);
+  const minute = parseInt(match[6], 10);
+  const second = match[7] ? parseInt(match[7], 10) : 0;
+  const tzStr = match[8] || match[9];
+
+  const month = RFC_MONTH_MAP[monthStr];
+  if (month === undefined) {
+    return null;
+  }
+
+  let year = parseInt(yearStr, 10);
+  if (yearStr.length === 2) {
+    year = year > 68 ? 1900 + year : 2000 + year;
+  }
+
+  let offset = 0;
+  if (tzStr) {
+    if (RFC_TZ_MAP[tzStr] !== undefined) {
+      offset = RFC_TZ_MAP[tzStr];
+    } else if (tzStr.length === 5) {
+      const sign = tzStr[0] === "+" ? 1 : -1;
+      const tzHour = parseInt(tzStr.substring(1, 3), 10);
+      const tzMin = parseInt(tzStr.substring(3, 5), 10);
+      offset = sign * (tzHour * 60 + tzMin);
+    }
+  }
+
+  const weekday = match[1]
+    ? WEEKDAY_NAMES_MAP[match[1].replaceAll(/[,\s]/g, "").toLowerCase().substring(0, 3)]
+    : undefined;
+
+  return {
+    year,
+    month,
+    day,
+    hour,
+    minute,
+    second,
+    millisecond: 0,
+    offset,
+    _weekdayName: weekday as unknown as string,
+    _rfc2822: true,
+  };
+}
+
+function classifyISODatePart(datePart: string): [fmt: string, allowTime: boolean] | null {
+  const len = datePart.length;
+  const ch0 = datePart.charCodeAt(0);
+  const hasDash = datePart.includes("-", ch0 === 45 ? 1 : 0);
+
+  if (hasDash) {
+    if (len === 13) {
+      return ["YYYYYY-MM-DD", true];
+    }
+    if (len === 10) {
+      if (datePart.charCodeAt(5) === 87) {
+        return ["GGGG-[W]WW-E", true];
+      }
+      return ["YYYY-MM-DD", true];
+    }
+    if (len === 8) {
+      if (datePart.charCodeAt(5) === 87) {
+        return ["GGGG-[W]WW", false];
+      }
+      return ["YYYY-DDD", true];
+    }
+    if (len === 7) {
+      return ["YYYY-MM", false];
+    }
+    return null;
+  }
+
+  if (len === 12 && (ch0 === 43 || ch0 === 45)) {
+    return ["YYYYYYMMDD", true];
+  }
+  if (len === 8) {
+    if (datePart.charCodeAt(4) === 87) {
+      return ["GGGG[W]WWE", true];
+    }
+    return ["YYYYMMDD", true];
+  }
+  if (len === 7) {
+    if (datePart.charCodeAt(4) === 87) {
+      return ["GGGG[W]WW", false];
+    }
+    return ["YYYYDDD", true];
+  }
+  if (len === 6) {
+    return ["YYYYMM", false];
+  }
+  if (len === 4) {
+    return ["YYYY", false];
+  }
+  return null;
+}
+
+function classifyISOTimePart(timePart: string): string | null {
+  const len = timePart.length;
+  const hasColon = len > 2 && timePart.charCodeAt(2) === 58;
+
+  if (hasColon) {
+    if (timePart.includes(".")) {
+      return "HH:mm:ss.SSSS";
+    }
+    if (timePart.includes(",")) {
+      return "HH:mm:ss,SSSS";
+    }
+    if (len === 8) {
+      return "HH:mm:ss";
+    }
+    if (len === 5) {
+      return "HH:mm";
+    }
+    return null;
+  }
+
+  if (timePart.includes(".")) {
+    return "HHmmss.SSSS";
+  }
+  if (timePart.includes(",")) {
+    return "HHmmss,SSSS";
+  }
+  if (len === 6) {
+    return "HHmmss";
+  }
+  if (len === 4) {
+    return "HHmm";
+  }
+  if (len === 2) {
+    return "HH";
+  }
+  return null;
+}
+
+function parseISOWithTable(str: string, locale?: ParseLocale): InternalParsedData | null {
+  const match = EXTENDED_ISO_REGEX.exec(str) ?? BASIC_ISO_REGEX.exec(str);
+  if (!match) {
+    return null;
+  }
+
+  const datePart = match[1];
+  const classified = classifyISODatePart(datePart);
+  if (!classified) {
+    return null;
+  }
+  let [dateFormat, allowTime] = classified;
+
+  if (match[3]) {
+    if (!allowTime) {
+      return { _claimed: true };
+    }
+    let timeFormat = classifyISOTimePart(match[3]);
+    if (!timeFormat) {
+      return { _claimed: true };
+    }
+    if (timeFormat.includes("SSSS")) {
+      const fracPos = match[3].search(/[.,]/);
+      if (fracPos >= 0) {
+        timeFormat = timeFormat.replace("SSSS", "S".repeat(match[3].length - fracPos - 1));
+      }
+    }
+    dateFormat = dateFormat + (match[2] || " ") + timeFormat;
+  }
+
+  if (match[4]) {
+    if (!match[3]) {
+      return { _claimed: true };
+    }
+    const tzStr = match[4].trim();
+    if (
+      tzStr === "Z" ||
+      tzStr === "z" ||
+      tzStr.charCodeAt(0) === 43 ||
+      tzStr.charCodeAt(0) === 45
+    ) {
+      dateFormat += "Z";
+    } else {
+      return { _claimed: true };
+    }
+  }
+
+  let parseStr = str;
+  const ch0 = parseStr.charCodeAt(0);
+  if (
+    (ch0 === 43 || ch0 === 45) &&
+    datePart.charCodeAt(0) === ch0 &&
+    !dateFormat.startsWith("YYYYYY")
+  ) {
+    parseStr = parseStr.slice(1);
+  }
+
+  const result = parseWithFormat(parseStr, dateFormat, locale);
+  if (!result) {
+    return { _claimed: true };
+  }
+  if (result._weekdayNum !== undefined && (result._weekdayNum < 1 || result._weekdayNum > 7)) {
+    return { _claimed: true };
+  }
+  if (dateFormat.includes("DDD") && result.year !== undefined && result.dayOfYear === undefined) {
+    return { _claimed: true };
+  }
+  return result as InternalParsedData;
+}
+
+const monthNames: Record<string, number> = {
+  jan: 0,
+  feb: 1,
+  mar: 2,
+  apr: 3,
+  may: 4,
+  jun: 5,
+  jul: 6,
+  aug: 7,
+  sep: 8,
+  oct: 9,
+  nov: 10,
+  dec: 11,
+  january: 0,
+  february: 1,
+  march: 2,
+  april: 3,
+  june: 5,
+  july: 6,
+  august: 7,
+  september: 8,
+  october: 9,
+  november: 10,
+  december: 11,
+};
+
+function getLocaleMonthsFull(loc: ParseLocale): string[] {
+  if ((loc as CachedParseLocale)._monthsCache !== undefined) {
+    return (loc as CachedParseLocale)._monthsCache as string[];
+  }
+  const months = localeMonths(loc as never);
+  const monthsArr = Array.isArray(months) ? months : [];
+  const lower = monthsArr.map((m: string) => m.toLowerCase());
+  const allFull = [...new Set(lower)];
+  (loc as CachedParseLocale)._monthsCache = lower;
+  (loc as CachedParseLocale)._monthsStrictRegex = new RegExp(
+    `^(${sortByLengthDesc(allFull).map(escapeRegex).join("|")})`,
+    "i",
+  );
+  const monthsShort = localeMonthsShort(loc as never);
+  const shortArr = Array.isArray(monthsShort) ? monthsShort : [];
+  const shortLower = shortArr.map((m: string) => m.toLowerCase());
+  // Strip trailing periods from short months for matching
+  const shortNoPeriod = shortLower
+    .map((m: string) => m.replace(/\.$/, ""))
+    .filter((m) => m.length > 0);
+  const all = [...new Set([...allFull, ...shortLower, ...shortNoPeriod])];
+  (loc as CachedParseLocale)._monthsRegex = new RegExp(
+    `^(${sortByLengthDesc(all).map(escapeRegex).join("|")})`,
+    "i",
+  );
+  return lower;
+}
+
+function getLocaleMonthsFullRegex(loc: ParseLocale, strict?: boolean): RegExp {
+  if (strict) {
+    if ((loc as CachedParseLocale)._monthsStrictRegex !== undefined) {
+      return (loc as CachedParseLocale)._monthsStrictRegex as RegExp;
+    }
+    getLocaleMonthsFull(loc);
+    return (loc as CachedParseLocale)._monthsStrictRegex as RegExp;
+  }
+  if ((loc as CachedParseLocale)._monthsRegex !== undefined) {
+    return (loc as CachedParseLocale)._monthsRegex as RegExp;
+  }
+  getLocaleMonthsFull(loc);
+  return (loc as CachedParseLocale)._monthsRegex as RegExp;
+}
+
+function getLocaleMonthsShort(loc: ParseLocale): string[] {
+  if ((loc as CachedParseLocale)._monthsShortCache !== undefined) {
+    return (loc as CachedParseLocale)._monthsShortCache as string[];
+  }
+  const monthsShort = localeMonthsShort(loc as never);
+  let shortArr = Array.isArray(monthsShort) ? monthsShort : [];
+  const lower = shortArr.map((m: string) => m.toLowerCase());
+  (loc as CachedParseLocale)._monthsShortCache = lower;
+  const noPeriod = lower.map((m) => m.replace(/\.$/, "")).filter((m) => m.length > 0);
+  const allStrict = [...new Set([...lower, ...noPeriod])];
+  (loc as CachedParseLocale)._monthsShortStrictRegex = new RegExp(
+    `^(${sortByLengthDesc(allStrict).map(escapeRegex).join("|")})`,
+    "i",
+  );
+  if (lower.length === 0) {
+    return getLocaleMonthsFull(loc);
+  }
+  return lower;
+}
+
+function getLocaleMonthsShortRegex(loc: ParseLocale, strict?: boolean): RegExp {
+  if (strict) {
+    if ((loc as CachedParseLocale)._monthsShortStrictRegex !== undefined) {
+      return (loc as CachedParseLocale)._monthsShortStrictRegex as RegExp;
+    }
+    getLocaleMonthsShort(loc);
+    return (loc as CachedParseLocale)._monthsShortStrictRegex as RegExp;
+  }
+  if ((loc as CachedParseLocale)._monthsShortRegex !== undefined) {
+    return (loc as CachedParseLocale)._monthsShortRegex as RegExp;
+  }
+  const shortList = getLocaleMonthsShort(loc);
+  const fullList = getLocaleMonthsFull(loc);
+  const noPeriod = shortList.map((m) => m.replace(/\.$/, "")).filter((m) => m.length > 0);
+  const all = [...new Set([...shortList, ...fullList, ...noPeriod])];
+  (loc as CachedParseLocale)._monthsShortRegex = new RegExp(
+    `^(${sortByLengthDesc(all).map(escapeRegex).join("|")})`,
+    "i",
+  );
+  return (loc as CachedParseLocale)._monthsShortRegex as RegExp;
+}
+
+function sortByLengthDesc(arr: string[]): string[] {
+  return [...arr].sort((a, b) => b.length - a.length);
+}
+
+function allowsEnglishNameFallback(loc: ParseLocale): boolean {
+  const abbr = (loc as CachedParseLocale)._abbr;
+  return typeof abbr === "string" && abbr.startsWith("en");
+}
+
+function hasWordContinuation(remaining: string, matchedLength: number): boolean {
+  return /^[\p{L}\p{N}'\u02BC]/u.test(remaining.slice(matchedLength));
+}
+
+function getLocaleWeekdaysFull(loc: ParseLocale): string[] {
+  if ((loc as CachedParseLocale)._weekdaysCache !== undefined) {
+    return (loc as CachedParseLocale)._weekdaysCache as string[];
+  }
+  const cfg = (loc as CachedParseLocale)._config;
+  let names: string[] = [];
+  if (Array.isArray(cfg.weekdays)) {
+    names = cfg.weekdays;
+  } else if (typeof cfg.weekdays === "object" && cfg.weekdays !== null) {
+    const standalone =
+      ((cfg.weekdays as Record<string, unknown>).standalone as string[] | undefined) ?? [];
+    const format = ((cfg.weekdays as Record<string, unknown>).format as string[] | undefined) ?? [];
+    names = [...new Set([...standalone, ...format])];
+  } else if (typeof cfg.weekdays === "function") {
+    for (let i = 0; i < 7; i++) {
+      try {
+        const r = cfg.weekdays({ day: () => i } as { day: () => number }, "dddd");
+        if (typeof r === "string") {
+          names.push(r);
+        }
+      } catch {}
+    }
+  }
+  const lower = names.map((m: string) => m.toLowerCase());
+  (loc as CachedParseLocale)._weekdaysCache = lower;
+  const all = [...new Set(lower)];
+  (loc as CachedParseLocale)._weekdaysRegex = new RegExp(
+    `^(${sortByLengthDesc(all).map(escapeRegex).join("|")})`,
+    "i",
+  );
+  return lower;
+}
+
+function getLocaleWeekdaysFullRegex(loc: ParseLocale): RegExp {
+  if ((loc as CachedParseLocale)._weekdaysRegex !== undefined) {
+    return (loc as CachedParseLocale)._weekdaysRegex as RegExp;
+  }
+  getLocaleWeekdaysFull(loc);
+  return (loc as CachedParseLocale)._weekdaysRegex as RegExp;
+}
+
+function getLocaleWeekdaysShort(loc: ParseLocale): string[] {
+  if ((loc as CachedParseLocale)._weekdaysShortCache !== undefined) {
+    return (loc as CachedParseLocale)._weekdaysShortCache as string[];
+  }
+  const cfg = (loc as CachedParseLocale)._config;
+  let names: string[] = [];
+  if (Array.isArray(cfg.weekdaysShort)) {
+    names = cfg.weekdaysShort;
+  } else if (typeof cfg.weekdaysShort === "object" && cfg.weekdaysShort !== null) {
+    const standalone =
+      ((cfg.weekdaysShort as Record<string, unknown>).standalone as string[] | undefined) ?? [];
+    const format =
+      ((cfg.weekdaysShort as Record<string, unknown>).format as string[] | undefined) ?? [];
+    names = [...new Set([...standalone, ...format])];
+  } else {
+    return getLocaleWeekdaysShort(loc);
+  }
+  const lower = names.map((m: string) => m.toLowerCase());
+  (loc as CachedParseLocale)._weekdaysShortCache = lower;
+  const all = [...new Set(lower)];
+  (loc as CachedParseLocale)._weekdaysShortRegex = new RegExp(
+    `^(${sortByLengthDesc(all).map(escapeRegex).join("|")})`,
+    "i",
+  );
+  return lower;
+}
+
+function getLocaleWeekdaysShortRegex(loc: ParseLocale): RegExp {
+  if ((loc as CachedParseLocale)._weekdaysShortRegex !== undefined) {
+    return (loc as CachedParseLocale)._weekdaysShortRegex as RegExp;
+  }
+  getLocaleWeekdaysShort(loc);
+  return (loc as CachedParseLocale)._weekdaysShortRegex as RegExp;
+}
+
+function getLocaleWeekdaysMin(loc: ParseLocale): string[] {
+  if ((loc as CachedParseLocale)._weekdaysMinCache !== undefined) {
+    return (loc as CachedParseLocale)._weekdaysMinCache as string[];
+  }
+  const cfg = (loc as CachedParseLocale)._config;
+  let names: string[] = [];
+  if (Array.isArray(cfg.weekdaysMin)) {
+    names = cfg.weekdaysMin;
+  } else if (typeof cfg.weekdaysMin === "object" && cfg.weekdaysMin !== null) {
+    const standalone =
+      ((cfg.weekdaysMin as Record<string, unknown>).standalone as string[] | undefined) ?? [];
+    const format =
+      ((cfg.weekdaysMin as Record<string, unknown>).format as string[] | undefined) ?? [];
+    names = [...new Set([...standalone, ...format])];
+  } else {
+    return getLocaleWeekdaysShort(loc);
+  }
+  const lower = names.map((m: string) => m.toLowerCase());
+  (loc as CachedParseLocale)._weekdaysMinCache = lower;
+  const all = [...new Set(lower)];
+  (loc as CachedParseLocale)._weekdaysMinRegex = new RegExp(
+    `^(${sortByLengthDesc(all).map(escapeRegex).join("|")})`,
+    "i",
+  );
+  return lower;
+}
+
+function getLocaleWeekdaysMinRegex(loc: ParseLocale): RegExp {
+  if ((loc as CachedParseLocale)._weekdaysMinRegex !== undefined) {
+    return (loc as CachedParseLocale)._weekdaysMinRegex as RegExp;
+  }
+  getLocaleWeekdaysMin(loc);
+  return (loc as CachedParseLocale)._weekdaysMinRegex as RegExp;
+}
+
+function timedMatch(
+  remaining: string,
+  pattern: RegExp,
+  exactLen?: number,
+  strict?: boolean,
+): RegExpMatchArray | null {
+  const match = remaining.match(pattern);
+  if (!match) {
+    return null;
+  }
+  if (strict && exactLen !== undefined && match[1].length !== exactLen) {
+    return null;
+  }
+  if (strict && exactLen === undefined && match[1].length > 2) {
+    return null;
+  }
+  return match;
+}
+
+const expandedFormatCache = new LruMap<string, string>(500);
 export function parseArray(arr: unknown[]): ParsedData | null {
   if (arr.length === 0) {
     return null;
