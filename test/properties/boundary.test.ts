@@ -156,6 +156,41 @@ describe("Property-based: boundary values", () => {
     );
   });
 
+  test("negative UTC timestamps preserve startOf/endOf bucket semantics", () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: -2208988800000, max: -1 }),
+        fc.constantFrom("day", "hour", "minute", "second"),
+        (ts, unit) => {
+          const m2Start = moment.utc(ts).startOf(unit);
+          const origStart = originalMoment.utc(ts).startOf(unit);
+          const m2End = moment.utc(ts).endOf(unit);
+          const origEnd = originalMoment.utc(ts).endOf(unit);
+          expect(m2Start.valueOf()).toBe(origStart.valueOf());
+          expect(m2End.valueOf()).toBe(origEnd.valueOf());
+        },
+      ),
+      { numRuns: 200 },
+    );
+  });
+
+  test("large month overflow via add(month) matches moment", () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1900, max: 4000 }),
+        fc.integer({ min: -240, max: 240 }),
+        fc.integer({ min: 1, max: 28 }),
+        (year, month, day) => {
+          const base = `${String(year).padStart(4, "0")}-01-${String(day).padStart(2, "0")}`;
+          const m2 = moment.utc(base).add(month, "month");
+          const mOrig = originalMoment.utc(base).add(month, "month");
+          expect(m2.valueOf()).toBe(mOrig.valueOf());
+        },
+      ),
+      { numRuns: 200 },
+    );
+  });
+
   test("two digit year boundaries (68/69 split)", () => {
     fc.assert(
       fc.property(

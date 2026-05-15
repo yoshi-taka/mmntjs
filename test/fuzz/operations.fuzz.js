@@ -1,5 +1,6 @@
 import _moment from "../../dist/index.js";
 import _originalMoment from "../../moment/moment.js";
+import { weightedMomentDate } from "./distributions.js";
 import { applyRandomTZ } from "./tz-helper.js";
 
 const moment = _moment;
@@ -25,7 +26,7 @@ export function fuzz(buf) {
   const offset = buf.readInt32LE(0);
   const unit = units[buf[4] % units.length];
   try {
-    const d = new Date(Date.now() + offset);
+    const d = weightedMomentDate(buf, Date.now() + offset);
     const m2 = moment(d);
     const mOrig = originalMoment(d);
     const fmt2 = m2.format("YYYY-MM-DD HH:mm:ss.SSS");

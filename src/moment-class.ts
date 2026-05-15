@@ -17,6 +17,8 @@ import { isArray, isObject, isDate, isMoment, hasOwnProp, zeroFill, createDateSa
 import {
   DATE,
   DAY,
+  endOfUnitEpoch,
+  floorUnitEpoch,
   HOUR,
   INVALID_UNIT,
   ISO_WEEK,
@@ -109,6 +111,11 @@ let isUtcCallback: ((m: Moment) => boolean) | undefined;
 let isUtcOffsetCallback: ((m: Moment) => boolean) | undefined;
 let isDSTCallback: ((m: Moment) => boolean) | undefined;
 let hasAlignedHourOffsetCallback: ((m: Moment, other?: MomentInput) => boolean) | undefined;
+
+const SECOND_MS = 1000;
+const MINUTE_MS = 60000;
+const HOUR_MS = 3600000;
+const DAY_MS = 86400000;
 
 export {
   getRelTimeRounding,
@@ -1868,7 +1875,7 @@ export class Moment {
       case DATE:
       case DAY:
         if (utc) {
-          this._t = Math.floor(this._t / 86400000) * 86400000;
+          this._t = floorUnitEpoch(this._t, DAY_MS);
           this._d = undefined;
         } else {
           const d = this._getD();
@@ -1881,38 +1888,41 @@ export class Moment {
         this.$ms = 0;
         break;
       case HOUR: {
-        const d = this._getD();
         if (utc) {
-          d.setUTCMinutes(0, 0, 0);
+          this._t = floorUnitEpoch(this._t, HOUR_MS);
+          this._d = undefined;
         } else {
+          const d = this._getD();
           d.setMinutes(0, 0, 0);
+          this._t = d.getTime();
         }
-        this._t = d.getTime();
         this.$m = 0;
         this.$s = 0;
         this.$ms = 0;
         break;
       }
       case MINUTE: {
-        const d = this._getD();
         if (utc) {
-          d.setUTCSeconds(0, 0);
+          this._t = floorUnitEpoch(this._t, MINUTE_MS);
+          this._d = undefined;
         } else {
+          const d = this._getD();
           d.setSeconds(0, 0);
+          this._t = d.getTime();
         }
-        this._t = d.getTime();
         this.$s = 0;
         this.$ms = 0;
         break;
       }
       case SECOND: {
-        const d = this._getD();
         if (utc) {
-          d.setUTCMilliseconds(0);
+          this._t = floorUnitEpoch(this._t, SECOND_MS);
+          this._d = undefined;
         } else {
+          const d = this._getD();
           d.setMilliseconds(0);
+          this._t = d.getTime();
         }
-        this._t = d.getTime();
         this.$ms = 0;
         break;
       }
@@ -1986,7 +1996,7 @@ export class Moment {
       case DATE:
       case DAY: {
         if (utc) {
-          this._t = (Math.floor(this._t / 86400000) + 1) * 86400000 - 1;
+          this._t = endOfUnitEpoch(this._t, DAY_MS);
           this._d = undefined;
           this._dirty = true;
         } else {
@@ -2006,7 +2016,7 @@ export class Moment {
       }
       case HOUR: {
         if (utc) {
-          this._t = (Math.floor(this._t / 3600000) + 1) * 3600000 - 1;
+          this._t = endOfUnitEpoch(this._t, HOUR_MS);
           this._d = undefined;
           this._dirty = true;
         } else {
@@ -2023,7 +2033,7 @@ export class Moment {
       }
       case MINUTE: {
         if (utc) {
-          this._t = (Math.floor(this._t / 60000) + 1) * 60000 - 1;
+          this._t = endOfUnitEpoch(this._t, MINUTE_MS);
           this._d = undefined;
           this._dirty = true;
         } else {
@@ -2039,7 +2049,7 @@ export class Moment {
       }
       case SECOND: {
         if (utc) {
-          this._t = (Math.floor(this._t / 1000) + 1) * 1000 - 1;
+          this._t = endOfUnitEpoch(this._t, SECOND_MS);
           this._d = undefined;
           this._dirty = true;
         } else {

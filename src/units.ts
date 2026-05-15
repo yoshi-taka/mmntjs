@@ -130,8 +130,25 @@ export function normalizeUnitCode(unit: string): UnitCode | undefined {
   return _codeAliases[unit] ?? _codeNmap[unit.toLowerCase()];
 }
 
+export function euclideanModulo(value: number, mod: number): number {
+  const remainder = value % mod;
+  return remainder < 0 ? remainder + mod : remainder;
+}
+
 export function normalizeMonth(m: number): number {
-  return ((m % 12) + 12) % 12;
+  return euclideanModulo(m, 12);
+}
+
+export function floorUnitEpoch(value: number, unitMs: number): number {
+  return value - euclideanModulo(value, unitMs);
+}
+
+export function floorUnitIndex(value: number, unitMs: number): number {
+  return floorUnitEpoch(value, unitMs) / unitMs;
+}
+
+export function endOfUnitEpoch(value: number, unitMs: number): number {
+  return value + (unitMs - 1) - euclideanModulo(value, unitMs);
 }
 
 export function isLeapYear(y: number): boolean {
@@ -161,9 +178,8 @@ export function daysInMonth(year: number, month: number): number {
     return NaN;
   }
   if (month < 0 || month > 11) {
-    const adj = month % 12;
     year += Math.floor(month / 12);
-    month = adj < 0 ? adj + 12 : adj;
+    month = normalizeMonth(month);
   }
   return daysInMonthFast(year, month);
 }

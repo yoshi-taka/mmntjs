@@ -2,6 +2,8 @@ import { getLiteLocale, getLiteCurrentLocale } from "./locale-lite";
 import type { LiteLocale as Locale } from "./locale-lite";
 import { isObject, isDate, isMoment, hasOwnProp, zeroFill, createDateSafe } from "./utils";
 import {
+  endOfUnitEpoch,
+  floorUnitEpoch,
   normalizeUnits,
   normalizeUnitCode,
   normalizeMonth,
@@ -22,6 +24,11 @@ import { parseString, type ParsedData } from "./parse-lite-strict";
 import { formatMomentBasic } from "./display/format-basic";
 import type { ParseLocale } from "./parse-locale";
 import type { FormattableMoment } from "./display/types";
+
+const SECOND_MS = 1000;
+const MINUTE_MS = 60000;
+const HOUR_MS = 3600000;
+const DAY_MS = 86400000;
 
 export type MomentInput =
   | MomentLite
@@ -1535,7 +1542,8 @@ export class MomentLite {
           if (swap) {
             wholeMonths = -wholeMonths;
           }
-          const delta = swap ? anchorVal - b.valueOf() : b.valueOf() - anchorVal;
+          const bEpoch = b.valueOf();
+          const delta = swap ? anchorVal - bEpoch : bEpoch - anchorVal;
           if (wholeMonths > 0) {
             if (delta > 0) {
               wholeMonths -= 1;
@@ -1652,7 +1660,7 @@ export class MomentLite {
       case DATE:
       case DAY:
         if (utc) {
-          this._t = Math.floor(this._t / 86400000) * 86400000;
+          this._t = floorUnitEpoch(this._t, DAY_MS);
           this._d = undefined;
         } else {
           const d = this._getDNoEnsure();
@@ -1666,7 +1674,7 @@ export class MomentLite {
         break;
       case HOUR:
         if (utc) {
-          this._t = Math.floor(this._t / 3600000) * 3600000;
+          this._t = floorUnitEpoch(this._t, HOUR_MS);
           this._d = undefined;
         } else {
           const d = this._getDNoEnsure();
@@ -1679,7 +1687,7 @@ export class MomentLite {
         break;
       case MINUTE:
         if (utc) {
-          this._t = Math.floor(this._t / 60000) * 60000;
+          this._t = floorUnitEpoch(this._t, MINUTE_MS);
           this._d = undefined;
         } else {
           const d = this._getDNoEnsure();
@@ -1691,7 +1699,7 @@ export class MomentLite {
         break;
       case SECOND:
         if (utc) {
-          this._t = Math.floor(this._t / 1000) * 1000;
+          this._t = floorUnitEpoch(this._t, SECOND_MS);
           this._d = undefined;
         } else {
           const d = this._getDNoEnsure();
@@ -1756,7 +1764,7 @@ export class MomentLite {
       case DATE:
       case DAY:
         if (utc) {
-          this._t = (Math.floor(this._t / 86400000) + 1) * 86400000 - 1;
+          this._t = endOfUnitEpoch(this._t, DAY_MS);
           this._d = undefined;
         } else {
           const d = this._getD();
@@ -1774,7 +1782,7 @@ export class MomentLite {
         break;
       case HOUR:
         if (utc) {
-          this._t = (Math.floor(this._t / 3600000) + 1) * 3600000 - 1;
+          this._t = endOfUnitEpoch(this._t, HOUR_MS);
           this._d = undefined;
         } else {
           const d = this._getD();
@@ -1789,7 +1797,7 @@ export class MomentLite {
         break;
       case MINUTE:
         if (utc) {
-          this._t = (Math.floor(this._t / 60000) + 1) * 60000 - 1;
+          this._t = endOfUnitEpoch(this._t, MINUTE_MS);
           this._d = undefined;
         } else {
           const d = this._getD();
@@ -1803,7 +1811,7 @@ export class MomentLite {
         break;
       case SECOND:
         if (utc) {
-          this._t = (Math.floor(this._t / 1000) + 1) * 1000 - 1;
+          this._t = endOfUnitEpoch(this._t, SECOND_MS);
           this._d = undefined;
         } else {
           const d = this._getD();

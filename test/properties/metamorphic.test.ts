@@ -26,6 +26,7 @@ describe("Metamorphic properties", () => {
   const safeDates = fc.date({ min: safeMin, max: safeMax, noInvalidDate: true });
 
   const reversibleUnits = fc.constantFrom("millisecond", "second", "minute", "hour", "day", "week");
+  const utcMetricUnits = fc.constantFrom("millisecond", "second", "minute", "hour", "day", "week");
   const shiftUnits = fc.constantFrom("millisecond", "second", "minute", "hour", "day", "week");
   const boundaryUnits = fc.constantFrom(
     "year",
@@ -164,6 +165,41 @@ describe("Metamorphic properties", () => {
         expect(shiftedLeft.isBefore(shiftedRight)).toBe(left.isBefore(right));
         expect(shiftedLeft.isAfter(shiftedRight)).toBe(left.isAfter(right));
         expect(shiftedLeft.isSame(shiftedRight)).toBe(left.isSame(right));
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  test("UTC fixed-size add rewrites are permutation-safe", () => {
+    fc.assert(
+      fc.property(
+        safeDates,
+        reversibleAmounts,
+        reversibleAmounts,
+        utcMetricUnits,
+        (date, a, b, unit) => {
+          const left = moment.utc(date).add(a, unit).add(b, unit);
+          const right = moment.utc(date).add(b, unit).add(a, unit);
+          const fused = moment.utc(date).add(a + b, unit);
+          expect(left.valueOf()).toBe(right.valueOf());
+          expect(left.valueOf()).toBe(fused.valueOf());
+        },
+      ),
+      { numRuns: 200 },
+    );
+  });
+
+  test("UTC same-unit metric comparisons are translation-invariant", () => {
+    fc.assert(
+      fc.property(safeDates, safeDates, shiftAmounts, utcMetricUnits, (a, b, shift, unit) => {
+        const left = moment.utc(a);
+        const right = moment.utc(b);
+        const shiftedLeft = moment.utc(a).add(shift, unit);
+        const shiftedRight = moment.utc(b).add(shift, unit);
+
+        expect(shiftedLeft.isBefore(shiftedRight, unit)).toBe(left.isBefore(right, unit));
+        expect(shiftedLeft.isAfter(shiftedRight, unit)).toBe(left.isAfter(right, unit));
+        expect(shiftedLeft.diff(shiftedRight, unit)).toBe(left.diff(right, unit));
       }),
       { numRuns: 200 },
     );

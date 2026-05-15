@@ -1,5 +1,6 @@
 import _moment from "../../dist/index.js";
 import _originalMoment from "../../moment/moment.js";
+import { weightedParseInput } from "./distributions.js";
 import { applyRandomTZ } from "./tz-helper.js";
 
 const moment = _moment;
@@ -7,7 +8,7 @@ const originalMoment = _originalMoment;
 
 export function fuzz(buf) {
   applyRandomTZ(buf);
-  const str = buf.toString("utf-8");
+  const str = weightedParseInput(buf);
   try {
     const m2 = moment(str);
     const mOrig = originalMoment(str);
