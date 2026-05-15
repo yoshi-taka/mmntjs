@@ -169,6 +169,7 @@ const enMonthsShort = [
 ];
 const enWeekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const enWeekdaysShort = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const enWeekdaysMin = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
 function fmt12H(h: number): number {
   return h % 12 || 12;
@@ -235,6 +236,12 @@ function formatCommonEn(m: FormattableMoment, format: string): string | undefine
       return `${enWeekdays[raw.$W]}, ${enMonths[raw.$M]} ${raw.$D}, ${padYear(y)} ${fmt12H(raw.$H)}:${PAD2[raw.$m]} ${fmtAmPm(raw.$H)}`;
     case "llll":
       return `${enWeekdaysShort[raw.$W]}, ${enMonthsShort[raw.$M]} ${raw.$D}, ${padYear(y)} ${fmt12H(raw.$H)}:${PAD2[raw.$m]} ${fmtAmPm(raw.$H)}`;
+    case "dddd":
+      return enWeekdays[raw.$W];
+    case "ddd":
+      return enWeekdaysShort[raw.$W];
+    case "dd":
+      return enWeekdaysMin[raw.$W];
   }
   return undefined;
 }
