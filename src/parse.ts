@@ -119,44 +119,63 @@ export function parseString(
     return null;
   }
 
-  const jsonMatch = trimmed.match(JSON_DATE_REGEX);
-  if (jsonMatch) {
-    const ts = parseInt(jsonMatch[1], 10);
-    const d = new Date(ts);
-    return {
-      year: d.getUTCFullYear(),
-      month: d.getUTCMonth(),
-      day: d.getUTCDate(),
-      hour: d.getUTCHours(),
-      minute: d.getUTCMinutes(),
-      second: d.getUTCSeconds(),
-      millisecond: d.getUTCMilliseconds(),
-      offset: 0,
-      _unusedTokens: [],
-      _unusedInput: [],
-      _charsLeftOver: 0,
-      _empty: false,
-      _invalidMonth: null,
-      _parsedDateParts: [],
-    } as unknown as ParsedData;
-  }
+  // ── input classifier: cheap charCodeAt routing before heavy parse attempts ──
+  // Digit/sign → ISO fast paths (parseCommonISO/Extended, ISO table).
+  // Slash → JSON /Date()/ format first.
+  // After ISO attempts, all paths fall through to RFC 2822 (handles
+  // both alpha-weekday and digit-day forms like "15 Jan 2024...").
 
-  const fastResult = parseCommonISOExtended(trimmed);
-  if (fastResult) {
-    return fastResult as unknown as ParsedData;
-  }
+  const c0 = trimmed.charCodeAt(0);
+  const isDigit = c0 >= 48 && c0 <= 57;
+  const isSlash = c0 === 47;
+  const isSign = c0 === 43 || c0 === 45;
 
-  const isoResult = parseISOWithTable(trimmed, locale);
-  if (isoResult) {
-    if (isoResult._claimed) {
-      return { _claimed: true } as unknown as ParsedData;
+  if (isDigit) {
+    const fastResult = parseCommonISOExtended(trimmed);
+    if (fastResult) {
+      return fastResult as unknown as ParsedData;
     }
-    return isoResult as unknown as ParsedData;
+  } else if (isSlash) {
+    const jsonMatch = trimmed.match(JSON_DATE_REGEX);
+    if (jsonMatch) {
+      const ts = parseInt(jsonMatch[1], 10);
+      const d = new Date(ts);
+      return {
+        year: d.getUTCFullYear(),
+        month: d.getUTCMonth(),
+        day: d.getUTCDate(),
+        hour: d.getUTCHours(),
+        minute: d.getUTCMinutes(),
+        second: d.getUTCSeconds(),
+        millisecond: d.getUTCMilliseconds(),
+        offset: 0,
+        _unusedTokens: [],
+        _unusedInput: [],
+        _charsLeftOver: 0,
+        _empty: false,
+        _invalidMonth: null,
+        _parsedDateParts: [],
+      } as unknown as ParsedData;
+    }
   }
 
+  if (isDigit || isSign) {
+    const isoResult = parseISOWithTable(trimmed, locale);
+    if (isoResult) {
+      if (isoResult._claimed) {
+        return { _claimed: true } as unknown as ParsedData;
+      }
+      return isoResult as unknown as ParsedData;
+    }
+  }
+
+  // RFC 2822 accepts both alpha-starting (weekday prefix) and
+  // digit-starting (bare "15 Jan 2024..." without weekday) strings.
   let rfcStr = stripRFC2822Comments(trimmed);
   let rfcMatch = rfcStr.match(RFC_2822_REGEX);
-  rfcMatch ??= trimmed.match(RFC_2822_REGEX);
+  if (!rfcMatch && trimmed !== rfcStr) {
+    rfcMatch = trimmed.match(RFC_2822_REGEX);
+  }
   if (rfcMatch) {
     return parseRFC2822(rfcMatch) as unknown as ParsedData;
   }
