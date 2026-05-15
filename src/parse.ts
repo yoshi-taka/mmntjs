@@ -97,6 +97,11 @@ export function parseString(
   }
 
   if (format) {
+    // Fast path: known ISO format strings bypass localePreparse + parseWithFormat.
+    if (typeof format === "string" && !strict) {
+      const fast = tryIsoFormatFastPath(str, format);
+      if (fast) return fast as unknown as ParsedData;
+    }
     const preparsed = localePreparse(locObj as never, str);
     if (isArray(format)) {
       return parseWithFormats(preparsed, format, locale, strict) as unknown as ParsedData;
@@ -2130,6 +2135,48 @@ function tokenizeFormat(format: string): FormatToken[] {
   return tokens;
 }
 
+function wrapFastParseResult(
+  data: InternalParsedData,
+): ParsedData {
+  return {
+    ...data,
+    _unusedTokens: [],
+    _unusedInput: [],
+    _charsLeftOver: 0,
+    _empty: false,
+    _invalidMonth: null,
+    _parsedDateParts: [],
+  } as unknown as ParsedData;
+}
+
+function tryIsoFormatFastPath(
+  str: string,
+  format: string,
+): ParsedData | null {
+  switch (format) {
+    case "YYYY-MM-DD":
+    case "YYYY-MM-DDTHH:mm:ss":
+    case "YYYY-MM-DDTHH:mm:ss.SSSZ":
+    case "YYYY-MM-DDTHH:mm:ssZ":
+    case "YYYY-MM-DD HH:mm:ss":
+    case "YYYY-MM-DD HH:mm:ss.SSSZ":
+    case "YYYY-MM-DDTHH:mm:ss.SSS":
+    case "YYYY-MM-DD HH:mm:ss.SSS": {
+      const fast = parseCommonISO(str);
+      if (fast) return wrapFastParseResult(fast);
+      break;
+    }
+    case "YYYYMMDD":
+    case "YYYYDDD":
+    case "YYYY-DDD": {
+      const fast = parseCommonISOExtended(str);
+      if (fast) return wrapFastParseResult(fast);
+      break;
+    }
+  }
+  return null;
+}
+
 function parseWithFormat(
   str: string,
   format: string,
@@ -2139,6 +2186,15 @@ function parseWithFormat(
   if (!locale) {
     return null;
   }
+
+  // Fast path: known ISO format strings bypass token dispatch.
+  // Call charCode-based handlers directly so that only true ISO-format
+  // inputs match — not RFC 2822 strings that happen to be in the format array.
+  if (!strict) {
+    const fast = tryIsoFormatFastPath(str, format);
+    if (fast) return fast;
+  }
+
   const loc = locale;
   const expandedCacheKey = `${loc._abbr ?? "en"}:${format}`;
   let expandedFormat = expandedFormatCache.get(expandedCacheKey);
