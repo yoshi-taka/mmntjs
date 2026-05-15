@@ -367,8 +367,128 @@ describe("local DST behavior unchanged", () => {
     const m = moment(dstDate);
     const beforeOffset = m.utcOffset();
     m.startOf("day");
-    // After startOf("day"), the time is midnight local,
-    // but the UTC offset should match the original date's DST status
     expect(m.utcOffset()).toBe(beforeOffset);
+  });
+});
+
+// -------------------------------------------------------------------------
+// LATTICE VALIDATION — local-valid vs global-invalid date coordinates
+// Calendar lattice is ℤ⁷: (y, m, d, h, min, s, ms).
+// A point is "locally valid" if each coordinate is in its individual range.
+// A point is "globally valid" if the combined coordinates form a real date.
+// -------------------------------------------------------------------------
+describe("calendar lattice: local-valid but global-invalid", () => {
+  // These have each field in its individual range but the combination is invalid
+  const localValidGlobalInvalid: [number, number, number][] = [
+    [2024, 1, 30], // Feb 30 — month-end overflow, not a real date
+    [2023, 1, 29], // Feb 29 in non-leap year
+    [2024, 3, 31], // Apr 31
+    [2024, 5, 31], // Jun 31
+    [2024, 8, 31], // Sep 31
+    [2024, 10, 31], // Nov 31
+    [2100, 1, 29], // Feb 29 in non-leap century year
+    [2000, 1, 30], // Feb 30 in leap year (Feb 29 exists but 30 doesn't)
+  ];
+
+  for (const [y, m, d] of localValidGlobalInvalid) {
+    test(`${y}-${m + 1}-${d} is invalid`, () => {
+      const m2 = moment([y, m, d]);
+      expect(m2.isValid()).toBe(false);
+    });
+  }
+
+  // These should be VALID (same local ranges, different global combination)
+  const localValidGlobalValid: [number, number, number][] = [
+    [2024, 1, 29], // Feb 29 in leap year
+    [2024, 0, 31], // Jan 31
+    [2024, 2, 31], // Mar 31
+    [2024, 6, 31], // Jul 31
+    [2024, 7, 31], // Aug 31
+    [2024, 9, 31], // Oct 31
+    [2024, 11, 31], // Dec 31
+    [2000, 1, 29], // Feb 29 in leap century year
+    [2100, 2, 31], // Mar 31 in non-leap century year (day 31 is fine for March)
+  ];
+
+  for (const [y, m, d] of localValidGlobalValid) {
+    test(`${y}-${m + 1}-${d} is valid`, () => {
+      const m2 = moment([y, m, d]);
+      expect(m2.isValid()).toBe(true);
+    });
+  }
+});
+
+describe("calendar lattice: month overflow early exit", () => {
+  test("month=13, day=1 fails at month before day check", () => {
+    // checkOverflow steps: month (1) before day (2).
+    // month=13 should return 1 before reaching day check.
+    const m2 = moment([2024, 13, 1]);
+    expect(m2.isValid()).toBe(false);
+  });
+
+  test("month=-1, day=31 fails at month before day check", () => {
+    const m2 = moment([2024, -1, 31]);
+    expect(m2.isValid()).toBe(false);
+  });
+
+  test("month=0, day=0 fails at day (0 is below min)", () => {
+    const m2 = moment([2024, 0, 0]);
+    expect(m2.isValid()).toBe(false);
+  });
+});
+
+describe("calendar lattice: singular boundaries", () => {
+  // Month-end: add 1 month from Jan 31 should clamp to Feb 28 (non-leap)
+  test("Jan 31 + 1 month = Feb 28 (non-leap)", () => {
+    const m2 = moment([2023, 0, 31]).add(1, "month");
+    expect(m2.date()).toBe(28);
+    expect(m2.month()).toBe(1);
+  });
+
+  // Month-end: add 1 month from Jan 31 should clamp to Feb 29 (leap)
+  test("Jan 31 + 1 month = Feb 29 (leap)", () => {
+    const m2 = moment([2024, 0, 31]).add(1, "month");
+    expect(m2.date()).toBe(29);
+    expect(m2.month()).toBe(1);
+  });
+
+  // Month-end: subtract 1 month from Mar 31 should clamp to Feb 28
+  test("Mar 31 - 1 month = Feb 28 (non-leap)", () => {
+    const m2 = moment([2023, 2, 31]).subtract(1, "month");
+    expect(m2.date()).toBe(28);
+    expect(m2.month()).toBe(1);
+  });
+
+  // Leap year boundary
+  test("add 1 year from Feb 29 in leap year = Feb 28 in non-leap", () => {
+    const m2 = moment([2024, 1, 29]).add(1, "year");
+    expect(m2.date()).toBe(28);
+    expect(m2.month()).toBe(1);
+    expect(m2.year()).toBe(2025);
+  });
+
+  // Negative timestamp: _t is correctly negative for pre-epoch dates
+  test("pre-epoch _t is negative", () => {
+    const m2 = moment.utc(-1);
+    expect(m2.year()).toBe(1969);
+    expect(m2.month()).toBe(11);
+    expect(m2.date()).toBe(31);
+    expect(m2.valueOf()).toBe(-1);
+  });
+
+  // UTC add(1,"day") always adds exactly 86400000 ms
+  test("UTC add(1, 'day') adds exactly 86400000 ms", () => {
+    const m2 = moment.utc([2024, 2, 9]);
+    const next = m2.clone().add(1, "day");
+    expect(next.valueOf() - m2.valueOf()).toBe(86400000);
+  });
+
+  // Local add(1,"day") accounts for DST via setDate, so the wall clock
+  // day advances by 1 regardless of DST. The UTC ms difference depends
+  // on whether a DST transition occurred.
+  test("local add(1, 'day') advances calendar date by 1", () => {
+    const m2 = moment([2024, 2, 9]);
+    const next = m2.clone().add(1, "day");
+    expect(next.date()).toBe(m2.date() + 1);
   });
 });
