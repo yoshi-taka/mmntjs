@@ -139,13 +139,13 @@ Also outperforms upstream moment.js in 28/30. Several hot-path operations outper
 
 | Operation | mmntjs | date-fns | vs moment.js |
 |-----------|--------:|---------:|-------------:|
-| format YYYY-MM-DD | **41 ns** | 1.10 us (26.8x) | 411 ns (10.0x) |
-| parse ISO string | **379 ns** | 979 ns (2.6x) | 4.10 us (10.8x) |
-| diff in days | **19 ns** | 826 ns (43.5x) | 557 ns (29.3x) |
-| add 1 second | **12 ns** | 95 ns (7.9x) | — |
-| get day of year | **17 ns** | 1.13 us (66.4x) | — |
-| moment() / new Date() | **38 ns** | 33 ns (0.9x) | 267 ns (7.0x) |
-| startOf month | **11 ns** | 73 ns (6.6x) | — |
+| format YYYY-MM-DD | **40 ns** | 1.09 us (27.3x) | 414 ns (10.4x) |
+| parse ISO string | **290 ns** | 965 ns (3.3x) | 4.22 us (14.6x) |
+| diff in days | **19 ns** | 828 ns (43.6x) | 514 ns (27.1x) |
+| add 1 second | **14 ns** | 86 ns (6.1x) | — |
+| get day of year | **16 ns** | 1.15 us (71.9x) | — |
+| moment() / new Date() | **38 ns** | 34 ns (0.9x) | 352 ns (9.3x) |
+| startOf month | **16 ns** | 75 ns (4.7x) | — |
 
 The main remaining regression is raw `moment()` construction overhead from compatibility wrapping. (wrapper overhead for moment.js API compatibility, negligible in real apps that reuse Moment objects).
 

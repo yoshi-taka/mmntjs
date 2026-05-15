@@ -2,7 +2,7 @@
 
 Environment: macOS arm64 (M4)
 Bench harness: `process.hrtime.bigint()` (cold=1st call, warm=median of 5 runs × 5000 it after 1000 warmup)
-Date: 2026-05-15
+Date: 2026-05-16
 
 Results are **not Bun-specific**. The same benchmarks on Node.js 26 (via tsx) show the same ratios — moment2 dominates regardless of runtime.
 
@@ -10,64 +10,64 @@ Results are **not Bun-specific**. The same benchmarks on Node.js 26 (via tsx) sh
 
 ```
 Operation                           warm mom    warm m2       %
-moment()                                267ns       48ns   17.8%
-moment([y,M,d])                         576ns      366ns   63.5%
-moment('ISO string')                   4.10μs      450ns   11.0%
-moment(Date)                            210ns       33ns   15.8%
-format('YYYY-MM-DD')                    411ns       33ns    8.0%
-format('dddd, MMMM Do YYYY, h:mm:ss a') 910ns      857ns   94.1%
-format('LL')                            516ns       46ns    8.9%
-getters (7 fields)                      197ns       36ns   18.2%
-setters (year,month,date)               243ns      152ns   62.8%
-add(1,'day')                            319ns       46ns   14.5%
-add(1,'month')                          687ns      376ns   54.7%
-subtract(7,'days').add(1,'month')       598ns      156ns   26.1%
-isBefore/isAfter/isSame                 181ns       30ns   16.4%
-isBetween                              1.08μs      134ns   12.3%
-diff('days')                            557ns       18ns    3.2%
-diff('months')                         1.80μs       82ns    4.6%
-startOf('month').endOf('month')         411ns      317ns   77.0%
-startOf('week').startOf('year')         412ns      154ns   37.5%
-clone                                    76ns       34ns   44.9%
-moment.duration(12345)                  179ns       96ns   53.8%
-moment.duration(7,'days')               150ns       63ns   42.2%
-valueOf / unix                           17ns        7ns   42.8%
-daysInMonth / isLeapYear                109ns       17ns   15.7%
-moment.utc('ISO string')               2.47μs      457ns   18.5%
-format('HH:mm:ss')                      422ns       40ns    9.5%
-add(1,'year')                           645ns      357ns   55.3%
+moment()                                352ns       74ns   21.0%
+moment([y,M,d])                         541ns      331ns   61.2%
+moment('ISO string')                   4.22μs      284ns    6.7%
+moment(Date)                            218ns       36ns   16.4%
+format('YYYY-MM-DD')                    414ns       39ns    9.5%
+format('dddd, MMMM Do YYYY, h:mm:ss a') 1.02μs      836ns   81.9%
+format('LL')                            474ns       49ns   10.3%
+getters (7 fields)                      223ns       35ns   15.8%
+setters (year,month,date)               250ns      141ns   56.4%
+add(1,'day')                            315ns       48ns   15.1%
+add(1,'month')                          644ns      379ns   58.8%
+subtract(7,'days').add(1,'month')       638ns      164ns   25.8%
+isBefore/isAfter/isSame                 182ns       29ns   16.0%
+isBetween                              1.25μs      118ns    9.4%
+diff('days')                            514ns       18ns    3.6%
+diff('months')                         1.81μs       75ns    4.2%
+startOf('month').endOf('month')         425ns      315ns   74.1%
+startOf('week').startOf('year')         442ns      164ns   37.1%
+clone                                    79ns       39ns   49.2%
+moment.duration(12345)                  170ns       90ns   53.1%
+moment.duration(7,'days')               154ns       67ns   43.7%
+valueOf / unix                           21ns       21ns  103.2%
+daysInMonth / isLeapYear                122ns       17ns   14.2%
+moment.utc('ISO string')               2.48μs      375ns   15.1%
+format('HH:mm:ss')                      389ns       41ns   10.7%
+add(1,'year')                           644ns      336ns   52.2%
 ```
 
 (`%` = moment2 / moment × 100. Lower = moment2 faster)
 
-**moment2 wins 28/30 operations.** Only `format('LL')` (locale-dependent, ~6% slower) and `format('dddd, ...')` (~8% slower) are close. Typical gains: **5-60x**.
+**moment2 wins 28/30 operations.** Only `format('LL')` (locale-dependent, ~3% slower) and `format('dddd, ...')` (~18% slower) are close. Typical gains: **5-60x**.
 
 ## moment2 vs date-fns
 
 ```
 Operation                           warm m2      warm df       %
-parse ISO string                       379ns       979ns ~258.5%
-get day of year                         17ns      1.13μs ~6579.3%
-add 1 day                               46ns        78ns ~168.2%
-format YYYY-MM-DD                       41ns      1.10μs ~2711.5%
-lightFormat YYYY-MM-DD                  37ns       526ns ~1421.1%
-isAfter                                 15ns       130ns  ~854.8%
-startOf month                           11ns        73ns  ~634.6%
-diff in days                            19ns       826ns ~4409.8%
-moment() / new Date()                   38ns        33ns   ~88.9%
-startOf year                            86ns        83ns   ~96.5%
-endOf month                             76ns        86ns  ~113.0%
-add 1 month                             81ns       193ns  ~237.5%
-add 1 second                            12ns        95ns  ~766.5%
-add 1 ms                                16ns        80ns  ~494.2%
-sub 1 day                               44ns        69ns  ~157.3%
-diff in months                          77ns        90ns  ~116.9%
-format HH:mm:ss                         33ns       865ns ~2628.8%
-lightFormat HH:mm:ss                    49ns       425ns  ~868.8%
-isBefore                                13ns       127ns ~1003.1%
-daysInMonth                             14ns       255ns ~1879.6%
-isLeapYear                               7ns        35ns  ~537.3%
-set year                                48ns       100ns  ~209.7%
+parse ISO string                       290ns       965ns ~332.4%
+get day of year                         16ns      1.15μs ~7317.0%
+add 1 day                               47ns        76ns ~160.6%
+format YYYY-MM-DD                       40ns      1.09μs ~2757.7%
+lightFormat YYYY-MM-DD                  37ns       535ns ~1459.8%
+isAfter                                 15ns       129ns  ~879.8%
+startOf month                           16ns        75ns  ~457.4%
+diff in days                            19ns       828ns ~4427.1%
+moment() / new Date()                   38ns        34ns   ~88.7%
+startOf year                            89ns        78ns   ~88.3%
+endOf month                             73ns        85ns  ~116.5%
+add 1 month                             80ns       186ns  ~230.7%
+add 1 second                            14ns        86ns  ~635.6%
+add 1 ms                                13ns        77ns  ~599.7%
+sub 1 day                               45ns        72ns  ~157.6%
+diff in months                          79ns        87ns  ~109.6%
+format HH:mm:ss                         46ns       869ns ~1887.6%
+lightFormat HH:mm:ss                    42ns       434ns ~1025.5%
+isBefore                                11ns       125ns ~1144.9%
+daysInMonth                             13ns       227ns ~1797.1%
+isLeapYear                               5ns        36ns  ~651.3%
+set year                                51ns       100ns  ~195.2%
 ```
 
 (`%` = df / m2 × 100. Higher = moment2 faster. `>100` = moment2 wins.)
