@@ -119,6 +119,9 @@ afterAll(() => {
   console.log(`Killed: ${mutKilled}/${mutTotal} (${rate}%)`);
   console.log(`Survived: ${mutSurvived}`);
   console.log(`Skipped: ${mutSkipped}`);
+  if (mutSurvived > 0) {
+    process.exit(1);
+  }
 });
 
 makeMutations([
@@ -176,18 +179,13 @@ makeMutations([
   {
     name: "diff: sign flipped",
     file: "src/moment-class.ts",
-    patterns: [
-      [
-        /const diff = this\.valueOf\(\) - other\.valueOf\(\)/g,
-        "const diff = other.valueOf() - this.valueOf()",
-      ],
-    ],
+    patterns: [[/return a - b \|\| 0;/g, "return b - a || 0;"]],
     inputs: distinctDatePair(),
     testFn: (input: unknown) => {
       const [a, b] = input as [unknown, unknown];
       return (
-        mutatedMoment(a).diff(mutatedMoment(b), "days") ===
-        originalMoment(a as Date).diff(originalMoment(b as Date), "days")
+        mutatedMoment(a).diff(mutatedMoment(b)) ===
+        originalMoment(a as Date).diff(originalMoment(b as Date))
       );
     },
   },
@@ -211,9 +209,7 @@ makeMutations([
   {
     name: "isAfter: comparison flipped",
     file: "src/moment-class.ts",
-    patterns: [
-      [/return this\.valueOf\(\) > other\.valueOf\(\)/g, "return this.valueOf() < other.valueOf()"],
-    ],
+    patterns: [[/return a > b;/g, "return a < b;"]],
     inputs: distinctDatePair(),
     testFn: (input: unknown) => {
       const [a, b] = input as [unknown, unknown];
@@ -245,8 +241,8 @@ makeMutations([
     file: "src/moment-class.ts",
     patterns: [
       [
-        /this\.\$H = 0; this\.\$m = 0; this\.\$s = 0; this\.\$ms = 0;/g,
-        "this.$H = 12; this.$m = 0; this.$s = 0; this.$ms = 0;",
+        /this\.\$H = 0;\n\s*this\.\$m = 0;\n\s*this\.\$s = 0;\n\s*this\.\$ms = 0;/g,
+        "this.$H = 12;\n    this.$m = 0;\n    this.$s = 0;\n    this.$ms = 0;",
       ],
     ],
     inputs: fc.date({ noInvalidDate: true }),
@@ -262,7 +258,7 @@ makeMutations([
   {
     name: "isValid always returns true",
     file: "src/moment-class.ts",
-    patterns: [[/if \(!this\._isValid\) {return false;}\n/g, ""]],
+    patterns: [[/if \(!this\._isValid\) \{\n\s*return false;\n\s*\}/g, ""]],
     inputs: fc.constantFrom(null, undefined, "", "invalid", NaN, Infinity, "2024-13-01"),
     testFn: (input: unknown) => {
       return (
@@ -273,11 +269,11 @@ makeMutations([
   },
   {
     name: "endOf: no -1ms",
-    file: "src/moment-class.ts",
+    file: "src/units.ts",
     patterns: [
       [
-        /this\._t = \(Math\.floor\(this\._t \/ 86400000\) \+ 1\) \* 86400000 - 1;/g,
-        "this._t = (Math.floor(this._t / 86400000) + 1) * 86400000;",
+        /return value \+ \(unitMs - 1\) - euclideanModulo\(value, unitMs\);/g,
+        "return value + unitMs - euclideanModulo(value, unitMs);",
       ],
     ],
     inputs: fc.date({ noInvalidDate: true }),
@@ -320,10 +316,9 @@ makeMutations([
     name: "year setter: wrong year stored",
     file: "src/moment-class.ts",
     patterns: [
-      [
-        /this\.\$y = this\._isUTC \? dt\.getUTCFullYear\(\) : dt\.getFullYear\(\);/g,
-        "this.$y = (this._isUTC ? dt.getUTCFullYear() : dt.getFullYear()) + 1;",
-      ],
+      [/this\.\$y = this\._d\.getUTCFullYear\(\);/g, "this.$y = this._d.getUTCFullYear() + 1;"],
+      [/this\.\$y = d\.getFullYear\(\);/g, "this.$y = d.getFullYear() + 1;"],
+      [/this\.\$y = dt\.getFullYear\(\);/g, "this.$y = dt.getFullYear() + 1;"],
     ],
     inputs: fc.date({ noInvalidDate: true }),
     testFn: (input: unknown) => {
@@ -340,7 +335,7 @@ makeMutations([
   {
     name: "parse: dayOfYear lower bound off-by-one",
     file: "src/parse.ts",
-    patterns: [[/dayOfYear >= 1 && dayOfYear <= 366/g, "dayOfYear >= 0 && dayOfYear <= 366"]],
+    patterns: [[/dayOfYear >= 0 && dayOfYear <= 366/g, "dayOfYear >= -1 && dayOfYear <= 366"]],
     inputs: fc.constantFrom("2024000", "2024-000", "2025000", "2025-000"),
     testFn: (input: unknown) => {
       return mutatedMoment(input as string).isValid() === originalMoment(input as string).isValid();
@@ -437,7 +432,9 @@ makeMutations([
   {
     name: "units: isLeapYear bit check flipped (condition flip)",
     file: "src/units.ts",
-    patterns: [[/if \(\(y & 3\) !== 0\) \{return false;\}/g, "if ((y & 3) !== 0) {return true;}"]],
+    patterns: [
+      [/if \(\(y & 3\) !== 0\) \{\n\s*return false;\n\s*\}/g, "if ((y & 3) !== 0) {return true;}"],
+    ],
     inputs: fc.constantFrom(2023, 2024, 1900, 2000),
     testFn: (input: unknown) => {
       return (
