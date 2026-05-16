@@ -461,10 +461,9 @@ export class Moment {
   _l: string | undefined;
   _isAMomentObject = true;
   _cold?: MomentCold;
-  _toast?: Record<string, unknown>;
-  declare _i: unknown;
-  declare _f: string | string[] | undefined;
-  declare _strict: boolean | undefined;
+  _i: unknown;
+  _f: string | string[] | undefined;
+  declare _strict: boolean;
   declare _overflow: number | undefined;
   declare _parsedDateParts: number[] | undefined;
   declare _unusedTokens: string[] | undefined;
@@ -597,18 +596,14 @@ export class Moment {
     }
     this._isValid = c._isValid ?? !isNaN(this._t);
     this._dirty = this._isValid;
-    if (c._i !== undefined || c._f !== undefined || c._strict !== undefined) {
-      const toast: Record<string, unknown> = {};
-      if (c._i !== undefined) {
-        toast._i = c._i;
-      }
-      if (c._f !== undefined) {
-        toast._f = c._f;
-      }
-      if (c._strict !== undefined) {
-        toast._strict = c._strict;
-      }
-      this._toast = toast;
+    if (c._i !== undefined) {
+      this._i = c._i;
+    }
+    if (c._f !== undefined) {
+      this._f = c._f;
+    }
+    if (c._strict !== undefined) {
+      this._strict = c._strict;
     }
     let hasExtraCold = false;
     if (
@@ -872,9 +867,13 @@ export class Moment {
     m._isUTC = this._isUTC;
     m._offset = this._offset;
     m._l = this._l;
-    if (this._toast) {
-      m._toast = { ...this._toast };
+    if (this._i !== undefined) {
+      m._i = this._i;
     }
+    if (this._f !== undefined) {
+      m._f = this._f;
+    }
+    m._strict = this._strict;
     if (this._cold) {
       m._cold = { ...this._cold } as MomentCold;
     }
@@ -2902,15 +2901,11 @@ export function createSimpleMoment(config: {
   m._d = undefined;
   m._isValid = config._isValid ?? !isNaN(config._t);
   m._dirty = m._isValid;
-  if (config._i !== undefined || config._f !== undefined) {
-    const toast: Record<string, unknown> = {};
-    if (config._i !== undefined) {
-      toast._i = config._i;
-    }
-    if (config._f !== undefined) {
-      toast._f = config._f;
-    }
-    m._toast = toast;
+  if (config._i !== undefined) {
+    m._i = config._i;
+  }
+  if (config._f !== undefined) {
+    m._f = config._f;
   }
   return m;
 }
@@ -2926,27 +2921,6 @@ for (const key of coldFieldKeys) {
       if (v !== undefined) {
         m._cold ??= {};
         (m._cold as Record<string, unknown>)[key] = v;
-      }
-    },
-    enumerable: true,
-    configurable: true,
-  });
-}
-
-// TOAST (cf. PostgreSQL The Oversized-Attribute Storage Technique):
-// cold fields _i, _f, _strict moved off the hot instance into _toast
-const toastFieldKeys = ["_i", "_f", "_strict"] as const;
-for (const key of toastFieldKeys) {
-  Object.defineProperty(Moment.prototype, key, {
-    get() {
-      const toast = (this as Moment)._toast;
-      return toast?.[key];
-    },
-    set(v: unknown) {
-      const m = this as Moment;
-      if (v !== undefined) {
-        m._toast ??= {};
-        m._toast[key] = v;
       }
     },
     enumerable: true,
