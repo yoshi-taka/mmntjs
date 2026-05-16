@@ -2,6 +2,7 @@
 .fallow/
 .tstree-*
 crash-*
+.bt-*
 dist/
 node_modules/
 **/*.bak
