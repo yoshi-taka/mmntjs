@@ -1,6 +1,13 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import { faqGroups } from "../../content/site";
+import { faqAnswers, faqGroups } from "../../content/site";
+import { withBase } from "../../lib/urls";
+
+const reviewAdvice = [
+  "Use this page to reduce uncertainty before a migration review or technical design discussion.",
+  "If a question affects production correctness, follow the answer through to Compatibility, Quality, or Migration rather than stopping at a summary.",
+  "The right tone here is candid and operational, not persuasive for its own sake.",
+];
 ---
 
 <BaseLayout
@@ -18,6 +25,13 @@ import { faqGroups } from "../../content/site";
   </section>
 
   <section class="panel section">
+    <p class="eyebrow">How To Use This FAQ</p>
+    <ul>
+      {reviewAdvice.map((item) => <li>{item}</li>)}
+    </ul>
+  </section>
+
+  <section class="panel section">
     <div class="cards">
       {faqGroups.map((group) => (
         <article class="card">
@@ -28,5 +42,36 @@ import { faqGroups } from "../../content/site";
         </article>
       ))}
     </div>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Direct Answers</p>
+    <div class="cards">
+      {faqAnswers.map((item) => (
+        <article class="card">
+          <h3>{item.question}</h3>
+          <p>{item.answer}</p>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section class="grid">
+    <article class="panel section">
+      <p class="eyebrow">Most Important Themes</p>
+      <ul>
+        <li>Compatibility should be evaluated in scope, not assumed as a slogan.</li>
+        <li>Migration safety matters more than speed of replacement.</li>
+        <li>Known differences and test evidence should be easy to find before adoption.</li>
+      </ul>
+    </article>
+    <article class="panel section">
+      <p class="eyebrow">Where To Go Next</p>
+      <ul>
+        <li><a href={withBase("/compatibility/")}>Compatibility</a> for current scope and known gaps.</li>
+        <li><a href={withBase("/quality/")}>Quality</a> for the testing strategy behind compatibility claims.</li>
+        <li><a href={withBase("/migration/")}>Migration</a> for rollout guidance and risk checklist.</li>
+      </ul>
+    </article>
   </section>
 </BaseLayout>

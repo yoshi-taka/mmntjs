@@ -3,6 +3,184 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import { docsPages } from "../../content/site";
 import { withBase } from "../../lib/urls";
 
+type DocSection = {
+  title: string;
+  body: string[];
+  bullets?: string[];
+};
+
+const docSections: Record<string, DocSection[]> = {
+  "getting-started": [
+    {
+      title: "Start With The Smallest Credible Evaluation",
+      body: [
+        "The first goal is not to rewrite date logic. The first goal is to confirm that one owned part of the system can switch without surprising behavior drift.",
+        "That usually means choosing one module with clear tests, limited timezone complexity, and an owner who can judge whether the resulting behavior still matches production expectations.",
+      ],
+      bullets: [
+        "Pick one low-risk module or service boundary.",
+        "Run the existing test suite before adding migration helpers.",
+        "Review known differences before broadening scope.",
+      ],
+    },
+    {
+      title: "What Success Looks Like",
+      body: [
+        "A successful first evaluation is boring: imports are replaced, tests still pass, a few targeted date fixtures compare cleanly, and the team gains confidence about where to expand next.",
+      ],
+    },
+  ],
+  installation: [
+    {
+      title: "Prefer Installation Shapes That Match Your Evaluation Strategy",
+      body: [
+        "Some teams want the lowest-friction alias path first. Others prefer explicit imports so the changed surface is obvious in code review. Both are valid, but the right choice depends on how you plan to control rollout risk.",
+      ],
+      bullets: [
+        "Alias-based install for low-friction trials.",
+        "Direct package import for module-by-module migration.",
+        "Keep runtime and bundling expectations visible from the start.",
+      ],
+    },
+  ],
+  parsing: [
+    {
+      title: "Treat Parsing As A Migration Review Area",
+      body: [
+        "Parsing behavior is where hidden dependencies tend to accumulate over years of product code. Teams often rely on forgiving input handling, fallback behavior, and malformed-but-accepted strings without realizing it until a replacement changes the outcome.",
+        "This is why parsing should be compared using real fixtures from your application, not just generic examples.",
+      ],
+      bullets: [
+        "Review custom format parsing and strict mode assumptions.",
+        "Compare invalid inputs as carefully as valid ones.",
+        "Track known edge-case differences explicitly during rollout.",
+      ],
+    },
+  ],
+  formatting: [
+    {
+      title: "Formatting Is Visible Compatibility",
+      body: [
+        "Formatting issues are easy for users and snapshots to notice, but they can still be subtle. Locale context, token behavior, and fallback output all matter because they often feed customer-visible strings, exports, and logs.",
+      ],
+      bullets: [
+        "Compare user-facing tokens directly against existing output.",
+        "Test locale-sensitive formatting separately from English defaults.",
+      ],
+    },
+  ],
+  manipulation: [
+    {
+      title: "Mutation Semantics Are Part Of Compatibility",
+      body: [
+        "Many moment.js codebases depend on mutation, even when the code no longer makes that explicit to readers. A replacement that changes those semantics can alter control flow or object reuse in ways that are hard to spot in review.",
+      ],
+      bullets: [
+        "Check add and subtract around month and year boundaries.",
+        "Verify startOf and endOf around reporting cutoffs.",
+        "Review shared-object call paths where mutation is expected.",
+      ],
+    },
+  ],
+  "query-comparison": [
+    {
+      title: "Comparison Drift Changes Business Logic",
+      body: [
+        "A small difference in diff semantics or range checking can change billing windows, expiration logic, or feature gating. Comparison APIs should be treated as logic-affecting rather than display-only.",
+      ],
+    },
+  ],
+  duration: [
+    {
+      title: "Duration Behavior Matters More Than It Looks",
+      body: [
+        "Duration flows affect scheduling, humanized labels, and calculations derived from multiple timestamps. Teams should check both construction and normalization behavior, especially if business logic stores or transforms durations directly.",
+      ],
+    },
+  ],
+  locale: [
+    {
+      title: "Only Documented Locale Scope Should Be Assumed",
+      body: [
+        "Locale behavior is often treated as peripheral until output shifts in production. Be explicit about which locales are loaded, how parsing and formatting interact with them, and what should be checked in localized snapshots.",
+      ],
+    },
+  ],
+  "timezone-parsezone": [
+    {
+      title: "Timezone Expectations Need Plain Language",
+      body: [
+        "The site should clearly separate core UTC and fixed-offset behavior from full timezone-data expectations. Most costly migration mistakes happen when teams assume these are the same concern.",
+      ],
+      bullets: [
+        "Verify parseZone and keepLocalTime with real examples.",
+        "Run tests in at least one non-UTC timezone.",
+        "Document any dependence on external timezone data explicitly.",
+      ],
+    },
+  ],
+  "invalid-dates": [
+    {
+      title: "Failure Behavior Is Part Of The Contract",
+      body: [
+        "Invalid dates influence formatting, comparisons, branching, and sometimes error handling. Teams evaluating migration safety should compare invalid behavior directly rather than treating it as a low-probability corner.",
+      ],
+    },
+  ],
+  typescript: [
+    {
+      title: "Typing Friction Can Block Adoption",
+      body: [
+        "Even if runtime behavior is sound, TypeScript friction can stall evaluation. This page should explain how existing moment-style types carry over and where mmntjs-specific additions appear.",
+      ],
+    },
+  ],
+  "browser-usage": [
+    {
+      title: "Browser Evaluation Needs Bundle Awareness",
+      body: [
+        "Client-side adoption is affected by entry points, locale loading, and bundle shape as much as API compatibility. Teams should check what actually ships, not just what works in isolated examples.",
+      ],
+    },
+  ],
+  "runtime-support": [
+    {
+      title: "Support Matrix Before Rollout",
+      body: [
+        "Teams usually want to know runtime boundaries before they spend migration time. Node, Bun, browser, and module-format expectations should be easy to scan here.",
+      ],
+    },
+  ],
+  "migration-notes": [
+    {
+      title: "Keep Migration Advice Close To Usage Docs",
+      body: [
+        "Migration notes should connect real usage patterns to rollout risk. That means highlighting the APIs most likely to require extra scrutiny, not just repeating general advice about careful testing.",
+      ],
+      bullets: [
+        "Flag parsing, invalid-date, locale, and timezone-sensitive APIs first.",
+        "Recommend targeted comparison fixtures where broad tests are not enough.",
+      ],
+    },
+  ],
+  "known-differences": [
+    {
+      title: "Trust Comes From Explicit Differences",
+      body: [
+        "A strong known-differences page is not an admission of weakness. It is a trust artifact. It tells reviewers exactly where to focus, what practical impact exists, and whether a workaround or tracking path already exists.",
+      ],
+    },
+  ],
+  "api-reference": [
+    {
+      title: "Reference Should Stay Separate From Migration Guidance",
+      body: [
+        "A full API reference is useful, but it should not crowd out the evaluation guidance that skeptical adopters need first. This page can remain a structured endpoint while higher-priority trust pages carry more of the early decision load.",
+      ],
+    },
+  ],
+};
+
 export function getStaticPaths() {
   return docsPages.map((page) => ({
     params: { slug: page.slug },
@@ -11,6 +189,7 @@ export function getStaticPaths() {
 }
 
 const { page } = Astro.props;
+const sections = docSections[page.slug] ?? [];
 ---
 
 <BaseLayout
@@ -50,5 +229,33 @@ const { page } = Astro.props;
         </div>
       </div>
     </div>
+  </section>
+
+  {sections.length > 0 && (
+    <section class="panel section">
+      <p class="eyebrow">Guidance</p>
+      <div class="cards">
+        {sections.map((section) => (
+          <article class="card">
+            <h3>{section.title}</h3>
+            {section.body.map((paragraph) => <p>{paragraph}</p>)}
+            {section.bullets && (
+              <ul>
+                {section.bullets.map((item) => <li>{item}</li>)}
+              </ul>
+            )}
+          </article>
+        ))}
+      </div>
+    </section>
+  )}
+
+  <section class="panel section">
+    <p class="eyebrow">How To Use This Doc</p>
+    <p>
+      Use this page as a migration review aid rather than as a generic tutorial. If the behavior in
+      this area is business-critical, compare it directly against your current moment.js usage and
+      record the outcome before expanding rollout.
+    </p>
   </section>
 </BaseLayout>

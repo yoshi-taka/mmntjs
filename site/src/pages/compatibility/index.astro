@@ -1,6 +1,10 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import { compatibilitySnapshot } from "../../content/site";
+import {
+  compatibilityEvidence,
+  compatibilitySnapshot,
+  knownDifferenceHighlights,
+} from "../../content/site";
 import { withBase } from "../../lib/urls";
 
 const statusGuide = [
@@ -14,6 +18,24 @@ const unsupported = [
   "Assume core mmntjs does not provide an IANA timezone database by itself.",
   "Treat known parsing edge cases as migration review items, not invisible footnotes.",
   "Use separate timezone support when your application depends on moment-timezone-style data behavior.",
+];
+
+const evaluationPrinciples = [
+  "Read compatibility as a scoped claim, not a universal promise.",
+  "Pay extra attention to parsing, invalid inputs, offsets, and locale-sensitive output.",
+  "Prefer behavior comparisons against your own production fixtures before broad rollout.",
+];
+
+const criticalAreas = [
+  ["Parsing", "This is where long-lived production systems usually hide the most surprising dependencies. Loose inputs, fallback behavior, and malformed-but-accepted strings should be reviewed directly."],
+  ["Invalid dates", "Invalid behavior affects both user-visible formatting and control-flow logic. Treat it as compatibility-critical, not as an edge-only concern."],
+  ["Timezone and offsets", "UTC and fixed-offset flows need explicit review around keepLocalTime, parseZone, and DST-adjacent transitions."],
+];
+
+const policyPoints = [
+  "Prefer documented scope over blanket claims.",
+  "Treat compatibility bugs as release-relevant changes, not as incidental cleanup.",
+  "Keep known differences visible enough that migration reviewers can use them directly.",
 ];
 ---
 
@@ -29,6 +51,38 @@ const unsupported = [
       This page exists to show what matches moment.js, what is partial, what is unsupported, and
       where teams should read more before rollout.
     </p>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">How To Read This Page</p>
+    <p>
+      The goal is not to make a sweeping claim that every behavior is identical in every context.
+      The goal is to make the current state legible enough that a staff engineer or maintainer can
+      decide whether a controlled evaluation is justified.
+    </p>
+    <ul>
+      {evaluationPrinciples.map((item) => <li>{item}</li>)}
+    </ul>
+  </section>
+
+  <section class="grid">
+    <article class="panel section">
+      <p class="eyebrow">Current Evidence</p>
+      <ul>
+        {compatibilityEvidence.map((item) => <li>{item}</li>)}
+      </ul>
+    </article>
+    <article class="panel section">
+      <p class="eyebrow">Comparison Policy</p>
+      <ul>
+        {policyPoints.map((item) => <li>{item}</li>)}
+      </ul>
+      <p>
+        In practice, that means a page like this should help a reviewer answer two questions: what
+        behavior appears compatible enough to evaluate now, and where should we add targeted checks
+        before widening scope?
+      </p>
+    </article>
   </section>
 
   <section class="panel section">
@@ -74,9 +128,41 @@ const unsupported = [
   </section>
 
   <section class="panel section">
+    <p class="eyebrow">Known Difference Highlights</p>
+    <ul>
+      {knownDifferenceHighlights.map((item) => <li>{item}</li>)}
+    </ul>
+    <p>
+      This is intentionally plain language. The audience for this page is trying to assess adoption
+      risk, not to decode whether caveats are being softened by marketing.
+    </p>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Highest-Risk Evaluation Areas</p>
+    <div class="cards">
+      {criticalAreas.map(([title, text]) => (
+        <article class="card">
+          <h3>{title}</h3>
+          <p>{text}</p>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section class="panel section">
     <p class="eyebrow">Unsupported Or Separate Scope</p>
     <ul>
       {unsupported.map((item) => <li>{item}</li>)}
     </ul>
+    <p>
+      For most teams, this means the first migration question is not "is everything identical?"
+      but "does the subset we rely on behave the same under our tests and fixtures?" This page is
+      meant to support that narrower and more useful decision.
+    </p>
+    <div class="actions">
+      <a class="button" href={withBase("/docs/known-differences/")}>Review Known Differences</a>
+      <a class="button" href={withBase("/migration/")}>See Rollout Guidance</a>
+    </div>
   </section>
 </BaseLayout>

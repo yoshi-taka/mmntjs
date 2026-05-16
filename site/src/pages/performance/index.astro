@@ -2,15 +2,69 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { performancePrinciples } from "../../content/site";
 
+const methodology = [
+  ["CPU", "Apple M4 performance core"],
+  ["OS", "macOS arm64"],
+  ["Default runtime", "Bun 1.x, with cross-runtime checks on Node.js 26"],
+  ["Harness", "process.hrtime.bigint()"],
+  ["Warm measurement", "Median of 5 runs x 5000 iterations after 1000-iteration warmup"],
+  ["Cold measurement", "First call from module load to capture startup-tier behavior"],
+  ["Dead-code protection", "Benchmark outputs are consumed so optimized-away work is not counted"],
+];
+
+const headlineResults = [
+  ["Against moment.js", "mmntjs wins all 31 benchmarked operations in the current benchmark set."],
+  ["Against date-fns", "mmntjs wins 24 of 25 benchmarked operations; the main loss is raw constructor-style creation."],
+  ["Bundle size", "The default full entry is about 55 KB gzip, and the lite entry is about 15.6 KB gzip."],
+  ["Cross-runtime check", "Relative gains were cross-validated on Node.js 26 so the story is not Bun-only."],
+];
+
+const operationRows = [
+  ["format YYYY-MM-DD", "56 ns", "1.31 us", "420 ns", "Common fast-path formatting is substantially lower overhead than both date-fns and moment.js in this benchmark."],
+  ["parse ISO string", "363 ns", "1.30 us", "4.20 us", "Parsing is one of the clearest wins in the current microbenchmarks."],
+  ["diff in days", "20 ns", "935 ns", "491 ns", "Difference calculations benefit from a smaller internal path and cached fields."],
+  ["add 1 second", "15 ns", "108 ns", "-", "Simple mutation-heavy arithmetic is a strong case for the current implementation."],
+  ["startOf month", "17 ns", "75 ns", "-", "Boundary normalization is cheap in the common path benchmark."],
+  ["moment() / new Date()", "40 ns", "35 ns", "221 ns", "This is the main place where raw construction can still lose to a bare Date-style path because compatibility wrapping has a cost."],
+];
+
 const workloads = [
-  "Parse",
-  "Format",
-  "Add and subtract",
-  "startOf and endOf",
-  "diff",
-  "Duration",
-  "Locale formatting",
-  "Bulk transformations",
+  ["Parse", "High-impact for migration because parsing differences break behavior silently. Performance wins matter only after semantic equivalence is checked."],
+  ["Format", "Formatting is both user-visible and frequent. The common token fast paths are where mmntjs currently shows some of its strongest results."],
+  ["Add and subtract", "Mutation-heavy date arithmetic is one of the areas where a moment-compatible mutable design can stay efficient."],
+  ["startOf and endOf", "Reporting and aggregation code often leans on these operations. They should be measured because they appear in hot loops and ETL-style transforms."],
+  ["diff", "This matters for comparisons, reporting windows, and business logic. Benchmarks should note when compared APIs do not expose identical semantics."],
+  ["Duration", "Duration construction and math affect both app code and humanized display flows."],
+  ["Locale formatting", "Locale-sensitive formatting is important because fast English output is not the whole story."],
+  ["Bulk transformations", "Real workloads often map over large arrays of timestamps rather than calling one function once."],
+];
+
+const interpretationNotes = [
+  "These are microbenchmark results, not a guarantee about every application workload.",
+  "Some comparisons are implementation-cost comparisons rather than perfect semantic equivalents, especially around date-fns calendar-difference helpers.",
+  "Cold-start and warm-path behavior should be read separately when startup latency matters.",
+  "Compatibility remains the higher priority when a faster path would change legacy behavior.",
+];
+
+const benchmarkFiles = [
+  ["test/bench.ts", "moment.js vs mmntjs main table"],
+  ["test/bench-datefns2.ts", "mmntjs vs date-fns comparisons"],
+  ["test/bench-regression.ts", "Regression guard thresholds"],
+  ["test/bench-mem.ts", "Memory footprint checks"],
+  ["test/bench-temporal.ts", "Native Temporal comparison"],
+];
+
+const commands = [
+  "bun run bench",
+  "bun run bench:guard",
+  "bun run bench:mem",
+  "bun test test/bench-temporal.ts",
+];
+
+const temporalNotes = [
+  "In the current Node.js 26 microbenchmarks, mmntjs wins 7 of 10 listed operations against native Temporal.",
+  "Temporal is faster in some parsing-oriented cases, while mmntjs tends to win in mutation-heavy and formatting-heavy paths.",
+  "This should be read as a trade-off note, not as an argument against Temporal's design goals.",
 ];
 ---
 
@@ -37,23 +91,117 @@ const workloads = [
     </article>
     <article class="panel section">
       <p class="eyebrow">Methodology</p>
-      <ul>
-        <li>Show benchmark hardware and runtime.</li>
-        <li>Separate cold and warm paths where relevant.</li>
-        <li>Call out when compared APIs are not semantically identical.</li>
-      </ul>
+      <div class="meta-list">
+        {methodology.map(([label, value]) => (
+          <div class="meta-row">
+            <div class="label">{label}</div>
+            <div>{value}</div>
+          </div>
+        ))}
+      </div>
     </article>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Headline Results</p>
+    <div class="cards">
+      {headlineResults.map(([title, text]) => (
+        <article class="card">
+          <h3>{title}</h3>
+          <p>{text}</p>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Representative Operations</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Operation</th>
+          <th>mmntjs</th>
+          <th>date-fns</th>
+          <th>moment.js</th>
+          <th>How to read it</th>
+        </tr>
+      </thead>
+      <tbody>
+        {operationRows.map(([operation, mmntjs, dateFns, moment, notes]) => (
+          <tr>
+            <td>{operation}</td>
+            <td>{mmntjs}</td>
+            <td>{dateFns}</td>
+            <td>{moment}</td>
+            <td>{notes}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+    <p>
+      These rows are deliberately representative rather than exhaustive. The intent is to show the
+      shape of the current results while keeping the page honest about what microbenchmarks can and
+      cannot prove.
+    </p>
   </section>
 
   <section class="panel section">
     <p class="eyebrow">Workloads</p>
     <div class="cards">
-      {workloads.map((item) => (
+      {workloads.map(([item, text]) => (
         <article class="card">
           <h3>{item}</h3>
-          <p>Document reproducible benchmark cases for this workload and explain why it matters in real code.</p>
+          <p>{text}</p>
         </article>
       ))}
     </div>
+  </section>
+
+  <section class="grid">
+    <article class="panel section">
+      <p class="eyebrow">How To Interpret Results</p>
+      <ul>
+        {interpretationNotes.map((item) => <li>{item}</li>)}
+      </ul>
+    </article>
+    <article class="panel section">
+      <p class="eyebrow">Reproducibility</p>
+      <p>
+        A performance page for this project should make it easy for a skeptical engineer to rerun
+        the numbers rather than trust a screenshot. The benchmark files live in the repository and
+        are intended to be rerun locally with documented commands.
+      </p>
+      <ul>
+        {benchmarkFiles.map(([file, purpose]) => <li><code>{file}</code>: {purpose}</li>)}
+      </ul>
+      <ul>
+        {commands.map((command) => <li><code>{command}</code></li>)}
+      </ul>
+    </article>
+  </section>
+
+  <section class="grid">
+    <article class="panel section">
+      <p class="eyebrow">Bundle Size</p>
+      <ul>
+        <li><code>mmntjs</code> full entry: about <strong>55 KB gzip</strong></li>
+        <li><code>mmntjs/lite</code>: about <strong>15.6 KB gzip</strong></li>
+        <li>Reference point: moment's minified entry is larger, and moment-with-locales is much larger still.</li>
+      </ul>
+      <p>
+        This matters because some teams need a compatibility bridge in the browser, where bundle
+        cost and locale loading shape adoption decisions as much as runtime speed.
+      </p>
+    </article>
+    <article class="panel section">
+      <p class="eyebrow">Temporal Comparison</p>
+      <ul>
+        {temporalNotes.map((item) => <li>{item}</li>)}
+      </ul>
+      <p>
+        That comparison is useful mainly as context. Temporal optimizes for a different design
+        point, and this site should not frame the result as a universal ranking of libraries.
+      </p>
+    </article>
   </section>
 </BaseLayout>

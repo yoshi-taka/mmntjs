@@ -257,6 +257,21 @@ export const compatibilitySnapshot = [
   ["Invalid dates", "Mostly compatible", "Invalid behavior is explicitly tested and documented because it affects migration safety."],
 ];
 
+export const compatibilityEvidence = [
+  "678/678 upstream moment.js compatibility tests passing",
+  "4642/4642 hard-test suite passing in the current tracked baseline",
+  "744/744 timezone compatibility cases passing across six timezones",
+  "112 property-style oracle tests with tens of thousands of assertions against upstream moment.js",
+  "9 coverage-guided fuzz harnesses plus a grammar-based ISO generator",
+  "Known remaining compatibility gaps are concentrated in a small set of sign-prefixed parse edge cases",
+];
+
+export const knownDifferenceHighlights = [
+  "A small number of sign-prefixed parse cases still differ because moment.js uses non-anchored regex matching in some fallback paths.",
+  "Core mmntjs should be treated as covering UTC and fixed-offset behavior, not as silently bundling full IANA timezone data behavior.",
+  "Runtime-specific caveats should stay visible, including environment-sensitive timezone and locale behavior during evaluation.",
+];
+
 export const qualityProof = [
   "678/678 moment.js compatibility tests passing",
   "Differential oracle tests and property-based comparisons",
@@ -361,5 +376,78 @@ export const changelogEntries = [
       "Audited additional behavior against upstream moment.js rather than local assumptions.",
       "Added more regression fixtures for parsing, locale, and diff edge cases.",
     ],
+  },
+];
+
+export const faqAnswers = [
+  {
+    question: "What is mmntjs?",
+    answer:
+      "mmntjs is a compatibility-first date/time library intended for teams that still depend on moment.js behavior but want a safer path forward. It is positioned as a migration bridge, not as a claim that every codebase should stop at this library permanently.",
+  },
+  {
+    question: "Is it a drop-in replacement for moment.js?",
+    answer:
+      "That is the direction, but the site should avoid absolute language. The more accurate answer is that mmntjs is designed for moment-compatible adoption, and the right way to evaluate that claim is area by area through compatibility notes, known differences, and your own tests.",
+  },
+  {
+    question: "How compatible is it with moment.js today?",
+    answer:
+      "The current evidence is strong enough for serious evaluation: upstream compatibility tests pass, timezone compatibility tests pass across multiple timezones, and property-based plus fuzz-driven comparisons are part of the workflow. The project should still document remaining parse edge cases plainly instead of implying universal equivalence.",
+  },
+  {
+    question: "What is still known to differ?",
+    answer:
+      "The main tracked differences are concentrated in some malformed or edge-case sign-prefixed parsing inputs discovered through fuzzing. Those cases should stay visible in Known Differences and Compatibility rather than being buried in issue trackers alone.",
+  },
+  {
+    question: "Why not just use Temporal?",
+    answer:
+      "Temporal is the long-term direction for many teams, but it does not solve the short-term problem of replacing a large mutable moment.js surface in one step. mmntjs is meant to lower migration risk now while giving teams more time to move new code toward modern APIs later.",
+  },
+  {
+    question: "Why not dayjs, date-fns, or Luxon?",
+    answer:
+      "Those libraries can be good choices for new systems or for teams ready to change calling patterns. mmntjs is aimed at a narrower problem: preserving legacy moment.js behavior closely enough that a large rewrite does not have to happen first.",
+  },
+  {
+    question: "Does it include timezone data?",
+    answer:
+      "Core mmntjs should be described carefully here: UTC and fixed-offset behavior are in scope, but IANA timezone-data behavior should be treated as a separate concern rather than silently assumed.",
+  },
+  {
+    question: "How should we migrate safely?",
+    answer:
+      "Start with inventory and compatibility review, then replace imports in a small owned surface, run existing tests, add a few targeted comparisons around parsing and timezone behavior, and expand only after those checks are boring.",
+  },
+  {
+    question: "Can we replace moment globally?",
+    answer:
+      "Sometimes, but it should not be the default recommendation. A global replacement can hide where the risk really is. Module-by-module or service-by-service rollout usually produces clearer ownership, easier rollback, and more trustworthy migration evidence.",
+  },
+  {
+    question: "What tests should we run before adoption?",
+    answer:
+      "Run the tests you already trust first. Then add targeted checks for custom parsing, invalid-date behavior, timezone and DST transitions, parseZone or keepLocalTime flows, and any locale-sensitive formatting that reaches users or reports.",
+  },
+  {
+    question: "Is mmntjs faster than moment.js?",
+    answer:
+      "Performance should be treated as a measured property, not a slogan. The useful answer is which workloads are faster, how the benchmarks were run, and where compatibility remains the higher priority if tradeoffs appear.",
+  },
+  {
+    question: "How are benchmarks run?",
+    answer:
+      "Benchmark methodology should stay reproducible and boring: record runtime and hardware, distinguish cold and warm paths where relevant, and note when compared libraries are not exposing identical semantics for a given operation.",
+  },
+  {
+    question: "How are compatibility bugs prioritized?",
+    answer:
+      "For this kind of library, compatibility bugs are product bugs. Regressions that change legacy behavior in parsing, formatting, invalid handling, timezone behavior, or mutability-sensitive flows should be visible quickly and prioritized ahead of more cosmetic work.",
+  },
+  {
+    question: "What is the long-term goal?",
+    answer:
+      "The long-term goal is not to trap teams on one compatibility layer forever. It is to reduce immediate rewrite risk, make behavior visible, and create a more controlled path toward modern JavaScript date/time APIs, including Temporal where it fits.",
   },
 ];

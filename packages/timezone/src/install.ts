@@ -104,7 +104,9 @@ function normalizeTz(tz: string): string {
     return u;
   }
   const aliased = ZONE_ALIAS[tz];
-  if (aliased) { return aliased; }
+  if (aliased) {
+    return aliased;
+  }
   return tz;
 }
 
@@ -116,7 +118,10 @@ function getAbbr(tz: string, ts: number): string {
       const m = full.match(/\s(\S+)$/);
       if (m) {
         const abbr = m[1];
-        if (abbr === "GMT" || (/^[A-Z]{2,5}$/.test(abbr) && !abbr.startsWith("GMT") && abbr !== "Time")) {
+        if (
+          abbr === "GMT" ||
+          (/^[A-Z]{2,5}$/.test(abbr) && !abbr.startsWith("GMT") && abbr !== "Time")
+        ) {
           return abbr;
         }
       }
@@ -203,10 +208,18 @@ function isZoneName(s: string): boolean {
         "timeZone",
       ),
     );
+    // Direct hit (canonical name in Intl)
     if (zoneNamesSet.has(s)) { return true; }
+    // Check if s is an alias whose canonical form is in Intl
     if (s in ZONE_ALIAS) {
-      const aliased = ZONE_ALIAS[s];
-      if (zoneNamesSet.has(aliased)) { return true; }
+      const canonical = ZONE_ALIAS[s];
+      if (zoneNamesSet.has(canonical)) { return true; }
+    }
+    // Check if s is a canonical name whose alias is in Intl
+    for (const alias of Object.keys(ZONE_ALIAS)) {
+      if (ZONE_ALIAS[alias] === s && zoneNamesSet.has(alias)) {
+        return true;
+      }
     }
     return false;
   } catch {
@@ -351,7 +364,7 @@ export function installTimezone(moment: MomentLike): MomentLike {
     const zoneInfo = moment.tz!.zone(tz);
     if (zoneInfo) {
       m._z = zoneInfo;
-      const targetOffset = zoneInfo.offset(timestamp);
+      const targetOffset = -zoneInfo.offset(timestamp);
       m.utcOffset(targetOffset, keepTime);
     } else {
       const targetOffset = getOffset(tz, timestamp);
@@ -364,6 +377,20 @@ export function installTimezone(moment: MomentLike): MomentLike {
 
   moment.tz = momentTz as unknown as MomentTz;
   moment.fn.tz = fnTz;
+
+  // Patch zoneName/zoneAbbr to return abbreviation when _z is set (moment-timezone compat)
+  const origZoneName = moment.fn.zoneName as (() => string) | undefined;
+  const origZoneAbbr = moment.fn.zoneAbbr as (() => string) | undefined;
+  // oxlint-disable-next-line no-explicit-any
+  (moment.fn as any).zoneName = function (this: any): string {
+    if (this._z) { return this._z.abbr(this.valueOf()); }
+    return origZoneName ? origZoneName.call(this) : "";
+  };
+  // oxlint-disable-next-line no-explicit-any
+  (moment.fn as any).zoneAbbr = function (this: any): string {
+    if (this._z) { return this._z.abbr(this.valueOf()); }
+    return origZoneAbbr ? origZoneAbbr.call(this) : "";
+  };
 
   moment.tz.guess = function (_preferCache?: boolean): string {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
@@ -401,25 +428,22 @@ export function installTimezone(moment: MomentLike): MomentLike {
 
   moment.tz.zone = function (name: string): MomentTzZone | null {
     const normalized = normalizeTz(name);
-    try {
-      const names = moment.tz!.names();
-      if (!names.includes(normalized)) {
-        return null;
-      }
-
-      return {
-        name: normalized,
-        abbr: (ts: number) => getAbbr(normalized, ts),
-        offset: (ts: number) => getOffset(name, ts),
-        utcOffset: (ts: number) => -getOffset(normalized, ts),
-        parse: (ts: number) => ({
-          name: normalized,
-          offset: getOffset(name, ts),
-        }),
-      };
-    } catch {
+    if (!isZoneName(name)) {
       return null;
     }
+
+    const off = (ts: number) => getOffset(normalized, ts);
+
+    return {
+      name: normalized,
+      abbr: (ts: number) => getAbbr(normalized, ts),
+      offset: (ts: number) => -off(ts),
+      utcOffset: (ts: number) => -off(ts),
+      parse: (ts: number) => ({
+        name: normalized,
+        offset: -off(ts),
+      }),
+    };
   };
 
   moment.tz.add = function (_data: unknown): void {

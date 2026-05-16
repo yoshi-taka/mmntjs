@@ -9,6 +9,13 @@ const sections = [
   ["DST and timezone boundaries", "Test mode transitions and local-time edge cases where production regressions are expensive."],
   ["Release discipline", "Treat compatibility changes and known behavior shifts as first-class release notes."],
 ];
+
+const releaseQuestions = [
+  "Did this change preserve documented moment.js-compatible behavior?",
+  "If behavior changed, is the difference explicit in compatibility or changelog docs?",
+  "Were timezone, invalid-date, and parsing-sensitive paths exercised in at least one realistic test shape?",
+  "Would a migration reviewer understand the risk of upgrading from the release notes alone?",
+];
 ---
 
 <BaseLayout
@@ -43,6 +50,21 @@ const sections = [
   </section>
 
   <section class="panel section">
+    <p class="eyebrow">What Quality Means Here</p>
+    <p>
+      In a compatibility-oriented library, a passing unit test on a happy path is not enough.
+      Quality means preserving legacy semantics where they are promised, recording discovered edge
+      cases, and resisting the temptation to hand-wave differences as acceptable because they are
+      rare. Rare date/time bugs are often the expensive ones.
+    </p>
+    <p>
+      That is why the site should frame differential testing, regression fixtures, timezone
+      boundary tests, and invalid-input behavior as first-class quality signals rather than advanced
+      extras.
+    </p>
+  </section>
+
+  <section class="panel section">
     <p class="eyebrow">Testing Areas</p>
     <div class="cards">
       {sections.map(([title, text]) => (
@@ -52,5 +74,22 @@ const sections = [
         </article>
       ))}
     </div>
+  </section>
+
+  <section class="grid">
+    <article class="panel section">
+      <p class="eyebrow">Why This Matters In Migration</p>
+      <ul>
+        <li>Legacy systems often rely on undocumented behavior that only differential comparison will reveal.</li>
+        <li>Timezone and DST bugs can pass broad test suites yet still break customer-visible workflows.</li>
+        <li>Regression preservation is what turns one-off bug fixes into growing migration confidence.</li>
+      </ul>
+    </article>
+    <article class="panel section">
+      <p class="eyebrow">Release Checklist</p>
+      <ul>
+        {releaseQuestions.map((item) => <li>{item}</li>)}
+      </ul>
+    </article>
   </section>
 </BaseLayout>

@@ -1,205 +1,197 @@
 /* oxlint-disable no-explicit-any, no-unnecessary-type-assertion */
 
 import { describe, test, expect } from "bun:test";
-import moment from "../../../src/index.ts";
-import { installTimezone } from "../src/install";
-
-installTimezone(moment as never);
+import { moment, momentTimezone, oracleEqual } from "./helper";
 
 const TS = 1587126975779; // 2020-04-17 12:36:15 UTC (EDT/CEST season)
 
+/* ------------------------------------------------------------------ */
+/*  Static API (oracle-based)                                         */
+/* ------------------------------------------------------------------ */
+
 describe("moment.tz static", () => {
-  test("moment.tz() with no args returns current time", () => {
-    const m = (moment as any).tz();
-    expect(m.isValid()).toBe(true);
+  test("moment.tz() with no args returns valid moment", () => {
+    expect(moment.tz().isValid()).toBe(true);
   });
 
   test("moment.tz(zone) creates current time in zone", () => {
-    const m = (moment as any).tz("Asia/Tokyo");
-    expect(m.isValid()).toBe(true);
+    expect(moment.tz("Asia/Tokyo").isValid()).toBe(true);
   });
 
-  test("moment.tz(input, zone) parses input in zone", () => {
-    const m = (moment as any).tz("2024-01-15 12:00", "America/New_York");
-    expect(m.isValid()).toBe(true);
-    expect(m.format()).toBeTruthy();
+  test("moment.tz(input, zone) parses wall-clock in zone", () => {
+    oracleEqual(
+      moment.tz("2024-01-15 12:00", "America/New_York"),
+      momentTimezone.tz("2024-01-15 12:00", "America/New_York"),
+    );
   });
 
   test("moment.tz(input, format, zone) parses with format in zone", () => {
-    const m = (moment as any).tz("01/15/2024", "MM/DD/YYYY", "America/New_York");
-    expect(m.isValid()).toBe(true);
+    oracleEqual(
+      moment.tz("01/15/2024", "MM/DD/YYYY", "America/New_York"),
+      momentTimezone.tz("01/15/2024", "MM/DD/YYYY", "America/New_York"),
+    );
   });
 
-  test("moment.tz(number) creates local", () => {
-    const m = (moment as any).tz(TS);
-    expect(m.isValid()).toBe(true);
-    expect(m.valueOf()).toBe(TS);
+  test("moment.tz(number) creates local (preserves valueOf)", () => {
+    const mm = moment.tz(TS);
+    expect(mm.isValid()).toBe(true);
+    expect(mm.valueOf()).toBe(TS);
   });
 
-  test("moment.tz(Date) creates local", () => {
-    const m = (moment as any).tz(new Date(TS));
-    expect(m.isValid()).toBe(true);
-    expect(m.valueOf()).toBe(TS);
+  test("moment.tz(Date) creates local (preserves valueOf)", () => {
+    const mm = moment.tz(new Date(TS));
+    expect(mm.isValid()).toBe(true);
+    expect(mm.valueOf()).toBe(TS);
   });
 });
 
+/* ------------------------------------------------------------------ */
+/*  Instance tz() (oracle-based)                                      */
+/* ------------------------------------------------------------------ */
+
 describe("moment().tz() instance", () => {
-  test("setter converts to timezone and preserves absolute time", () => {
+  test("setter converts and preserves absolute time", () => {
     const m = moment.utc(TS);
-    const m2 = (m as any).tz("Asia/Tokyo");
-    expect(m2.isValid()).toBe(true);
-    expect(m2.valueOf()).toBe(TS);
-    expect(m2.format("HH:mm")).toBe("21:36");
+    oracleEqual(
+      m.tz("Asia/Tokyo"),
+      momentTimezone.utc(TS).tz("Asia/Tokyo"),
+    );
   });
 
-  test("getter returns timezone name when set", () => {
-    const m = (moment as any).tz("America/Chicago");
-    expect((m as any).tz()).toBe("America/Chicago");
+  test("getter returns zone name when set", () => {
+    const m = moment.tz("America/Chicago");
+    expect(m.tz()).toBe("America/Chicago");
   });
 
-  test("getter returns string when not set", () => {
-    const m = moment();
-    expect(typeof (m as any).tz()).toBe("string");
+  test("getter returns a string when not set", () => {
+    expect(typeof moment().tz()).toBe("string");
   });
 
   test("setter with lowercase utc normalizes", () => {
-    const m = moment.utc(TS);
-    const m2 = (m as any).tz("utc");
-    expect((m2 as any).tz()).toBe("UTC");
-    expect(m2.format("z")).toBe("UTC");
+    const m = moment.utc(TS).tz("utc");
+    expect(m.tz()).toBe("UTC");
+    expect(m.format("z")).toBe("UTC");
   });
 
   test("setter with lowercase gmt normalizes", () => {
-    const m = moment.utc(TS);
-    const m2 = (m as any).tz("gmt");
-    expect((m2 as any).tz()).toBe("GMT");
+    expect(moment.utc(TS).tz("gmt").tz()).toBe("GMT");
   });
 });
+
+/* ------------------------------------------------------------------ */
+/*  tz(zone, keepTime)                                                */
+/* ------------------------------------------------------------------ */
+
+describe("tz() with keepTime", () => {
+  test("tz(zone) without keepTime preserves instant", () => {
+    oracleEqual(
+      moment.utc("2024-06-15T12:00:00Z").tz("Europe/Berlin"),
+      momentTimezone.utc("2024-06-15T12:00:00Z").tz("Europe/Berlin"),
+    );
+  });
+
+  test("tz(zone, true) preserves wall clock", () => {
+    oracleEqual(
+      moment.utc("2024-06-15T12:00:00Z").tz("Europe/Berlin", true),
+      momentTimezone.utc("2024-06-15T12:00:00Z").tz("Europe/Berlin", true),
+    );
+  });
+
+  test("valueOf differs between keep and no-keep", () => {
+    const base = moment.utc("2024-06-15T12:00:00Z");
+    const noKeep = base.clone().tz("Europe/Berlin");
+    const keep = base.clone().tz("Europe/Berlin", true);
+    expect(noKeep.valueOf()).not.toBe(keep.valueOf());
+  });
+
+  test("keepTime with America/New_York", () => {
+    oracleEqual(
+      moment.utc("2024-12-25T10:00:00Z").tz("America/New_York", true),
+      momentTimezone.utc("2024-12-25T10:00:00Z").tz("America/New_York", true),
+    );
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/*  Zone object (oracle-based where applicable)                       */
+/* ------------------------------------------------------------------ */
 
 describe("moment.tz.zone()", () => {
   test("returns zone object for valid zone", () => {
-    const zone = (moment as any).tz.zone("America/New_York");
-    expect(zone).not.toBeNull();
-    expect((zone as any).name).toBe("America/New_York");
+    const z = moment.tz.zone("America/New_York");
+    expect(z).not.toBeNull();
+    expect(z!.name).toBe("America/New_York");
   });
 
   test("returns null for invalid zone", () => {
-    const zone = (moment as any).tz.zone("Invalid/Zone");
-    expect(zone).toBeNull();
+    expect(moment.tz.zone("Invalid/Zone")).toBeNull();
+    expect(moment.tz.zone("")).toBeNull();
   });
 
-  test("returns null for garbage input", () => {
-    const zone = (moment as any).tz.zone("");
-    expect(zone).toBeNull();
+  test("zone.name matches oracle", () => {
+    const zones = ["Europe/Stockholm", "Asia/Tokyo", "America/New_York"];
+    for (const zn of zones) {
+      expect(moment.tz.zone(zn)?.name).toBe(momentTimezone.tz.zone(zn)?.name);
+    }
   });
 
-  test("zone.name is set", () => {
-    const zone = (moment as any).tz.zone("Europe/Stockholm");
-    expect((zone as any).name).toBe("Europe/Stockholm");
+  test("zone.abbr matches oracle", () => {
+    const zones = [
+      "Europe/Stockholm", "America/New_York", "Europe/Bucharest",
+      "Asia/Tokyo", "Australia/Sydney", "Europe/London",
+      "America/Los_Angeles", "Asia/Kolkata", "Asia/Taipei",
+    ];
+    for (const zn of zones) {
+      const mm = moment.tz.zone(zn)?.abbr(TS);
+      const om = momentTimezone.tz.zone(zn)?.abbr(TS);
+      expect(mm).toBe(om);
+    }
   });
 
-  test("zone.abbr returns IANA abbreviation for Stockholm (CEST)", () => {
-    const zone = (moment as any).tz.zone("Europe/Stockholm");
-    expect((zone as any).abbr(TS)).toBe("CEST");
+  test("zone.offset matches oracle", () => {
+    const zones = ["Asia/Tokyo", "America/New_York"];
+    for (const zn of zones) {
+      const mm = moment.tz.zone(zn)?.offset(TS);
+      const om = momentTimezone.tz.zone(zn)?.offset(TS);
+      expect(mm).toBe(om);
+    }
   });
 
-  test("zone.abbr returns IANA abbreviation for New York (EDT)", () => {
-    const zone = (moment as any).tz.zone("America/New_York");
-    expect((zone as any).abbr(TS)).toBe("EDT");
-  });
-
-  test("zone.abbr returns IANA abbreviation for Bucharest (EEST)", () => {
-    const zone = (moment as any).tz.zone("Europe/Bucharest");
-    expect((zone as any).abbr(TS)).toBe("EEST");
-  });
-
-  test("zone.abbr returns IANA abbreviation for Tokyo (JST)", () => {
-    const zone = (moment as any).tz.zone("Asia/Tokyo");
-    expect((zone as any).abbr(TS)).toBe("JST");
-  });
-
-  test("zone.abbr returns IANA abbreviation for Sydney (AEST)", () => {
-    const zone = (moment as any).tz.zone("Australia/Sydney");
-    expect((zone as any).abbr(TS)).toBe("AEST");
-  });
-
-  test("zone.abbr returns IANA abbreviation for London (BST)", () => {
-    const zone = (moment as any).tz.zone("Europe/London");
-    expect((zone as any).abbr(TS)).toBe("BST");
-  });
-
-  test("zone.abbr returns IANA abbreviation for LA (PDT)", () => {
-    const zone = (moment as any).tz.zone("America/Los_Angeles");
-    expect((zone as any).abbr(TS)).toBe("PDT");
-  });
-
-  test("zone.abbr returns CST for Asia/Shanghai (same as moment-timezone)", () => {
-    const zone = (moment as any).tz.zone("Asia/Shanghai");
-    expect((zone as any).abbr(TS)).toBe("CST");
-  });
-
-  test("zone.offset returns positive minutes east of UTC", () => {
-    const zone = (moment as any).tz.zone("Asia/Tokyo");
-    expect((zone as any).offset(TS)).toBe(540);
-  });
-
-  test("zone.offset returns negative minutes west of UTC", () => {
-    const zone = (moment as any).tz.zone("America/New_York");
-    expect((zone as any).offset(TS)).toBe(-240);
-  });
-
-  test("zone.utcOffset returns negative of offset", () => {
-    const zone = (moment as any).tz.zone("Asia/Tokyo");
-    expect((zone as any).utcOffset(TS)).toBe(-540);
+  test("zone.utcOffset matches oracle", () => {
+    const zn = "Asia/Tokyo";
+    const mm = moment.tz.zone(zn)?.utcOffset(TS);
+    const om = momentTimezone.tz.zone(zn)?.utcOffset(TS);
+    expect(mm).toBe(om);
   });
 
   test("zone.parse returns object with name and offset", () => {
-    const zone = (moment as any).tz.zone("America/New_York");
-    const parsed = (zone as any).parse(TS);
-    expect(parsed.name).toBe("America/New_York");
-    expect(typeof parsed.offset).toBe("number");
+    const parsed = moment.tz.zone("America/New_York")?.parse(TS);
+    expect(parsed?.name).toBe("America/New_York");
+    expect(typeof parsed?.offset).toBe("number");
   });
 });
 
-describe("format with timezone (z / zz)", () => {
-  test("format z for Europe/Stockholm returns CEST", () => {
-    const m = moment.utc(TS).tz("Europe/Stockholm");
-    expect(m.format("z")).toBe("CEST");
-  });
+/* ------------------------------------------------------------------ */
+/*  Format tokens z/zz/Z/ZZ (oracle-based)                            */
+/* ------------------------------------------------------------------ */
 
-  test("format z for America/New_York returns EDT", () => {
-    const m = moment.utc(TS).tz("America/New_York");
-    expect(m.format("z")).toBe("EDT");
-  });
+describe("format tokens with timezone", () => {
+  const zones = [
+    "Europe/Stockholm", "America/New_York", "Europe/Bucharest",
+    "Asia/Tokyo", "Europe/London", "America/Los_Angeles",
+    "Australia/Sydney", "Asia/Kolkata", "Australia/Adelaide",
+  ];
 
-  test("format z for Europe/Bucharest returns EEST", () => {
-    const m = moment.utc(TS).tz("Europe/Bucharest");
-    expect(m.format("z")).toBe("EEST");
-  });
-
-  test("format z for Asia/Tokyo returns JST", () => {
-    const m = moment.utc(TS).tz("Asia/Tokyo");
-    expect(m.format("z")).toBe("JST");
-  });
-
-  test("format z for Europe/London returns BST", () => {
-    const m = moment.utc(TS).tz("Europe/London");
-    expect(m.format("z")).toBe("BST");
-  });
-
-  test("format z for America/Los_Angeles returns PDT", () => {
-    const m = moment.utc(TS).tz("America/Los_Angeles");
-    expect(m.format("z")).toBe("PDT");
-  });
-
-  test("format z for Australia/Sydney returns AEST", () => {
-    const m = moment.utc(TS).tz("Australia/Sydney");
-    expect(m.format("z")).toBe("AEST");
-  });
+  for (const zn of zones) {
+    test(`format z for ${zn} matches oracle`, () => {
+      const mm = moment.utc(TS).tz(zn);
+      const om = momentTimezone.utc(TS).tz(zn);
+      expect(mm.format("z")).toBe(om.format("z"));
+    });
+  }
 
   test("format z for UTC returns UTC", () => {
-    const m = moment.utc(TS).tz("UTC");
-    expect(m.format("z")).toBe("UTC");
+    expect(moment.utc(TS).tz("UTC").format("z")).toBe("UTC");
   });
 
   test("format zz matches format z for timezone moments", () => {
@@ -207,133 +199,197 @@ describe("format with timezone (z / zz)", () => {
     expect(m.format("zz")).toBe(m.format("z"));
   });
 
-  test("format Z returns offset string for timezone moment", () => {
-    const m = moment.utc(TS).tz("Europe/Stockholm");
-    expect(m.format("Z")).toBe("+02:00");
-  });
-
-  test("format ZZ returns compact offset for timezone moment", () => {
-    const m = moment.utc(TS).tz("Europe/Stockholm");
-    expect(m.format("ZZ")).toBe("+0200");
+  test("format Z and ZZ match oracle", () => {
+    const mm = moment.utc(TS).tz("Europe/Stockholm");
+    const om = momentTimezone.utc(TS).tz("Europe/Stockholm");
+    expect(mm.format("Z")).toBe(om.format("Z"));
+    expect(mm.format("ZZ")).toBe(om.format("ZZ"));
   });
 });
 
+/* ------------------------------------------------------------------ */
+/*  zoneAbbr / zoneName                                               */
+/* ------------------------------------------------------------------ */
+
 describe("zoneAbbr / zoneName", () => {
-  test("zoneAbbr() returns IANA abbreviation after tz()", () => {
+  test("zoneAbbr() after tz() matches oracle", () => {
     const m = moment.utc(TS).tz("Europe/Stockholm");
-    expect(m.zoneAbbr()).toBe("CEST");
+    const o = momentTimezone.utc(TS).tz("Europe/Stockholm");
+    expect(m.zoneAbbr()).toBe(o.zoneAbbr());
   });
 
-  test("zoneAbbr() returns EDT after tz()", () => {
-    const m = moment.utc(TS).tz("America/New_York");
-    expect(m.zoneAbbr()).toBe("EDT");
-  });
-
-  test("zoneName() returns timezone name after tz()", () => {
+  test("zoneName() after tz() matches oracle", () => {
     const m = moment.utc(TS).tz("Europe/Stockholm");
-    expect(m.zoneName()).toBe("Europe/Stockholm");
+    const o = momentTimezone.utc(TS).tz("Europe/Stockholm");
+    expect(m.zoneName()).toBe(o.zoneName());
   });
 
   test("zoneAbbr() for UTC moment returns UTC", () => {
-    const m = moment.utc(TS);
-    expect(m.zoneAbbr()).toBe("UTC");
+    expect(moment.utc(TS).zoneAbbr()).toBe("UTC");
   });
 
   test("zoneName() for UTC moment returns Coordinated Universal Time", () => {
-    const m = moment.utc(TS);
-    expect(m.zoneName()).toBe("Coordinated Universal Time");
+    expect(moment.utc(TS).zoneName()).toBe("Coordinated Universal Time");
   });
 
   test("zoneAbbr() for local moment returns empty string", () => {
-    const m = moment(TS);
-    expect(m.zoneAbbr()).toBe("");
+    expect(moment(TS).zoneAbbr()).toBe("");
   });
 
   test("zoneName() for local moment returns empty string", () => {
-    const m = moment(TS);
-    expect(m.zoneName()).toBe("");
+    expect(moment(TS).zoneName()).toBe("");
   });
 });
+
+/* ------------------------------------------------------------------ */
+/*  Grafana-specific patterns (oracle-based)                          */
+/* ------------------------------------------------------------------ */
 
 describe("Grafana-specific patterns", () => {
-  test("moment.tz.zone(name) and zone.name works", () => {
-    const zone = (moment as any).tz.zone("Europe/Stockholm");
-    expect(zone).not.toBeNull();
-    expect((zone as any).name).toBe("Europe/Stockholm");
+  test("toUtc + tz + format z matches oracle", () => {
+    const mm = moment.utc(TS).tz("Europe/Stockholm");
+    const om = momentTimezone.utc(TS).tz("Europe/Stockholm");
+    expect(mm.format("YYYY-MM-DD HH:mm:ss z")).toBe(om.format("YYYY-MM-DD HH:mm:ss z"));
   });
 
-  test("toUtc + tz + format z matching Grafana formatter pattern", () => {
-    const m = moment.utc(TS).tz("Europe/Stockholm");
-    expect(m.format("YYYY-MM-DD HH:mm:ss z")).toBe("2020-04-17 14:36:15 CEST");
+  test("America/New_York with format + z matches oracle", () => {
+    const mm = moment.utc(TS).tz("America/New_York");
+    const om = momentTimezone.utc(TS).tz("America/New_York");
+    expect(mm.format("YYYY-MM-DD HH:mm:ss z")).toBe(om.format("YYYY-MM-DD HH:mm:ss z"));
   });
 
-  test("Grafana: America/New_York with format + z", () => {
-    const m = moment.utc(TS).tz("America/New_York");
-    expect(m.format("YYYY-MM-DD HH:mm:ss z")).toBe("2020-04-17 08:36:15 EDT");
-  });
-
-  test("Grafana: Europe/Bucharest with format + z", () => {
-    const m = moment.utc(TS).tz("Europe/Bucharest");
-    expect(m.format("YYYY-MM-DD HH:mm:ss z")).toBe("2020-04-17 15:36:15 EEST");
-  });
-
-  test("isDST with timezone applied (Stockholm April = DST)", () => {
-    const m = moment.utc(TS).tz("Europe/Stockholm");
-    expect(m.isDST()).toBe(false); // DST check only works for local tz
+  test("Europe/Bucharest with format + z matches oracle", () => {
+    const mm = moment.utc(TS).tz("Europe/Bucharest");
+    const om = momentTimezone.utc(TS).tz("Europe/Bucharest");
+    expect(mm.format("YYYY-MM-DD HH:mm:ss z")).toBe(om.format("YYYY-MM-DD HH:mm:ss z"));
   });
 });
+
+/* ------------------------------------------------------------------ */
+/*  UTC offset and mode invariants                                    */
+/* ------------------------------------------------------------------ */
 
 describe("utc offset and mode", () => {
   test("tz() preserves valueOf", () => {
-    const m = moment.utc(TS);
-    const m2 = (m as any).tz("Asia/Tokyo");
-    expect(m2.valueOf()).toBe(TS);
+    expect(moment.utc(TS).tz("Asia/Tokyo").valueOf()).toBe(TS);
   });
 
   test("tz() then utc() roundtrip preserves valueOf", () => {
     const m = moment.utc(TS).tz("Asia/Tokyo");
     expect(m.valueOf()).toBe(TS);
-    const m2 = m.utc();
-    expect(m2.valueOf()).toBe(TS);
+    expect(m.utc().valueOf()).toBe(TS);
   });
 
-  test("utcOffset getter returns correct offset after tz()", () => {
-    const m = moment.utc(TS).tz("America/New_York");
-    expect(m.utcOffset()).toBe(-240);
+  test("utcOffset after tz() matches oracle", () => {
+    const mm = moment.utc(TS).tz("America/New_York");
+    const om = momentTimezone.utc(TS).tz("America/New_York");
+    expect(mm.utcOffset()).toBe(om.utcOffset());
   });
 });
 
+/* ------------------------------------------------------------------ */
+/*  Southern hemisphere DST (Adelaide, Sydney, Auckland)              */
+/* ------------------------------------------------------------------ */
+
+describe("southern hemisphere DST", () => {
+  // Australia/Adelaide: DST ends April 7, 2024 at 03:00 ACDT → 02:00 ACST
+  test("Adelaide autumn: 02:59:59 before fall-back", () => {
+    oracleEqual(
+      moment.tz("2024-04-06 02:59:59", "Australia/Adelaide"),
+      momentTimezone.tz("2024-04-06 02:59:59", "Australia/Adelaide"),
+    );
+  });
+
+  test("Adelaide autumn: 03:00 after fall-back", () => {
+    oracleEqual(
+      moment.tz("2024-04-07 03:00:00", "Australia/Adelaide"),
+      momentTimezone.tz("2024-04-07 03:00:00", "Australia/Adelaide"),
+    );
+  });
+
+  test("Adelaide spring-forward exists", () => {
+    oracleEqual(
+      moment.tz("2024-10-06 02:30:00", "Australia/Adelaide"),
+      momentTimezone.tz("2024-10-06 02:30:00", "Australia/Adelaide"),
+    );
+  });
+
+  // Pacific/Auckland: DST ends April 7, 2024 at 03:00 NZDT → 02:00 NZST
+  test("Auckland autumn: 02:59:59 before fall-back", () => {
+    oracleEqual(
+      moment.tz("2024-04-06 02:59:59", "Pacific/Auckland"),
+      momentTimezone.tz("2024-04-06 02:59:59", "Pacific/Auckland"),
+    );
+  });
+
+  test("Auckland winter valueOf matches", () => {
+    const mm = moment.utc(TS).tz("Pacific/Auckland");
+    const om = momentTimezone.utc(TS).tz("Pacific/Auckland");
+    expect(mm.valueOf()).toBe(om.valueOf());
+    expect(mm.utcOffset()).toBe(om.utcOffset());
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/*  Additional zones (Chatham, Phoenix, Toronto)                      */
+/* ------------------------------------------------------------------ */
+
+describe("additional zones", () => {
+  test("Pacific/Chatham winter format matches oracle", () => {
+    const W = Date.UTC(2024, 5, 15, 12, 0, 0, 0);
+    const mm = moment(W).tz("Pacific/Chatham");
+    const om = momentTimezone(W).tz("Pacific/Chatham");
+    expect(mm.valueOf()).toBe(om.valueOf());
+    expect(mm.utcOffset()).toBe(om.utcOffset());
+    expect(mm.format("z")).toBe(om.format("z"));
+  });
+
+  test("America/Phoenix (no DST) matches oracle", () => {
+    const mm = moment.utc(TS).tz("America/Phoenix");
+    const om = momentTimezone.utc(TS).tz("America/Phoenix");
+    oracleEqual(mm, om);
+  });
+
+  test("America/Toronto matches oracle", () => {
+    const mm = moment.utc(TS).tz("America/Toronto");
+    const om = momentTimezone.utc(TS).tz("America/Toronto");
+    oracleEqual(mm, om);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/*  Edge cases (non-oracle, smoke only)                               */
+/* ------------------------------------------------------------------ */
+
 describe("edge cases", () => {
   test("moment.tz.add() is a no-op", () => {
-    (moment as any).tz.add({});
+    moment.tz.add({});
   });
 
   test("moment.tz.link() is a no-op", () => {
-    (moment as any).tz.link({});
+    moment.tz.link({});
   });
 
   test("moment.tz.countries() returns empty array", () => {
-    const countries = (moment as any).tz.countries();
-    expect(Array.isArray(countries)).toBe(true);
-    expect(countries.length).toBe(0);
+    const c = moment.tz.countries();
+    expect(Array.isArray(c)).toBe(true);
+    expect(c.length).toBe(0);
   });
 
   test("moment.tz.zonesForCountry() returns empty array", () => {
-    const zones = (moment as any).tz.zonesForCountry("US");
-    expect(Array.isArray(zones)).toBe(true);
-    expect(zones.length).toBe(0);
+    const z = moment.tz.zonesForCountry("US");
+    expect(Array.isArray(z)).toBe(true);
+    expect(z.length).toBe(0);
   });
 
   test("moment.tz.guess() returns a string", () => {
-    const tz = (moment as any).tz.guess();
+    const tz = moment.tz.guess();
     expect(typeof tz).toBe("string");
     expect(tz.length).toBeGreaterThan(0);
   });
 
-  test("moment.tz.names() returns array with common zones", () => {
-    const names = (moment as any).tz.names();
-    expect(Array.isArray(names)).toBe(true);
-    expect(names.length).toBeGreaterThan(0);
+  test("moment.tz.names() includes common zones", () => {
+    const names = moment.tz.names();
     expect(names).toContain("UTC");
     expect(names).toContain("America/New_York");
     expect(names).toContain("Asia/Tokyo");

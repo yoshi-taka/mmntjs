@@ -8,6 +8,18 @@ const checklist = [
   "Verify invalid-date behavior in both UI and business logic paths.",
   "Expand rollout only after production-like comparisons pass.",
 ];
+
+const testStrategy = [
+  "Run the tests you already trust before writing new migration-specific wrappers.",
+  "Add a small set of targeted comparisons for parsing, invalid dates, offsets, and DST boundaries.",
+  "Prefer module-level rollout so failures have a clear owner and rollback path.",
+];
+
+const doNotRush = [
+  "Do not start with your most time-sensitive billing, reporting, or scheduling path.",
+  "Do not treat a benchmark win as evidence of behavioral safety.",
+  "Do not assume timezone-heavy code is low-risk just because the tests are green in UTC.",
+];
 ---
 
 <BaseLayout
@@ -21,6 +33,19 @@ const checklist = [
     <p>
       This page is for teams that need a realistic adoption path: evaluate first, replace in a
       small surface, compare behavior, then expand with confidence.
+    </p>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Migration Overview</p>
+    <p>
+      The safest way to adopt mmntjs is to treat it as a compatibility bridge first and an
+      optimization or modernization step second. Teams usually get better results by reducing the
+      migration surface one ownership boundary at a time instead of attempting a global swap.
+    </p>
+    <p>
+      A good migration plan also makes room for the possibility that a few modules should stay on
+      moment.js longer than others. That is not failure. It is a controlled rollout doing its job.
     </p>
   </section>
 
@@ -55,10 +80,29 @@ const checklist = [
     </article>
   </section>
 
+  <section class="grid">
+    <article class="panel section">
+      <p class="eyebrow">Testing Strategy</p>
+      <ul>
+        {testStrategy.map((item) => <li>{item}</li>)}
+      </ul>
+    </article>
+    <article class="panel section">
+      <p class="eyebrow">What Not To Rush</p>
+      <ul>
+        {doNotRush.map((item) => <li>{item}</li>)}
+      </ul>
+    </article>
+  </section>
+
   <section class="panel section">
     <p class="eyebrow">Risk Checklist</p>
     <ul>
       {checklist.map((item) => <li>{item}</li>)}
     </ul>
+    <p>
+      If your team can complete this checklist for one low-risk module first, the next expansion
+      step becomes much more credible to reviewers and maintainers.
+    </p>
   </section>
 </BaseLayout>
