@@ -105,32 +105,46 @@ export function parseString(
     }
   }
 
-  const locObj = locale;
-  if (!locObj) {
+  if (!locale) {
     return null;
   }
+  if (format) {
+    return _parseWithFormat(str, format, locale, strict);
+  }
+  return _parseFreeform(str, locale);
+}
 
+function _parseWithFormat(
+  str: string,
+  format: string | string[],
+  locale: ParseLocale,
+  strict?: boolean,
+): ParsedData | null {
+  _pc("parseString:with-format");
   const preparseFn = (locale as never as { _config?: { preparse?: (s: string) => string } })._config
     ?.preparse;
 
-  if (format) {
-    _pc("parseString:with-format");
-    if (typeof format === "string" && !strict) {
-      const fast = tryIsoFormatFastPath(str, format);
-      if (fast) {
-        _pc("parseString:format-fast-hit");
-        return fast as unknown as ParsedData;
-      }
+  if (typeof format === "string" && !strict) {
+    const fast = tryIsoFormatFastPath(str, format);
+    if (fast) {
+      _pc("parseString:format-fast-hit");
+      return fast as unknown as ParsedData;
     }
-    const preparsed = preparseFn ? preparseFn(str) : str;
-    if (isArray(format)) {
-      _pc("parseString:format-array");
-      return parseWithFormats(preparsed, format, locale, strict) as unknown as ParsedData;
-    }
-    _pc("parseString:format-single");
-    return parseWithFormat(preparsed, format, locale, strict) as unknown as ParsedData;
   }
 
+  const preparsed = preparseFn ? preparseFn(str) : str;
+  if (isArray(format)) {
+    _pc("parseString:format-array");
+    return parseWithFormats(preparsed, format, locale, strict) as unknown as ParsedData;
+  }
+  _pc("parseString:format-single");
+  return parseWithFormat(preparsed, format, locale, strict) as unknown as ParsedData;
+}
+
+function _parseFreeform(str: string, locale: ParseLocale): ParsedData | null {
+  _pc("parseString:freeform");
+  const preparseFn = (locale as never as { _config?: { preparse?: (s: string) => string } })._config
+    ?.preparse;
   str = preparseFn ? preparseFn(str) : str;
   const trimmed = str;
 
@@ -367,25 +381,7 @@ function parseCommonISOExtended(str: string): InternalParsedData | null {
   return null;
 }
 
-function parseCommonISO(str: string): InternalParsedData | null {
-  const len = str.length;
-  // Length 10 = date only (YYYY-MM-DD). Lengths 19-29 = date + time + optional
-  // fractional seconds + optional timezone. The charCode parsing below validates
-  // the actual structure — any length 19-29 follows the same deterministic path.
-  if (len !== 10 && (len < 19 || len > 29)) {
-    return null;
-  }
-  if (str.charCodeAt(4) !== 45 || str.charCodeAt(7) !== 45) {
-    return null;
-  }
-  const y0 = str.charCodeAt(0) - 48,
-    y1 = str.charCodeAt(1) - 48;
-  const y2 = str.charCodeAt(2) - 48,
-    y3 = str.charCodeAt(3) - 48;
-  if (y0 < 0 || y0 > 9 || y1 < 0 || y1 > 9 || y2 < 0 || y2 > 9 || y3 < 0 || y3 > 9) {
-    return null;
-  }
-  const year = y0 * 1000 + y1 * 100 + y2 * 10 + y3;
+function _parseCommonISODate(str: string, len: number, year: number): InternalParsedData | null {
   const m0 = str.charCodeAt(5) - 48,
     m1 = str.charCodeAt(6) - 48;
   if (m0 < 0 || m0 > 9 || m1 < 0 || m1 > 9) {
@@ -429,7 +425,6 @@ function parseCommonISO(str: string): InternalParsedData | null {
     return null;
   }
   const second = s0 * 10 + s1;
-
   let millisecond: number | undefined;
   let pos = 19;
   if (pos < len && str.charCodeAt(pos) === 46) {
@@ -452,7 +447,6 @@ function parseCommonISO(str: string): InternalParsedData | null {
       return null;
     }
   }
-
   let offset: number | undefined;
   if (pos < len) {
     const tz = str.charCodeAt(pos);
@@ -512,7 +506,6 @@ function parseCommonISO(str: string): InternalParsedData | null {
   if (pos !== len) {
     return null;
   }
-
   return {
     year,
     month: month1 - 1,
@@ -525,6 +518,24 @@ function parseCommonISO(str: string): InternalParsedData | null {
     _hasDate: true,
     _hasTime: true,
   };
+}
+
+function parseCommonISO(str: string): InternalParsedData | null {
+  const len = str.length;
+  if (len !== 10 && (len < 19 || len > 29)) {
+    return null;
+  }
+  if (str.charCodeAt(4) !== 45 || str.charCodeAt(7) !== 45) {
+    return null;
+  }
+  const y0 = str.charCodeAt(0) - 48,
+    y1 = str.charCodeAt(1) - 48;
+  const y2 = str.charCodeAt(2) - 48,
+    y3 = str.charCodeAt(3) - 48;
+  if (y0 < 0 || y0 > 9 || y1 < 0 || y1 > 9 || y2 < 0 || y2 > 9 || y3 < 0 || y3 > 9) {
+    return null;
+  }
+  return _parseCommonISODate(str, len, y0 * 1000 + y1 * 100 + y2 * 10 + y3);
 }
 
 function parseTwo(str: string, idx: number): { v: number; len: number } | null {
