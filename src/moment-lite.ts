@@ -219,9 +219,7 @@ export class MomentLite {
   _l: string | undefined;
   _isAMomentObject = true;
   _cold?: Record<string, unknown>;
-  _i: unknown;
-  _f: string | string[] | undefined;
-  _strict?: boolean;
+  _toast?: Record<string, unknown>;
   _dirty: boolean;
 
   $y = 0;
@@ -337,14 +335,18 @@ export class MomentLite {
     }
     this._isValid = c._isValid ?? !isNaN(this._t);
     this._dirty = this._isValid;
-    if (c._i !== undefined) {
-      this._i = c._i;
-    }
-    if (c._f !== undefined) {
-      this._f = c._f;
-    }
-    if (c._strict !== undefined) {
-      this._strict = c._strict;
+    if (c._i !== undefined || c._f !== undefined || c._strict !== undefined) {
+      const toast: Record<string, unknown> = {};
+      if (c._i !== undefined) {
+        toast._i = c._i;
+      }
+      if (c._f !== undefined) {
+        toast._f = c._f;
+      }
+      if (c._strict !== undefined) {
+        toast._strict = c._strict;
+      }
+      this._toast = toast;
     }
     const hasExtraCold = Object.keys(c).some(
       (key) =>
@@ -476,13 +478,9 @@ export class MomentLite {
     m._isUTC = this._isUTC;
     m._offset = this._offset;
     m._l = this._l;
-    if (this._i !== undefined) {
-      m._i = this._i;
+    if (this._toast) {
+      m._toast = { ...this._toast };
     }
-    if (this._f !== undefined) {
-      m._f = this._f;
-    }
-    m._strict = this._strict;
     if (this._cold) {
       m._cold = { ...this._cold };
     }
@@ -2256,6 +2254,26 @@ export class MomentLite {
     this._dirty = true;
     return this;
   }
+}
+
+// TOAST accessors: _i, _f, _strict moved off the hot instance into _toast
+const toastFieldKeysLite = ["_i", "_f", "_strict"] as const;
+for (const key of toastFieldKeysLite) {
+  Object.defineProperty(MomentLite.prototype, key, {
+    get() {
+      const toast = (this as MomentLite)._toast;
+      return toast?.[key];
+    },
+    set(v: unknown) {
+      const m = this as MomentLite;
+      if (v !== undefined) {
+        m._toast ??= {};
+        m._toast[key] = v;
+      }
+    },
+    enumerable: true,
+    configurable: true,
+  });
 }
 
 // eslint-disable-next-line max-params
