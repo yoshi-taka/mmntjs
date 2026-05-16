@@ -138,8 +138,9 @@ describe("zone()", () => {
   }
 
   test("zone() getter sign opposite of utcOffset", () => {
-    const m = moment().utcOffset(-120);
-    const o = originalMoment().utcOffset(-120);
+    const base = "2024-06-15T12:00:00";
+    const m = moment(base).utcOffset(-120);
+    const o = originalMoment(base).utcOffset(-120);
     zoneCompare(m, o);
     expect(m.zone()).toBe(120);
   });
@@ -385,6 +386,24 @@ describe("parseZone()", () => {
     o.local();
     expect(m.valueOf()).toBe(o.valueOf());
     expect(m.utcOffset()).toBe(o.utcOffset());
+  });
+
+  test("parseZone without timezone preserves wall-clock and sets offset to 0", () => {
+    const inputs = [
+      "2016-02-01T00:00:00",
+      "2016-02-01T00:00:00Z",
+      "2016-02-01T00:00:00+00:00",
+      "2016-02-01T00:00:00+0000",
+    ];
+    for (const input of inputs) {
+      const mm = moment.parseZone(input);
+      const om = originalMoment.parseZone(input);
+      expect(mm.format("M D YYYY HH:mm:ss ZZ")).toBe(
+        om.format("M D YYYY HH:mm:ss ZZ"),
+      );
+      expect(mm.utcOffset()).toBe(om.utcOffset());
+      expect(mm.valueOf()).toBe(om.valueOf());
+    }
   });
 });
 

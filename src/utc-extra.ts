@@ -136,6 +136,7 @@ export function parseZoneMoment(
           ? parseString(m._i, fmt, m._getLocale() as unknown as ParseLocale)
           : parseString(m._i, undefined, m._getLocale() as unknown as ParseLocale);
       if (parsed?.offset !== undefined) {
+        (clone as unknown as { _ensureFields: () => void })._ensureFields();
         clone._d = new Date(clone.valueOf() + parsed.offset * 60000);
         clone._t = clone._d.getTime();
         clone._offset = parsed.offset;
@@ -152,6 +153,14 @@ export function parseZoneMoment(
           const minutes = parseInt(tzMatch[2], 10);
           clone._offset = sign * (hours * 60 + minutes);
           clone._isUTC = true;
+        } else {
+          // No offset found — treat wall-clock as UTC (+00:00)
+          (clone as unknown as { _ensureFields: () => void })._ensureFields();
+          clone._d = new Date(Date.UTC(clone.$y, clone.$M, clone.$D, clone.$H, clone.$m, clone.$s, clone.$ms));
+          clone._t = clone._d.getTime();
+          clone._offset = 0;
+          clone._isUTC = true;
+          clone._refreshFields();
         }
       }
     }
@@ -193,8 +202,33 @@ export function parseZoneMoment(
         const minutes = parseInt(tzMatch[2], 10);
         next._offset = sign * (hours * 60 + minutes);
         next._isUTC = true;
+      } else if (!next._isUTC) {
+        (next as unknown as { _ensureFields: () => void })._ensureFields();
+        const d = createDateSafe(
+          next.$y, next.$M, next.$D,
+          next.$H, next.$m, next.$s, next.$ms,
+          true,
+        );
+        next._d = d;
+        next._t = d.getTime();
+        next._offset = 0;
+        next._isUTC = true;
+        next._refreshFields();
       }
     }
+  } else if (!next._isUTC && isString(input)) {
+    // No format, no offset — treat wall-clock as UTC (+00:00)
+    (next as unknown as { _ensureFields: () => void })._ensureFields();
+    const d = createDateSafe(
+      next.$y, next.$M, next.$D,
+      next.$H, next.$m, next.$s, next.$ms,
+      true,
+    );
+    next._d = d;
+    next._t = d.getTime();
+    next._offset = 0;
+    next._isUTC = true;
+    next._refreshFields();
   }
   return next;
 }
