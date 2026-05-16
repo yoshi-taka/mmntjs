@@ -45,8 +45,8 @@ moment.duration(12345)                  170ns       87ns   51.1%
 moment.duration(7,'days')               154ns       65ns   42.1%
 valueOf / unix                           17ns        8ns   46.8%
 daysInMonth / isLeapYear                117ns       17ns   14.7%
-startOf('year')                         147ns       89ns   60.8%
-endOf('year')                           285ns       71ns   25.1%
+startOf('year')                         124ns       69ns   55.6%
+endOf('year')                           278ns       72ns   25.9%
 moment('ISO string') with format       4.05us     1.17us   29.0%
 moment.utc('ISO string')               2.45us      348ns   14.2%
 format('HH:mm:ss')                      398ns       43ns   10.8%
@@ -70,7 +70,7 @@ isAfter                                 16ns      160ns ~1000.3%
 startOf month                           17ns       75ns  ~453.6%
 diff in days                            20ns      935ns ~4611.0%
 moment() / new Date()                   40ns       35ns   ~85.6%
-startOf year                            99ns       88ns   ~89.4%
+startOf year                            70ns       82ns  ~117.6%
 endOf month                             75ns       83ns  ~110.5%
 add 1 month                             92ns      242ns  ~262.9%
 add 1 second                            15ns      108ns  ~721.1%
@@ -89,7 +89,7 @@ set year                                48ns       99ns  ~206.2%
 
 `~` marks noisy short runs. `test/bench-datefns2.ts` now reports medians from repeated runs instead of single samples.
 
-**moment2 wins 23/25 operations.** Losses: `moment() / new Date()` (~86%, wrapper allocation overhead), `startOf year` (~89%, effectively tied).
+**moment2 wins 24/25 operations.** Only loss: `moment() / new Date()` (~86%, wrapper allocation overhead).
 
 For `month`/`quarter`/`year` comparisons, note that date-fns uses `differenceInCalendar*` helpers while moment2 matches moment.js's truncated fractional diff semantics. Those rows compare implementation cost, not identical behavior.
 

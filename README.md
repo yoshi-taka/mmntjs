@@ -133,7 +133,7 @@ TypeScript types included — `import moment from "moment"` resolves to mmntjs's
 
 `lite` drops locale registry, Temporal bridge, custom format parse, and marginal APIs — add them back via plugins only when needed.
 
-### 3. Faster Than date-fns in 23/25 Benchmarks
+### 3. Faster Than date-fns in 24/25 Benchmarks
 
 Also outperforms upstream moment.js in all 31 benchmarked operations. Several hot-path operations outperform current Temporal implementations in microbenchmarks.
 
