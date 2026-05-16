@@ -15,7 +15,7 @@
 5. **シェルスクリプトの冪等性**: 同じスクリプトを2回実行しても壊れないように書け（元の状態を確認してから変更する）
 6. **テストは両方のTZで**: 日付処理の変更後は `TZ=UTC bun test` と `TZ=Asia/Tokyo bun test`（またはAmerica/New_York）の両方でテストを通せ。さらにタイムゾーン関連の変更後は `bun run test:tz` も実行し、全6タイムゾーンでの互換性を確認せよ
 7. **比較方法**: `bash scripts/compare.sh {bench|test|moment-tests}` — benchは性能比較、testはプロパティ比較、moment-testsはmoment.jsのテストをmoment2で実行（oracle.tsを一時的に差し替え）
-8. **commit前にlint**: `bun run lint` を通してから commit せよ。pre-commit hook で落ちて手戻りが発生するのを防ぐ
+8. **commit前にlint**: `bun run lint` を通してから commit せよ。`lint` は `oxfmt`（フォーマッタ）→ `oxlint` の順に実行するので、lint後に差分が出たらそれも含めて commit すること。pre-commit hook で落ちて手戻りが発生するのを防ぐ
 
 
 ---
