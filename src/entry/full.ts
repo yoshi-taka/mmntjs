@@ -5,7 +5,7 @@ import { moment } from "../core/factory";
 import { initializeFullEntry } from "./init";
 import type { FullMomentStatic } from "./types";
 
-export type { MomentConfig } from "../moment-class";
+export type { MomentConstructionConfig } from "../moment-class";
 export type { DurationInput } from "../duration";
 export type { LocaleSpec } from "../locale/en";
 

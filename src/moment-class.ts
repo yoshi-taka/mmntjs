@@ -303,7 +303,7 @@ export type MomentInput =
   | undefined
   | null;
 
-export interface MomentConfig {
+export interface MomentConstructionConfig {
   _d?: Date;
   _dClone?: boolean;
   _isValid?: boolean;
@@ -380,7 +380,7 @@ const coldFieldKeys: (keyof MomentCold)[] = [
   "_tooBusyWith",
 ];
 
-function isCoreMomentConfigKey(key: string): boolean {
+function isCoreMomentConstructionConfigKey(key: string): boolean {
   switch (key) {
     case "_d":
     case "_dClone":
@@ -398,12 +398,12 @@ function isCoreMomentConfigKey(key: string): boolean {
   }
 }
 
-function hasExtraColdConfig(c: MomentConfig): boolean {
+function hasExtraColdConfig(c: MomentConstructionConfig): boolean {
   for (const key in c) {
     if (!hasOwnProp(c, key)) {
       continue;
     }
-    if (key.charCodeAt(0) === 95 && !isCoreMomentConfigKey(key)) {
+    if (key.charCodeAt(0) === 95 && !isCoreMomentConstructionConfigKey(key)) {
       return true;
     }
   }
@@ -447,6 +447,9 @@ export interface MomentCold {
   _tooBusyWith?: string;
 }
 
+// Moment is the moment-compatible runtime object exported as moment.fn / moment.prototype.
+// It is NOT merely an implementation detail — its shape IS the public API boundary.
+// new Moment(config) is an internal construction primitive; prefer factory functions.
 export class Moment {
   static calendarFormat: ((m: Moment, now: Moment) => string) | undefined;
 
@@ -574,7 +577,7 @@ export class Moment {
     }
   }
 
-  constructor(config: MomentConfig = {}) {
+  constructor(config: MomentConstructionConfig = {}) {
     const c = config;
     this._isAMomentObject = true;
     this._l =
@@ -617,7 +620,7 @@ export class Moment {
     }
   }
 
-  _initCold(c: MomentConfig, hasExtraCold = false): void {
+  _initCold(c: MomentConstructionConfig, hasExtraCold = false): void {
     const hasErrorCold =
       (c._overflow !== undefined && c._overflow >= 0) ||
       c._empty === true ||
@@ -699,7 +702,7 @@ export class Moment {
       for (const [key, value] of Object.entries(c)) {
         if (
           key.charCodeAt(0) === 95 &&
-          !isCoreMomentConfigKey(key) &&
+          !isCoreMomentConstructionConfigKey(key) &&
           !(key in cold) &&
           value !== undefined
         ) {

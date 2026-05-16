@@ -1,4 +1,4 @@
-import type { MomentConfig } from "../moment-class";
+import type { MomentConstructionConfig } from "../moment-class";
 import { Moment, checkOverflow, createSimpleMoment } from "../moment-class";
 import type { InternalParsedData } from "../types";
 import {
@@ -323,8 +323,8 @@ export function createMomentFactory(deps: FactoryDeps) {
       return (input as unknown as Moment).clone();
     }
     if (isObject(input) && input._isAMomentObject) {
-      const obj = input as unknown as MomentConfig;
-      const cfg: MomentConfig = {
+      const obj = input as unknown as MomentConstructionConfig;
+      const cfg: MomentConstructionConfig = {
         _d: obj._d ? new Date(obj._d.getTime()) : new Date(NaN),
         _i: obj._i ?? input,
         _f: obj._f,

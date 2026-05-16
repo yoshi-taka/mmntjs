@@ -50,7 +50,7 @@ export type MomentInput =
   | undefined
   | null;
 
-export interface MomentConfig {
+export interface MomentConstructionConfig {
   _d?: Date;
   _dClone?: boolean;
   _i?: unknown;
@@ -319,7 +319,7 @@ export class MomentLite {
     return this._locale;
   }
 
-  constructor(config: MomentConfig = {}) {
+  constructor(config: MomentConstructionConfig = {}) {
     const c = config;
     this._isAMomentObject = true;
     this._l = c._l ?? getLiteCurrentLocale();
@@ -374,7 +374,7 @@ export class MomentLite {
     }
   }
 
-  private _initCold(c: MomentConfig): void {
+  private _initCold(c: MomentConstructionConfig): void {
     const cold: Record<string, unknown> = {};
     if (c._overflow !== undefined) {
       cold._overflow = c._overflow;

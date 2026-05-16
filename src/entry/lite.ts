@@ -12,7 +12,7 @@ import {
 import { registerLiteCoreApi } from "../plugins/core-lite";
 import type { LiteMomentStatic } from "./types";
 
-export type { MomentConfig } from "../moment-lite";
+export type { MomentConstructionConfig } from "../moment-lite";
 
 registerLiteCoreApi(moment as never, {
   getMomentNowFunction,
