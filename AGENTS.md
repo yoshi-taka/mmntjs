@@ -13,8 +13,9 @@
 3. **変更後即構文チェック**: ファイルを変更したら直後に `bun build src/変更したファイル.ts --no-bundle` で構文エラーがないか確認せよ
 4. **chflags禁止**: ファイルをロックする `chflags uchg` は絶対に使うな。ロックされると `chflags nouchg` が必要になり、存在を忘れて長時間ハマる
 5. **シェルスクリプトの冪等性**: 同じスクリプトを2回実行しても壊れないように書け（元の状態を確認してから変更する）
-6. **テストは両方のTZで**: 日付処理の変更後は `TZ=UTC bun test` と `TZ=Asia/Tokyo bun test`（またはAmerica/New_York）の両方でテストを通せ
+6. **テストは両方のTZで**: 日付処理の変更後は `TZ=UTC bun test` と `TZ=Asia/Tokyo bun test`（またはAmerica/New_York）の両方でテストを通せ。さらにタイムゾーン関連の変更後は `bun run test:tz` も実行し、全6タイムゾーンでの互換性を確認せよ
 7. **比較方法**: `bash scripts/compare.sh {bench|test|moment-tests}` — benchは性能比較、testはプロパティ比較、moment-testsはmoment.jsのテストをmoment2で実行（oracle.tsを一時的に差し替え）
+8. **commit前にlint**: `bun run lint` を通してから commit せよ。pre-commit hook で落ちて手戻りが発生するのを防ぐ
 
 
 ---
@@ -37,6 +38,64 @@
 - `bun run test` (678 tests): ✅ 0 fail
 - `bun run test:hard` (4122 tests): 一部 pre-existing failures（diff プロパティテストの moment.js とのアルゴリズム差異、locale equivalence）
 - ファズ: `bun run fuzz` で実行可能
+
+## Phase 5: タイムゾーン / DST 互換性の検証と修正 (2026-05-16)
+
+### 修正したバグ
+
+1. **`_ensureFields` 未呼び出しによる `keepLocalTime` の誤動作** (`src/utc-extra.ts`)
+   - `localMoment`, `utcMoment`, `utcOffsetMoment` の `keepLocalTime=true` パスで `$y,$M,$D,$H,$m,$s,$ms` を読み取る前に `_ensureFields()` を呼んでいなかった
+   - これにより生成直後の Moment で `.utcOffset(N, true)` を呼ぶと時フィールドが初期値0のまま使われ、常に0時と解釈される問題があった
+   - **修正**: 該当3関数の keepLocalTime パス先頭に `_ensureFields()` を追加
+
+2. **`moment.utc([year, month, ...])` が配列をローカル時刻として扱っていた** (`src/plugins/utc.ts`)
+   - moment.js は `moment.utc([2024, 5, 15, 12, 30])` を UTC として解釈するが、mmntjs はローカル時刻として解釈していた
+   - 原因: ファクトリが配列入力に対して `isUTC` フラグを渡さずに `createFromArray` を呼び、ローカル Date で生成していた
+   - **修正**: `moment.utc()` ハンドラで配列入力を検出し、`createUTCDate` で直接 UTC Date を構築
+
+3. **配列入力の Moment に `_isUTC` フラグが伝播していない** (`src/core/factory-input-struct.ts`)
+   - `createFromArrayInput` は `isUTC` パラメータを受け取っていたが、生成する Moment の `_isUTC` に反映していなかった
+   - **修正**: `new Moment({ _isUTC: !!isUTC, ... })` を追加
+
+### 互換性テストスイート
+
+| ファイル | 内容 | テスト数 |
+|---------|------|---------|
+| `test/timezone-compat.test.ts` | moment() / moment.utc() / parseZone() / utcOffset() / zone() / keepLocalTime / format Z,ZZ,z,zz / isDST / valueOf の moment.js 対比 | 105 tests |
+| `test/timezone-dst-subproc.test.ts` | DST境界（spring-forward/fall-back）、format、mode遷移 | 19 tests |
+
+**実行方法**:
+- `bun run test:tz` — 全タイムゾーンで互換性テスト + DSTテスト
+- `bun run test:dst` — DSTテストのみ
+- `bash scripts/run-timezone-tests.sh`
+- `TZ=America/New_York bun test test/timezone-compat.test.ts`
+
+**検証済みタイムゾーン**: UTC, America/New_York, Europe/Berlin, Asia/Tokyo, Australia/Sydney, America/Los_Angeles
+
+**結果**: 124 tests × 6 timezones = 744 test cases、全パス
+
+### DST 境界テスト内容
+
+- **Spring-forward** (例: 2024-03-10 America/New_York):
+  - 存在しないローカル時刻 02:30 の解釈（JS Date の挙動に従う moment.js 準拠）
+  - isDST の変化（冬時間→夏時間）
+- **Fall-back** (例: 2024-11-03 America/New_York):
+  - 重複するローカル時刻 01:30 の解釈
+  - isDST の変化（EDT→EST）
+- **Mode 遷移近傍**:
+  - local → utc → local で valueOf 保存
+  - utcOffset(N, true) で wall-clock 保存
+  - format Z/ZZ の一致
+
+### 設計上の制約と moment.js との一致点
+
+1. **UTC / 固定 UTC オフセットのみ**: 本体の moment.js と同様、IANA タイムゾーン解決は行わない
+2. **DST 検出**: ランタイムのローカルタイムゾーンの JS Date 挙動に従う。固定オフセットのモーメントは常に `isDST()=false`
+3. **valueOf()**: 全モード間で moment.js と完全一致
+4. **parseZone()**: wall-clock + offset 保存
+5. **keepLocalTime**: moment.js と完全一致
+6. **format Z/ZZ/z/zz**: moment.js と完全一致
+7. **うるう秒**: 非サポート（JS Date / Unix epoch に従う）
 
 ## 確認済みエッジケース
 

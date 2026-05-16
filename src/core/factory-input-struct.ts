@@ -30,9 +30,16 @@ export function createFromArrayInput(
     isUTC,
   );
   if (overflow >= 0) {
-    return new Moment({ _dClone: false, _d: d, _i: arr, _isValid: false, _overflow: overflow });
+    return new Moment({
+      _dClone: false,
+      _d: d,
+      _i: arr,
+      _isValid: false,
+      _overflow: overflow,
+      _isUTC: !!isUTC,
+    });
   }
-  return new Moment({ _dClone: false, _d: d, _i: arr });
+  return new Moment({ _dClone: false, _d: d, _i: arr, _isUTC: !!isUTC });
 }
 
 export function createFromObjectInput(

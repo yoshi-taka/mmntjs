@@ -35,6 +35,7 @@ type UtcMoment = Moment & {
 export function localMoment(m: UtcMoment, keepLocalTime?: boolean): Moment {
   if (m._isUTC) {
     if (keepLocalTime) {
+      (m as unknown as { _ensureFields: () => void })._ensureFields();
       m._d = new Date(m.$y, m.$M, m.$D, m.$H, m.$m, m.$s, m.$ms);
     } else {
       m._d = new Date(m.valueOf());
@@ -55,6 +56,7 @@ export function utcMoment(m: UtcMoment, keepLocalTime?: boolean): Moment {
     }
   } else if (!m._isUTC) {
     if (keepLocalTime) {
+      (m as unknown as { _ensureFields: () => void })._ensureFields();
       m._d = new Date(Date.UTC(m.$y, m.$M, m.$D, m.$H, m.$m, m.$s, m.$ms));
     } else {
       m._d = new Date(m.valueOf());
@@ -95,6 +97,7 @@ export function utcOffsetMoment(
     numOffset = Math.abs(offset) < 16 ? offset * 60 : offset;
   }
   if (keepLocalTime) {
+    (m as unknown as { _ensureFields: () => void })._ensureFields();
     if (!m._isUTC) {
       m._d = new Date(Date.UTC(m.$y, m.$M, m.$D, m.$H, m.$m, m.$s, m.$ms));
       m._t = m._d.getTime();

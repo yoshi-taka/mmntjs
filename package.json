@@ -61,7 +61,9 @@
   "scripts": {
     "build": "tsup",
     "test": "TZ=UTC bun test --parallel ./test/moment/*.js ./test/mmntjs.test.ts ./test/temporal.test.ts ./test/tree-shaking.test.ts ./test/regression/ ./test/parse-main.test.ts ./test/parse-format.test.ts ./packages/timezone/test/basic.test.ts && TZ=UTC bun test ./test/mutation.test.ts && bun run fuzz:quick",
-    "test:hard": "TZ=UTC bun test --parallel ./test/moment/*.js ./test/mmntjs.test.ts ./test/temporal.test.ts ./test/tree-shaking.test.ts ./test/regression/ ./test/parse-main.test.ts ./test/parse-format.test.ts ./packages/timezone/test/basic.test.ts ./test/properties/ ./test/locale/*.test.ts ./test/sbst-*.test.ts && TZ=UTC bun test ./test/mutation.test.ts && bun run fuzz:quick && TZ=Asia/Tokyo bun run fuzz:quick && bun run fuzz && bun run fuzz:grammar",
+    "test:tz": "bash scripts/run-timezone-tests.sh",
+    "test:dst": "bash scripts/run-dst-tests.sh",
+    "test:hard": "TZ=UTC bun test --parallel ./test/moment/*.js ./test/mmntjs.test.ts ./test/temporal.test.ts ./test/tree-shaking.test.ts ./test/regression/ ./test/parse-main.test.ts ./test/parse-format.test.ts ./test/timezone-compat.test.ts ./packages/timezone/test/basic.test.ts ./test/properties/ ./test/locale/*.test.ts ./test/sbst-*.test.ts && TZ=UTC bun test ./test/mutation.test.ts && bun run fuzz:quick && TZ=Asia/Tokyo bun run fuzz:quick && bun run fuzz && bun run fuzz:grammar",
     "bench": "bun test/bench.ts",
     "bench:guard": "bun test/bench-regression.ts",
     "bench:mem": "bun test/bench-mem.ts",

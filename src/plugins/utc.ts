@@ -1,6 +1,6 @@
 import { Moment, setUtcMethodCallbacks } from "../moment-class";
 import type { MomentInput } from "../moment-class";
-import { isString } from "../utils";
+import { isString, isArray, createUTCDate } from "../utils";
 import {
   hasAlignedHourOffsetMoment,
   isDSTMoment,
@@ -65,6 +65,25 @@ export function registerUtcApi(target: UtcMomentTarget, deps: UtcApiDeps): void 
       return new Moment({
         _dClone: false,
         _d: new Date(deps.nowFn()),
+        _isUTC: true,
+        _offset: 0,
+        _i: input,
+      });
+    }
+    if (isArray(input)) {
+      const arr = input;
+      const d = createUTCDate(
+        arr[0] != null ? Number(arr[0]) : 0,
+        arr[1] != null ? Number(arr[1]) : 0,
+        arr[2] != null ? Number(arr[2]) : 1,
+        arr[3] != null ? Number(arr[3]) : 0,
+        arr[4] != null ? Number(arr[4]) : 0,
+        arr[5] != null ? Number(arr[5]) : 0,
+        arr[6] != null ? Number(arr[6]) : 0,
+      );
+      return new Moment({
+        _d: d,
+        _dClone: false,
         _isUTC: true,
         _offset: 0,
         _i: input,
