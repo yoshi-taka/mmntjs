@@ -3026,9 +3026,7 @@ function parseISOWithTable(str: string, locale?: ParseLocale): InternalParsedDat
     return { _claimed: true };
   }
   if (
-    result._unusedInput &&
     result._unusedInput.some((s: string) => s.length > 0) &&
-    result._unusedTokens &&
     result._unusedTokens.some((s: string) => s.length > 0)
   ) {
     return null;
