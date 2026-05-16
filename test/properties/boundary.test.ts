@@ -24,7 +24,11 @@ describe("Property-based: boundary values", () => {
       const mOrig = originalMoment(input as unknown);
       expect(m2.isValid()).toBe(mOrig.isValid());
       if (mOrig.isValid()) {
-        expect(m2.valueOf()).toBe(mOrig.valueOf());
+        if (input === undefined) {
+          expect(Math.abs(m2.valueOf() - mOrig.valueOf())).toBeLessThan(1000);
+        } else {
+          expect(m2.valueOf()).toBe(mOrig.valueOf());
+        }
       }
     }
   });
