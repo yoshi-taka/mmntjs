@@ -2851,7 +2851,19 @@ function classifyISODatePart(datePart: string): [fmt: string, allowTime: boolean
 
   if (hasDash) {
     if (len === 13) {
+      if (datePart.charCodeAt(8) === 87) {
+        return ["GGGG-[W]WW-E", true];
+      }
       return ["YYYYYY-MM-DD", true];
+    }
+    if (len === 12 && (ch0 === 43 || ch0 === 45) && datePart.charCodeAt(7) === 87) {
+      return ["GGGG-[W]WW", false];
+    }
+    if (len === 11 && (ch0 === 43 || ch0 === 45)) {
+      if (datePart.charCodeAt(8) === 87) {
+        return ["GGGG-[W]WW", false];
+      }
+      return ["YYYY-DDD", true];
     }
     if (len === 10) {
       if (datePart.charCodeAt(5) === 87) {
@@ -3012,6 +3024,14 @@ function parseISOWithTable(str: string, locale?: ParseLocale): InternalParsedDat
   }
   if (dateFormat.includes("DDD") && result.year !== undefined && result.dayOfYear === undefined) {
     return { _claimed: true };
+  }
+  if (
+    result._unusedInput &&
+    result._unusedInput.some((s: string) => s.length > 0) &&
+    result._unusedTokens &&
+    result._unusedTokens.some((s: string) => s.length > 0)
+  ) {
+    return null;
   }
   return result as InternalParsedData;
 }
