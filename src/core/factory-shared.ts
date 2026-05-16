@@ -77,17 +77,22 @@ export function createMomentFactory(deps: FactoryDeps) {
     strict?: boolean,
   ): Moment {
     if (
-      parsed.isoWeekYear !== undefined &&
-      parsed.isoWeek !== undefined &&
+      (parsed.isoWeekYear ?? parsed._weekYear) !== undefined &&
+      (parsed.isoWeek ?? parsed._week) !== undefined &&
       parsed.year === undefined
     ) {
-      const jan4 = new Date(parsed.isoWeekYear, 0, 4);
-      const dayOfJan4 = jan4.getDay() || 7;
-      const week1Start = new Date(parsed.isoWeekYear, 0, 4 - (dayOfJan4 - 1));
+      const isoWeekYear = parsed.isoWeekYear ?? parsed._weekYear;
+      const isoWeek = parsed.isoWeek ?? parsed._week;
+      const jan4 = createUTCDate(isoWeekYear, 0, 4);
+      const dayOfJan4 = jan4.getUTCDay() || 7;
+      const week1StartEpoch = createUTCDate(isoWeekYear, 0, 4 - (dayOfJan4 - 1)).getTime();
       const weekday = parsed._weekdayNum ?? 1;
       const d = new Date(
-        week1Start.getTime() + ((parsed.isoWeek - 1) * 7 + (weekday - 1)) * 86400000,
+        week1StartEpoch + ((isoWeek - 1) * 7 + (weekday - 1)) * 86400000,
       );
+      if (parsed.hour !== undefined) {
+        d.setUTCHours(parsed.hour, parsed.minute ?? 0, parsed.second ?? 0, parsed.millisecond ?? 0);
+      }
       return new Moment({
         _d: d,
         _i: str,
