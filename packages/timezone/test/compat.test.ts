@@ -46,25 +46,25 @@ describe("parse-in-zone vs convert-to-zone", () => {
   test("moment.tz(input, zone) parses wall-clock in zone (Asia/Taipei)", () => {
     const mm = moment.tz("2013-11-18 11:55", "Asia/Taipei");
     const om = momentTimezone.tz("2013-11-18 11:55", "Asia/Taipei");
-    oracleEqual(mm, om, { skipAbbr: true });
+    oracleEqual(mm, om);
   });
 
   test("moment.tz(input, zone) parses wall-clock in America/Toronto", () => {
     const mm = moment.tz("2013-11-18 11:55", "America/Toronto");
     const om = momentTimezone.tz("2013-11-18 11:55", "America/Toronto");
-    oracleEqual(mm, om, { skipAbbr: true });
+    oracleEqual(mm, om);
   });
 
   test("moment.utc(input).tz(zone) converts instant to zone (Asia/Taipei)", () => {
     const mm = moment.utc("2013-11-18 11:55").tz("Asia/Taipei");
     const om = momentTimezone.utc("2013-11-18 11:55").tz("Asia/Taipei");
-    oracleEqual(mm, om, { skipAbbr: true });
+    oracleEqual(mm, om);
   });
 
   test("moment.utc(input).tz(zone) converts instant to America/Toronto", () => {
     const mm = moment.utc("2013-11-18 11:55").tz("America/Toronto");
     const om = momentTimezone.utc("2013-11-18 11:55").tz("America/Toronto");
-    oracleEqual(mm, om, { skipAbbr: true });
+    oracleEqual(mm, om);
   });
 
   test("convert Z-suffixed instant to Asia/Tokyo", () => {
@@ -109,19 +109,19 @@ describe("input forms", () => {
     test("with Z suffix in Asia/Tokyo", () => {
       const mm = moment.tz("2024-01-15T12:34:56Z", "Asia/Tokyo");
       const om = momentTimezone.tz("2024-01-15T12:34:56Z", "Asia/Tokyo");
-      oracleEqual(mm, om, { skipAbbr: true });
+      oracleEqual(mm, om);
     });
 
     test("with +09:00 offset in Asia/Tokyo", () => {
       const mm = moment.tz("2024-01-15T12:34:56+09:00", "Asia/Tokyo");
       const om = momentTimezone.tz("2024-01-15T12:34:56+09:00", "Asia/Tokyo");
-      oracleEqual(mm, om, { skipAbbr: true });
+      oracleEqual(mm, om);
     });
 
     test("with -05:00 offset in Asia/Tokyo", () => {
       const mm = moment.tz("2024-01-15T12:34:56-05:00", "Asia/Tokyo");
       const om = momentTimezone.tz("2024-01-15T12:34:56-05:00", "Asia/Tokyo");
-      oracleEqual(mm, om, { skipAbbr: true });
+      oracleEqual(mm, om);
     });
   });
 
@@ -221,7 +221,7 @@ describe("DST transitions", () => {
       test(input, () => {
         const mm = moment.tz(input, "Europe/London");
         const om = momentTimezone.tz(input, "Europe/London");
-        oracleEqual(mm, om, { skipAbbr: true });
+        oracleEqual(mm, om);
       });
     }
   });
@@ -235,31 +235,31 @@ describe("zone matrix", () => {
   const WINTER_TS = Date.UTC(2024, 0, 15, 12, 0, 0, 0);
   const SUMMER_TS = Date.UTC(2024, 6, 15, 12, 0, 0, 0);
 
-  const zones: [string, boolean][] = [
-    ["UTC", false],
-    ["Asia/Tokyo", false],
-    ["Asia/Kolkata", true],
-    ["America/New_York", false],
-    ["America/Los_Angeles", false],
-    ["America/Phoenix", false],
-    ["Europe/London", true],
-    ["Europe/Berlin", false],
-    ["Australia/Sydney", false],
-    ["Australia/Adelaide", true],
-    ["Pacific/Auckland", false],
+  const zones = [
+    "UTC",
+    "Asia/Tokyo",
+    "Asia/Kolkata",
+    "America/New_York",
+    "America/Los_Angeles",
+    "America/Phoenix",
+    "Europe/London",
+    "Europe/Berlin",
+    "Australia/Sydney",
+    "Australia/Adelaide",
+    "Pacific/Auckland",
   ];
 
-  for (const [zone, skipAbbr] of zones) {
+  for (const zone of zones) {
     test(`${zone} winter`, () => {
       const mm = moment(WINTER_TS).tz(zone);
       const om = momentTimezone(WINTER_TS).tz(zone);
-      oracleEqual(mm, om, { skipAbbr });
+      oracleEqual(mm, om);
     });
 
     test(`${zone} summer`, () => {
       const mm = moment(SUMMER_TS).tz(zone);
       const om = momentTimezone(SUMMER_TS).tz(zone);
-      oracleEqual(mm, om, { skipAbbr });
+      oracleEqual(mm, om);
     });
   }
 });

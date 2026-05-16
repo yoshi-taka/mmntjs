@@ -65,11 +65,46 @@ const ABBR_LOCALES = [
   "zh-CN",
 ];
 
+/** Hardcoded abbreviation overrides for zones where Intl doesn't return traditional abbreviations. */
+/** Map IANA alias → canonical name for zones renamed by CLDR. */
+const ZONE_ALIAS: Record<string, string> = {
+  "Asia/Calcutta": "Asia/Kolkata",
+};
+
+const KNOWN_ABBR: Record<string, string> = {
+  "Asia/Taipei": "CST",
+  "Asia/Shanghai": "CST",
+  "Asia/Macau": "CST",
+  "Asia/Hong_Kong": "HKT",
+  "Asia/Kuala_Lumpur": "MYT",
+  "Asia/Singapore": "SGT",
+  "Asia/Jakarta": "WIB",
+  "Asia/Bangkok": "ICT",
+  "Asia/Ho_Chi_Minh": "ICT",
+  "Asia/Yangon": "MMT",
+  "Asia/Dhaka": "BST",
+  "Asia/Kathmandu": "NPT",
+  "Asia/Colombo": "IST",
+  "Pacific/Chatham": "",
+  "Pacific/Fiji": "FJT",
+  "Pacific/Norfolk": "NFT",
+  "Pacific/Guam": "ChST",
+  "Pacific/Saipan": "ChST",
+  "Africa/Cairo": "EET",
+  "Africa/Johannesburg": "SAST",
+  "Africa/Nairobi": "EAT",
+  "Africa/Lagos": "WAT",
+  "Africa/Casablanca": "+01",
+  "Africa/El_Aaiun": "+01",
+};
+
 function normalizeTz(tz: string): string {
   const u = tz.toUpperCase();
   if (u === "UTC" || u === "GMT") {
     return u;
   }
+  const aliased = ZONE_ALIAS[tz];
+  if (aliased) { return aliased; }
   return tz;
 }
 
@@ -81,13 +116,28 @@ function getAbbr(tz: string, ts: number): string {
       const m = full.match(/\s(\S+)$/);
       if (m) {
         const abbr = m[1];
-        if (/^[A-Z]{2,5}$/.test(abbr) && !abbr.startsWith("GMT") && abbr !== "Time") {
+        if (abbr === "GMT" || (/^[A-Z]{2,5}$/.test(abbr) && !abbr.startsWith("GMT") && abbr !== "Time")) {
           return abbr;
         }
       }
     } catch {
       /* skip */
     }
+  }
+  if (tz in KNOWN_ABBR) {
+    const known = KNOWN_ABBR[tz];
+    if (known === "") {
+      const offset = getOffset(tz, ts);
+      const abs = Math.abs(offset);
+      const hrs = Math.floor(abs / 60);
+      const min = abs % 60;
+      const sign = offset >= 0 ? "+" : "-";
+      return `${sign}${String(hrs).padStart(2, "0")}${String(min).padStart(2, "0")}`;
+    }
+    if (known.startsWith("+") || known.startsWith("-")) {
+      return known;
+    }
+    return known;
   }
   const offset = getOffset(tz, ts);
   const abs = Math.abs(offset);
@@ -153,7 +203,12 @@ function isZoneName(s: string): boolean {
         "timeZone",
       ),
     );
-    return zoneNamesSet.has(s);
+    if (zoneNamesSet.has(s)) { return true; }
+    if (s in ZONE_ALIAS) {
+      const aliased = ZONE_ALIAS[s];
+      if (zoneNamesSet.has(aliased)) { return true; }
+    }
+    return false;
   } catch {
     return s.includes("/");
   }

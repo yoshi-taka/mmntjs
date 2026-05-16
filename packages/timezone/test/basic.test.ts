@@ -133,10 +133,9 @@ describe("moment.tz.zone()", () => {
     expect((zone as any).abbr(TS)).toBe("PDT");
   });
 
-  test("zone.abbr returns GMT offset for zones without IANA abbr", () => {
+  test("zone.abbr returns CST for Asia/Shanghai (same as moment-timezone)", () => {
     const zone = (moment as any).tz.zone("Asia/Shanghai");
-    const abbr = (zone as any).abbr(TS);
-    expect(abbr).toMatch(/^GMT[+-]/);
+    expect((zone as any).abbr(TS)).toBe("CST");
   });
 
   test("zone.offset returns positive minutes east of UTC", () => {
