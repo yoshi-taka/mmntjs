@@ -675,7 +675,6 @@ function getLocaleMonthsFull(loc: ParseLocale): string[] {
   const monthsShort = localeMonthsShort(loc as never);
   const shortArr = Array.isArray(monthsShort) ? monthsShort : [];
   const shortLower = shortArr.map((m: string) => m.toLowerCase());
-  // Strip trailing periods from short months for matching
   const shortNoPeriod = shortLower
     .map((m: string) => m.replace(/\.$/, ""))
     .filter((m) => m.length > 0);
@@ -1002,7 +1001,7 @@ interface ParseCtx {
   _seenUnusedTokens: Set<string>;
   failed: boolean;
   tokenIndex: number;
-  tokens: FormatToken[];
+  ops: Op[];
 }
 
 type TokenHandler = (ctx: ParseCtx) => void;
@@ -1467,8 +1466,12 @@ function hs(ctx: ParseCtx): void {
 // -- Millisecond tokens --
 
 function hS(ctx: ParseCtx): void {
-  const t = ctx.tokens[ctx.tokenIndex];
-  const maxDigits = t.name!.length;
+  const op = ctx.ops[ctx.tokenIndex];
+  if (op.kind !== "token") {
+    ctx.failed = true;
+    return;
+  }
+  const maxDigits = op.name.length;
   const remaining = ctx.str.slice(ctx.strIdx);
   const match = timedMatch(
     remaining,
@@ -2309,78 +2312,221 @@ function getOrdinalRegex(loc: ParseLocale): RegExp {
   return cached;
 }
 
-// ===== Dispatch Table =====
+// ===== Bytecode: compile format → opcodes =====
 
-const PARSE_DISPATCH: Record<string, TokenHandler> = {
-  YYYYYY: hYYYYYY,
-  YYYYY: hYYYYY,
-  YYYY: hYYYY,
-  yyyy: hYYYY,
-  YY: hYY,
-  Y: hY,
-  y: hEraYear,
-  yy: hEraYear,
-  yyy: hEraYear,
-  yo: hYo,
-  N: hN,
-  NN: hN,
-  NNN: hN,
-  NNNN: hNNNN,
-  NNNNN: hNNNNN,
-  MMMM: hMMMM,
-  MMM: hMMM,
-  MM: hMM,
-  M: hM,
-  DD: hDD,
-  D: hD,
-  Do: hDo,
-  dddd: hdddd,
-  ddd: hddd,
-  dd: hdd,
-  d: hd,
-  E: hE,
-  e: he,
-  Q: hQ,
-  HH: hHH,
-  H: hH,
-  hh: hhh,
-  h: hh,
-  kk: hkk,
-  k: hk,
-  mm: hmm,
-  m: hm,
-  ss: hss,
-  s: hs,
-  SSSSSSSSS: hS,
-  SSSSSSSS: hS,
-  SSSSSSS: hS,
-  SSSSSS: hS,
-  SSSSS: hS,
-  SSSS: hS,
-  SSS: hS,
-  SS: hS,
-  S: hS,
-  A: hA,
-  a: hA,
-  Z: hZ,
-  ZZ: hZ,
-  X: hX,
-  x: hx,
-  DDD: hDDD,
-  DDDD: hDDD,
-  GGGG: hGGGG,
-  gggg: hgggg,
-  GG: hGG,
-  gg: hgg,
-  WW: hWW,
-  ww: hww,
-  W: hW,
-  w: hw,
-  hmm: hhmm,
-  hmmss: hhmmss,
-  Hmm: hHmm,
-  Hmmss: hHmmss,
-};
+type Op =
+  | { kind: "token"; handler: TokenHandler; name: string }
+  | { kind: "literal"; value: string };
+
+const BYTECODE_CACHE = new LruMap<string, Op[]>(1000);
+
+function compileFormatToOpcodes(format: string): Op[] {
+  const cached = BYTECODE_CACHE.get(format);
+  if (cached) {
+    return cached;
+  }
+
+  const tokens = tokenizeFormat(format);
+  const ops = tokens.map((t) => {
+    if (t.type === "literal") {
+      return { kind: "literal" as const, value: t.value ?? "" };
+    }
+    const handler = getTokenHandler(t.name!);
+    return { kind: "token" as const, handler, name: t.name! };
+  });
+  BYTECODE_CACHE.set(format, ops);
+  return ops;
+}
+
+function getTokenHandler(name: string): TokenHandler {
+  const cc = name.charCodeAt(0);
+  const len = name.length;
+  switch (cc) {
+    case 89 /* Y */:
+      switch (len) {
+        case 6:
+          return hYYYYYY;
+        case 5:
+          return hYYYYY;
+        case 4:
+          return hYYYY;
+        case 2:
+          return hYY;
+        case 1:
+          return hY;
+      }
+      break;
+    case 121 /* y */:
+      if (name === "yo") {
+        return hYo;
+      }
+      switch (len) {
+        case 4:
+          return hYYYY;
+        case 3:
+          return hEraYear;
+        case 2:
+          return hEraYear;
+        case 1:
+          return hEraYear;
+      }
+      break;
+    case 78 /* N */:
+      switch (len) {
+        case 5:
+          return hNNNNN;
+        case 4:
+          return hNNNN;
+        case 3:
+        case 2:
+        case 1:
+          return hN;
+      }
+      break;
+    case 77 /* M */:
+      switch (len) {
+        case 4:
+          return hMMMM;
+        case 3:
+          return hMMM;
+        case 2:
+          return hMM;
+        case 1:
+          return hM;
+      }
+      break;
+    case 68 /* D */:
+      if (name === "Do") {
+        return hDo;
+      }
+      if (len === 4 || len === 3) {
+        return hDDD;
+      }
+      switch (len) {
+        case 2:
+          return hDD;
+        case 1:
+          return hD;
+      }
+      break;
+    case 100 /* d */:
+      switch (len) {
+        case 4:
+          return hdddd;
+        case 3:
+          return hddd;
+        case 2:
+          return hdd;
+        case 1:
+          return hd;
+      }
+      break;
+    case 69:
+      /* E */ return hE;
+    case 101:
+      /* e */ return he;
+    case 81:
+      /* Q */ return hQ;
+    case 72 /* H */:
+      if (name === "Hmm") {
+        return hHmm;
+      }
+      if (name === "Hmmss") {
+        return hHmmss;
+      }
+      switch (len) {
+        case 2:
+          return hHH;
+        case 1:
+          return hH;
+      }
+      break;
+    case 104 /* h */:
+      if (name === "hmm") {
+        return hhmm;
+      }
+      if (name === "hmmss") {
+        return hhmmss;
+      }
+      switch (len) {
+        case 2:
+          return hhh;
+        case 1:
+          return hh;
+      }
+      break;
+    case 107 /* k */:
+      switch (len) {
+        case 2:
+          return hkk;
+        case 1:
+          return hk;
+      }
+      break;
+    case 109 /* m */:
+      switch (len) {
+        case 2:
+          return hmm;
+        case 1:
+          return hm;
+      }
+      break;
+    case 115 /* s */:
+      switch (len) {
+        case 2:
+          return hss;
+        case 1:
+          return hs;
+      }
+      break;
+    case 83:
+      /* S */ return hS;
+    case 65:
+    case 97:
+      /* A / a */ return hA;
+    case 90:
+      /* Z */ return hZ;
+    case 88:
+      /* X */ return hX;
+    case 120:
+      /* x */ return hx;
+    case 71 /* G */:
+      if (len === 4) {
+        return hGGGG;
+      }
+      if (len === 2) {
+        return hGG;
+      }
+      break;
+    case 103 /* g */:
+      if (len === 4) {
+        return hgggg;
+      }
+      if (len === 2) {
+        return hgg;
+      }
+      break;
+    case 87 /* W */:
+      if (len === 2) {
+        return hWW;
+      }
+      if (len === 1) {
+        return hW;
+      }
+      break;
+    case 119 /* w */:
+      if (len === 2) {
+        return hww;
+      }
+      if (len === 1) {
+        return hw;
+      }
+      break;
+  }
+  return (): void => {
+    /* unreachable for known tokens */
+  };
+}
 
 interface FormatToken {
   type: "token" | "literal";
@@ -2459,14 +2605,24 @@ const FORMAT_TOKENS = [
 
 const tokenizeCache = new LruMap<string, FormatToken[]>(1000);
 
-const tokenizeByChar: Record<string, string[]> = {};
+const CANDIDATES_TABLE: (string[] | undefined)[] = Array.from({ length: 128 });
 for (const token of FORMAT_TOKENS) {
-  const c = token[0];
-  tokenizeByChar[c] ??= [];
-  tokenizeByChar[c].push(token);
+  const cc = token.charCodeAt(0);
+  if (cc >= 128) {
+    continue;
+  }
+  let arr = CANDIDATES_TABLE[cc];
+  if (!arr) {
+    arr = [];
+    CANDIDATES_TABLE[cc] = arr;
+  }
+  arr.push(token);
 }
-for (const c in tokenizeByChar) {
-  tokenizeByChar[c].sort((a, b) => b.length - a.length);
+for (let ci = 0; ci < 128; ci++) {
+  const arr = CANDIDATES_TABLE[ci];
+  if (arr) {
+    arr.sort((a, b) => b.length - a.length);
+  }
 }
 
 function tokenizeFormat(format: string): FormatToken[] {
@@ -2477,9 +2633,11 @@ function tokenizeFormat(format: string): FormatToken[] {
 
   const tokens: FormatToken[] = [];
   let i = 0;
+  const len = format.length;
 
-  while (i < format.length) {
-    if (format[i] === "[") {
+  while (i < len) {
+    const cc0 = format.charCodeAt(i);
+    if (cc0 === 91) {
       const close = format.indexOf("]", i);
       if (close !== -1) {
         tokens.push({ type: "literal", value: format.slice(i + 1, close) });
@@ -2488,9 +2646,9 @@ function tokenizeFormat(format: string): FormatToken[] {
       }
     }
 
-    if (format[i] === "S") {
+    if (cc0 === 83) {
       let j = i;
-      while (j < format.length && format[j] === "S") {
+      while (j < len && format.charCodeAt(j) === 83) {
         j++;
       }
       const name = "S".repeat(j - i);
@@ -2500,14 +2658,16 @@ function tokenizeFormat(format: string): FormatToken[] {
     }
 
     let matched = false;
-    const candidates = tokenizeByChar[format[i]] as string[] | undefined;
-    if (candidates) {
-      for (const token of candidates) {
-        if (format.startsWith(token, i)) {
-          tokens.push({ type: "token", name: token });
-          i += token.length;
-          matched = true;
-          break;
+    if (cc0 < 128) {
+      const candidates = CANDIDATES_TABLE[cc0];
+      if (candidates) {
+        for (const candidate of candidates) {
+          if (format.startsWith(candidate, i)) {
+            tokens.push({ type: "token", name: candidate });
+            i += candidate.length;
+            matched = true;
+            break;
+          }
         }
       }
     }
@@ -2542,7 +2702,7 @@ function parseWithFormat(
   }
   format = expandedFormat;
 
-  const tokens = tokenizeFormat(format);
+  const ops = compileFormatToOpcodes(format);
 
   const result: ParsedData = {
     year: undefined,
@@ -2580,10 +2740,10 @@ function parseWithFormat(
     _seenUnusedTokens,
     failed: false,
     tokenIndex,
-    tokens,
+    ops,
   };
 
-  for (const token of tokens) {
+  for (const op of ops) {
     tokenIndex++;
     ctx.tokenIndex = tokenIndex;
     ctx.strIdx = strIdx;
@@ -2593,21 +2753,21 @@ function parseWithFormat(
       break;
     }
 
-    if (token.type === "literal") {
-      const val = token.value ?? "";
+    if (op.kind === "literal") {
+      const val = op.value;
       if (!val) {
         continue;
       }
 
       if (strIdx >= str.length) {
-        for (let j = tokenIndex; j < tokens.length; j++) {
-          const t = tokens[j];
-          if (t.type === "token") {
-            result._unusedTokens.push(t.name!);
-          } else if (t.value?.trim()) {
-            result._unusedTokens.push(t.value.trim());
-          } else if (!strict && t.value && /[A-Za-z]/.test(t.value.trim())) {
-            result._unusedTokens.push(t.value.trim());
+        for (let j = tokenIndex; j < ops.length; j++) {
+          const o = ops[j];
+          if (o.kind === "token") {
+            result._unusedTokens.push(o.name);
+          } else if (o.value.trim()) {
+            result._unusedTokens.push(o.value.trim());
+          } else if (!strict && o.value && /[A-Za-z]/.test(o.value.trim())) {
+            result._unusedTokens.push(o.value.trim());
           }
         }
         break;
@@ -2716,14 +2876,14 @@ function parseWithFormat(
     }
 
     if (strIdx >= str.length) {
-      for (let j = tokenIndex; j < tokens.length; j++) {
-        const t = tokens[j];
-        if (t.type === "token") {
-          result._unusedTokens.push(t.name!);
-        } else if (t.value?.trim()) {
-          result._unusedTokens.push(t.value.trim());
-        } else if (!strict && t.value && /[A-Za-z]/.test(t.value.trim())) {
-          result._unusedTokens.push(t.value.trim());
+      for (let j = tokenIndex; j < ops.length; j++) {
+        const o = ops[j];
+        if (o.kind === "token") {
+          result._unusedTokens.push(o.name);
+        } else if (o.value.trim()) {
+          result._unusedTokens.push(o.value.trim());
+        } else if (!strict && o.value && /[A-Za-z]/.test(o.value.trim())) {
+          result._unusedTokens.push(o.value.trim());
         }
       }
       break;
@@ -2732,20 +2892,20 @@ function parseWithFormat(
     // Pre-scan: skip non-matching chars for lenient parsing
     if (!strict) {
       const nameToken =
-        token.name === "MMMM" ||
-        token.name === "MMM" ||
-        token.name === "dddd" ||
-        token.name === "ddd" ||
-        token.name === "dd" ||
-        token.name === "Do";
-      const digitLike = /^[YMDWHhmsSXxk]/.test(token.name ?? "") && !nameToken;
+        op.name === "MMMM" ||
+        op.name === "MMM" ||
+        op.name === "dddd" ||
+        op.name === "ddd" ||
+        op.name === "dd" ||
+        op.name === "Do";
+      const digitLike = /^[YMDWHhmsSXxk]/.test(op.name) && !nameToken;
       if (digitLike) {
         const canHandleSign =
-          (token.name === "YYYYYY" ||
-            token.name === "YYYYY" ||
-            token.name === "YYYY" ||
-            token.name === "yyyy" ||
-            token.name === "Y") &&
+          (op.name === "YYYYYY" ||
+            op.name === "YYYYY" ||
+            op.name === "YYYY" ||
+            op.name === "yyyy" ||
+            op.name === "Y") &&
           strIdx === 0;
         const ch0 = str.charCodeAt(strIdx);
         if ((ch0 < 48 || ch0 > 57) && !canHandleSign) {
@@ -2778,11 +2938,11 @@ function parseWithFormat(
           }
         }
       } else if (
-        token.name === "MMMM" ||
-        token.name === "MMM" ||
-        token.name === "dddd" ||
-        token.name === "ddd" ||
-        token.name === "dd"
+        op.name === "MMMM" ||
+        op.name === "MMM" ||
+        op.name === "dddd" ||
+        op.name === "ddd" ||
+        op.name === "dd"
       ) {
         const ch0 = str.charCodeAt(strIdx);
         const isLetterOrDigit =
@@ -2813,7 +2973,7 @@ function parseWithFormat(
             strIdx += skipIdx;
           }
         }
-      } else if (token.name === "A" || token.name === "a") {
+      } else if (op.name === "A" || op.name === "a") {
         const ch0 = str.charCodeAt(strIdx);
         if (ch0 !== 65 && ch0 !== 97 && ch0 !== 80 && ch0 !== 112) {
           let skipIdx = 1;
@@ -2833,23 +2993,20 @@ function parseWithFormat(
     }
 
     // Dispatch to token handler
-    const handler = token.name ? PARSE_DISPATCH[token.name] : undefined;
-    if (handler) {
-      ctx.strIdx = strIdx;
-      handler(ctx);
-      strIdx = ctx.strIdx;
-      failed = ctx.failed;
-    }
+    ctx.strIdx = strIdx;
+    op.handler(ctx);
+    strIdx = ctx.strIdx;
+    failed = ctx.failed;
 
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (failed) {
       if (strict) {
-        for (let j = tokenIndex; j < tokens.length; j++) {
-          const t = tokens[j];
-          if (t.type === "token") {
-            if (!_seenUnusedTokens.has(t.name!)) {
-              _seenUnusedTokens.add(t.name!);
-              result._unusedTokens.push(t.name!);
+        for (let j = tokenIndex; j < ops.length; j++) {
+          const o = ops[j];
+          if (o.kind === "token") {
+            if (!_seenUnusedTokens.has(o.name)) {
+              _seenUnusedTokens.add(o.name);
+              result._unusedTokens.push(o.name);
             }
             if (j === tokenIndex && deferredWhitespaceLiterals.length > 0) {
               for (const literal of deferredWhitespaceLiterals) {
@@ -2860,13 +3017,13 @@ function parseWithFormat(
               }
               deferredWhitespaceLiterals.length = 0;
             }
-          } else if (t.value?.trim()) {
-            const trimmed = t.value.trim();
+          } else if (o.value.trim()) {
+            const trimmed = o.value.trim();
             if (!_seenUnusedTokens.has(trimmed)) {
               _seenUnusedTokens.add(trimmed);
               result._unusedTokens.push(trimmed);
             }
-          } else if (t.value && deferredWhitespaceLiterals.length > 0) {
+          } else if (o.value && deferredWhitespaceLiterals.length > 0) {
             for (const literal of deferredWhitespaceLiterals) {
               if (!_seenUnusedTokens.has(literal)) {
                 _seenUnusedTokens.add(literal);
@@ -2879,12 +3036,7 @@ function parseWithFormat(
         break;
       }
       failed = false;
-      const tok = token as { type: string; name?: string; value?: string };
-      if (tok.type === "token") {
-        result._unusedTokens.push(tok.name!);
-      } else if (tok.type === "literal" && tok.value) {
-        result._unusedTokens.push(tok.value.trim());
-      }
+      result._unusedTokens.push(op.name);
       const skipMatch = str.slice(strIdx).match(/^[^\p{L}\d]+/u);
       if (skipMatch) {
         result._unusedInput.push(skipMatch[0]);
@@ -2955,15 +3107,15 @@ function parseWithFormat(
       if (result._bigHour) {
         return result;
       }
-      for (let j = tokenIndex; j < tokens.length; j++) {
-        const t = tokens[j];
-        if (t.type === "token") {
-          if (!_seenUnusedTokens.has(t.name!)) {
-            _seenUnusedTokens.add(t.name!);
-            result._unusedTokens.push(t.name!);
+      for (let j = tokenIndex; j < ops.length; j++) {
+        const o = ops[j];
+        if (o.kind === "token") {
+          if (!_seenUnusedTokens.has(o.name)) {
+            _seenUnusedTokens.add(o.name);
+            result._unusedTokens.push(o.name);
           }
-        } else if (t.value?.trim()) {
-          const trimmed = t.value.trim();
+        } else if (o.value.trim()) {
+          const trimmed = o.value.trim();
           if (!_seenUnusedTokens.has(trimmed)) {
             _seenUnusedTokens.add(trimmed);
             result._unusedTokens.push(trimmed);

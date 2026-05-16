@@ -561,23 +561,25 @@ const tokenFnMap: Record<string, RenderFn> = {
   x: fnx,
 };
 
-export const tokenByChar: Record<string, { tokens: TokenEntry[]; maxLen: number } | undefined> = {};
+const TOKEN_BY_CHAR_TABLE: (TokenEntry[] | undefined)[] = Array.from({ length: 128 });
 for (const key of Object.keys(tokenFnMap)) {
-  const c = key[0];
-  let entry = tokenByChar[c];
-  if (entry === undefined) {
-    entry = { tokens: [], maxLen: 0 };
-    tokenByChar[c] = entry;
+  const cc = key.charCodeAt(0);
+  if (cc >= 128) {
+    continue;
   }
-  entry.tokens.push({ token: key, fn: tokenFnMap[key] });
-  if (key.length > entry.maxLen) {
-    entry.maxLen = key.length;
+  let tokens = TOKEN_BY_CHAR_TABLE[cc];
+  if (tokens === undefined) {
+    tokens = [];
+    TOKEN_BY_CHAR_TABLE[cc] = tokens;
+  }
+  tokens.push({ token: key, fn: tokenFnMap[key] });
+}
+for (let ci = 0; ci < 128; ci++) {
+  const tokens = TOKEN_BY_CHAR_TABLE[ci];
+  if (tokens) {
+    tokens.sort((a, b) => b.token.length - a.token.length);
   }
 }
-for (const c in tokenByChar) {
-  tokenByChar[c]!.tokens.sort((a, b) => b.token.length - a.token.length);
-}
-
 export function buildRenderFns(format: string): RenderFn[] {
   const result: RenderFn[] = [];
   let i = 0;
@@ -596,10 +598,11 @@ export function buildRenderFns(format: string): RenderFn[] {
       }
     }
 
-    const entry = tokenByChar[ch];
-    if (entry) {
+    const cc = ch.charCodeAt(0);
+    const tokens = cc < 128 ? TOKEN_BY_CHAR_TABLE[cc] : undefined;
+    if (tokens) {
       let matched = false;
-      for (const t of entry.tokens) {
+      for (const t of tokens) {
         if (format.startsWith(t.token, i)) {
           result.push(t.fn);
           i += t.token.length;
@@ -613,12 +616,12 @@ export function buildRenderFns(format: string): RenderFn[] {
     }
 
     if (i + 1 < len) {
-      const next = format[i + 1];
-      if (next !== "[" && tokenByChar[next] === undefined) {
+      const nextCC = format.charCodeAt(i + 1);
+      if (nextCC !== 91 && (nextCC >= 128 || TOKEN_BY_CHAR_TABLE[nextCC] === undefined)) {
         let j = i + 2;
         while (j < len) {
-          const c = format[j];
-          if (c === "[" || tokenByChar[c] !== undefined) {
+          const cj = format.charCodeAt(j);
+          if (cj === 91 || (cj < 128 && TOKEN_BY_CHAR_TABLE[cj] !== undefined)) {
             break;
           }
           j++;
@@ -629,8 +632,7 @@ export function buildRenderFns(format: string): RenderFn[] {
         continue;
       }
     }
-    const literal = ch;
-    result.push(() => literal);
+    result.push(() => ch);
     i++;
   }
 
