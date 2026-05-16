@@ -141,7 +141,9 @@ function g(buf) {
 
 export function fuzz(buf) {
   const str = g(buf);
-  if (/^[+-]/.test(str)) { return; }
+  if (/^[+-]/.test(str)) {
+    return;
+  }
   try {
     const m2 = moment(str);
     const mOrig = originalMoment(str);

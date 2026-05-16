@@ -54,6 +54,6 @@
     "unused-files": "error",
     "unused-dev-dependencies": "error",
     "duplicate-exports": "warn",
-    "circular-dependencies": "warn"
+    "circular-dependencies": "error"
   }
 }

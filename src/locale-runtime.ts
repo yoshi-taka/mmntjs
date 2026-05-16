@@ -2,11 +2,25 @@ import type { Moment } from "./moment-class";
 import { isFunction } from "./utils";
 import type { LocaleSpec } from "./locale/en";
 import { enLocale } from "./locale/en";
-import { buildRenderFns, lowerVariant, type RenderFn } from "./format-tokens";
 
-// -------------------------------------------------------------------------
-// TYPED INTERNAL API — locale registry and runtime cache
-// -------------------------------------------------------------------------
+type RenderFn = (m: Moment) => string;
+
+function lowerVariant(fmt: string): string {
+  return fmt
+    .replaceAll("MMMM", "MMM")
+    .replaceAll("dddd", "ddd")
+    .replaceAll("MM", "M")
+    .replaceAll("DD", "D")
+    .replaceAll("mm", "m")
+    .replaceAll("ss", "s")
+    .replaceAll("hh", "h");
+}
+
+let _buildRenderFns: ((fmt: string) => RenderFn[]) | null = null;
+
+export function setBuildRenderFns(fn: (fmt: string) => RenderFn[]): void {
+  _buildRenderFns = fn;
+}
 
 let currentLocaleName = "en";
 export const localeConfigs: Record<string, LocaleSpec | undefined> = {
@@ -396,19 +410,19 @@ function precompileLocaleFormats(loc: Locale): void {
   const ldf = (loc._config as Record<string, unknown>).longDateFormat as
     | Record<string, string>
     | undefined;
-  if (!ldf) {
+  if (!ldf || !_buildRenderFns) {
     return;
   }
   const cache: Record<string, RenderFn[]> = {};
   for (const key of Object.keys(ldf)) {
-    cache[key] = buildRenderFns(ldf[key]);
+    cache[key] = _buildRenderFns(ldf[key]);
   }
   for (const upper of ["L", "LL", "LLL", "LLLL"]) {
     const lower = upper.toLowerCase();
-    cache[lower] ??= buildRenderFns(lowerVariant(ldf[upper]));
+    cache[lower] ??= _buildRenderFns(lowerVariant(ldf[upper]));
   }
-  cache.lt = buildRenderFns(lowerVariant(ldf.LT));
-  cache.lts = buildRenderFns(lowerVariant(ldf.LTS));
+  cache.lt = _buildRenderFns(lowerVariant(ldf.LT));
+  cache.lts = _buildRenderFns(lowerVariant(ldf.LTS));
   (loc._config as Record<string, unknown>)._localeRenderFns = cache;
 }
 

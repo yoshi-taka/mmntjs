@@ -8,6 +8,7 @@ import {
   localeWeekdays,
   localeWeekdaysMin,
   localeWeekdaysShort,
+  setBuildRenderFns,
 } from "./locale-runtime";
 import { zeroFill } from "./utils";
 
@@ -648,3 +649,5 @@ export function lowerVariant(fmt: string): string {
     .replaceAll("ss", "s")
     .replaceAll("hh", "h");
 }
+
+setBuildRenderFns(buildRenderFns);
