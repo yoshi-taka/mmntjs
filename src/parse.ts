@@ -3134,6 +3134,139 @@ function classifyISOTimePart(timePart: string): string | null {
   return null;
 }
 
+function matchFixedDigitsAnywhere(
+  str: string,
+  start: number,
+  count: number,
+): { value: number; next: number } | null {
+  for (let i = start; i + count <= str.length; i++) {
+    let value = 0;
+    let ok = true;
+    for (let j = 0; j < count; j++) {
+      const c = str.charCodeAt(i + j) - 48;
+      if (c < 0 || c > 9) {
+        ok = false;
+        break;
+      }
+      value = value * 10 + c;
+    }
+    if (ok) {
+      return { value, next: i + count };
+    }
+  }
+  return null;
+}
+
+function trySignPrefixedDateFallback(datePart: string): InternalParsedData | null {
+  const sign = datePart.charCodeAt(0);
+  if ((sign !== 43 && sign !== 45) || datePart.length < 2) {
+    return null;
+  }
+  const body = datePart.slice(1);
+  const hasDash = body.includes("-");
+  const candidates = hasDash
+    ? ["YYYY-MM-DD", "YYYY-MM", "YYYY-DDD"]
+    : ["YYYYMMDD", "YYYYMM", "YYYYDDD"];
+
+  for (const fmt of candidates) {
+    let pos = 0;
+    let year: number | undefined;
+    let month: number | undefined;
+    let day: number | undefined;
+    let dayOfYear: number | undefined;
+    let ok = true;
+
+    for (let i = 0; i < fmt.length; ) {
+      if (fmt.startsWith("YYYY", i)) {
+        const found = matchFixedDigitsAnywhere(body, pos, 4);
+        if (!found) {
+          ok = false;
+          break;
+        }
+        year = found.value;
+        pos = found.next;
+        i += 4;
+        continue;
+      }
+      if (fmt.startsWith("DDD", i)) {
+        const found = matchFixedDigitsAnywhere(body, pos, 3);
+        if (!found) {
+          ok = false;
+          break;
+        }
+        dayOfYear = found.value;
+        pos = found.next;
+        i += 3;
+        continue;
+      }
+      if (fmt.startsWith("MM", i)) {
+        const found = matchFixedDigitsAnywhere(body, pos, 2);
+        if (!found) {
+          ok = false;
+          break;
+        }
+        month = found.value - 1;
+        pos = found.next;
+        i += 2;
+        continue;
+      }
+      if (fmt.startsWith("DD", i)) {
+        const found = matchFixedDigitsAnywhere(body, pos, 2);
+        if (!found) {
+          ok = false;
+          break;
+        }
+        day = found.value;
+        pos = found.next;
+        i += 2;
+        continue;
+      }
+      const literalPos = body.indexOf(fmt[i], pos);
+      if (literalPos < 0) {
+        ok = false;
+        break;
+      }
+      pos = literalPos + 1;
+      i++;
+    }
+
+    if (!ok || year === undefined) {
+      continue;
+    }
+    if (month !== undefined && (month < 0 || month > 11)) {
+      continue;
+    }
+    if (day !== undefined && (day < 1 || day > 31)) {
+      continue;
+    }
+    if (dayOfYear !== undefined && (dayOfYear < 0 || dayOfYear > 366)) {
+      continue;
+    }
+
+    const parsedDateParts = [year];
+    if (month !== undefined) {
+      parsedDateParts.push(month);
+    }
+    if (day !== undefined) {
+      parsedDateParts.push(day);
+    }
+    return {
+      year,
+      month,
+      day,
+      dayOfYear,
+      _unusedTokens: [],
+      _unusedInput: [],
+      _charsLeftOver: 0,
+      _empty: false,
+      _invalidMonth: null,
+      _parsedDateParts: parsedDateParts,
+    };
+  }
+
+  return null;
+}
+
 function parseISOWithTable(str: string, locale?: ParseLocale): InternalParsedData | null {
   const match = EXTENDED_ISO_REGEX.exec(str) ?? BASIC_ISO_REGEX.exec(str);
   if (!match) {
@@ -3188,6 +3321,12 @@ function parseISOWithTable(str: string, locale?: ParseLocale): InternalParsedDat
     datePart.charCodeAt(0) === ch0 &&
     !dateFormat.startsWith("YYYYYY")
   ) {
+    if (!match[3] && !match[4]) {
+      const signFallback = trySignPrefixedDateFallback(datePart);
+      if (signFallback) {
+        return signFallback;
+      }
+    }
     parseStr = parseStr.slice(1);
   }
 

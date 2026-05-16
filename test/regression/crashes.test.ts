@@ -24,6 +24,9 @@ const FIXED_PARSE = [
   "2008-W01-3",
   "2008W01",
   "2008W013",
+  "-055555-05",
+  "-000700-005",
+  "-881802-88",
 ];
 
 test.each(FIXED_PARSE)("FIXED (parse): %s", (input) => {
@@ -97,13 +100,6 @@ test('KNOWN_DIFF: negative year sign handling in utc ("-110990-09")', () => {
   const m2 = moment.utc("-110990-09");
   expect(m2.isValid()).toBe(true);
   expect(m2.format("YYYY-MM-DD")).toBe("-110990-09-01");
-});
-
-test('KNOWN_DIFF: negative year + dash-day in utc ("-000700-005")', () => {
-  // moment.js: 0007-01-05, mmntjs: -0700-05-01
-  const m2 = moment.utc("-000700-005");
-  expect(m2.isValid()).toBe(true);
-  expect(m2.format("YYYY-MM-DD")).toBe("-0700-05-01");
 });
 
 test('KNOWN_DIFF: mixed format parse ("93280531 09-3911")', () => {
