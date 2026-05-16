@@ -36,7 +36,8 @@
 ## テスト結果
 
 - `bun run test` (678 tests): ✅ 0 fail
-- `bun run test:hard` (4122 tests): 一部 pre-existing failures（diff プロパティテストの moment.js とのアルゴリズム差異、locale equivalence）
+- `bun run test:hard` (4642 tests): ✅ 0 fail
+- `bun run test:tz`: 全6タイムゾーン × 124 tests = 744 tests ✅
 - ファズ: `bun run fuzz` で実行可能
 
 ## Phase 5: タイムゾーン / DST 互換性の検証と修正 (2026-05-16)

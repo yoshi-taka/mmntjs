@@ -4,6 +4,7 @@ import { applyRandomTZ } from "./tz-helper.js";
 
 const moment = _moment;
 const originalMoment = _originalMoment;
+originalMoment.suppressDeprecationWarnings = true;
 
 function randomFormat(buf) {
   const chars = [];
