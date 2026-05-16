@@ -369,6 +369,12 @@ export function fnZZ(m: Moment): string {
   return sign + zeroFill(Math.floor(abs / 60), 2) + zeroFill(abs % 60, 2);
 }
 export function fnz(m: Moment): string {
+  const z = (m as unknown as Record<string, unknown>)._z as
+    | { abbr: (ts: number) => string }
+    | undefined;
+  if (z) {
+    return z.abbr(m.valueOf());
+  }
   if (m._isUTC) {
     if (m._offset === 0) {
       return "UTC";
@@ -380,6 +386,12 @@ export function fnz(m: Moment): string {
   return "";
 }
 export function fnzz(m: Moment): string {
+  const z = (m as unknown as Record<string, unknown>)._z as
+    | { abbr: (ts: number) => string }
+    | undefined;
+  if (z) {
+    return z.abbr(m.valueOf());
+  }
   if (m._isUTC && m._offset === 0) {
     return "Coordinated Universal Time";
   }

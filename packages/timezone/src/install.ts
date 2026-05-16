@@ -8,7 +8,42 @@ type MomentLike = {
 const offsetCache = new Map<string, Map<number, number>>();
 const MAX_DOMAIN_CACHE_SIZE = 1000;
 
+const ABBR_LOCALES = [
+  "en-US", "en-GB", "ja-JP", "en-AU", "en-SG",
+  "en-HK", "af-ZA", "es-AR", "pt-BR", "ko-KR",
+  "en-IN", "zh-CN",
+];
+
+function normalizeTz(tz: string): string {
+  const u = tz.toUpperCase();
+  if (u === "UTC" || u === "GMT") return u;
+  return tz;
+}
+
+function getAbbr(tz: string, ts: number): string {
+  const d = new Date(ts);
+  for (const loc of ABBR_LOCALES) {
+    try {
+      const full = d.toLocaleString(loc, { timeZone: tz, timeZoneName: "short" });
+      const m = full.match(/\s(\S+)$/);
+      if (m) {
+        const abbr = m[1];
+        if (/^[A-Z]{2,5}$/.test(abbr) && !abbr.startsWith("GMT") && abbr !== "Time") {
+          return abbr;
+        }
+      }
+    } catch { /* skip */ }
+  }
+  const offset = getOffset(tz, ts);
+  const abs = Math.abs(offset);
+  const hrs = Math.floor(abs / 60);
+  const min = abs % 60;
+  const sign = offset >= 0 ? "+" : "-";
+  return `GMT${sign}${String(hrs).padStart(2, "0")}${min ? String(min).padStart(2, "0") : ""}`;
+}
+
 function getOffset(tz: string, timestamp: number): number {
+  tz = normalizeTz(tz);
   let domain = offsetCache.get(tz);
   if (!domain) {
     domain = new Map();
@@ -28,7 +63,7 @@ function getOffset(tz: string, timestamp: number): number {
   const d = new Date(timestamp);
   const parts = d.toLocaleString("en-US", {
     timeZone: tz,
-    timeZoneName: "short",
+    timeZoneName: "longOffset",
   });
 
   const m = parts.match(/GMT([+-]\d{1,2})(?::(\d{2}))?/);
@@ -44,8 +79,21 @@ function getOffset(tz: string, timestamp: number): number {
   return offset;
 }
 
+let zoneNamesSet: Set<string> | null = null;
 function isZoneName(s: string): boolean {
-  return s.includes("/") || s === "UTC" || s === "GMT";
+  const u = s.toUpperCase();
+  if (u === "UTC" || u === "GMT") return true;
+  if (!s.includes("/")) return false;
+  try {
+    if (!zoneNamesSet) {
+      zoneNamesSet = new Set(
+        (Intl as unknown as { supportedValuesOf: (k: string) => string[] }).supportedValuesOf("timeZone"),
+      );
+    }
+    return zoneNamesSet.has(s);
+  } catch {
+    return s.includes("/");
+  }
 }
 
 export function installTimezone(moment: MomentLike): MomentLike {
@@ -57,7 +105,7 @@ export function installTimezone(moment: MomentLike): MomentLike {
 
   function momentTz(input?: any, formatOrZone?: any, zoneOrStrict?: any, fourth?: any): any {
     if (typeof formatOrZone === "string" && isZoneName(formatOrZone)) {
-      const tz = formatOrZone;
+      const tz = normalizeTz(formatOrZone);
       if (input === undefined || input === null) {
         return moment().tz(tz);
       }
@@ -67,7 +115,7 @@ export function installTimezone(moment: MomentLike): MomentLike {
 
     if (typeof input === "string" && typeof formatOrZone === "string" && typeof zoneOrStrict === "string" && isZoneName(zoneOrStrict)) {
       const fmt = formatOrZone;
-      const tz = zoneOrStrict;
+      const tz = normalizeTz(zoneOrStrict);
       const m = moment(input, fmt);
       return m.tz(tz);
     }
@@ -81,7 +129,7 @@ export function installTimezone(moment: MomentLike): MomentLike {
       return moment().tz(input);
     }
 
-    return moment();
+    return input !== undefined ? moment(input) : moment();
   }
 
   function fnTz(this: any, tz?: string): any {
@@ -89,18 +137,28 @@ export function installTimezone(moment: MomentLike): MomentLike {
       return this._z ? this._z.name : Intl.DateTimeFormat().resolvedOptions().timeZone;
     }
 
+    tz = normalizeTz(tz);
     const timestamp = this.valueOf();
-    const targetOffset = getOffset(tz, timestamp);
     const m = this.clone();
-    m.utcOffset(targetOffset, false);
-    m._z = { name: tz };
+
+    const zoneInfo = (moment as any).tz.zone(tz);
+    if (zoneInfo) {
+      m._z = zoneInfo;
+      const targetOffset = (zoneInfo as any).offset(timestamp);
+      m.utcOffset(targetOffset, false);
+    } else {
+      const targetOffset = getOffset(tz, timestamp);
+      m.utcOffset(targetOffset, false);
+      m._z = { name: tz, abbr: (_ts: number) => getAbbr(tz, _ts) };
+    }
+
     return m;
   }
 
   (moment as any).tz = momentTz;
   (moment as any).fn.tz = fnTz;
 
-  (moment as any).tz.guess = function (): string {
+  (moment as any).tz.guess = function (_preferCache?: boolean): string {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
   };
 
@@ -119,24 +177,18 @@ export function installTimezone(moment: MomentLike): MomentLike {
   };
 
   (moment as any).tz.zone = function (name: string): object | null {
+    const normalized = normalizeTz(name);
     try {
       const names = (moment as any).tz.names();
-      if (!names.includes(name)) {return null;}
+      if (!names.includes(normalized)) {return null;}
 
       return {
-        name,
-        abbr: (ts: number) => {
-          const offset = getOffset(name, ts);
-          const abs = Math.abs(offset);
-          const hrs = Math.floor(abs / 60);
-          const min = abs % 60;
-          const sign = offset >= 0 ? "+" : "-";
-          return `GMT${sign}${String(hrs).padStart(2, "0")}${min ? String(min).padStart(2, "0") : ""}`;
-        },
+        name: normalized,
+        abbr: (ts: number) => getAbbr(normalized, ts),
         offset: (ts: number) => getOffset(name, ts),
-        utcOffset: (ts: number) => -getOffset(name, ts),
+        utcOffset: (ts: number) => -getOffset(normalized, ts),
         parse: (ts: number) => ({
-          name,
+          name: normalized,
           offset: getOffset(name, ts),
         }),
       };
@@ -153,6 +205,14 @@ export function installTimezone(moment: MomentLike): MomentLike {
 
   (moment as any).tz.setDefault = function (tz: string): void {
     (moment as any).defaultZone = tz;
+  };
+
+  (moment as any).tz.countries = function (): string[] {
+    return [];
+  };
+
+  (moment as any).tz.zonesForCountry = function (_code: string): string[] {
+    return [];
   };
 
   return moment;

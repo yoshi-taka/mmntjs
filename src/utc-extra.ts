@@ -267,6 +267,11 @@ export function zoneMoment(
 }
 
 export function zoneAbbrMoment(m: UtcMoment): string {
+  if ((m as unknown as Record<string, unknown>)._z) {
+    return ((m as unknown as Record<string, unknown>)._z as { abbr: (ts: number) => string }).abbr(
+      m.valueOf(),
+    );
+  }
   if (m._isUTC) {
     if (m._offset === 0) {
       return "UTC";
@@ -281,6 +286,9 @@ export function zoneAbbrMoment(m: UtcMoment): string {
 }
 
 export function zoneNameMoment(m: UtcMoment): string {
+  if ((m as unknown as Record<string, unknown>)._z) {
+    return ((m as unknown as Record<string, unknown>)._z as { name: string }).name;
+  }
   if (m._isUTC && m._offset === 0) {
     return "Coordinated Universal Time";
   }
