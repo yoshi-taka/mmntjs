@@ -1,5 +1,12 @@
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect, afterAll } from "bun:test";
 import moment from "../src/lite.ts";
+import { disableCustomFormatParsing } from "../src/parse-lite-strict.ts";
+import { disableFormattedInput } from "../src/core/factory-lite-impl.ts";
+
+afterAll(() => {
+  disableCustomFormatParsing();
+  disableFormattedInput();
+});
 
 describe("factory-lite-impl", () => {
   describe("moment() with null", () => {

@@ -28,6 +28,11 @@ export function enableFormattedInput(): void {
   formattedInputEnabled = true;
 }
 
+export function disableFormattedInput(): void {
+  formattedInputEnabled = false;
+  formattedStringInputHandler = undefined;
+}
+
 export function isFormattedInputEnabled(): boolean {
   return formattedInputEnabled;
 }

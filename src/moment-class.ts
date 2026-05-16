@@ -628,7 +628,7 @@ export class Moment {
       (c._invalidMonth !== undefined && c._invalidMonth !== null) ||
       c._invalidFormat === true ||
       c._weekdayMismatch === true ||
-      c._userInvalidated === true;
+      c._userInvalidated !== undefined;
     if (
       hasErrorCold ||
       c._unusedTokens !== undefined ||

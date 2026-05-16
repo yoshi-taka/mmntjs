@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect, afterAll } from "bun:test";
 import {
   parseString,
   parseArray,
@@ -6,10 +6,15 @@ import {
   parseTwoDigitYear,
   setParseTwoDigitYear,
   enableCustomFormatParsing,
+  disableCustomFormatParsing,
   isCustomFormatParsingEnabled,
   registerCustomFormatParser,
 } from "../src/parse-lite.ts";
 import type { ParseLocale } from "../src/parse-locale";
+
+afterAll(() => {
+  disableCustomFormatParsing();
+});
 
 function enLocale(): ParseLocale {
   return { _config: {} } as unknown as ParseLocale;
@@ -184,6 +189,7 @@ describe("parseString", () => {
   });
 
   test("returns null when format is specified but custom parsing is disabled", () => {
+    disableCustomFormatParsing();
     expect(parseString("2024-01-01", "YYYY-MM-DD", enLocale())).toBeNull();
   });
 

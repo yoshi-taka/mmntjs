@@ -434,7 +434,7 @@ export class MomentLite {
       c._empty === true ||
       c._nullInput === true ||
       (c._invalidMonth !== undefined && c._invalidMonth !== null) ||
-      c._userInvalidated === true;
+      c._userInvalidated !== undefined;
     if (hasError) {
       this._dirty = false;
     }

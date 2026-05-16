@@ -1,13 +1,18 @@
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect, afterAll } from "bun:test";
 import {
   parseString,
   parseTwoDigitYear,
   setParseTwoDigitYear,
   enableCustomFormatParsing,
+  disableCustomFormatParsing,
   isCustomFormatParsingEnabled,
   registerCustomFormatParser,
 } from "../src/parse-lite-strict.ts";
 import type { ParseLocale } from "../src/parse-locale";
+
+afterAll(() => {
+  disableCustomFormatParsing();
+});
 
 function enLocale(): ParseLocale {
   return { _config: {} } as unknown as ParseLocale;
@@ -170,13 +175,40 @@ describe("parseString", () => {
   });
 
   test("returns null when format specified but custom parsing disabled", () => {
+    disableCustomFormatParsing();
     expect(parseString("2024-01-01", "YYYY-MM-DD", enLocale())).toBeNull();
   });
 
   test("custom format parsing", () => {
     enableCustomFormatParsing();
     registerCustomFormatParser(
-      (str, fmt) => {
+      (str, fmt, _loc, _strict) => {
+        if (fmt === "YYYY-MM-DD" && /^\d{4}-\d{2}-\d{2}$/.test(str)) {
+          return {
+            year: 2024,
+            month: 0,
+            day: 15,
+            _unusedTokens: [],
+            _unusedInput: [],
+            _charsLeftOver: 0,
+            _empty: false,
+            _invalidMonth: null,
+            _parsedDateParts: [],
+          };
+        }
+        return null;
+      },
+      (_str, _fmts, _loc, _strict) => null,
+    );
+    const result = parseString("2024-01-15", "YYYY-MM-DD", enLocale());
+    expect(result).toEqual(expect.objectContaining({ year: 2024, month: 0, day: 15 }));
+    expect(isCustomFormatParsingEnabled()).toBe(true);
+  });
+
+  test("custom format parsing", () => {
+    enableCustomFormatParsing();
+    registerCustomFormatParser(
+      (str, fmt, _loc, _strict) => {
         if (fmt === "YYYY-MM-DD" && /^\d{4}-\d{2}-\d{2}$/.test(str)) {
           return {
             year: 2024,

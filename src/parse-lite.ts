@@ -30,6 +30,12 @@ export function enableCustomFormatParsing(): void {
   customFormatParsingEnabled = true;
 }
 
+export function disableCustomFormatParsing(): void {
+  customFormatParsingEnabled = false;
+  registeredFormatParser = undefined;
+  registeredFormatsParser = undefined;
+}
+
 export function isCustomFormatParsingEnabled(): boolean {
   return customFormatParsingEnabled;
 }
