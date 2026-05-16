@@ -8,6 +8,18 @@ import {
   localeMonthsShort,
 } from "./locale-runtime";
 
+// PGO: path counters — enabled only when PGO=1 env var is set
+const _PCOUNT: Record<string, number> = {};
+const _PGOActive = !!process.env.PGO;
+function _pc(name: string): void {
+  if (_PGOActive) {
+    _PCOUNT[name] = (_PCOUNT[name] ?? 0) + 1;
+  }
+}
+export function getPGOCounters(): Record<string, number> {
+  return { ..._PCOUNT };
+}
+
 export let parseTwoDigitYearFn: ((input: string) => number) | undefined;
 let customFormatParsingEnabled = false;
 type FormatParser = (
@@ -79,13 +91,16 @@ export function parseString(
   locale?: ParseLocale,
   strict?: boolean,
 ): ParsedData | null {
+  _pc("parseString:entry");
   if (typeof str !== "string") {
     return null;
   }
 
   if (!format && (locale?._abbr ?? "en") === "en") {
+    _pc("parseString:en-fast");
     const fast = parseCommonISO(str);
     if (fast) {
+      _pc("parseString:common-iso-hit");
       return fast as unknown as ParsedData;
     }
   }
@@ -99,17 +114,20 @@ export function parseString(
     ?.preparse;
 
   if (format) {
-    // Fast path: known ISO format strings bypass localePreparse + parseWithFormat.
+    _pc("parseString:with-format");
     if (typeof format === "string" && !strict) {
       const fast = tryIsoFormatFastPath(str, format);
       if (fast) {
+        _pc("parseString:format-fast-hit");
         return fast as unknown as ParsedData;
       }
     }
     const preparsed = preparseFn ? preparseFn(str) : str;
     if (isArray(format)) {
+      _pc("parseString:format-array");
       return parseWithFormats(preparsed, format, locale, strict) as unknown as ParsedData;
     }
+    _pc("parseString:format-single");
     return parseWithFormat(preparsed, format, locale, strict) as unknown as ParsedData;
   }
 
@@ -125,14 +143,9 @@ export function parseString(
     }
   }
   if (blank) {
+    _pc("parseString:blank");
     return null;
   }
-
-  // ── input classifier: cheap charCodeAt routing before heavy parse attempts ──
-  // Digit/sign → ISO fast paths (parseCommonISO/Extended, ISO table).
-  // Slash → JSON /Date()/ format first.
-  // After ISO attempts, all paths fall through to RFC 2822 (handles
-  // both alpha-weekday and digit-day forms like "15 Jan 2024...").
 
   const c0 = trimmed.charCodeAt(0);
   const isDigit = c0 >= 48 && c0 <= 57;
@@ -140,13 +153,17 @@ export function parseString(
   const isSign = c0 === 43 || c0 === 45;
 
   if (isDigit) {
+    _pc("parseString:digit-start");
     const fastResult = parseCommonISOExtended(trimmed);
     if (fastResult) {
+      _pc("parseString:iso-extended-hit");
       return fastResult as unknown as ParsedData;
     }
   } else if (isSlash) {
+    _pc("parseString:slash-start");
     const jsonMatch = trimmed.match(JSON_DATE_REGEX);
     if (jsonMatch) {
+      _pc("parseString:json-date-hit");
       const ts = parseInt(jsonMatch[1], 10);
       const d = new Date(ts);
       return {
@@ -169,26 +186,30 @@ export function parseString(
   }
 
   if (isDigit || isSign) {
+    _pc("parseString:iso-table");
     const isoResult = parseISOWithTable(trimmed, locale);
     if (isoResult) {
       if (isoResult._claimed) {
+        _pc("parseString:iso-table-claimed");
         return { _claimed: true } as unknown as ParsedData;
       }
+      _pc("parseString:iso-table-hit");
       return isoResult as unknown as ParsedData;
     }
   }
 
-  // RFC 2822 accepts both alpha-starting (weekday prefix) and
-  // digit-starting (bare "15 Jan 2024..." without weekday) strings.
+  _pc("parseString:rfc2822");
   let rfcStr = stripRFC2822Comments(trimmed);
   let rfcMatch = rfcStr.match(RFC_2822_REGEX);
   if (!rfcMatch && trimmed !== rfcStr) {
     rfcMatch = trimmed.match(RFC_2822_REGEX);
   }
   if (rfcMatch) {
+    _pc("parseString:rfc2822-hit");
     return parseRFC2822(rfcMatch) as unknown as ParsedData;
   }
 
+  _pc("parseString:fallthrough-null");
   return null;
 }
 

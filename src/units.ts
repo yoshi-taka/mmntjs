@@ -114,20 +114,17 @@ const _unitCodes: Record<NormalizedUnit, UnitCode> = {
 };
 
 const _codeAliases: Record<string, UnitCode | undefined> = {};
-const _codeNmap: Record<string, UnitCode | undefined> = {}; // hot path fallback
 for (const key of Object.keys(_aliases)) {
   const code = _unitCodes[_aliases[key as UnitAlias]];
   _codeAliases[key] = code;
-  _codeNmap[key.toLowerCase()] = code;
+  _codeAliases[key.toLowerCase()] = code;
 }
 
-// Composition: normalizeUnitCode ∘ normalizeUnits ≡ normalizeUnitCode on UnitAlias domain.
-//   normalizeUnitCode returns a numeric code — further calls with the same string are idempotent.
 export function normalizeUnitCode(unit: string): UnitCode {
   if (!unit) {
     return INVALID_UNIT;
   }
-  return _codeAliases[unit] ?? _codeNmap[unit.toLowerCase()] ?? INVALID_UNIT;
+  return _codeAliases[unit] ?? INVALID_UNIT;
 }
 
 export function euclideanModulo(value: number, mod: number): number {

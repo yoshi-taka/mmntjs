@@ -1810,19 +1810,19 @@ export class Moment {
         }
       }
     }
-    const utc = this._isUTC;
+    if (this._isUTC) {
+      this._startOfUTC(code);
+    } else {
+      this._startOfLocal(code);
+    }
+    return this;
+  }
 
+  _startOfUTC(code: UnitCode): void {
     switch (code) {
       case YEAR:
-        if (utc) {
-          this._t = ymdToEpochDays(this.$y, 0, 1) * DAY_MS;
-          this._d = undefined;
-        } else {
-          const d = this._getDNoEnsure();
-          d.setMonth(0, 1);
-          d.setHours(0, 0, 0, 0);
-          this._t = d.getTime();
-        }
+        this._t = ymdToEpochDays(this.$y, 0, 1) * DAY_MS;
+        this._d = undefined;
         this.$M = 0;
         this.$D = 1;
         this.$H = 0;
@@ -1832,15 +1832,8 @@ export class Moment {
         this.$W = _dayOfWeek(this.$y, 0, 1);
         break;
       case MONTH:
-        if (utc) {
-          this._t = ymdToEpochDays(this.$y, this.$M, 1) * DAY_MS;
-          this._d = undefined;
-        } else {
-          const d = this._getDNoEnsure();
-          d.setDate(1);
-          d.setHours(0, 0, 0, 0);
-          this._t = d.getTime();
-        }
+        this._t = ymdToEpochDays(this.$y, this.$M, 1) * DAY_MS;
+        this._d = undefined;
         this.$D = 1;
         this.$H = 0;
         this.$m = 0;
@@ -1855,68 +1848,103 @@ export class Moment {
           throw new Error("mmntjs startOf extra units are not initialized");
         }
         startOfExtraCallback(this, code);
-        return this;
+        return;
       case DATE:
       case DAY:
-        if (utc) {
-          this._t = floorUnitEpoch(this._t, DAY_MS);
-          this._d = undefined;
-        } else {
-          const d = this._getDNoEnsure();
-          d.setHours(0, 0, 0, 0);
-          this._t = d.getTime();
-        }
+        this._t = floorUnitEpoch(this._t, DAY_MS);
+        this._d = undefined;
         this.$H = 0;
         this.$m = 0;
         this.$s = 0;
         this.$ms = 0;
         break;
-      case HOUR: {
-        if (utc) {
-          this._t = floorUnitEpoch(this._t, HOUR_MS);
-          this._d = undefined;
-        } else {
-          const d = this._getDNoEnsure();
-          d.setMinutes(0, 0, 0);
-          this._t = d.getTime();
-        }
+      case HOUR:
+        this._t = floorUnitEpoch(this._t, HOUR_MS);
+        this._d = undefined;
         this.$m = 0;
         this.$s = 0;
         this.$ms = 0;
         break;
-      }
-      case MINUTE: {
-        if (utc) {
-          this._t = floorUnitEpoch(this._t, MINUTE_MS);
-          this._d = undefined;
-        } else {
-          const d = this._getDNoEnsure();
-          d.setSeconds(0, 0);
-          this._t = d.getTime();
-        }
+      case MINUTE:
+        this._t = floorUnitEpoch(this._t, MINUTE_MS);
+        this._d = undefined;
         this.$s = 0;
         this.$ms = 0;
         break;
-      }
-      case SECOND: {
-        if (utc) {
-          this._t = floorUnitEpoch(this._t, SECOND_MS);
-          this._d = undefined;
-        } else {
-          const d = this._getDNoEnsure();
-          d.setMilliseconds(0);
-          this._t = d.getTime();
-        }
+      case SECOND:
+        this._t = floorUnitEpoch(this._t, SECOND_MS);
+        this._d = undefined;
         this.$ms = 0;
         break;
-      }
-    }
-
-    if (!utc) {
-      this._offset = -this._getDNoEnsure().getTimezoneOffset();
     }
     this._updateOffset(true);
-    return this;
+  }
+
+  _startOfLocal(code: UnitCode): void {
+    // _ensureFields() already called by startOf() — this._d is guaranteed
+    const d = this._d!;
+    switch (code) {
+      case YEAR:
+        d.setMonth(0, 1);
+        d.setHours(0, 0, 0, 0);
+        this._t = d.getTime();
+        this.$M = 0;
+        this.$D = 1;
+        this.$H = 0;
+        this.$m = 0;
+        this.$s = 0;
+        this.$ms = 0;
+        this.$W = _dayOfWeek(this.$y, 0, 1);
+        break;
+      case MONTH:
+        d.setDate(1);
+        d.setHours(0, 0, 0, 0);
+        this._t = d.getTime();
+        this.$D = 1;
+        this.$H = 0;
+        this.$m = 0;
+        this.$s = 0;
+        this.$ms = 0;
+        this.$W = _dayOfWeek(this.$y, this.$M, 1);
+        break;
+      case QUARTER:
+      case WEEK:
+      case ISO_WEEK:
+        if (!startOfExtraCallback) {
+          throw new Error("mmntjs startOf extra units are not initialized");
+        }
+        startOfExtraCallback(this, code);
+        return;
+      case DATE:
+      case DAY:
+        d.setHours(0, 0, 0, 0);
+        this._t = d.getTime();
+        this.$H = 0;
+        this.$m = 0;
+        this.$s = 0;
+        this.$ms = 0;
+        break;
+      case HOUR:
+        d.setMinutes(0, 0, 0);
+        this._t = d.getTime();
+        this.$m = 0;
+        this.$s = 0;
+        this.$ms = 0;
+        break;
+      case MINUTE:
+        d.setSeconds(0, 0);
+        this._t = d.getTime();
+        this.$s = 0;
+        this.$ms = 0;
+        break;
+      case SECOND:
+        d.setMilliseconds(0);
+        this._t = d.getTime();
+        this.$ms = 0;
+        break;
+    }
+    this._offset = -d.getTimezoneOffset();
+    this._updateOffset(true);
   }
 
   endOf(unit: string): this {
@@ -1924,24 +1952,23 @@ export class Moment {
     if (code < 0) {
       return this;
     }
-    // Invalid state propagation: invalid.endOf(u) stays invalid (match moment.js behavior)
     if (!this._isValid) {
       return this;
     }
     this._ensureFields();
-    const utc = this._isUTC;
+    if (this._isUTC) {
+      this._endOfUTC(code);
+    } else {
+      this._endOfLocal(code);
+    }
+    return this;
+  }
 
+  _endOfUTC(code: UnitCode): void {
     switch (code) {
       case YEAR:
-        if (utc) {
-          this._t = (ymdToEpochDays(this.$y, 11, 31) + 1) * DAY_MS - 1;
-          this._d = undefined;
-        } else {
-          const d = this._getDNoEnsure();
-          d.setFullYear(this.$y, 11, 31);
-          d.setHours(23, 59, 59, 999);
-          this._t = d.getTime();
-        }
+        this._t = (ymdToEpochDays(this.$y, 11, 31) + 1) * DAY_MS - 1;
+        this._d = undefined;
         this.$M = 11;
         this.$D = 31;
         this.$H = 23;
@@ -1952,15 +1979,8 @@ export class Moment {
         break;
       case MONTH: {
         const _eomMaxDay = daysInMonthFast(this.$y, this.$M);
-        if (utc) {
-          this._t = (ymdToEpochDays(this.$y, this.$M, _eomMaxDay) + 1) * DAY_MS - 1;
-          this._d = undefined;
-        } else {
-          const d = this._getDNoEnsure();
-          d.setFullYear(this.$y, this.$M, _eomMaxDay);
-          d.setHours(23, 59, 59, 999);
-          this._t = d.getTime();
-        }
+        this._t = (ymdToEpochDays(this.$y, this.$M, _eomMaxDay) + 1) * DAY_MS - 1;
+        this._d = undefined;
         this.$D = _eomMaxDay;
         this.$H = 23;
         this.$m = 59;
@@ -1976,82 +1996,107 @@ export class Moment {
           throw new Error("mmntjs endOf extra units are not initialized");
         }
         endOfExtraCallback(this, code);
-        return this;
+        return;
       case DATE:
-      case DAY: {
-        if (utc) {
-          this._t = endOfUnitEpoch(this._t, DAY_MS);
-          this._d = undefined;
-          this._dirty = true;
-        } else {
-          const d = this._getDNoEnsure();
-          d.setHours(0, 0, 0, 0);
-          d.setDate(d.getDate() + 1);
-          d.setMilliseconds(-1);
-          this.$D = d.getDate();
-          this.$H = d.getHours();
-          this.$m = d.getMinutes();
-          this.$s = d.getSeconds();
-          this.$ms = d.getMilliseconds();
-          this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
-          this._t = d.getTime();
-        }
+      case DAY:
+        this._t = endOfUnitEpoch(this._t, DAY_MS);
+        this._d = undefined;
+        this._dirty = true;
         break;
-      }
-      case HOUR: {
-        if (utc) {
-          this._t = endOfUnitEpoch(this._t, HOUR_MS);
-          this._d = undefined;
-          this._dirty = true;
-        } else {
-          const d = this._getDNoEnsure();
-          d.setMinutes(0, 0, 0);
-          d.setHours(d.getHours() + 1, 0, 0, -1);
-          this.$H = d.getHours();
-          this.$m = d.getMinutes();
-          this.$s = d.getSeconds();
-          this.$ms = d.getMilliseconds();
-          this._t = d.getTime();
-        }
+      case HOUR:
+        this._t = endOfUnitEpoch(this._t, HOUR_MS);
+        this._d = undefined;
+        this._dirty = true;
         break;
-      }
-      case MINUTE: {
-        if (utc) {
-          this._t = endOfUnitEpoch(this._t, MINUTE_MS);
-          this._d = undefined;
-          this._dirty = true;
-        } else {
-          const d = this._getDNoEnsure();
-          d.setSeconds(0, 0);
-          d.setMinutes(d.getMinutes() + 1, 0, -1);
-          this.$m = d.getMinutes();
-          this.$s = d.getSeconds();
-          this.$ms = d.getMilliseconds();
-          this._t = d.getTime();
-        }
+      case MINUTE:
+        this._t = endOfUnitEpoch(this._t, MINUTE_MS);
+        this._d = undefined;
+        this._dirty = true;
         break;
-      }
-      case SECOND: {
-        if (utc) {
-          this._t = endOfUnitEpoch(this._t, SECOND_MS);
-          this._d = undefined;
-          this._dirty = true;
-        } else {
-          const d = this._getDNoEnsure();
-          d.setSeconds(d.getSeconds() + 1, -1);
-          this.$s = d.getSeconds();
-          this.$ms = d.getMilliseconds();
-          this._t = d.getTime();
-        }
+      case SECOND:
+        this._t = endOfUnitEpoch(this._t, SECOND_MS);
+        this._d = undefined;
+        this._dirty = true;
         break;
-      }
-    }
-
-    if (!utc) {
-      this._offset = -this._getDNoEnsure().getTimezoneOffset();
     }
     this._updateOffset(true);
-    return this;
+  }
+
+  _endOfLocal(code: UnitCode): void {
+    const d = this._d!;
+    switch (code) {
+      case YEAR:
+        d.setFullYear(this.$y, 11, 31);
+        d.setHours(23, 59, 59, 999);
+        this._t = d.getTime();
+        this.$M = 11;
+        this.$D = 31;
+        this.$H = 23;
+        this.$m = 59;
+        this.$s = 59;
+        this.$ms = 999;
+        this.$W = _dayOfWeek(this.$y, 11, 31);
+        break;
+      case MONTH: {
+        const _eomMaxDay = daysInMonthFast(this.$y, this.$M);
+        d.setFullYear(this.$y, this.$M, _eomMaxDay);
+        d.setHours(23, 59, 59, 999);
+        this._t = d.getTime();
+        this.$D = _eomMaxDay;
+        this.$H = 23;
+        this.$m = 59;
+        this.$s = 59;
+        this.$ms = 999;
+        this.$W = _dayOfWeek(this.$y, this.$M, _eomMaxDay);
+        break;
+      }
+      case QUARTER:
+      case WEEK:
+      case ISO_WEEK:
+        if (!endOfExtraCallback) {
+          throw new Error("mmntjs endOf extra units are not initialized");
+        }
+        endOfExtraCallback(this, code);
+        return;
+      case DATE:
+      case DAY:
+        d.setHours(0, 0, 0, 0);
+        d.setDate(d.getDate() + 1);
+        d.setMilliseconds(-1);
+        this.$D = d.getDate();
+        this.$H = d.getHours();
+        this.$m = d.getMinutes();
+        this.$s = d.getSeconds();
+        this.$ms = d.getMilliseconds();
+        this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
+        this._t = d.getTime();
+        break;
+      case HOUR:
+        d.setMinutes(0, 0, 0);
+        d.setHours(d.getHours() + 1, 0, 0, -1);
+        this.$H = d.getHours();
+        this.$m = d.getMinutes();
+        this.$s = d.getSeconds();
+        this.$ms = d.getMilliseconds();
+        this._t = d.getTime();
+        break;
+      case MINUTE:
+        d.setSeconds(0, 0);
+        d.setMinutes(d.getMinutes() + 1, 0, -1);
+        this.$m = d.getMinutes();
+        this.$s = d.getSeconds();
+        this.$ms = d.getMilliseconds();
+        this._t = d.getTime();
+        break;
+      case SECOND:
+        d.setSeconds(d.getSeconds() + 1, -1);
+        this.$s = d.getSeconds();
+        this.$ms = d.getMilliseconds();
+        this._t = d.getTime();
+        break;
+    }
+    this._offset = -d.getTimezoneOffset();
+    this._updateOffset(true);
   }
 
   local(keepLocalTime?: boolean): this {
