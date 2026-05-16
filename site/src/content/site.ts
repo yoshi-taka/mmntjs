@@ -13,6 +13,15 @@ export type DocPage = {
   related: { label: string; href: string }[];
 };
 
+export type KnownDifference = {
+  category: string;
+  title: string;
+  momentBehavior: string;
+  mmntjsBehavior: string;
+  impact: string;
+  workaround: string;
+};
+
 export const githubUrl = "https://github.com/yoshi-taka/moment2";
 
 export const topNav: NavLink[] = [
@@ -270,6 +279,57 @@ export const knownDifferenceHighlights = [
   "A small number of sign-prefixed parse cases still differ because moment.js uses non-anchored regex matching in some fallback paths.",
   "Core mmntjs should be treated as covering UTC and fixed-offset behavior, not as silently bundling full IANA timezone data behavior.",
   "Runtime-specific caveats should stay visible, including environment-sensitive timezone and locale behavior during evaluation.",
+];
+
+export const knownDifferences: KnownDifference[] = [
+  {
+    category: "Parsing",
+    title: "Some sign-prefixed parse edge cases remain different",
+    momentBehavior:
+      "moment.js can match some sign-prefixed strings through non-anchored regex fallback behavior.",
+    mmntjsBehavior:
+      "mmntjs is still stricter in a small set of these malformed or edge-case inputs, especially around sign-prefixed parse forms discovered by fuzzing.",
+    impact:
+      "Relevant mainly if the application depends on odd legacy inputs rather than clean ISO, RFC 2822, or explicit format strings.",
+    workaround:
+      "Add targeted regression fixtures for suspicious legacy inputs and review the Known Differences page before broad rollout of parsing-heavy modules.",
+  },
+  {
+    category: "Timezone scope",
+    title: "Core scope is UTC and fixed-offset behavior, not full timezone data",
+    momentBehavior:
+      "moment plus moment-timezone can be paired with IANA timezone data behavior when that package is in use.",
+    mmntjsBehavior:
+      "Core mmntjs should be evaluated as covering UTC and fixed offsets. Full timezone-data expectations should be treated as a separate concern.",
+    impact:
+      "Important for systems that schedule or render by named timezone rather than by plain UTC or fixed offsets.",
+    workaround:
+      "Review timezone-sensitive code separately and use dedicated timezone support instead of assuming core behavior covers named-zone data cases.",
+  },
+  {
+    category: "Runtime caveat",
+    title: "Bun named locale imports may not trigger side effects as expected",
+    momentBehavior:
+      "Consumers often assume locale module side effects run when importing locale-related exports.",
+    mmntjsBehavior:
+      "In Bun, named imports like locale symbols may not trigger module-level locale registration side effects in the same way a bare import does.",
+    impact:
+      "This mainly affects teams depending on locale registration through import style rather than explicit loading behavior.",
+    workaround:
+      "Prefer bare imports such as importing the locale module directly, or call locale registration explicitly when validating Bun-specific runtime behavior.",
+  },
+  {
+    category: "Performance comparison semantics",
+    title: "Some benchmark rows are cost comparisons, not perfectly equivalent APIs",
+    momentBehavior:
+      "moment.js and its ecosystem comparisons often involve slightly different semantic definitions, especially around month or year differences.",
+    mmntjsBehavior:
+      "mmntjs matches moment.js semantics in areas like truncated fractional diff, while some comparison libraries expose calendar-difference helpers instead.",
+    impact:
+      "This affects how benchmark tables should be interpreted, especially by reviewers comparing against date-fns or Temporal at face value.",
+    workaround:
+      "Read the methodology notes before using benchmark rows in architecture decisions, and prefer workload-specific comparisons where semantics truly align.",
+  },
 ];
 
 export const qualityProof = [

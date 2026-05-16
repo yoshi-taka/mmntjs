@@ -1,12 +1,19 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import { docsPages } from "../../content/site";
+import { docsPages, knownDifferences } from "../../content/site";
 import { withBase } from "../../lib/urls";
 
 type DocSection = {
   title: string;
   body: string[];
   bullets?: string[];
+};
+
+type DocExample = {
+  title: string;
+  code: string;
+  language: string;
+  note?: string;
 };
 
 const docSections: Record<string, DocSection[]> = {
@@ -40,6 +47,20 @@ const docSections: Record<string, DocSection[]> = {
         "Alias-based install for low-friction trials.",
         "Direct package import for module-by-module migration.",
         "Keep runtime and bundling expectations visible from the start.",
+      ],
+    },
+  ],
+  "basic-usage": [
+    {
+      title: "Stay Close To Existing Moment Call Patterns At First",
+      body: [
+        "Basic usage examples should reassure evaluators that common moment-style creation, formatting, arithmetic, and duration flows still read naturally.",
+        "The first migration phase is usually about preserving behavior and minimizing review noise, not about rewriting every date call into a new style immediately.",
+      ],
+      bullets: [
+        "Prefer examples that look like current moment code.",
+        "Use a mix of formatting, UTC, add/subtract, and duration examples.",
+        "Link out quickly when behavior becomes parsing- or timezone-sensitive.",
       ],
     },
   ],
@@ -181,6 +202,92 @@ const docSections: Record<string, DocSection[]> = {
   ],
 };
 
+const docExamples: Record<string, DocExample[]> = {
+  "getting-started": [
+    {
+      title: "Zero-code alias trial",
+      language: "sh",
+      code: `npm install moment@npm:mmntjs`,
+      note: "Useful when you want the smallest possible trial surface before changing imports.",
+    },
+    {
+      title: "Coexistence mode",
+      language: "js",
+      code: `import moment from "moment";
+
+// already migrated file
+import mmnt from "mmntjs";`,
+      note: "This lets one codebase move module by module instead of forcing a single cutoff day.",
+    },
+    {
+      title: "First evaluation flow",
+      language: "sh",
+      code: `bun test
+bun run docs:build
+# then compare one or two representative date fixtures in the chosen module`,
+      note: "The important part is reusing the tests you already trust before inventing new migration scaffolding.",
+    },
+  ],
+  installation: [
+    {
+      title: "Direct package install",
+      language: "sh",
+      code: `npm install mmntjs`,
+      note: "Best when you want code review to show each migration step explicitly.",
+    },
+    {
+      title: "Import replacement",
+      language: "js",
+      code: `import moment from "mmntjs";
+
+moment("2024-01-01").format("YYYY-MM-DD");`,
+    },
+    {
+      title: "Alias-based replacement",
+      language: "sh",
+      code: `npm install moment@npm:mmntjs`,
+      note: "Best for low-friction evaluation when you need unchanged import sites first.",
+    },
+    {
+      title: "Lite entry with add-ons",
+      language: "js",
+      code: `import moment from "mmntjs/lite";
+import "mmntjs/plugin/format-parse";
+import "mmntjs/locale/ja";`,
+      note: "Useful when browser bundle cost matters and the narrower feature surface is acceptable.",
+    },
+  ],
+  "basic-usage": [
+    {
+      title: "Formatting and arithmetic",
+      language: "js",
+      code: `import moment from "mmntjs";
+
+const invoiceDate = moment("2024-01-01");
+const dueDate = invoiceDate.clone().add(30, "days");
+
+dueDate.format("YYYY-MM-DD");`,
+      note: "This is the kind of low-drama example teams want to see first during a migration review.",
+    },
+    {
+      title: "UTC flow",
+      language: "js",
+      code: `import moment from "mmntjs";
+
+moment.utc("2024-06-15T12:30:00Z").format("YYYY-MM-DD HH:mm:ss");`,
+      note: "Useful as a first check when the application already relies on explicit UTC handling.",
+    },
+    {
+      title: "Duration example",
+      language: "js",
+      code: `import moment from "mmntjs";
+
+moment.duration(2, "hours").humanize();`,
+      note: "Keep examples short and recognizable before diving into compatibility-sensitive details.",
+    },
+  ],
+};
+
 export function getStaticPaths() {
   return docsPages.map((page) => ({
     params: { slug: page.slug },
@@ -190,6 +297,8 @@ export function getStaticPaths() {
 
 const { page } = Astro.props;
 const sections = docSections[page.slug] ?? [];
+const pageKnownDifferences = page.slug === "known-differences" ? knownDifferences : [];
+const pageExamples = docExamples[page.slug] ?? [];
 ---
 
 <BaseLayout
@@ -250,6 +359,53 @@ const sections = docSections[page.slug] ?? [];
     </section>
   )}
 
+  {pageExamples.length > 0 && (
+    <section class="panel section">
+      <p class="eyebrow">Examples</p>
+      <div class="cards">
+        {pageExamples.map((example) => (
+          <article class="card">
+            <h3>{example.title}</h3>
+            <pre><code>{example.code}</code></pre>
+            {example.note && <p>{example.note}</p>}
+          </article>
+        ))}
+      </div>
+    </section>
+  )}
+
+  {pageKnownDifferences.length > 0 && (
+    <section class="panel section">
+      <p class="eyebrow">Tracked Differences</p>
+      <div class="cards">
+        {pageKnownDifferences.map((item) => (
+          <article class="card">
+            <p class="eyebrow">{item.category}</p>
+            <h3>{item.title}</h3>
+            <div class="meta-list">
+              <div class="meta-row">
+                <div class="label">moment.js</div>
+                <div>{item.momentBehavior}</div>
+              </div>
+              <div class="meta-row">
+                <div class="label">mmntjs</div>
+                <div>{item.mmntjsBehavior}</div>
+              </div>
+              <div class="meta-row">
+                <div class="label">Impact</div>
+                <div>{item.impact}</div>
+              </div>
+              <div class="meta-row">
+                <div class="label">Workaround</div>
+                <div>{item.workaround}</div>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  )}
+
   <section class="panel section">
     <p class="eyebrow">How To Use This Doc</p>
     <p>
@@ -257,5 +413,12 @@ const sections = docSections[page.slug] ?? [];
       this area is business-critical, compare it directly against your current moment.js usage and
       record the outcome before expanding rollout.
     </p>
+    {page.slug === "known-differences" && (
+      <p>
+        The goal is not to eliminate every caveat before evaluation starts. The goal is to make the
+        currently known caveats visible enough that they can be tested deliberately rather than
+        discovered accidentally in production.
+      </p>
+    )}
   </section>
 </BaseLayout>

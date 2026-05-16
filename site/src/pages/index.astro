@@ -67,8 +67,20 @@ moment("2024-01-01").add(1, "day");</code></pre>
         Evaluate mmntjs in one module, run the tests you already trust, and expand only after
         checking compatibility-sensitive behavior.
       </p>
+      <pre><code>npm install moment@npm:mmntjs
+
+# or migrate one module first
+npm install mmntjs</code></pre>
+      <pre><code>import moment from "moment";
+
+moment("2024-01-01").utc().format("YYYY-MM-DD");</code></pre>
+      <p>
+        If your codebase is large, the safest first move is usually one owned module with clear
+        tests, not a global replacement across every service at once.
+      </p>
       <div class="actions">
         <a class="button" href={withBase("/docs/getting-started/")}>Getting Started</a>
+        <a class="button" href={withBase("/docs/installation/")}>Installation Options</a>
       </div>
     </article>
   </section>

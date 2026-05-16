@@ -20,6 +20,33 @@ const doNotRush = [
   "Do not treat a benchmark win as evidence of behavioral safety.",
   "Do not assume timezone-heavy code is low-risk just because the tests are green in UTC.",
 ];
+
+const rolloutExamples = [
+  {
+    title: "Example A: package-by-package migration in a monorepo",
+    steps: [
+      "Start with one internal package that formats and compares dates but does not own timezone-heavy scheduling logic.",
+      "Replace imports in that package only and run its tests plus a small integration slice that consumes it.",
+      "Add a few explicit fixtures for custom parsing, invalid inputs, and date-boundary math before expanding to the next package.",
+    ],
+  },
+  {
+    title: "Example B: service-by-service migration",
+    steps: [
+      "Begin with a service that has clear ownership and a deploy path independent from billing or scheduling-critical systems.",
+      "Switch the import path, compare outputs in staging or canary logs, then expand after those comparisons stay boring for a full release cycle.",
+      "Leave higher-risk services on moment.js longer if needed; controlled uneven rollout is better than a misleading all-at-once switch.",
+    ],
+  },
+];
+
+const comparisonChecklist = [
+  "A custom-format parse example your application already relies on",
+  "An invalid input that should stay invalid",
+  "A timezone-offset or parseZone example used in production",
+  "A DST-adjacent example if the system operates in local time",
+  "A locale-sensitive format used in customer-visible output or exported reports",
+];
 ---
 
 <BaseLayout
@@ -56,6 +83,20 @@ const doNotRush = [
         <article class="card">
           <h3>{phase}</h3>
           <p>{text}</p>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Concrete Rollout Examples</p>
+    <div class="cards">
+      {rolloutExamples.map((example) => (
+        <article class="card">
+          <h3>{example.title}</h3>
+          <ol>
+            {example.steps.map((step) => <li>{step}</li>)}
+          </ol>
         </article>
       ))}
     </div>
@@ -104,5 +145,17 @@ const doNotRush = [
       If your team can complete this checklist for one low-risk module first, the next expansion
       step becomes much more credible to reviewers and maintainers.
     </p>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Minimal Comparison Set</p>
+    <p>
+      Before expanding beyond the first module or service, keep a tiny comparison set that reflects
+      the way your application actually uses dates. It does not need to be large. It needs to be
+      representative.
+    </p>
+    <ul>
+      {comparisonChecklist.map((item) => <li>{item}</li>)}
+    </ul>
   </section>
 </BaseLayout>
