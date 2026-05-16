@@ -3,11 +3,12 @@
   "entry": [
     "test/*.test.ts",
     "test/*.js",
+    "packages/timezone/src/index.ts",
     "packages/timezone/test/*.test.ts",
     "test/properties/basic.test.ts",
     "test/properties/boundary.test.ts"
   ],
-  "project": ["src/**", "test/**"],
+  "project": ["src/**", "test/**", "packages/timezone/src/**"],
   "ignore": [
     "test/moment/**",
     "test/helpers/**",

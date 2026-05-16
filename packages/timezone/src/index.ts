@@ -1,3 +1,5 @@
+/* oxlint-disable no-explicit-any */
+
 import moment from "mmntjs";
 import { installTimezone } from "./install";
 

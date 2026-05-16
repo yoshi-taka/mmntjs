@@ -67,7 +67,7 @@
     "bench": "bun test/bench.ts",
     "bench:guard": "bun test/bench-regression.ts",
     "bench:mem": "bun test/bench-mem.ts",
-    "lint": "oxfmt src test && oxlint --type-aware --type-check src test",
+    "lint": "oxfmt src test packages/timezone/src packages/timezone/test && oxlint --type-aware --type-check src test && oxlint packages/timezone/src packages/timezone/test",
     "fmt": "oxfmt src test",
     "knip": "knip",
     "fallow": "fallow",
