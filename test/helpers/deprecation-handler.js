@@ -4,6 +4,7 @@ export function setupDeprecationHandler(test, moment, _scope) {
     test._expectedDeprecations = null;
     test._observedDeprecations = null;
     test._oldSupress = moment.suppressDeprecationWarnings;
+    test._oldDeprecationHandler = moment.deprecationHandler;
     moment.suppressDeprecationWarnings = true;
     test.expectedDeprecations = function () {
         test._expectedDeprecations = arguments;
@@ -26,6 +27,7 @@ export function setupDeprecationHandler(test, moment, _scope) {
 
 export function teardownDeprecationHandler(test, moment, _scope) {
     moment.suppressDeprecationWarnings = test._oldSupress;
+    moment.deprecationHandler = test._oldDeprecationHandler;
 
     if (test._expectedDeprecations != null) {
         const missedDeprecations = [];

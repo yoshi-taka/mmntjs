@@ -122,6 +122,7 @@ function createAssert() {
 
 function runWithLifecycle(name, fn) {
     moment.locale('en');
+    const originalCreateFromInputFallback = moment.createFromInputFallback;
     if (moment.createFromInputFallback !== undefined) {
         moment.createFromInputFallback = function (config) {
             throw new Error(`input not handled by moment: ${  config._i}`);
@@ -151,6 +152,7 @@ function runWithLifecycle(name, fn) {
         } catch {
             // ignore teardown errors if deprecation handler wasn't set up
         }
+        moment.createFromInputFallback = originalCreateFromInputFallback;
     }
 }
 

@@ -1881,8 +1881,7 @@ export class Moment {
   }
 
   _startOfLocal(code: UnitCode): void {
-    // _ensureFields() already called by startOf() — this._d is guaranteed
-    const d = this._d!;
+    const d = this._getDNoEnsure();
     switch (code) {
       case YEAR:
         d.setMonth(0, 1);
@@ -2023,7 +2022,7 @@ export class Moment {
   }
 
   _endOfLocal(code: UnitCode): void {
-    const d = this._d!;
+    const d = this._getDNoEnsure();
     switch (code) {
       case YEAR:
         d.setFullYear(this.$y, 11, 31);
