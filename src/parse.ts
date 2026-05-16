@@ -100,7 +100,9 @@ export function parseString(
     // Fast path: known ISO format strings bypass localePreparse + parseWithFormat.
     if (typeof format === "string" && !strict) {
       const fast = tryIsoFormatFastPath(str, format);
-      if (fast) return fast as unknown as ParsedData;
+      if (fast) {
+        return fast as unknown as ParsedData;
+      }
     }
     const preparsed = localePreparse(locObj as never, str);
     if (isArray(format)) {
@@ -2129,9 +2131,7 @@ function tokenizeFormat(format: string): FormatToken[] {
   return tokens;
 }
 
-function wrapFastParseResult(
-  data: InternalParsedData,
-): ParsedData {
+function wrapFastParseResult(data: InternalParsedData): ParsedData {
   return {
     ...data,
     _unusedTokens: [],
@@ -2143,10 +2143,7 @@ function wrapFastParseResult(
   } as unknown as ParsedData;
 }
 
-function tryIsoFormatFastPath(
-  str: string,
-  format: string,
-): ParsedData | null {
+function tryIsoFormatFastPath(str: string, format: string): ParsedData | null {
   switch (format) {
     case "YYYY-MM-DD":
     case "YYYY-MM-DDTHH:mm:ss":
@@ -2157,14 +2154,18 @@ function tryIsoFormatFastPath(
     case "YYYY-MM-DDTHH:mm:ss.SSS":
     case "YYYY-MM-DD HH:mm:ss.SSS": {
       const fast = parseCommonISO(str);
-      if (fast) return wrapFastParseResult(fast);
+      if (fast) {
+        return wrapFastParseResult(fast);
+      }
       break;
     }
     case "YYYYMMDD":
     case "YYYYDDD":
     case "YYYY-DDD": {
       const fast = parseCommonISOExtended(str);
-      if (fast) return wrapFastParseResult(fast);
+      if (fast) {
+        return wrapFastParseResult(fast);
+      }
       break;
     }
   }
@@ -2186,7 +2187,9 @@ function parseWithFormat(
   // inputs match — not RFC 2822 strings that happen to be in the format array.
   if (!strict) {
     const fast = tryIsoFormatFastPath(str, format);
-    if (fast) return fast;
+    if (fast) {
+      return fast;
+    }
   }
 
   const loc = locale;

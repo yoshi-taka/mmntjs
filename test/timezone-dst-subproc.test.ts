@@ -5,11 +5,7 @@ import moment from "../src/index.ts";
 import originalMoment from "../moment/moment.js";
 import { describe, test, expect } from "bun:test";
 
-function compareMoments(
-  mm: ReturnType<typeof moment>,
-  om: ReturnType<typeof originalMoment>,
-  msg?: string,
-) {
+function compareMoments(mm: ReturnType<typeof moment>, om: ReturnType<typeof originalMoment>) {
   expect(mm.valueOf()).toBe(om.valueOf());
   expect(mm.utcOffset()).toBe(om.utcOffset());
   expect(mm.hours()).toBe(om.hours());
@@ -18,7 +14,7 @@ function compareMoments(
 }
 
 function getTZ(): string {
-  return process.env.TZ || "(unset)";
+  return process.env.TZ ?? "(unset)";
 }
 
 describe(`DST tests under TZ=${getTZ()}`, () => {
