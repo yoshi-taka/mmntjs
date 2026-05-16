@@ -73,3 +73,84 @@ describe("regression: keepLocalTime valueOf difference", () => {
     expect(noKeep.valueOf()).not.toBe(keep.valueOf());
   });
 });
+
+/* ------------------------------------------------------------------ */
+/*  DST transition second cache correctness                            */
+/* ------------------------------------------------------------------ */
+
+describe("regression: DST transition second boundary", () => {
+  const ZONE_NY = "America/New_York";
+
+  test("spring-forward 2024: offset flips at exact transition second", () => {
+    // zone.offset uses west-positive convention (deprecated moment-timezone compat)
+    const beforeMs = Date.UTC(2024, 2, 10, 6, 59, 59, 999); // EST = +300
+    const afterMs = Date.UTC(2024, 2, 10, 7, 0, 0, 0); // EDT = +240
+    const zone = moment.tz.zone(ZONE_NY)!;
+    const oracleZone = momentTimezone.tz.zone(ZONE_NY)!;
+    expect(zone.offset(beforeMs)).toBe(oracleZone.offset(beforeMs));
+    expect(zone.offset(afterMs)).toBe(oracleZone.offset(afterMs));
+    expect(zone.offset(beforeMs)).toBe(300);
+    expect(zone.offset(afterMs)).toBe(240);
+  });
+
+  test("fall-back 2024: offset flips at exact transition second", () => {
+    const beforeMs = Date.UTC(2024, 10, 3, 5, 59, 59, 999); // EDT = +240
+    const afterMs = Date.UTC(2024, 10, 3, 6, 0, 0, 0); // EST = +300
+    const zone = moment.tz.zone(ZONE_NY)!;
+    const oracleZone = momentTimezone.tz.zone(ZONE_NY)!;
+    expect(zone.offset(beforeMs)).toBe(oracleZone.offset(beforeMs));
+    expect(zone.offset(afterMs)).toBe(oracleZone.offset(afterMs));
+    expect(zone.offset(beforeMs)).toBe(240);
+    expect(zone.offset(afterMs)).toBe(300);
+  });
+
+  test("cache returns correct offset when queried after→before across transition", () => {
+    const zone = moment.tz.zone(ZONE_NY)!;
+    const oracleZone = momentTimezone.tz.zone(ZONE_NY)!;
+    const afterMs = Date.UTC(2024, 2, 10, 7, 0, 0, 0);
+    const beforeMs = Date.UTC(2024, 2, 10, 6, 59, 59, 999);
+    expect(zone.offset(afterMs)).toBe(oracleZone.offset(afterMs)); // EDT cache populates
+    expect(zone.offset(beforeMs)).toBe(oracleZone.offset(beforeMs)); // different key → EST
+    expect(zone.offset(afterMs)).toBe(240);
+    expect(zone.offset(beforeMs)).toBe(300);
+  });
+
+  test("same-second bucket after transition is consistent", () => {
+    const zone = moment.tz.zone(ZONE_NY)!;
+    const afterMs = Date.UTC(2024, 2, 10, 7, 0, 0, 0);
+    const afterMsLater = Date.UTC(2024, 2, 10, 7, 0, 0, 500);
+    expect(zone.offset(afterMs)).toBe(240);
+    expect(zone.offset(afterMsLater)).toBe(240);
+  });
+
+  test("zone.offset matches oracle across years and seasons", () => {
+    const zone = moment.tz.zone(ZONE_NY)!;
+    const oracleZone = momentTimezone.tz.zone(ZONE_NY)!;
+    for (const year of [2000, 2010, 2020, 2024, 2030]) {
+      for (const month of [0, 6]) {
+        const ts = Date.UTC(year, month, 15, 12, 0, 0, 0);
+        expect(zone.offset(ts)).toBe(oracleZone.offset(ts));
+      }
+    }
+  });
+
+  test("abbr cache does not return stale value across DST transition", () => {
+    const zone = moment.tz.zone(ZONE_NY)!;
+    const oracleZone = momentTimezone.tz.zone(ZONE_NY)!;
+    const beforeMs = Date.UTC(2024, 2, 10, 6, 59, 59, 999);
+    const afterMs = Date.UTC(2024, 2, 10, 7, 0, 0, 0);
+    expect(zone.abbr(beforeMs)).toBe(oracleZone.abbr(beforeMs));
+    expect(zone.abbr(afterMs)).toBe(oracleZone.abbr(afterMs));
+    expect(zone.abbr(beforeMs)).toBe("EST");
+    expect(zone.abbr(afterMs)).toBe("EDT");
+  });
+
+  test("abbr cache reverse query order", () => {
+    // Query after first, then before — both must still be correct
+    const zone = moment.tz.zone(ZONE_NY)!;
+    const beforeMs = Date.UTC(2024, 2, 10, 6, 59, 59, 999);
+    const afterMs = Date.UTC(2024, 2, 10, 7, 0, 0, 0);
+    expect(zone.abbr(afterMs)).toBe("EDT");
+    expect(zone.abbr(beforeMs)).toBe("EST");
+  });
+});

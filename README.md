@@ -65,12 +65,20 @@ moment.duration(2, "hours").humanize();
 
 ### Entry Points
 
-| Import | Size (gzip) | Description |
-|--------|------------:|-------------|
-| `mmntjs` (bare import) | ~55 KB | Full compatibility (default) |
-| `mmntjs/lite` | **15.6 KB** | ISO-centric, size-first SKU |
-| `mmntjs/plugin/*` | +separate | Optional plugins (format-parse, duration, …) |
-| `mmntjs/locale/*` | +separate | Individual locales (136 total) |
+#### Import path contract
+
+| Import | gzip (bundled) | gzip (dist) | Description |
+|--------|--------------:|------------:|-------------|
+| `mmntjs` | **39 KB** | 54 KB | Full compatibility (default) — core + display + utc + locale registry + format-parse |
+| `mmntjs/lite` | **12 KB** | 16 KB | ISO-centric, size-first — core-lite + strict parsing, no locale registry, no display extras |
+| `mmntjs/full` | **39 KB** | 54 KB | Same as default — explicit alias |
+| `mmntjs/temporal` | **47 KB** | 37 KB | Temporal bridge — `toTemporal(m)` / `fromTemporal(t)` |
+| `mmntjs/plugin/*` | — | +separate | Optional plugins (utc, format-parse) — self-contained, add features to lite |
+| `mmntjs/locale/*` | — | +1-8 KB | Individual locales (136 total) — tree-shakeable, each <2 KB gzip |
+| `mmntjs-timezone` | **41 KB** | — | Separate package — `installTimezone(moment)` |
+
+> **bundled**: measured from source with `Bun.build({minify:true, target:"browser"})` — represents what consumer bundlers produce.
+> **dist**: raw tsup output with `splitting:false` — self-contained files, some code duplication across entries is expected.
 
 ```js
 // Use lite + plugins for smaller bundles
@@ -79,6 +87,33 @@ import "mmntjs/plugin/format-parse";
 import "mmntjs/locale/ja";
 import "mmntjs-timezone";
 ```
+
+#### What each entry includes
+
+| Feature | `lite` | `default` | `full` | `temporal` |
+|---------|:------:|:---------:|:------:|:----------:|
+| `moment()` / format / parse (ISO) | ✅ | ✅ | ✅ | — |
+| Strict ISO 8601 parsing | ✅ | ✅ | ✅ | — |
+| `.add()` / `.subtract()` / `.startOf()` / `.endOf()` | ✅ | ✅ | ✅ | — |
+| `.diff()` / `.from()` / `.to()` | ✅ | ✅ | ✅ | — |
+| UTC mode (`moment.utc()` / `.utc()` / `.local()`) | via plugin | ✅ | ✅ | — |
+| Locale registry (`moment.locale()` / `defineLocale()`) | — | ✅ | ✅ | — |
+| Custom format parsing (`moment("…", "YYYY-MM-DD")`) | via plugin | ✅ | ✅ | — |
+| `.format("LLL")` locale-aware | via plugin | ✅ | ✅ | — |
+| `moment.duration()` | via plugin | ✅ | ✅ | — |
+| `moment.min()` / `moment.max()` / `moment.parseZone()` | — | ✅ | ✅ | — |
+| `toTemporal(m)` / `fromTemporal(t)` | — | — | — | ✅ |
+| CLI (`mmntjs migrate` / `mmntjs audit`) | — | — | — | — |
+
+> `lite` includes `.format("YYYY-MM-DD")` (basic format tokens) and ISO parsing. Add `format-parse` plugin for custom format strings and locale-aware long date formats.
+
+#### Modularity guarantees
+
+- **Timezone is fully opt-in**: `mmntjs-timezone` is a separate package. Core bundles (`lite`, `default`, `full`) contain zero timezone resolution code — no `Intl.DateTimeFormat` references.
+- **Temporal is opt-in**: `mmntjs/temporal` is the only entry that exports `toTemporal`/`fromTemporal`. Neither `lite` nor `default` pulls `@js-temporal/polyfill`.
+- **Locales are tree-shakeable**: Each locale is a standalone module. Importing `mmntjs/locale/ja` does not pull `de`, `fr`, or any other locale.
+- **CLI is separate**: The `mmntjs` CLI binary uses `dist/bin/cli.js`; none of the library entry points contain CLI code.
+- **Side effects**: `"sideEffects": false` in package.json — all entry points are safe for consumer tree-shaking.
 
 ### Platform Support
 

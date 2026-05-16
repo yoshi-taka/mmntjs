@@ -16,7 +16,7 @@
   "sideEffects": false,
   "files": ["dist"],
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && bun ../../scripts/copy-dts.ts",
     "test": "bun test"
   },
   "peerDependencies": {

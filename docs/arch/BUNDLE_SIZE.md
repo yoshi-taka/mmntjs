@@ -1,155 +1,121 @@
-# moment2 bundle size削減メモ
+# Bundle Size Architecture
 
-## 目的
+## Current Measurements (2026-05-17)
 
-`moment2` の bundle size を、`moment` 互換を壊さない範囲で段階的に削る。
+### From source (Bun.build, minified + gzip — what consumer bundlers produce)
 
-前提:
+| Import | Raw | Gzip | Brotli |
+|--------|----:|-----:|-------:|
+| `mmntjs` (default) | 148 KB | 39.0 KB | 32.8 KB |
+| `mmntjs/lite` | 43 KB | 11.9 KB | 10.4 KB |
+| `mmntjs/full` | 148 KB | 39.0 KB | 32.8 KB |
+| `mmntjs/temporal` | 157 KB | 46.7 KB | 39.7 KB |
+| `mmntjs-timezone` | 152 KB | 40.6 KB | 33.9 KB |
 
-- 最優先は `moment` 互換
-- `dayjs` 級の極小サイズは現実的な目標ではない
-- 効くのは micro-optimization より `core` の責務削減
+### Dist files (tsup output, splitting:false — self-contained)
 
-## 現状認識
+| File | Raw | Gzip | Brotli |
+|------|----:|-----:|-------:|
+| `dist/lite.js` | 83.5 KB | 16.4 KB | 13.9 KB |
+| `dist/index.js` (full) | 294.2 KB | 54.2 KB | 43.6 KB |
+| `dist/temporal-entry.js` | 212.9 KB | 37.2 KB | 30.8 KB |
+| `dist/mmntjs.min.js` | 145.3 KB | 39.0 KB | 33.0 KB |
+| `dist/plugin/utc.js` | 247.1 KB | 44.3 KB | 31.9 KB |
+| `dist/plugin/format-parse.js` | 245.3 KB | 42.1 KB | 28.5 KB |
+| `dist/locale/ja.js` | 4.8 KB | 1.5 KB | 1.3 KB |
 
-最近の計測では、だいたい次のサイズ感だった。
+### Comparison vs moment.js and alternatives
 
-| artifact | raw | gzip | 補足 |
-|---|---:|---:|---|
-| `moment2/core` | 約 `290 KB` | 約 `49 KB` | locale registry なし |
-| `moment2/full` | 約 `305 KB` | 約 `55 KB` | 全部入り |
-| `moment/min/moment.min.js` | `58,890 B` | `18,892 B` | locale なし |
-| `moment/min/moment-with-locales.min.js` | `375,055 B` | `76,950 B` | locale 全部入り |
-| `dayjs/dayjs.min.js` | `7,160 B` | `3,041 B` | 比較用 |
-| `date-fns/addDays.js` | `1,378 B` | `677 B` | 関数単位 import |
-| `date-fns/format.js` | `25,019 B` | `5,452 B` | 関数単位 import |
+| Library | gzip | Notes |
+|---------|-----:|-------|
+| `mmntjs/lite` | **11.9 KB** | ISO-centric subset |
+| `mmntjs` (default) | **39.0 KB** | Full compatibility |
+| `moment/min/moment.min.js` | 18.9 KB | No locales |
+| `moment/min/moment-with-locales.min.js` | 77.0 KB | All locales |
+| `dayjs/dayjs.min.js` | 3.0 KB | Minimal |
+| `date-fns/format.js` | 5.5 KB | Function-scoped |
 
-読み方:
+## Entry Point Boundaries
 
-- `moment2/full` は `moment-with-locales.min.js` より小さい
-- `moment2/core` は `moment.min.js` よりかなり大きい
-- `dayjs` や tree-shake された `date-fns` と比べると重い
+### `mmntjs/lite` (11.9 KB gzip)
 
-これは失敗ではなく、mutable / prototype / static API を含む `moment` 互換のコスト。
+Smallest useful drop-in. Includes:
+- MomentLite class (parse, format, add/subtract, startOf/endOf, diff)
+- ISO 8601 strict parsing
+- Basic format tokens (YYYY, MM, DD, HH, mm, ss, SSS)
+- UTC mode via `moment.utc()` (built-in)
+- No locale registry — English only
+- No custom format parsing (`moment(str, fmt)`)
+- No `duration` static
+- No `parseZone`, `min`, `max`
+- No locale-aware formatting (`LLLL`, relative time)
 
-## すでに効いた施策
+### `mmntjs` / `mmntjs/full` (39.0 KB gzip)
 
-1. locale を個別 import 化した
-2. `core` / `full` / `temporal` の入口を分けた
-3. `core` から locale registry を外した
-4. `core` から Temporal bridge と migration を外した
+Full moment.js API compatible build. Adds to lite:
+- Full Moment class with locale runtime
+- Locale registry (`defineLocale`, `updateLocale`, `locales()`)
+- Custom format parsing (`moment(str, fmt, [strict])`)
+- Duration (`moment.duration()`)
+- UTC plugin (`moment.utc()`, `.utc()`, `.local()`, `.utcOffset()`, `.parseZone()`)
+- Display extras (`calendar()`, relative time)
+- Debug extras (`parsingFlags()`, `creationData()`, `inspect()`)
+- `moment.min()`, `moment.max()`, `moment.parseZone()`
 
-この方向は正しい。今後も `core` から責務を剥がすのが本筋。
+### `mmntjs/temporal` (46.7 KB gzip)
 
-## 優先度つき削減案
+Temporal API bridge — separate entry, not included in default:
+- `toTemporal(moment)` — convert Moment → Temporal.PlainDate / ZonedDateTime
+- `fromTemporal(temporal)` — convert Temporal → Moment
+- Lazy-loads `@js-temporal/polyfill` via `require()` — polyfill only runs when conversion is called
 
-### 1. `core` を en runtime だけに寄せる
+### `mmntjs-timezone` (40.6 KB gzip)
 
-最優先。
+Separate peer package (`mmntjs-timezone`):
+- Full moment-timezone compatible API
+- Uses `Intl.DateTimeFormat` for IANA timezone resolution
+- Zero timezone code in any `mmntjs` entry
+- Requires explicit `import "mmntjs-timezone"` — never auto-loaded
 
-今の `core` は locale registry を外したが、locale runtime との結びつきはまだ強い。`en` を除く locale の知識を `core` からさらに減らせるなら、効果が大きい。
+## Modularity Guarantees
 
-狙い:
+These are enforced by `test/bundle-smoke.test.ts` and `test/tree-shaking.test.ts`:
 
-- `core` は `en` locale runtime のみ前提
-- locale の登録、列挙、更新 API は `full` 側だけ
-- `core` では `moment.locale()` の static API を最小化または非対応に寄せる
+1. **Timezone isolation**: No `Intl.DateTimeFormat`, `installTimezone`, `tz.add`, or `moment2-timezone` strings appear in any `lite`, `default`, or `full` bundle.
+2. **Temporal isolation**: No `toTemporal`/`fromTemporal`/`@js-temporal/polyfill` in `lite` or `default`. Only `temporal` entry exports them.
+3. **Locale isolation**: Importing `mmntjs/locale/ja` does not pull `de`, `fr`, or any other locale. Each locale is a standalone module (<2 KB gzip).
+4. **CLI exclusion**: The `mmntjs` CLI binary (`dist/bin/cli.js`) is never bundled into library entry points.
+5. **Tree-shaking**: All entry points are `sideEffects:false`. Consumer bundlers can tree-shake unused imports.
 
-注意:
+## `splitting:false` Evaluation
 
-- instance 側の `m.locale()` と format は壊さない
-- `localeData()` の扱いを雑にすると互換破壊になる
+tsup currently builds with `splitting:false` — each entry point bundles all its dependencies inline.
 
-### 2. `duration` の境界を見直す
+| Aspect | Assessment |
+|--------|-----------|
+| Simplicity | ✅ Self-contained, no missing chunk errors |
+| CJS/ESM | ✅ Works for both |
+| Code duplication | ⚠️ Some across entries (e.g., shared utils duplicated in lite + plugin), but consumers typically use one entry at a time |
+| Consumer tree-shaking | ✅ `sideEffects:false` + source maps enable good tree-shaking from source |
 
-優先度高。
+**Recommendation**: Keep `splitting:false` for library distribution. The duplication is a known trade-off that keeps each entry independently usable. The gap between dist file size (tsup bundled) and consumer bundle size (tree-shaken by bundler) is wide — lite goes from 16 KB (dist) → 12 KB (consumer), default from 54 KB → 39 KB.
 
-`moment.duration` は互換上かなり重要だが、`core` に常設すべきかは再検討余地がある。
+## Size Regression Guard
 
-候補:
+`bun run size` — prints current measurements.
+`bun run size:guard` — fails if:
+- lite exceeds 60 KB raw / 16 KB gzip
+- default exceeds 180 KB raw / 47 KB gzip
+- full exceeds 180 KB raw / 47 KB gzip
+- temporal exceeds 200 KB raw / 50 KB gzip
+- timezone code appears in core bundles
+- Temporal code appears in lite/default bundles
+- Locale files contain data from other locales
 
-- `duration` を `core` に残す
-- `duration` 本体は残しつつ周辺 static API を薄くする
-- 将来 `full` 側へ寄せるための registration 境界だけ先に作る
+## History
 
-注意:
-
-- いきなり外すのは危険
-- まずは plugin/entry 境界を明示するところまで
-
-### 3. display 層をさらに薄くする
-
-優先度中。
-
-`format` と `reltime` はすでに `src/display/` へ寄せた。次は dependency を見直す。
-
-候補:
-
-- `format` token engine の遅延ロード
-- relative time と calendar をさらに分離
-- `format` の common fast path と locale-aware path を分ける
-
-注意:
-
-- 細かく刻みすぎると互換性コストが増える
-- ここは大幅削減より整理効果の方が大きい
-
-### 4. parse と format の分離度を上げる
-
-優先度中。
-
-`core` の parse と display の format が暗黙に引き合っている部分を減らす。tree-shaking 上の見通しがよくなる。
-
-候補:
-
-- parse は parse に必要な locale helper だけを見る
-- format token 展開は display 側に閉じる
-- `Moment` 本体から display helper 直結を減らす
-
-### 5. timezone をコアに近づけない
-
-優先度高。
-
-これは削減案というよりガードレール。
-
-- timezone は別 package のまま維持
-- `core` と `full` に timezone data や runtime 依存を持ち込まない
-
-ここを破るとサイズと責務の両方が崩れる。
-
-## やらない方がいい案
-
-1. `moment_fixed.ts` の大分割を先にやる
-2. lodash 風の細粒度 export を先に公開する
-3. `dayjs` と同じ粒度をそのまま真似る
-4. 互換 API を削ってサイズだけ追う
-5. timezone を本体に統合する
-
-理由:
-
-- どれも差分の大きさに対してサイズ効果が読みにくい
-- 互換破壊のリスクが高い
-- 今の段階では `core` の責務削減の方が費用対効果が高い
-
-## 実行順
-
-現実的な順番はこう。
-
-1. `core` の locale runtime 依存を棚卸しする
-2. `duration` の registration 境界を作る
-3. display の依存を薄くする
-4. parse / format の結合を減らす
-5. その後に、必要なら `core` 専用の size regression test を追加する
-
-## 判断基準
-
-サイズ削減案は、次の条件を満たすものだけ採用する。
-
-1. `moment` 互換を壊さない
-2. `core` と `full` の責務差が明確になる
-3. tree-shaking test で差分を検証できる
-4. `moment_fixed.ts` の大規模再編を前提にしない
-
-## 補足
-
-現時点の build は、`src/moment_fixed.ts` に混入している別差分の `NUL` バイトで不安定になることがある。bundle size の議論自体は有効だが、正確な再計測はその修正後にやる。
+Phase 1: Split locale into individual imports (removed 137× from core bundle).
+Phase 2: Separate `lite` / `full` / `temporal` entry points.
+Phase 3: Remove locale registry from lite.
+Phase 4: Remove Temporal bridge from core (moved to `temporal-entry.ts`).
+Phase 5: Add bundle-size measurement + size regression guard (this document).

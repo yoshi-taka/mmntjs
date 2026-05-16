@@ -18,6 +18,11 @@
     "noEmit": true,
     "ignoreDeprecations": "6.0",
     "allowImportingTsExtensions": true,
+    "paths": {
+      "mmntjs": ["./src/index.ts"],
+      "mmntjs/lite": ["./src/lite.ts"],
+      "mmntjs-timezone": ["./packages/timezone/src/index.ts"]
+    },
     "types": ["node", "bun"]
   },
   "include": ["src/**/*.ts", "test/**/*.ts", "packages/timezone/src/**/*.ts"],

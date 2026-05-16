@@ -74,6 +74,18 @@ These APIs exist as **no-op compatibility shims** and do NOT provide full drop-i
   - No data loading step
   - Some DST transition edge cases may differ from moment-timezone (the IANA database has exact transition rules; Intl resolves transitions at the API level)
 
+### Intl-backed abbreviation limitations
+
+`zone.abbr()` uses `Intl.DateTimeFormat` with `timeZoneName: "short"`. This differs from moment-timezone's packed tzdb:
+
+- **Historical abbreviations**: Intl may not know pre-1970 abbreviations (e.g., "BST" for pre-WW2 London). The oracle tests in `zone-object.test.ts` verify this for epoch=0.
+- **Generic vs standard/daylight**: Some zones return generic "CT" or "MT" instead of "CST"/"CDT" or "EST"/"EDT". `tryLocaleAbbr()` filters out non-standard results via heuristic (2-5 uppercase letters, no "GMT" prefix).
+- **Known overrides**: Zones like `Asia/Taipei`, `Africa/Cairo` use `KNOWN_ABBR` table (line 217) where Intl doesn't provide a short name.
+- **Fallback**: When Intl fails to produce a short name, the abbreviation is synthesized as `GMT{±HHMM}` (e.g., "GMT+0530" for Asia/Kolkata).
+- **Locale probing**: Multiple locales (`en-US`, `ja-JP`, `zh-CN`, etc.) are tried since different locales sometimes yield a short name where others produce a long name. The winning locale is cached per zone.
+
+Abbreviation behavior is oracle-tested against moment-timezone in `regression.test.ts` (including DST transitions and cache ordering).
+
 - **Default timezone**: `moment.tz.setDefault()` stores the zone name. Full integration (making `moment()` respect the default) requires changes to the mmntjs core. The current behavior is:
   - `moment.defaultZone` is set
   - `moment.tz(explicit, zone)` still uses the explicit zone

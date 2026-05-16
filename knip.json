@@ -24,7 +24,19 @@
     "test/properties/metamorphic.test.ts",
     "test/properties/number-theory.test.ts",
     "test/browser-bundle-compare.ts",
-    "moment/**"
+    "moment/**",
+    "packages/timezone/test/bench-compare.ts",
+    "packages/timezone/test/bench-timezone.ts"
   ],
-  "ignoreDependencies": ["date-fns", "dayjs", "luxon", "@rspack/cli", "@rspack/core"]
+  "tags": ["-public"],
+  "ignoreDependencies": [
+    "date-fns",
+    "dayjs",
+    "luxon",
+    "@rspack/cli",
+    "@rspack/core",
+    "@date-fns/tz",
+    "@date-fns/utc",
+    "date-fns-tz"
+  ]
 }

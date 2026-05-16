@@ -3,12 +3,24 @@ interface MomentFnProps {
   [key: string]: unknown;
 }
 
-interface MomentTzZone {
-  name: string;
-  abbr: (ts: number) => string;
-  offset: (ts: number) => number;
-  utcOffset: (ts: number) => number;
-  parse: (ts: number) => number;
+/** @public */
+export class MomentTzZone {
+  readonly name: string;
+  constructor(name: string) {
+    this.name = name;
+  }
+  abbr(ts: number): string {
+    return getAbbr(this.name, ts);
+  }
+  offset(ts: number): number {
+    return -getOffsetByZone(this.name, ts) || 0;
+  }
+  utcOffset(ts: number): number {
+    return -getOffsetByZone(this.name, ts) || 0;
+  }
+  parse(ts: number): number {
+    return -getOffsetByZone(this.name, ts) || 0;
+  }
 }
 
 interface MomentTz {
@@ -25,7 +37,7 @@ interface MomentTz {
 
 type MomentInstance = MomentLike & {
   tz(tz?: string): MomentInstance;
-  _z?: { name: string; abbr: (ts: number) => string };
+  _z?: MomentTzZone;
   utcOffset(offset?: number | string, keepLocalTime?: boolean): number | MomentInstance;
   isValid(): boolean;
   year(): number;
@@ -48,65 +60,199 @@ export type MomentLike = {
 };
 
 /* ------------------------------------------------------------------ */
-/*  Caches                                                             */
+/*  Ring buffer caches                                                 */
+/*  TypedArray-based, contiguous memory — no hash table overhead,      */
+/*  no pointer chasing. Linear scan of 64 entries stays in L1 cache.  */
 /* ------------------------------------------------------------------ */
 
-const offsetCache = new Map<string, Map<number, number>>();
-const MAX_DOMAIN_CACHE_SIZE = 1000;
-
-/** Cached Intl.DateTimeFormat per timezone for offset computation. */
-const offsetFormatters = new Map<string, Intl.DateTimeFormat>();
-
-/** Cached Intl.DateTimeFormat per timezone for wall-clock extraction. */
-const wallFormatters = new Map<string, Intl.DateTimeFormat>();
-
-function getOffsetFormatter(tz: string): Intl.DateTimeFormat {
-  let dtf = offsetFormatters.get(tz);
-  if (!dtf) {
-    dtf = new Intl.DateTimeFormat("en-US", {
-      timeZone: tz,
-      hour12: false,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-    offsetFormatters.set(tz, dtf);
-  }
-  return dtf;
-}
-
-function getWallFormatter(tz: string): Intl.DateTimeFormat {
-  let dtf = wallFormatters.get(tz);
-  if (!dtf) {
-    dtf = new Intl.DateTimeFormat("en-US", {
-      timeZone: tz,
-      hour12: false,
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-    wallFormatters.set(tz, dtf);
-  }
-  return dtf;
-}
-
-/** Extract typed wall-clock components from formatToParts output. */
-function parseParts(parts: Intl.DateTimeFormatPart[]): Record<string, number> {
-  const result: Record<string, number> = {};
-  for (const p of parts) {
-    if (
-      p.type !== "literal" &&
-      p.type !== "dayPeriod" &&
-      p.type !== "timeZoneName" &&
-      p.type !== "era"
-    ) {
-      result[p.type] = parseInt(p.value, 10);
+/**
+ * Direct-mapped cache: 16 slots, indexed by Math.imul(k, golden) >>> 28 & 15.
+ * Uses Math.imul for correct 32-bit integer overflow (float64 loses precision
+ * for timestamps > ~year 2038). Single compare, no loop → no pipeline bubbles.
+ * 16 entries = 128+64 = 192 bytes, fits L1 cache line multiple.
+ */
+class DmCache {
+  readonly keys = new Float64Array(16);
+  readonly vals = new Int32Array(16);
+  constructor() {
+    for (let i = 0; i < 16; i++) {
+      this.keys[i] = NaN;
     }
   }
-  return result;
+  get(k: number): number | undefined {
+    const i = (Math.imul(k | 0, 2654435761) >>> 28) & 15;
+    if (this.keys[i] === k) {
+      return this.vals[i];
+    }
+    return undefined;
+  }
+  set(k: number, v: number): void {
+    const i = (Math.imul(k | 0, 2654435761) >>> 28) & 15;
+    this.keys[i] = k;
+    this.vals[i] = v;
+  }
+}
+
+/** Direct-mapped cache for string values (abbr). Same hash layout. */
+class DmStrCache {
+  readonly keys = new Float64Array(16);
+  readonly vals: (string | undefined)[] = Array.from({ length: 16 });
+  constructor() {
+    for (let i = 0; i < 16; i++) {
+      this.keys[i] = NaN;
+    }
+  }
+  get(k: number): string | undefined {
+    const i = (Math.imul(k | 0, 2654435761) >>> 28) & 15;
+    if (this.keys[i] === k) {
+      return this.vals[i];
+    }
+    return undefined;
+  }
+  set(k: number, v: string): void {
+    const i = (Math.imul(k | 0, 2654435761) >>> 28) & 15;
+    this.keys[i] = k;
+    this.vals[i] = v;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Per-zone state (collocated for cache-line locality)                */
+/* ------------------------------------------------------------------ */
+
+class ZoneData {
+  offsetCache = new DmCache();
+  /** Day-level offset cache: key=UTC day number, value=offset. Only stored if the day is stable (start/noon/end agree). */
+  dayOffsetCache = new DmCache();
+  /** Set of UTC day numbers already probed for offset stability. Lazily created. */
+  probedDays: Set<number> | undefined;
+  offsetFormatter: Intl.DateTimeFormat | undefined;
+  wallFormatter: Intl.DateTimeFormat | undefined;
+  abbrCache = new DmStrCache();
+  /** Day-level abbreviation cache: key=UTC day number, value=abbr. Only stored if the day is stable. */
+  abbrDayCache = new DmStrCache();
+  /** Set of UTC day numbers already probed for abbr stability. Lazily created. */
+  abbrProbedDays: Set<number> | undefined;
+  abbrFormatters = new Map<string, Intl.DateTimeFormat>();
+  abbrLocale: string | undefined;
+}
+
+const zoneDataMap = new Map<string, ZoneData>();
+
+function ensureZoneData(tz: string): ZoneData {
+  let zd = zoneDataMap.get(tz);
+  if (!zd) {
+    zd = new ZoneData();
+    zoneDataMap.set(tz, zd);
+  }
+  return zd;
+}
+
+/** Zone object cache — IANA zones are finite (~600), inherently bounded. */
+const zoneObjectCache = new Map<string, MomentTzZone>();
+
+/** true for normalized UTC/GMT zone names (always offset 0, abbr is the name). */
+const isUtcOrGmt = (tz: string) => tz === "UTC" || tz === "GMT";
+
+/** Try a single locale for abbreviation, returning null if it doesn't yield a short name. */
+function tryLocaleAbbr(zd: ZoneData, tz: string, ts: number, locale: string): string | null {
+  let dtf = zd.abbrFormatters.get(locale);
+  if (!dtf) {
+    try {
+      dtf = new Intl.DateTimeFormat(locale, {
+        timeZone: tz,
+        timeZoneName: "short",
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      zd.abbrFormatters.set(locale, dtf);
+    } catch {
+      return null;
+    }
+  }
+  try {
+    const parts = dtf.formatToParts(new Date(ts));
+    for (const p of parts) {
+      if (p.type === "timeZoneName") {
+        const abbr = p.value;
+        if (
+          abbr === "GMT" ||
+          (/^[A-Z]{2,5}$/.test(abbr) && !abbr.startsWith("GMT") && abbr !== "Time")
+        ) {
+          return abbr;
+        }
+      }
+    }
+  } catch {
+    /* skip */
+  }
+  return null;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Intl helpers                                                       */
+/* ------------------------------------------------------------------ */
+
+type IntlExtended = typeof Intl & { supportedValuesOf(key: "timeZone"): string[] };
+const intlTZNames: () => string[] = (Intl as IntlExtended).supportedValuesOf.bind(
+  Intl,
+  "timeZone",
+) as () => string[];
+
+/**
+ * Extract year/month/day/hour/minute/second from formatToParts into a
+ * stable-shape object. Avoids generic Record<string, number> allocation
+ * and string-key lookup at call sites.
+ */
+function extractWallParts(
+  dtf: Intl.DateTimeFormat,
+  ts: number,
+): { year: number; month: number; day: number; hour: number; minute: number; second: number } {
+  let year = 0,
+    month = 0,
+    day = 0,
+    hour = 0,
+    minute = 0,
+    second = 0;
+  for (const p of dtf.formatToParts(new Date(ts))) {
+    if (p.type === "year") {
+      year = Number(p.value);
+    } else if (p.type === "month") {
+      month = Number(p.value);
+    } else if (p.type === "day") {
+      day = Number(p.value);
+    } else if (p.type === "hour") {
+      hour = Number(p.value);
+    } else if (p.type === "minute") {
+      minute = Number(p.value);
+    } else if (p.type === "second") {
+      second = Number(p.value);
+    }
+  }
+  return { year, month, day, hour, minute, second };
+}
+
+/**
+ * Extract hour/minute/second only. Used by getWallClock.
+ */
+function extractTimeParts(
+  dtf: Intl.DateTimeFormat,
+  ts: number,
+): { hour: number; minute: number; second: number } {
+  let hour = 0,
+    minute = 0,
+    second = 0;
+  for (const p of dtf.formatToParts(new Date(ts))) {
+    if (p.type === "hour") {
+      hour = Number(p.value);
+    } else if (p.type === "minute") {
+      minute = Number(p.value);
+    } else if (p.type === "second") {
+      second = Number(p.value);
+    }
+  }
+  return { hour, minute, second };
 }
 
 /* ------------------------------------------------------------------ */
@@ -160,13 +306,126 @@ const KNOWN_ABBR: Record<string, string> = {
 };
 
 /* ------------------------------------------------------------------ */
+/*  PAD2 lookup table (zero-padded 2-digit numbers 00-59)            */
+/* ------------------------------------------------------------------ */
+
+const PAD2 = [
+  "00",
+  "01",
+  "02",
+  "03",
+  "04",
+  "05",
+  "06",
+  "07",
+  "08",
+  "09",
+  "10",
+  "11",
+  "12",
+  "13",
+  "14",
+  "15",
+  "16",
+  "17",
+  "18",
+  "19",
+  "20",
+  "21",
+  "22",
+  "23",
+  "24",
+  "25",
+  "26",
+  "27",
+  "28",
+  "29",
+  "30",
+  "31",
+  "32",
+  "33",
+  "34",
+  "35",
+  "36",
+  "37",
+  "38",
+  "39",
+  "40",
+  "41",
+  "42",
+  "43",
+  "44",
+  "45",
+  "46",
+  "47",
+  "48",
+  "49",
+  "50",
+  "51",
+  "52",
+  "53",
+  "54",
+  "55",
+  "56",
+  "57",
+  "58",
+  "59",
+];
+
+/* ------------------------------------------------------------------ */
+/*  Digit helpers (charCodeAt-based, no regex/parseInt allocation)     */
+/* ------------------------------------------------------------------ */
+
+function isDigit(str: string, i: number): boolean {
+  const c = str.charCodeAt(i);
+  return c >= 48 && c <= 57;
+}
+
+function p2(str: string, i: number): number {
+  return (str.charCodeAt(i) - 48) * 10 + (str.charCodeAt(i + 1) - 48);
+}
+
+function p4(str: string, i: number): number {
+  return p2(str, i) * 100 + p2(str, i + 2);
+}
+
+function parseMsTail(str: string, i: number, end: number): number {
+  const avail = end - i;
+  if (avail <= 0) {
+    return 0;
+  }
+  const digits = avail < 3 ? avail : 3;
+  let ms = 0;
+  for (let j = 0; j < digits; j++) {
+    ms = ms * 10 + (str.charCodeAt(i + j) - 48);
+  }
+  for (let j = digits; j < 3; j++) {
+    ms = ms * 10;
+  }
+  return ms;
+}
+
+/* ------------------------------------------------------------------ */
 /*  Helpers                                                           */
 /* ------------------------------------------------------------------ */
 
 function normalizeTz(tz: string): string {
-  const u = tz.toUpperCase();
-  if (u === "UTC" || u === "GMT") {
-    return u;
+  // Hot path: tz is already the normalized name (no lowercase, no alias).
+  // Skip toUpperCase for common non-UTC/GMT zones like America/New_York.
+  const len = tz.length;
+  if (len <= 4) {
+    const c0 = tz.charCodeAt(0);
+    if (c0 === 85 || c0 === 117) {
+      // U or u — check for UTC
+      if (tz.toUpperCase() === "UTC") {
+        return "UTC";
+      }
+    } else if (c0 === 71 || c0 === 103) {
+      // G or g — check for GMT
+      if (tz.toUpperCase() === "GMT") {
+        return "GMT";
+      }
+    }
   }
   const aliased = ZONE_ALIAS[tz];
   if (aliased) {
@@ -175,113 +434,186 @@ function normalizeTz(tz: string): string {
   return tz;
 }
 
-function getOffset(tz: string, timestamp: number): number {
+/** Wrapper for callers that only have the zone name. */
+function getOffsetByZone(tz: string, timestamp: number): number {
+  if (isUtcOrGmt(tz)) {
+    return 0;
+  }
   tz = normalizeTz(tz);
-  let domain = offsetCache.get(tz);
-  if (!domain) {
-    domain = new Map();
-    offsetCache.set(tz, domain);
+  if (isUtcOrGmt(tz)) {
+    return 0;
+  }
+  return getOffset(ensureZoneData(tz), tz, timestamp);
+}
+
+/**
+ * Compute offset from Intl without any caching.
+ * Used by getOffset() and by day-stability probing.
+ */
+function computeOffsetRaw(zd: ZoneData, tz: string, timestamp: number): number {
+  let dtf = zd.offsetFormatter;
+  if (!dtf) {
+    dtf = new Intl.DateTimeFormat("sv-SE", {
+      timeZone: tz,
+      hour12: false,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+    zd.offsetFormatter = dtf;
+  }
+  const wall = extractWallParts(dtf, timestamp);
+  const wallTs = Date.UTC(wall.year, wall.month - 1, wall.day, wall.hour, wall.minute, wall.second);
+  return Math.round((wallTs - timestamp) / 60000) || 0;
+}
+
+function getOffset(zd: ZoneData, tz: string, timestamp: number): number {
+  // 1. Day-level cache: check if this UTC day is known stable.
+  const dayKey = Math.floor(timestamp / 86400000);
+  const dayCached = zd.dayOffsetCache.get(dayKey);
+  if (dayCached !== undefined) {
+    return dayCached;
   }
 
-  // Use Math.floor for deterministic cache key. This returns the offset
-  // for any timestamp in the same second, which is safe since DST
-  // transitions never happen more frequently than once per second.
-  const key = Math.floor(timestamp / 1000);
-
-  const cached = domain.get(key);
+  // 2. Second-level cache: exact-second lookup.
+  const secKey = (timestamp / 1000) | 0;
+  const cached = zd.offsetCache.get(secKey);
   if (cached !== undefined) {
     return cached;
   }
 
-  if (domain.size >= MAX_DOMAIN_CACHE_SIZE) {
-    const first = domain.keys().next().value;
-    if (first !== undefined) {
-      domain.delete(first);
+  // 3. Compute via Intl.
+  const offset = computeOffsetRaw(zd, tz, timestamp);
+  zd.offsetCache.set(secKey, offset);
+
+  // 4. Probe day stability (once per day).
+  if (!zd.probedDays?.has(dayKey)) {
+    (zd.probedDays ??= new Set()).add(dayKey);
+    const dayStart = dayKey * 86400000;
+    const offStart = computeOffsetRaw(zd, tz, dayStart);
+    const offNoon = computeOffsetRaw(zd, tz, dayStart + 43200000);
+    const offEnd = computeOffsetRaw(zd, tz, dayStart + 86399999);
+    if (offStart === offNoon && offNoon === offEnd) {
+      zd.dayOffsetCache.set(dayKey, offStart);
     }
   }
 
-  const d = new Date(timestamp);
-  const dtf = getOffsetFormatter(tz);
-  const parts = dtf.formatToParts(d);
-  const vals = parseParts(parts);
-
-  // Compute offset by comparing wall-clock in target zone to UTC epoch.
-  const y = vals.year || 0;
-  const M = (vals.month || 1) - 1;
-  const day = vals.day || 1;
-  const h = vals.hour || 0;
-  const min = vals.minute || 0;
-  const sec = vals.second || 0;
-
-  const wallTs = Date.UTC(y, M, day, h, min, sec);
-  // Round to nearest minute: wallTs has second precision but timestamp
-  // may have milliseconds, causing sub-minute drift. Use "|| 0" to
-  // coerce -0 to 0 (Object.is(-0,0) === false, which breaks .toBe()).
-  const offset = Math.round((wallTs - timestamp) / 60000) || 0;
-
-  domain.set(key, offset);
   return offset;
 }
 
 /** Get wall-clock components (hour, minute, second) in a given zone. */
 function getWallClock(ts: number, tz: string): { hour: number; minute: number; second: number } {
-  const dtf = getWallFormatter(tz);
-  const parts = dtf.formatToParts(new Date(ts));
-  const vals = parseParts(parts);
-  return {
-    hour: vals.hour || 0,
-    minute: vals.minute || 0,
-    second: vals.second || 0,
-  };
+  if (isUtcOrGmt(tz)) {
+    const d = new Date(ts);
+    return { hour: d.getUTCHours(), minute: d.getUTCMinutes(), second: d.getUTCSeconds() };
+  }
+  const zd = ensureZoneData(tz);
+  let dtf = zd.wallFormatter;
+  if (!dtf) {
+    dtf = new Intl.DateTimeFormat("sv-SE", {
+      timeZone: tz,
+      hour12: false,
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+    zd.wallFormatter = dtf;
+  }
+  return extractTimeParts(dtf, ts);
 }
 
 function getAbbr(tz: string, ts: number): string {
-  const d = new Date(ts);
-  for (const loc of ABBR_LOCALES) {
-    try {
-      const dtf = new Intl.DateTimeFormat(loc, {
-        timeZone: tz,
-        timeZoneName: "short",
-        hour12: false,
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-      const parts = dtf.formatToParts(d);
-      const tzPart = parts.find((p) => p.type === "timeZoneName");
-      if (tzPart) {
-        const abbr = tzPart.value;
-        if (
-          abbr === "GMT" ||
-          (/^[A-Z]{2,5}$/.test(abbr) && !abbr.startsWith("GMT") && abbr !== "Time")
-        ) {
-          return abbr;
-        }
-      }
-    } catch {
-      /* skip */
+  if (tz === "UTC") {
+    return "UTC";
+  }
+  if (tz === "GMT") {
+    return "GMT";
+  }
+
+  const zd = ensureZoneData(tz);
+
+  // 1. Day-level cache: check if this UTC day is known stable for abbr.
+  const dayKey = Math.floor(ts / 86400000);
+  const dayCached = zd.abbrDayCache.get(dayKey);
+  if (dayCached !== undefined) {
+    return dayCached;
+  }
+
+  // 2. Second-level cache: exact-second lookup.
+  const secKey = Math.floor(ts / 1000);
+  const cached = zd.abbrCache.get(secKey);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  // 3. Compute abbreviation.
+  const abbr = computeAbbr(zd, tz, ts);
+
+  // 4. Store at second level.
+  zd.abbrCache.set(secKey, abbr);
+
+  // 5. Probe day stability (once per day).
+  if (!zd.abbrProbedDays?.has(dayKey)) {
+    (zd.abbrProbedDays ??= new Set()).add(dayKey);
+    const dayStart = dayKey * 86400000;
+    const a0 = computeAbbr(zd, tz, dayStart);
+    const a1 = computeAbbr(zd, tz, dayStart + 43200000);
+    const a2 = computeAbbr(zd, tz, dayStart + 86399999);
+    if (a0 === a1 && a1 === a2) {
+      zd.abbrDayCache.set(dayKey, a0);
     }
   }
+
+  return abbr;
+}
+
+/**
+ * Compute abbreviation without any caching.
+ * Used by getAbbr() and by day-stability probing.
+ */
+function computeAbbr(zd: ZoneData, tz: string, ts: number): string {
+  // Try the locale that previously succeeded for this zone.
+  if (zd.abbrLocale) {
+    const abbr = tryLocaleAbbr(zd, tz, ts, zd.abbrLocale);
+    if (abbr !== null) {
+      return abbr;
+    }
+  }
+
+  // Try all configured locales.
+  for (const loc of ABBR_LOCALES) {
+    const abbr = tryLocaleAbbr(zd, tz, ts, loc);
+    if (abbr !== null) {
+      zd.abbrLocale = loc;
+      return abbr;
+    }
+  }
+
+  // Known abbreviation fallback (zones where Intl doesn't give a short name).
   if (tz in KNOWN_ABBR) {
     const known = KNOWN_ABBR[tz];
     if (known === "") {
-      const offset = getOffset(tz, ts);
+      const offset = getOffsetByZone(tz, ts);
       const abs = Math.abs(offset);
       const hrs = Math.floor(abs / 60);
       const min = abs % 60;
       const sign = offset >= 0 ? "+" : "-";
-      return `${sign}${String(hrs).padStart(2, "0")}${String(min).padStart(2, "0")}`;
+      return `${sign}${PAD2[hrs]}${PAD2[min]}`;
     }
     if (known.startsWith("+") || known.startsWith("-")) {
       return known;
     }
     return known;
   }
-  const offset = getOffset(tz, ts);
+  const offset = getOffsetByZone(tz, ts);
   const abs = Math.abs(offset);
   const hrs = Math.floor(abs / 60);
   const min = abs % 60;
   const sign = offset >= 0 ? "+" : "-";
-  return `GMT${sign}${String(hrs).padStart(2, "0")}${min ? String(min).padStart(2, "0") : ""}`;
+  return `GMT${sign}${PAD2[hrs]}${min ? PAD2[min] : ""}`;
 }
 
 let zoneNamesSet: Set<string> | null = null;
@@ -294,12 +626,12 @@ function isZoneName(s: string): boolean {
   if (!s.includes("/")) {
     return false;
   }
+  return isZoneNameIntl(s);
+}
+
+function isZoneNameIntl(s: string): boolean {
   try {
-    zoneNamesSet ??= new Set(
-      (Intl as unknown as { supportedValuesOf: (k: string) => string[] }).supportedValuesOf(
-        "timeZone",
-      ),
-    );
+    zoneNamesSet ??= new Set(intlTZNames());
     if (zoneNamesSet.has(s)) {
       return true;
     }
@@ -343,7 +675,13 @@ export function installTimezone(moment: MomentLike): MomentLike {
    * boundaries in the host TZ affecting the parsed hour value).
    */
   function parseInZone(input: string, zone: string, format?: string): MomentInstance {
-    let y: number, M: number, d: number, h: number, min: number, s: number, ms: number;
+    let y = 0,
+      M = 0,
+      d = 1,
+      h = 0,
+      min = 0,
+      s = 0,
+      ms = 0;
 
     if (format) {
       // oxlint-disable-next-line no-explicit-any
@@ -359,20 +697,51 @@ export function installTimezone(moment: MomentLike): MomentLike {
       s = m.second();
       ms = m.millisecond();
     } else {
-      // Parse ISO-like "YYYY-MM-DD HH:mm:ss" directly from the input
-      // string to avoid local-TZ spring-forward boundary interference.
-      const isoMatch = input.match(
-        /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?(?:\.(\d+))?/,
-      );
-      if (isoMatch) {
-        y = parseInt(isoMatch[1], 10);
-        M = parseInt(isoMatch[2], 10) - 1;
-        d = parseInt(isoMatch[3], 10);
-        h = parseInt(isoMatch[4], 10);
-        min = parseInt(isoMatch[5], 10);
-        s = isoMatch[6] ? parseInt(isoMatch[6], 10) : 0;
-        ms = isoMatch[7] ? parseInt(isoMatch[7].padEnd(3, "0"), 10) : 0;
-      } else {
+      const len = input.length;
+      let iso = false;
+      if (
+        len >= 16 &&
+        isDigit(input, 0) &&
+        isDigit(input, 1) &&
+        isDigit(input, 2) &&
+        isDigit(input, 3) &&
+        input.charCodeAt(4) === 45 &&
+        isDigit(input, 5) &&
+        isDigit(input, 6) &&
+        input.charCodeAt(7) === 45 &&
+        isDigit(input, 8) &&
+        isDigit(input, 9)
+      ) {
+        const sep = input.charCodeAt(10);
+        if (
+          (sep === 84 || sep === 32) &&
+          isDigit(input, 11) &&
+          isDigit(input, 12) &&
+          input.charCodeAt(13) === 58 &&
+          isDigit(input, 14) &&
+          isDigit(input, 15)
+        ) {
+          y = p4(input, 0);
+          M = p2(input, 5) - 1;
+          d = p2(input, 8);
+          h = p2(input, 11);
+          min = p2(input, 14);
+          if (
+            len >= 19 &&
+            input.charCodeAt(16) === 58 &&
+            isDigit(input, 17) &&
+            isDigit(input, 18)
+          ) {
+            s = p2(input, 17);
+            ms = len > 19 && input.charCodeAt(19) === 46 ? parseMsTail(input, 20, len) : 0;
+          } else {
+            s = 0;
+            ms = 0;
+          }
+          iso = true;
+        }
+      }
+      if (!iso) {
         // oxlint-disable-next-line no-explicit-any
         const m = (moment as any)(input);
         if (!m.isValid()) {
@@ -389,13 +758,13 @@ export function installTimezone(moment: MomentLike): MomentLike {
     }
 
     const guess = Date.UTC(y, M, d, h, min, s, ms);
-    const initialOffset = getOffset(zone, guess);
+    const initialOffset = getOffsetByZone(zone, guess);
     let ts = guess - initialOffset * 60000;
-    let secondOffset = getOffset(zone, ts);
+    let secondOffset = getOffsetByZone(zone, ts);
 
     if (initialOffset !== secondOffset) {
       const ts2 = guess - secondOffset * 60000;
-      const thirdOffset = getOffset(zone, ts2);
+      const thirdOffset = getOffsetByZone(zone, ts2);
       if (thirdOffset === secondOffset) {
         const wc = getWallClock(ts2, zone);
         if (wc.hour === h && wc.minute === min) {
@@ -406,7 +775,6 @@ export function installTimezone(moment: MomentLike): MomentLike {
           secondOffset = Math.max(initialOffset, secondOffset);
         }
       } else {
-        // Transition boundary — try both offsets for wall-clock match.
         for (const off of [initialOffset, secondOffset]) {
           const candidateTs = guess - off * 60000;
           const wc = getWallClock(candidateTs, zone);
@@ -419,7 +787,6 @@ export function installTimezone(moment: MomentLike): MomentLike {
       }
     }
 
-    // Spring-forward adjustment: if wall-clock doesn't match, adjust forward by 1h.
     {
       const wc = getWallClock(ts, zone);
       if (wc.hour !== h || wc.minute !== min || wc.second !== s) {
@@ -430,12 +797,11 @@ export function installTimezone(moment: MomentLike): MomentLike {
       }
     }
 
-    // Fall-back ambiguity detection: when guess falls after the UTC transition.
     if (initialOffset === secondOffset) {
       for (const offsetDelta of [60, -60]) {
         const testOff = secondOffset + offsetDelta;
         const testTs = guess - testOff * 60000;
-        const actualOff = getOffset(zone, testTs);
+        const actualOff = getOffsetByZone(zone, testTs);
         if (actualOff !== testOff) {
           continue;
         }
@@ -453,7 +819,7 @@ export function installTimezone(moment: MomentLike): MomentLike {
     // oxlint-disable-next-line no-explicit-any
     const result = (moment as any)(ts) as MomentInstance;
     result.utcOffset(secondOffset, false);
-    result._z = { name: zone, abbr: (t: number) => getAbbr(zone, t) };
+    result._z = new MomentTzZone(zone);
     return result;
   }
 
@@ -525,9 +891,9 @@ export function installTimezone(moment: MomentLike): MomentLike {
       const targetOffset = -zoneInfo.offset(timestamp) || 0;
       m.utcOffset(targetOffset, keepTime);
     } else {
-      const targetOffset = getOffset(tz, timestamp) || 0;
+      const targetOffset = getOffsetByZone(tz, timestamp) || 0;
       m.utcOffset(targetOffset, keepTime);
-      m._z = { name: tz, abbr: (_ts: number) => getAbbr(tz, _ts) };
+      m._z = new MomentTzZone(tz);
     }
 
     return m;
@@ -548,10 +914,10 @@ export function installTimezone(moment: MomentLike): MomentLike {
       const z = this._z.name;
       const d = new Date(ts);
       const year = d.getUTCFullYear();
-      const janOff = getOffset(z, Date.UTC(year, 0, 1));
-      const julOff = getOffset(z, Date.UTC(year, 6, 1));
+      const janOff = getOffsetByZone(z, Date.UTC(year, 0, 1));
+      const julOff = getOffsetByZone(z, Date.UTC(year, 6, 1));
       const standardOff = Math.min(janOff, julOff);
-      const currentOff = getOffset(z, ts);
+      const currentOff = getOffsetByZone(z, ts);
       return currentOff !== standardOff;
     }
     return origIsDST ? origIsDST.call(this) : false;
@@ -578,9 +944,7 @@ export function installTimezone(moment: MomentLike): MomentLike {
 
   moment.tz.names = function (): string[] {
     try {
-      return (Intl as unknown as { supportedValuesOf: (k: string) => string[] })
-        .supportedValuesOf("timeZone")
-        .sort();
+      return intlTZNames().sort();
     } catch {
       return [
         "UTC",
@@ -612,16 +976,14 @@ export function installTimezone(moment: MomentLike): MomentLike {
       return null;
     }
 
-    const off = (ts: number) => getOffset(normalized, ts);
+    const cached = zoneObjectCache.get(normalized);
+    if (cached) {
+      return cached;
+    }
 
-    return {
-      name: normalized,
-      abbr: (ts: number) => getAbbr(normalized, ts),
-      // "|| 0" coerces -0 to 0 (Object.is(-0,0) === false)
-      offset: (ts: number) => -off(ts) || 0,
-      utcOffset: (ts: number) => -off(ts) || 0,
-      parse: (ts: number) => -off(ts) || 0,
-    };
+    const zone = new MomentTzZone(normalized);
+    zoneObjectCache.set(normalized, zone);
+    return zone;
   };
 
   moment.tz.add = function (_data: unknown): void {
