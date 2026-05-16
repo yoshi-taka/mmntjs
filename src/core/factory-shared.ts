@@ -118,6 +118,8 @@ export function createMomentFactory(deps: FactoryDeps) {
         _f: format,
         _l: locale,
         _strict: strict,
+        _offset: parsed.offset,
+        _isUTC: parsed.offset !== undefined,
         _unusedTokens: parsed._unusedTokens,
         _unusedInput: parsed._unusedInput,
         _charsLeftOver: parsed._charsLeftOver,
