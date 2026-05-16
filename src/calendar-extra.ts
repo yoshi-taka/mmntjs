@@ -68,18 +68,16 @@ function getISOWeekNumber(d: Date, utc: boolean): number {
 }
 
 function getISOWeekYear(d: Date, utc: boolean): number {
-  const getYear = utc ? (x: Date) => x.getUTCFullYear() : (x: Date) => x.getFullYear();
-  const year = getYear(d);
-  const weekOffset = firstWeekOffset(year, 1, 4, utc);
-  const dayOfYear = getDayOfYear(d, utc);
-  const week = Math.floor((dayOfYear - weekOffset - 1) / 7) + 1;
-  if (week < 1) {
-    return year - 1;
-  }
-  if (week > weeksInYear(year, 1, 4, utc)) {
-    return year + 1;
-  }
-  return year;
+  const getDow = utc ? (x: Date) => x.getUTCDay() : (x: Date) => x.getDay();
+  const getDate = utc ? (x: Date) => x.getUTCDate() : (x: Date) => x.getDate();
+  const getFullYear = utc ? (x: Date) => x.getUTCFullYear() : (x: Date) => x.getFullYear();
+  const setDate = utc
+    ? (x: Date, v: number) => x.setUTCDate(v)
+    : (x: Date, v: number) => x.setDate(v);
+  const clone = new Date(d.getTime());
+  const isoDow = getDow(clone) || 7;
+  setDate(clone, getDate(clone) + 4 - isoDow);
+  return getFullYear(clone);
 }
 
 export function isoWeekdayMoment(m: CalendarAwareMoment, d?: unknown): number | Moment {

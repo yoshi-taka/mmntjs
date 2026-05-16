@@ -83,15 +83,34 @@ export function createMomentFactory(deps: FactoryDeps) {
     ) {
       const isoWeekYear = parsed.isoWeekYear ?? parsed._weekYear;
       const isoWeek = parsed.isoWeek ?? parsed._week;
-      const jan4 = createUTCDate(isoWeekYear, 0, 4);
-      const dayOfJan4 = jan4.getUTCDay() || 7;
-      const week1StartEpoch = createUTCDate(isoWeekYear, 0, 4 - (dayOfJan4 - 1)).getTime();
+      const useUtc = parsed.offset !== undefined;
+      const makeDate = useUtc
+        ? createUTCDate
+        : (y: number, m: number, d = 1) => {
+            if (y >= 0 && y <= 99) {
+              const date = new Date(0);
+              date.setFullYear(y, m, d);
+              date.setHours(0, 0, 0, 0);
+              return date;
+            }
+            return new Date(y, m, d);
+          };
+      const jan4 = makeDate(isoWeekYear, 0, 4);
+      const dayOfJan4 = useUtc ? jan4.getUTCDay() || 7 : jan4.getDay() || 7;
+      const week1StartEpoch = makeDate(isoWeekYear, 0, 4 - (dayOfJan4 - 1)).getTime();
       const weekday = parsed._weekdayNum ?? 1;
-      const d = new Date(
-        week1StartEpoch + ((isoWeek - 1) * 7 + (weekday - 1)) * 86400000,
-      );
+      const d = new Date(week1StartEpoch + ((isoWeek - 1) * 7 + (weekday - 1)) * 86400000);
       if (parsed.hour !== undefined) {
-        d.setUTCHours(parsed.hour, parsed.minute ?? 0, parsed.second ?? 0, parsed.millisecond ?? 0);
+        if (useUtc) {
+          d.setUTCHours(
+            parsed.hour,
+            parsed.minute ?? 0,
+            parsed.second ?? 0,
+            parsed.millisecond ?? 0,
+          );
+        } else {
+          d.setHours(parsed.hour, parsed.minute ?? 0, parsed.second ?? 0, parsed.millisecond ?? 0);
+        }
       }
       return new Moment({
         _d: d,
@@ -173,7 +192,7 @@ export function createMomentFactory(deps: FactoryDeps) {
       _offset: parsed.offset,
       _isUTC: parsed.offset !== undefined,
       _overflow: overflow >= 0 ? overflow : undefined,
-      _isValid: overflow < 0,
+      _isValid: overflow < 0 && isFinite(date.getTime()),
       _unusedTokens: parsed._unusedTokens,
       _unusedInput: parsed._unusedInput,
       _charsLeftOver: parsed._charsLeftOver,

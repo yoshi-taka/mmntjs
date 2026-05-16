@@ -2940,7 +2940,13 @@ function parseISOWithTable(str: string, locale?: ParseLocale): InternalParsedDat
   }
 
   const datePart = match[1];
-  const classified = classifyISODatePart(datePart);
+  let classified = classifyISODatePart(datePart);
+  if (!classified) {
+    const ch0 = datePart.charCodeAt(0);
+    if ((ch0 === 43 || ch0 === 45) && datePart.length > 1) {
+      classified = classifyISODatePart(datePart.slice(1));
+    }
+  }
   if (!classified) {
     return null;
   }
