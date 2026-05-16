@@ -156,7 +156,9 @@ export function parseZoneMoment(
         } else {
           // No offset found — treat wall-clock as UTC (+00:00)
           (clone as unknown as { _ensureFields: () => void })._ensureFields();
-          clone._d = new Date(Date.UTC(clone.$y, clone.$M, clone.$D, clone.$H, clone.$m, clone.$s, clone.$ms));
+          clone._d = new Date(
+            Date.UTC(clone.$y, clone.$M, clone.$D, clone.$H, clone.$m, clone.$s, clone.$ms),
+          );
           clone._t = clone._d.getTime();
           clone._offset = 0;
           clone._isUTC = true;
@@ -205,8 +207,13 @@ export function parseZoneMoment(
       } else if (!next._isUTC) {
         (next as unknown as { _ensureFields: () => void })._ensureFields();
         const d = createDateSafe(
-          next.$y, next.$M, next.$D,
-          next.$H, next.$m, next.$s, next.$ms,
+          next.$y,
+          next.$M,
+          next.$D,
+          next.$H,
+          next.$m,
+          next.$s,
+          next.$ms,
           true,
         );
         next._d = d;
@@ -219,11 +226,7 @@ export function parseZoneMoment(
   } else if (!next._isUTC && isString(input)) {
     // No format, no offset — treat wall-clock as UTC (+00:00)
     (next as unknown as { _ensureFields: () => void })._ensureFields();
-    const d = createDateSafe(
-      next.$y, next.$M, next.$D,
-      next.$H, next.$m, next.$s, next.$ms,
-      true,
-    );
+    const d = createDateSafe(next.$y, next.$M, next.$D, next.$H, next.$m, next.$s, next.$ms, true);
     next._d = d;
     next._t = d.getTime();
     next._offset = 0;

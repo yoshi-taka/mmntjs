@@ -44,11 +44,17 @@ describe("moment.utc()", () => {
   });
 
   test("ISO string with offset", () => {
-    compareMoments(moment.utc("2024-06-15T12:30:00+09:00"), originalMoment.utc("2024-06-15T12:30:00+09:00"));
+    compareMoments(
+      moment.utc("2024-06-15T12:30:00+09:00"),
+      originalMoment.utc("2024-06-15T12:30:00+09:00"),
+    );
   });
 
   test("ISO string with negative offset", () => {
-    compareMoments(moment.utc("2024-06-15T12:30:00-04:00"), originalMoment.utc("2024-06-15T12:30:00-04:00"));
+    compareMoments(
+      moment.utc("2024-06-15T12:30:00-04:00"),
+      originalMoment.utc("2024-06-15T12:30:00-04:00"),
+    );
   });
 
   test("array", () => {
@@ -128,10 +134,7 @@ describe("utcOffset() setter — string", () => {
 });
 
 describe("zone()", () => {
-  function zoneCompare(
-    mm: ReturnType<typeof moment>,
-    om: ReturnType<typeof originalMoment>,
-  ) {
+  function zoneCompare(mm: ReturnType<typeof moment>, om: ReturnType<typeof originalMoment>) {
     expect(mm.zone()).toBe(-om.utcOffset() || 0);
     expect(mm.utcOffset()).toBe(om.utcOffset());
     expect(mm.valueOf()).toBe(om.valueOf());
@@ -398,9 +401,7 @@ describe("parseZone()", () => {
     for (const input of inputs) {
       const mm = moment.parseZone(input);
       const om = originalMoment.parseZone(input);
-      expect(mm.format("M D YYYY HH:mm:ss ZZ")).toBe(
-        om.format("M D YYYY HH:mm:ss ZZ"),
-      );
+      expect(mm.format("M D YYYY HH:mm:ss ZZ")).toBe(om.format("M D YYYY HH:mm:ss ZZ"));
       expect(mm.utcOffset()).toBe(om.utcOffset());
       expect(mm.valueOf()).toBe(om.valueOf());
     }
@@ -729,12 +730,8 @@ describe("getters/setters with utcOffset", () => {
     expect(a.clone().utcOffset(-120).month(1).month()).toBe(
       b.clone().utcOffset(-120).month(1).month(),
     );
-    expect(a.clone().utcOffset(-120).date(2).date()).toBe(
-      b.clone().utcOffset(-120).date(2).date(),
-    );
-    expect(a.clone().utcOffset(-120).hour(1).hour()).toBe(
-      b.clone().utcOffset(-120).hour(1).hour(),
-    );
+    expect(a.clone().utcOffset(-120).date(2).date()).toBe(b.clone().utcOffset(-120).date(2).date());
+    expect(a.clone().utcOffset(-120).hour(1).hour()).toBe(b.clone().utcOffset(-120).hour(1).hour());
   });
 });
 
