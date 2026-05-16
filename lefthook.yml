@@ -2,6 +2,5 @@ pre-commit:
   commands:
     lint:
       run: bun run lint
-    audit-config:
-      glob: "{knip.json,.fallowrc.json}"
-      run: bun run audit:static
+    knip:
+      run: bun run knip

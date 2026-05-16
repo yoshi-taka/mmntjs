@@ -21,6 +21,7 @@
     "test/bench*.mjs",
     "test/fuzz/**",
     "test/properties/metamorphic.test.ts",
+    "test/properties/number-theory.test.ts",
     "test/browser-bundle-compare.ts",
     "moment/**"
   ],
