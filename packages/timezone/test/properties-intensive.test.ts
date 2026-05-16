@@ -67,3 +67,21 @@ describe("property-intensive: tz() preserves valueOf", () => {
     );
   });
 });
+
+describe("property-intensive: zone abbreviations match oracle", () => {
+  const timestamps = fc.integer({ min: MIN_TS, max: MAX_TS });
+  const zones = fc.constantFrom(...ZONES);
+
+  test("zoneAbbr() matches moment-timezone across random timestamps", () => {
+    fc.assert(
+      fc.property(timestamps, zones, (ts, zone) => {
+        const mm = moment(ts).tz(zone);
+        const om = momentTimezone(ts).tz(zone);
+        expect(mm.zoneAbbr()).toBe(om.zoneAbbr());
+        expect(mm.format("z")).toBe(om.format("z"));
+        expect(mm.utcOffset()).toBe(om.utcOffset());
+      }),
+      { numRuns: 1000 },
+    );
+  });
+});

@@ -6,8 +6,9 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 cd "$PROJECT_DIR"
 
-COMPAT_FILE="test/timezone-compat.test.ts"
-DST_FILE="test/timezone-dst-subproc.test.ts"
+ROOT_COMPAT_FILE="test/timezone-compat.test.ts"
+ROOT_DST_FILE="test/timezone-dst-subproc.test.ts"
+PACKAGE_TEST_DIR="packages/timezone/test"
 
 TZS=(
   "UTC"
@@ -25,11 +26,11 @@ echo ""
 
 all_pass=true
 
-# Run the main compat tests under all TZs
-echo "=== Main Compatibility Tests (${COMPAT_FILE}) ==="
+# Run root compat tests under all TZs
+echo "=== Main Compatibility Tests (${ROOT_COMPAT_FILE}) ==="
 for tz in "${TZS[@]}"; do
   echo "--- TZ=$tz ---"
-  if TZ="$tz" bun test "$COMPAT_FILE" 2>&1; then
+  if TZ="$tz" bun test "$ROOT_COMPAT_FILE" 2>&1; then
     echo "  ✅ PASS"
   else
     echo "  ❌ FAIL"
@@ -38,11 +39,24 @@ for tz in "${TZS[@]}"; do
   echo ""
 done
 
-# Run the DST-specific tests (which compare against moment.js) under multiple TZs
-echo "=== DST Boundary Tests (${DST_FILE}) ==="
+# Run DST-specific tests under multiple TZs
+echo "=== DST Boundary Tests (${ROOT_DST_FILE}) ==="
 for tz in "${TZS[@]}"; do
   echo "--- TZ=$tz ---"
-  if TZ="$tz" bun test "$DST_FILE" 2>&1; then
+  if TZ="$tz" bun test "$ROOT_DST_FILE" 2>&1; then
+    echo "  ✅ PASS"
+  else
+    echo "  ❌ FAIL"
+    all_pass=false
+  fi
+  echo ""
+done
+
+# Run package timezone tests under all TZs
+echo "=== Package Timezone Tests (${PACKAGE_TEST_DIR}) ==="
+for tz in "${TZS[@]}"; do
+  echo "--- TZ=$tz ---"
+  if TZ="$tz" bun test "${PACKAGE_TEST_DIR}/" 2>&1; then
     echo "  ✅ PASS"
   else
     echo "  ❌ FAIL"

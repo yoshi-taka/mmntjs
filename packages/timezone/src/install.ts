@@ -8,7 +8,7 @@ interface MomentTzZone {
   abbr: (ts: number) => string;
   offset: (ts: number) => number;
   utcOffset: (ts: number) => number;
-  parse: (ts: number) => { name: string; offset: number };
+  parse: (ts: number) => number;
 }
 
 interface MomentTz {
@@ -47,8 +47,71 @@ export type MomentLike = {
   (...args: unknown[]): MomentInstance;
 };
 
+/* ------------------------------------------------------------------ */
+/*  Caches                                                             */
+/* ------------------------------------------------------------------ */
+
 const offsetCache = new Map<string, Map<number, number>>();
 const MAX_DOMAIN_CACHE_SIZE = 1000;
+
+/** Cached Intl.DateTimeFormat per timezone for offset computation. */
+const offsetFormatters = new Map<string, Intl.DateTimeFormat>();
+
+/** Cached Intl.DateTimeFormat per timezone for wall-clock extraction. */
+const wallFormatters = new Map<string, Intl.DateTimeFormat>();
+
+function getOffsetFormatter(tz: string): Intl.DateTimeFormat {
+  let dtf = offsetFormatters.get(tz);
+  if (!dtf) {
+    dtf = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz,
+      hour12: false,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+    offsetFormatters.set(tz, dtf);
+  }
+  return dtf;
+}
+
+function getWallFormatter(tz: string): Intl.DateTimeFormat {
+  let dtf = wallFormatters.get(tz);
+  if (!dtf) {
+    dtf = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz,
+      hour12: false,
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+    wallFormatters.set(tz, dtf);
+  }
+  return dtf;
+}
+
+/** Extract typed wall-clock components from formatToParts output. */
+function parseParts(parts: Intl.DateTimeFormatPart[]): Record<string, number> {
+  const result: Record<string, number> = {};
+  for (const p of parts) {
+    if (
+      p.type !== "literal" &&
+      p.type !== "dayPeriod" &&
+      p.type !== "timeZoneName" &&
+      p.type !== "era"
+    ) {
+      result[p.type] = parseInt(p.value, 10);
+    }
+  }
+  return result;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Abbreviation overrides                                             */
+/* ------------------------------------------------------------------ */
 
 const ABBR_LOCALES = [
   "en-US",
@@ -65,8 +128,6 @@ const ABBR_LOCALES = [
   "zh-CN",
 ];
 
-/** Hardcoded abbreviation overrides for zones where Intl doesn't return traditional abbreviations. */
-/** Map IANA alias → canonical name for zones renamed by CLDR. */
 const ZONE_ALIAS: Record<string, string> = {
   "Asia/Calcutta": "Asia/Kolkata",
 };
@@ -98,6 +159,10 @@ const KNOWN_ABBR: Record<string, string> = {
   "Africa/El_Aaiun": "+01",
 };
 
+/* ------------------------------------------------------------------ */
+/*  Helpers                                                           */
+/* ------------------------------------------------------------------ */
+
 function normalizeTz(tz: string): string {
   const u = tz.toUpperCase();
   if (u === "UTC" || u === "GMT") {
@@ -110,14 +175,81 @@ function normalizeTz(tz: string): string {
   return tz;
 }
 
+function getOffset(tz: string, timestamp: number): number {
+  tz = normalizeTz(tz);
+  let domain = offsetCache.get(tz);
+  if (!domain) {
+    domain = new Map();
+    offsetCache.set(tz, domain);
+  }
+
+  // Use Math.floor for deterministic cache key. This returns the offset
+  // for any timestamp in the same second, which is safe since DST
+  // transitions never happen more frequently than once per second.
+  const key = Math.floor(timestamp / 1000);
+
+  const cached = domain.get(key);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  if (domain.size >= MAX_DOMAIN_CACHE_SIZE) {
+    const first = domain.keys().next().value;
+    if (first !== undefined) {
+      domain.delete(first);
+    }
+  }
+
+  const d = new Date(timestamp);
+  const dtf = getOffsetFormatter(tz);
+  const parts = dtf.formatToParts(d);
+  const vals = parseParts(parts);
+
+  // Compute offset by comparing wall-clock in target zone to UTC epoch.
+  const y = vals.year || 0;
+  const M = (vals.month || 1) - 1;
+  const day = vals.day || 1;
+  const h = vals.hour || 0;
+  const min = vals.minute || 0;
+  const sec = vals.second || 0;
+
+  const wallTs = Date.UTC(y, M, day, h, min, sec);
+  // Round to nearest minute: wallTs has second precision but timestamp
+  // may have milliseconds, causing sub-minute drift. Use "|| 0" to
+  // coerce -0 to 0 (Object.is(-0,0) === false, which breaks .toBe()).
+  const offset = Math.round((wallTs - timestamp) / 60000) || 0;
+
+  domain.set(key, offset);
+  return offset;
+}
+
+/** Get wall-clock components (hour, minute, second) in a given zone. */
+function getWallClock(ts: number, tz: string): { hour: number; minute: number; second: number } {
+  const dtf = getWallFormatter(tz);
+  const parts = dtf.formatToParts(new Date(ts));
+  const vals = parseParts(parts);
+  return {
+    hour: vals.hour || 0,
+    minute: vals.minute || 0,
+    second: vals.second || 0,
+  };
+}
+
 function getAbbr(tz: string, ts: number): string {
   const d = new Date(ts);
   for (const loc of ABBR_LOCALES) {
     try {
-      const full = d.toLocaleString(loc, { timeZone: tz, timeZoneName: "short" });
-      const m = full.match(/\s(\S+)$/);
-      if (m) {
-        const abbr = m[1];
+      const dtf = new Intl.DateTimeFormat(loc, {
+        timeZone: tz,
+        timeZoneName: "short",
+        hour12: false,
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      const parts = dtf.formatToParts(d);
+      const tzPart = parts.find((p) => p.type === "timeZoneName");
+      if (tzPart) {
+        const abbr = tzPart.value;
         if (
           abbr === "GMT" ||
           (/^[A-Z]{2,5}$/.test(abbr) && !abbr.startsWith("GMT") && abbr !== "Time")
@@ -152,48 +284,8 @@ function getAbbr(tz: string, ts: number): string {
   return `GMT${sign}${String(hrs).padStart(2, "0")}${min ? String(min).padStart(2, "0") : ""}`;
 }
 
-function getOffset(tz: string, timestamp: number): number {
-  tz = normalizeTz(tz);
-  let domain = offsetCache.get(tz);
-  if (!domain) {
-    domain = new Map();
-    offsetCache.set(tz, domain);
-  }
-
-  const key = Math.round(timestamp / 1000);
-
-  const cached = domain.get(key);
-  if (cached !== undefined) {
-    return cached;
-  }
-
-  if (domain.size >= MAX_DOMAIN_CACHE_SIZE) {
-    const first = domain.keys().next().value;
-    if (first !== undefined) {
-      domain.delete(first);
-    }
-  }
-
-  const d = new Date(timestamp);
-  const parts = d.toLocaleString("en-US", {
-    timeZone: tz,
-    timeZoneName: "longOffset",
-  });
-
-  const m = parts.match(/GMT([+-]\d{1,2})(?::(\d{2}))?/);
-  let offset = 0;
-  if (m) {
-    const hrs = parseInt(m[1], 10);
-    const min = m[2] ? parseInt(m[2], 10) : 0;
-    const s = hrs >= 0 ? 1 : -1;
-    offset = hrs * 60 + s * min;
-  }
-
-  domain.set(key, offset);
-  return offset;
-}
-
 let zoneNamesSet: Set<string> | null = null;
+
 function isZoneName(s: string): boolean {
   const u = s.toUpperCase();
   if (u === "UTC" || u === "GMT") {
@@ -208,14 +300,15 @@ function isZoneName(s: string): boolean {
         "timeZone",
       ),
     );
-    // Direct hit (canonical name in Intl)
-    if (zoneNamesSet.has(s)) { return true; }
-    // Check if s is an alias whose canonical form is in Intl
+    if (zoneNamesSet.has(s)) {
+      return true;
+    }
     if (s in ZONE_ALIAS) {
       const canonical = ZONE_ALIAS[s];
-      if (zoneNamesSet.has(canonical)) { return true; }
+      if (zoneNamesSet.has(canonical)) {
+        return true;
+      }
     }
-    // Check if s is a canonical name whose alias is in Intl
     for (const alias of Object.keys(ZONE_ALIAS)) {
       if (ZONE_ALIAS[alias] === s && zoneNamesSet.has(alias)) {
         return true;
@@ -227,12 +320,14 @@ function isZoneName(s: string): boolean {
   }
 }
 
-/** Check if a string input has an explicit timezone offset (e.g. +09:00, Z) */
 function hasExplicitOffset(input: string): boolean {
-  // Strip leading/trailing whitespace, check for trailing Z or +/-HH:MM or +/-HHMM
   const trimmed = input.trim();
   return /(Z|[+-]\d{2}:?\d{2})\s*$/.test(trimmed);
 }
+
+/* ------------------------------------------------------------------ */
+/*  Plugin installation                                               */
+/* ------------------------------------------------------------------ */
 
 export function installTimezone(moment: MomentLike): MomentLike {
   if (moment.tz) {
@@ -243,23 +338,55 @@ export function installTimezone(moment: MomentLike): MomentLike {
 
   /**
    * Parse a wall-clock time string in a given timezone.
-   * moment-timezone interprets the wall-clock components as being in the target zone,
-   * NOT as local time followed by conversion.
+   * For ISO-like strings, components are extracted directly from the
+   * input to avoid local-timezone interference (e.g. spring-forward
+   * boundaries in the host TZ affecting the parsed hour value).
    */
   function parseInZone(input: string, zone: string, format?: string): MomentInstance {
-    // oxlint-disable-next-line no-explicit-any
-    const m = format ? (moment as any)(input, format) : (moment as any)(input);
-    if (!m.isValid()) {
-      return m;
-    }
+    let y: number, M: number, d: number, h: number, min: number, s: number, ms: number;
 
-    const y = m.year();
-    const M = m.month();
-    const d = m.date();
-    const h = m.hour();
-    const min = m.minute();
-    const s = m.second();
-    const ms = m.millisecond();
+    if (format) {
+      // oxlint-disable-next-line no-explicit-any
+      const m = (moment as any)(input, format);
+      if (!m.isValid()) {
+        return m;
+      }
+      y = m.year();
+      M = m.month();
+      d = m.date();
+      h = m.hour();
+      min = m.minute();
+      s = m.second();
+      ms = m.millisecond();
+    } else {
+      // Parse ISO-like "YYYY-MM-DD HH:mm:ss" directly from the input
+      // string to avoid local-TZ spring-forward boundary interference.
+      const isoMatch = input.match(
+        /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?(?:\.(\d+))?/,
+      );
+      if (isoMatch) {
+        y = parseInt(isoMatch[1], 10);
+        M = parseInt(isoMatch[2], 10) - 1;
+        d = parseInt(isoMatch[3], 10);
+        h = parseInt(isoMatch[4], 10);
+        min = parseInt(isoMatch[5], 10);
+        s = isoMatch[6] ? parseInt(isoMatch[6], 10) : 0;
+        ms = isoMatch[7] ? parseInt(isoMatch[7].padEnd(3, "0"), 10) : 0;
+      } else {
+        // oxlint-disable-next-line no-explicit-any
+        const m = (moment as any)(input);
+        if (!m.isValid()) {
+          return m;
+        }
+        y = m.year();
+        M = m.month();
+        d = m.date();
+        h = m.hour();
+        min = m.minute();
+        s = m.second();
+        ms = m.millisecond();
+      }
+    }
 
     const guess = Date.UTC(y, M, d, h, min, s, ms);
     const initialOffset = getOffset(zone, guess);
@@ -270,15 +397,8 @@ export function installTimezone(moment: MomentLike): MomentLike {
       const ts2 = guess - secondOffset * 60000;
       const thirdOffset = getOffset(zone, ts2);
       if (thirdOffset === secondOffset) {
-        const d2 = new Date(ts2);
-        const wall = d2.toLocaleString("en-US", {
-          timeZone: zone,
-          hour12: false,
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-        const wallH = parseInt(wall.slice(0, 2), 10);
-        if (wallH === h && wall.slice(3, 5) === String(min).padStart(2, "0")) {
+        const wc = getWallClock(ts2, zone);
+        if (wc.hour === h && wc.minute === min) {
           ts = ts2;
         } else {
           const preOffset = Math.min(initialOffset, secondOffset);
@@ -286,9 +406,47 @@ export function installTimezone(moment: MomentLike): MomentLike {
           secondOffset = Math.max(initialOffset, secondOffset);
         }
       } else {
-        const preOffset = Math.min(initialOffset, secondOffset);
-        ts = guess - preOffset * 60000;
-        secondOffset = Math.max(initialOffset, secondOffset);
+        // Transition boundary — try both offsets for wall-clock match.
+        for (const off of [initialOffset, secondOffset]) {
+          const candidateTs = guess - off * 60000;
+          const wc = getWallClock(candidateTs, zone);
+          if (wc.hour === h && wc.minute === min && wc.second === s) {
+            ts = candidateTs;
+            secondOffset = off;
+            break;
+          }
+        }
+      }
+    }
+
+    // Spring-forward adjustment: if wall-clock doesn't match, adjust forward by 1h.
+    {
+      const wc = getWallClock(ts, zone);
+      if (wc.hour !== h || wc.minute !== min || wc.second !== s) {
+        const dstOff = Math.max(initialOffset, secondOffset);
+        const springGuess = Date.UTC(y, M, d, h + 1, min, s, ms);
+        ts = springGuess - dstOff * 60000;
+        secondOffset = dstOff;
+      }
+    }
+
+    // Fall-back ambiguity detection: when guess falls after the UTC transition.
+    if (initialOffset === secondOffset) {
+      for (const offsetDelta of [60, -60]) {
+        const testOff = secondOffset + offsetDelta;
+        const testTs = guess - testOff * 60000;
+        const actualOff = getOffset(zone, testTs);
+        if (actualOff !== testOff) {
+          continue;
+        }
+        const wc = getWallClock(testTs, zone);
+        if (wc.hour === h && wc.minute === min && wc.second === s) {
+          if (testOff > secondOffset) {
+            ts = testTs;
+            secondOffset = testOff;
+          }
+          break;
+        }
       }
     }
 
@@ -364,10 +522,10 @@ export function installTimezone(moment: MomentLike): MomentLike {
     const zoneInfo = moment.tz!.zone(tz);
     if (zoneInfo) {
       m._z = zoneInfo;
-      const targetOffset = -zoneInfo.offset(timestamp);
+      const targetOffset = -zoneInfo.offset(timestamp) || 0;
       m.utcOffset(targetOffset, keepTime);
     } else {
-      const targetOffset = getOffset(tz, timestamp);
+      const targetOffset = getOffset(tz, timestamp) || 0;
       m.utcOffset(targetOffset, keepTime);
       m._z = { name: tz, abbr: (_ts: number) => getAbbr(tz, _ts) };
     }
@@ -378,17 +536,39 @@ export function installTimezone(moment: MomentLike): MomentLike {
   moment.tz = momentTz as unknown as MomentTz;
   moment.fn.tz = fnTz;
 
-  // Patch zoneName/zoneAbbr to return abbreviation when _z is set (moment-timezone compat)
   const origZoneName = moment.fn.zoneName as (() => string) | undefined;
   const origZoneAbbr = moment.fn.zoneAbbr as (() => string) | undefined;
+  // Patch isDST to use zone offsets instead of local TZ offsets
+  // oxlint-disable-next-line no-explicit-any
+  const origIsDST = (moment.fn as any).isDST as ((...args: unknown[]) => boolean) | undefined;
+  // oxlint-disable-next-line no-explicit-any
+  (moment.fn as any).isDST = function (this: any): boolean {
+    if (this._z) {
+      const ts = this.valueOf();
+      const z = this._z.name;
+      const d = new Date(ts);
+      const year = d.getUTCFullYear();
+      const janOff = getOffset(z, Date.UTC(year, 0, 1));
+      const julOff = getOffset(z, Date.UTC(year, 6, 1));
+      const standardOff = Math.min(janOff, julOff);
+      const currentOff = getOffset(z, ts);
+      return currentOff !== standardOff;
+    }
+    return origIsDST ? origIsDST.call(this) : false;
+  };
+
   // oxlint-disable-next-line no-explicit-any
   (moment.fn as any).zoneName = function (this: any): string {
-    if (this._z) { return this._z.abbr(this.valueOf()); }
+    if (this._z) {
+      return this._z.abbr(this.valueOf());
+    }
     return origZoneName ? origZoneName.call(this) : "";
   };
   // oxlint-disable-next-line no-explicit-any
   (moment.fn as any).zoneAbbr = function (this: any): string {
-    if (this._z) { return this._z.abbr(this.valueOf()); }
+    if (this._z) {
+      return this._z.abbr(this.valueOf());
+    }
     return origZoneAbbr ? origZoneAbbr.call(this) : "";
   };
 
@@ -437,12 +617,10 @@ export function installTimezone(moment: MomentLike): MomentLike {
     return {
       name: normalized,
       abbr: (ts: number) => getAbbr(normalized, ts),
-      offset: (ts: number) => -off(ts),
-      utcOffset: (ts: number) => -off(ts),
-      parse: (ts: number) => ({
-        name: normalized,
-        offset: -off(ts),
-      }),
+      // "|| 0" coerces -0 to 0 (Object.is(-0,0) === false)
+      offset: (ts: number) => -off(ts) || 0,
+      utcOffset: (ts: number) => -off(ts) || 0,
+      parse: (ts: number) => -off(ts) || 0,
     };
   };
 
