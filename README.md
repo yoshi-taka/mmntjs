@@ -111,7 +111,7 @@ const moment = require("mmntjs");
 
 **moment.js's own test suite**: 678/678 pass (52 QUnit files via compat layer).  
 **Oracle comparison**: 112 properties, 45k+ assertions against upstream moment.js.  
-**Mutation**: 10/10 injected bugs detected.  
+**Mutation**: 20 operators, 100% kill rate (12/12 applicable, 8 N/A).  
 **Fuzzing**: 9 coverage-guided harnesses + grammar-based ISO 8601 generator.
 
 The only known incompatibilities are malformed/edge-case strings discovered through fuzzing (e.g. sign-prefixed strings without delimiters). These are under active repair — see [REMAINING.md](./docs/meta/REMAINING.md) for the shortlist.
@@ -135,19 +135,19 @@ TypeScript types included — `import moment from "moment"` resolves to mmntjs's
 
 ### 3. Faster Than date-fns in 23/25 Benchmarks
 
-Also outperforms upstream moment.js in 28/30. Several hot-path operations outperform current Temporal implementations in microbenchmarks.
+Also outperforms upstream moment.js in all 31 benchmarked operations. Several hot-path operations outperform current Temporal implementations in microbenchmarks.
 
 | Operation | mmntjs | date-fns | vs moment.js |
 |-----------|--------:|---------:|-------------:|
-| format YYYY-MM-DD | **40 ns** | 1.09 us (27.3x) | 414 ns (10.4x) |
-| parse ISO string | **290 ns** | 965 ns (3.3x) | 4.22 us (14.6x) |
-| diff in days | **19 ns** | 828 ns (43.6x) | 514 ns (27.1x) |
-| add 1 second | **14 ns** | 86 ns (6.1x) | — |
-| get day of year | **16 ns** | 1.15 us (71.9x) | — |
-| moment() / new Date() | **38 ns** | 34 ns (0.9x) | 352 ns (9.3x) |
-| startOf month | **16 ns** | 75 ns (4.7x) | — |
+| format YYYY-MM-DD | **56 ns** | 1.31 us (23.4x) | 420 ns (12.7x) |
+| parse ISO string | **363 ns** | 1.30 us (3.6x) | 4.20 us (13.5x) |
+| diff in days | **20 ns** | 935 ns (46.8x) | 491 ns (27.3x) |
+| add 1 second | **15 ns** | 108 ns (7.2x) | — |
+| get day of year | **17 ns** | 1.38 us (81.2x) | — |
+| moment() / new Date() | **40 ns** | 35 ns (0.9x) | 221 ns (5.3x) |
+| startOf month | **17 ns** | 75 ns (4.4x) | — |
 
-The main remaining regression is raw `moment()` construction overhead from compatibility wrapping (wrapper overhead for moment.js API compatibility, negligible in real apps that reuse Moment objects), and complex locale-dependent formats like `format('dddd, MMMM Do YYYY, h:mm:ss a')` (~18% slower than moment.js).
+The main remaining overhead is raw `moment()` construction from compatibility wrapping (wrapper overhead for moment.js API compatibility, negligible in real apps that reuse Moment objects).
 
 Representative Bun microbenchmarks on Apple Silicon. ns-scale results use median-of-repeated warmed runs after warmup — see [BENCHMARKS.md](./docs/perf/BENCHMARKS.md) for methodology, noise markers, and caveats.
 

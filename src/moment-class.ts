@@ -1813,12 +1813,11 @@ export class Moment {
     switch (code) {
       case YEAR:
         if (utc) {
-          this._t = ymdToEpochDays(this.$y, 0, 1) * 86400000;
+          this._t = ymdToEpochDays(this.$y, 0, 1) * DAY_MS;
           this._d = undefined;
         } else {
-          const d = this._getD();
-          d.setDate(1);
-          d.setMonth(0);
+          const d = this._getDNoEnsure();
+          d.setMonth(0, 1);
           d.setHours(0, 0, 0, 0);
           this._t = d.getTime();
         }
@@ -1832,10 +1831,10 @@ export class Moment {
         break;
       case MONTH:
         if (utc) {
-          this._t = ymdToEpochDays(this.$y, this.$M, 1) * 86400000;
+          this._t = ymdToEpochDays(this.$y, this.$M, 1) * DAY_MS;
           this._d = undefined;
         } else {
-          const d = this._getD();
+          const d = this._getDNoEnsure();
           d.setDate(1);
           d.setHours(0, 0, 0, 0);
           this._t = d.getTime();
@@ -1861,7 +1860,7 @@ export class Moment {
           this._t = floorUnitEpoch(this._t, DAY_MS);
           this._d = undefined;
         } else {
-          const d = this._getD();
+          const d = this._getDNoEnsure();
           d.setHours(0, 0, 0, 0);
           this._t = d.getTime();
         }
@@ -1875,7 +1874,7 @@ export class Moment {
           this._t = floorUnitEpoch(this._t, HOUR_MS);
           this._d = undefined;
         } else {
-          const d = this._getD();
+          const d = this._getDNoEnsure();
           d.setMinutes(0, 0, 0);
           this._t = d.getTime();
         }
@@ -1889,7 +1888,7 @@ export class Moment {
           this._t = floorUnitEpoch(this._t, MINUTE_MS);
           this._d = undefined;
         } else {
-          const d = this._getD();
+          const d = this._getDNoEnsure();
           d.setSeconds(0, 0);
           this._t = d.getTime();
         }
@@ -1902,7 +1901,7 @@ export class Moment {
           this._t = floorUnitEpoch(this._t, SECOND_MS);
           this._d = undefined;
         } else {
-          const d = this._getD();
+          const d = this._getDNoEnsure();
           d.setMilliseconds(0);
           this._t = d.getTime();
         }
@@ -1912,7 +1911,7 @@ export class Moment {
     }
 
     if (!utc) {
-      this._offset = -this._getD().getTimezoneOffset();
+      this._offset = -this._getDNoEnsure().getTimezoneOffset();
     }
     this._updateOffset(true);
     return this;
@@ -1933,10 +1932,10 @@ export class Moment {
     switch (code) {
       case YEAR:
         if (utc) {
-          this._t = (ymdToEpochDays(this.$y, 11, 31) + 1) * 86400000 - 1;
+          this._t = (ymdToEpochDays(this.$y, 11, 31) + 1) * DAY_MS - 1;
           this._d = undefined;
         } else {
-          const d = this._getD();
+          const d = this._getDNoEnsure();
           d.setFullYear(this.$y, 11, 31);
           d.setHours(23, 59, 59, 999);
           this._t = d.getTime();
@@ -1952,10 +1951,10 @@ export class Moment {
       case MONTH: {
         const _eomMaxDay = daysInMonthFast(this.$y, this.$M);
         if (utc) {
-          this._t = (ymdToEpochDays(this.$y, this.$M, _eomMaxDay) + 1) * 86400000 - 1;
+          this._t = (ymdToEpochDays(this.$y, this.$M, _eomMaxDay) + 1) * DAY_MS - 1;
           this._d = undefined;
         } else {
-          const d = this._getD();
+          const d = this._getDNoEnsure();
           d.setFullYear(this.$y, this.$M, _eomMaxDay);
           d.setHours(23, 59, 59, 999);
           this._t = d.getTime();
@@ -1983,7 +1982,7 @@ export class Moment {
           this._d = undefined;
           this._dirty = true;
         } else {
-          const d = this._getD();
+          const d = this._getDNoEnsure();
           d.setHours(0, 0, 0, 0);
           d.setDate(d.getDate() + 1);
           d.setMilliseconds(-1);
@@ -2003,7 +2002,7 @@ export class Moment {
           this._d = undefined;
           this._dirty = true;
         } else {
-          const d = this._getD();
+          const d = this._getDNoEnsure();
           d.setMinutes(0, 0, 0);
           d.setHours(d.getHours() + 1, 0, 0, -1);
           this.$H = d.getHours();
@@ -2020,7 +2019,7 @@ export class Moment {
           this._d = undefined;
           this._dirty = true;
         } else {
-          const d = this._getD();
+          const d = this._getDNoEnsure();
           d.setSeconds(0, 0);
           d.setMinutes(d.getMinutes() + 1, 0, -1);
           this.$m = d.getMinutes();
@@ -2036,7 +2035,7 @@ export class Moment {
           this._d = undefined;
           this._dirty = true;
         } else {
-          const d = this._getD();
+          const d = this._getDNoEnsure();
           d.setSeconds(d.getSeconds() + 1, -1);
           this.$s = d.getSeconds();
           this.$ms = d.getMilliseconds();
@@ -2047,7 +2046,7 @@ export class Moment {
     }
 
     if (!utc) {
-      this._offset = -this._getD().getTimezoneOffset();
+      this._offset = -this._getDNoEnsure().getTimezoneOffset();
     }
     this._updateOffset(true);
     return this;

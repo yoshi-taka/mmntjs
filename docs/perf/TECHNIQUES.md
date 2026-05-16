@@ -296,14 +296,14 @@ fmt.format(date);  // -> ~600ns, ICU C++ calls, locale+calendar+digit resolution
 
 ## Benchmark Results
 
-Latest benchmark data: see [BENCHMARKS.md](./BENCHMARKS.md) (2026-05-07, macOS arm64 M4).
+Latest benchmark data: see [BENCHMARKS.md](./BENCHMARKS.md) (2026-05-16, macOS arm64 M4).
 
 Key figures (excerpt):
 
 | Operation | Tech | effect |
 |-----------|------|--------|
-| parse ISO string | 1, 4, 5 | moment2 **281ns** vs moment.js 4.10us (**15x**) |
-| format YYYY-MM-DD | 1, 8 | moment2 **35ns** vs moment.js 413ns (**12x**) |
-| getters (7 fields) | 1 | moment2 **27ns** vs moment.js 208ns (**7.6x**) |
-| diff days | 1, 12 | moment2 **18ns** vs moment.js 413ns (**24x**) |
-| moment() | 2 | moment2 **52ns** vs moment.js 280ns (**5.4x**) |
+| parse ISO string | 1, 4, 5 | moment2 **310ns** vs moment.js 4.20us (**14x**) |
+| format YYYY-MM-DD | 1, 8 | moment2 **33ns** vs moment.js 420ns (**13x**) |
+| getters (7 fields) | 1 | moment2 **37ns** vs moment.js 230ns (**6.2x**) |
+| diff days | 1, 12 | moment2 **18ns** vs moment.js 491ns (**27x**) |
+| moment() | 2 | moment2 **54ns** vs moment.js 311ns (**5.8x**) |
