@@ -1688,7 +1688,22 @@ function hgg(ctx: ParseCtx): void {
 // -- Day of year tokens --
 
 function hDDD(ctx: ParseCtx): void {
-  const p = p3(ctx.str, ctx.strIdx);
+  let p = p3(ctx.str, ctx.strIdx);
+  if (p === null && !ctx.strict) {
+    const savedIdx = ctx.strIdx;
+    for (let attempt = savedIdx + 1; attempt < ctx.str.length - 2; attempt++) {
+      const candidate = p3(ctx.str, attempt);
+      if (candidate !== null) {
+        ctx.result._unusedInput.push(ctx.str.substring(ctx.strIdx, attempt));
+        ctx.strIdx = attempt;
+        p = candidate;
+        break;
+      }
+    }
+    if (p === null) {
+      ctx.strIdx = savedIdx;
+    }
+  }
   if (p === null) {
     ctx.failed = true;
     return;

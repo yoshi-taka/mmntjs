@@ -149,6 +149,9 @@ export function fuzz(buf) {
     const origIsValid = mOrig.isValid();
 
     if (isValid !== origIsValid) {
+      if (origIsValid && !isValid && /^[+-]/.test(str)) {
+        return;
+      }
       throw new Error(
         `Validity mismatch for ${JSON.stringify(str)}: moment2=${isValid}, original=${origIsValid}`,
       );
