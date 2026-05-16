@@ -343,11 +343,21 @@ makeMutations([
   },
   {
     name: "parse: month index off-by-one (month1-1 -> month1)",
-    file: "src/parse.ts",
-    patterns: [[/month: month1 - 1/g, "month: month1"]],
+    file: "src/core/factory-shared.ts",
+    patterns: [
+      [
+        /let mo = parsed\.month;/g,
+        "let mo = parsed.month !== undefined ? parsed.month + 1 : parsed.month;",
+      ],
+    ],
     inputs: fc.date({ noInvalidDate: true }).map((d) => d.toISOString().slice(0, 10)),
     testFn: (input: unknown) => {
-      return mutatedMoment(input as string).month() === originalMoment(input as string).month();
+      const mutated = mutatedMoment(input as string);
+      const original = originalMoment(input as string);
+      return (
+        mutated.month() === original.month() &&
+        mutated.format("YYYY-MM-DD") === original.format("YYYY-MM-DD")
+      );
     },
   },
 
