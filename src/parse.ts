@@ -98,10 +98,17 @@ export function parseString(
 
   if (!format && (locale?._abbr ?? "en") === "en") {
     _pc("parseString:en-fast");
-    const fast = parseCommonISO(str);
-    if (fast) {
-      _pc("parseString:common-iso-hit");
-      return fast as unknown as ParsedData;
+    const len = str.length;
+    if (
+      (len === 10 || (len >= 19 && len <= 29)) &&
+      str.charCodeAt(4) === 45 &&
+      str.charCodeAt(7) === 45
+    ) {
+      const fast = parseCommonISO(str);
+      if (fast) {
+        _pc("parseString:common-iso-hit");
+        return fast as unknown as ParsedData;
+      }
     }
   }
 
