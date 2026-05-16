@@ -1,10 +1,39 @@
-/* oxlint-disable no-explicit-any */
+interface MomentFnProps {
+  tz: (this: unknown, tz?: string) => unknown;
+  [key: string]: unknown;
+}
 
-type MomentLike = {
-  fn: Record<string, unknown>;
+interface MomentTzZone {
+  name: string;
+  abbr: (ts: number) => string;
+  offset: (ts: number) => number;
+  utcOffset: (ts: number) => number;
+  parse: (ts: number) => { name: string; offset: number };
+}
+
+interface MomentTz {
+  (input?: unknown, formatOrZone?: unknown, zoneOrStrict?: unknown, fourth?: unknown): MomentLike;
+  guess: (preferCache?: boolean) => string;
+  names: () => string[];
+  zone: (name: string) => MomentTzZone | null;
+  add: (data: unknown) => void;
+  link: (links: unknown) => void;
+  setDefault: (tz: string) => void;
+  countries: () => string[];
+  zonesForCountry: (code: string) => string[];
+}
+
+type MomentInstance = MomentLike & {
+  tz(tz?: string): MomentInstance;
+  _z?: { name: string; abbr: (ts: number) => string };
+};
+
+export type MomentLike = {
+  fn: MomentFnProps;
   momentProperties: string[];
   defaultZone?: string;
-  (...args: unknown[]): any;
+  tz?: MomentTz;
+  (...args: unknown[]): MomentInstance;
 };
 
 const offsetCache = new Map<string, Map<number, number>>();
@@ -120,12 +149,13 @@ function isZoneName(s: string): boolean {
 }
 
 export function installTimezone(moment: MomentLike): MomentLike {
-  if ((moment as unknown as Record<string, unknown>).tz) {
+  if (moment.tz) {
     return moment;
   }
 
   moment.momentProperties.push("_z");
 
+  // oxlint-disable-next-line no-explicit-any
   function momentTz(input?: any, formatOrZone?: any, zoneOrStrict?: any, _fourth?: any): any {
     if (typeof formatOrZone === "string" && isZoneName(formatOrZone)) {
       const tz = normalizeTz(formatOrZone);
@@ -160,6 +190,7 @@ export function installTimezone(moment: MomentLike): MomentLike {
     return input !== undefined ? moment(input) : moment();
   }
 
+  // oxlint-disable-next-line no-explicit-any
   function fnTz(this: any, tz?: string): any {
     if (tz === undefined) {
       return this._z ? this._z.name : Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -169,7 +200,7 @@ export function installTimezone(moment: MomentLike): MomentLike {
     const timestamp = this.valueOf();
     const m = this.clone();
 
-    const zoneInfo = (moment as any).tz.zone(tz);
+    const zoneInfo = moment.tz!.zone(tz);
     if (zoneInfo) {
       m._z = zoneInfo;
       const targetOffset = zoneInfo.offset(timestamp);
@@ -183,16 +214,18 @@ export function installTimezone(moment: MomentLike): MomentLike {
     return m;
   }
 
-  (moment as any).tz = momentTz;
-  (moment as any).fn.tz = fnTz;
+  moment.tz = momentTz as unknown as MomentTz;
+  moment.fn.tz = fnTz;
 
-  (moment as any).tz.guess = function (_preferCache?: boolean): string {
+  moment.tz.guess = function (_preferCache?: boolean): string {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
   };
 
-  (moment as any).tz.names = function (): string[] {
+  moment.tz.names = function (): string[] {
     try {
-      return ((Intl as any).supportedValuesOf("timeZone") as string[]).sort();
+      return (Intl as unknown as { supportedValuesOf: (k: string) => string[] })
+        .supportedValuesOf("timeZone")
+        .sort();
     } catch {
       return [
         "UTC",
@@ -218,10 +251,10 @@ export function installTimezone(moment: MomentLike): MomentLike {
     }
   };
 
-  (moment as any).tz.zone = function (name: string): object | null {
+  moment.tz.zone = function (name: string): MomentTzZone | null {
     const normalized = normalizeTz(name);
     try {
-      const names = (moment as any).tz.names();
+      const names = moment.tz!.names();
       if (!names.includes(normalized)) {
         return null;
       }
@@ -241,23 +274,23 @@ export function installTimezone(moment: MomentLike): MomentLike {
     }
   };
 
-  (moment as any).tz.add = function (_data: any): void {
+  moment.tz.add = function (_data: unknown): void {
     console.warn(
       "[moment2-timezone] .tz.add() is a no-op — timezone data comes from the runtime Intl API",
     );
   };
 
-  (moment as any).tz.link = function (_links: any): void {};
+  moment.tz.link = function (_links: unknown): void {};
 
-  (moment as any).tz.setDefault = function (tz: string): void {
-    (moment as any).defaultZone = tz;
+  moment.tz.setDefault = function (tz: string): void {
+    moment.defaultZone = tz;
   };
 
-  (moment as any).tz.countries = function (): string[] {
+  moment.tz.countries = function (): string[] {
     return [];
   };
 
-  (moment as any).tz.zonesForCountry = function (_code: string): string[] {
+  moment.tz.zonesForCountry = function (_code: string): string[] {
     return [];
   };
 

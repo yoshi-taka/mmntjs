@@ -1,9 +1,7 @@
-/* oxlint-disable no-explicit-any */
-
 import moment from "mmntjs";
-import { installTimezone } from "./install";
+import { installTimezone, type MomentLike } from "./install";
 
-installTimezone(moment as never);
+installTimezone(moment as unknown as MomentLike);
 
 export default moment;
-export const tz = (moment as any).tz;
+export const tz = (moment as unknown as MomentLike).tz!;

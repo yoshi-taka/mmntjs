@@ -20,6 +20,6 @@
     "allowImportingTsExtensions": true,
     "types": ["node", "bun"]
   },
-  "include": ["src/**/*.ts", "test/**/*.ts"],
+  "include": ["src/**/*.ts", "test/**/*.ts", "packages/timezone/src/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }
