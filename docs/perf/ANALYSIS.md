@@ -1,8 +1,32 @@
 # Performance Analysis (Low-Level)
 
-How moment2 achieves its speed, examined from CPU/V8 internals beyond the L2 cache perspective.
+Why the techniques in [TECHNIQUES.md](./TECHNIQUES.md) tend to work.
 
-## 1. Hidden Class (Shape) Stability
+This document is not a list of optimizations. It is a model of the main performance forces behind them: allocation pressure, hot-path specialization, deferred work, branch behavior, object layout stability, and avoidance of heavyweight subsystems.
+
+The default benchmark runtime in this repo is Bun (JavaScriptCore), but this document still uses V8 terminology where it is the clearest public model for shapes, inline caches, and deopts. Treat those sections as explanatory models, not claims that only V8 matters. The higher-level conclusions are cross-checked on Node 26 as well.
+
+A practical split:
+- `TECHNIQUES.md` = what the code does
+- `ANALYSIS.md` = why those patterns are usually faster
+
+Parallel lenses are useful here:
+- Algorithmic: less asymptotic or constant-factor work
+- Runtime/engine: better IC behavior, inlining, lower deopt risk
+- Allocation/GC: fewer short-lived helper objects and `Date` instances
+- API specialization: common moment.js-compatible cases get dedicated paths
+- Compatibility-aware design: fast paths are constrained by moment.js semantics, DST behavior, and parse quirks
+
+Reading the full commit history, most successful optimizations fall into a small number of recurring themes:
+- classify earlier, reject earlier
+- keep hot and cold paths physically and logically separate
+- replace calendar-object work with integer arithmetic where semantics allow it
+- cache compiled or expanded representations, not just final values
+- specialize the dominant compatibility cases without changing edge-case behavior
+
+## 1. Stable Object Layout
+
+Representative techniques: field cache, `_cold` separation, constructor key-order discipline
 
 **Problem**: V8 assigns the same Hidden Class (Shape) to objects created with the same property order. Property access is optimized to index computation (like C struct access). Shape changes trigger deoptimization.
 
@@ -29,6 +53,8 @@ cold._overflow  // one Moment has number, another has undefined -> different Sha
 ```
 
 ## 2. Branch Prediction and Branch Reduction
+
+Representative techniques: `_ensureFields`, day fast path, UTC arithmetic fast paths
 
 **Problem**: Many conditional branches cause CPU branch mispredictions. Pipeline flushes cost ~15 cycles each.
 
@@ -61,25 +87,46 @@ private _ensureFields(): void {
 
 After first access, `_dirty` is always false. The branch predictor learns "strongly not-taken" -> zero mispredictions.
 
-### 2c. `_addSimple` DAY: while -> if
+### 2c. DAY add/subtract stays on the timestamp fast path
 
 ```typescript
-// Before: while loop, calls daysInMonth each time
-while (this.$D > daysInMonth(this.$y, this.$M)) { ... }
-
-// After: if-else. 99% chance it fits in current month
-if (this.$D > daysInMonth(this.$y, this.$M)) {   // prediction: not taken
-  this.$D -= daysInMonth(this.$y, this.$M);
-  this.$M++;
-  if (this.$D > daysInMonth(this.$y, this.$M)) {  // prediction: not taken (2-month cross is extremely rare)
-    this.$D = daysInMonth(this.$y, this.$M);
-  }
+if (this._isUTC) {
+  this._t += rounded * 86400000;
+  this._d = undefined;
+} else {
+  const dt = this._d ?? (this._d = new Date(this._t));
+  dt.setDate(dt.getDate() + rounded);
+  this._t = dt.getTime();
 }
+
+this._dirty = true;
 ```
 
-`add(1,'day')` crosses a month boundary with ~3% probability. Even though the while loop usually runs once, the loop structure has overhead (condition check + branch + counter). if-else lets V8's optimizing compiler eliminate the branch entirely.
+`add(1,'day')` is common enough that it gets its own direct path in `add()`: UTC moments do one integer add on `_t`, local moments use a single `Date#setDate`, and both only mark `_dirty` for deferred field refresh. This avoids the heavier generic unit-mutation machinery on the hottest calendar increment.
 
-## 3. String Representation and charCodeAt
+### 2d. UTC calendar arithmetic avoids `Date.UTC` and negative-epoch traps
+
+```typescript
+const tm = this.$y * 12 + this.$M + totalMonths;
+const y = Math.floor(tm / 12);
+const m = normalizeMonth(tm);
+const d_ = this.$D > 28 ? Math.min(this.$D, daysInMonthFast(y, m)) : this.$D;
+
+this._t =
+  ymdToEpochDays(y, m, d_) * 86400000 +
+  this.$H * 3600000 +
+  this.$m * 60000 +
+  this.$s * 1000 +
+  this.$ms;
+```
+
+This matters for two reasons:
+- no `Date` allocation or `Date.UTC(...)` call in UTC month/year mutations
+- shared helpers (`floorUnitEpoch`, `endOfUnitEpoch`) make UTC `startOf/endOf` correct even for negative epochs, which is now guarded by `test/bench-regression.ts`
+
+## 3. String Representation and Direct Digit Parsing
+
+Representative techniques: `parseCommonISO`, digit helpers, trim avoidance in fast paths
 
 **Problem**: V8 has multiple internal string representations:
 - SeqString: contiguous memory (charCodeAt O(1), cache-friendly)
@@ -105,7 +152,9 @@ if (len === 10 && charCodeAt(4) === 45 && charCodeAt(7) === 45) {
 }
 ```
 
-## 4. Regex Engine Startup Cost
+## 4. Avoiding Heavyweight Subsystems: Regex
+
+Representative techniques: fast ISO parser, `_hasDate` short-circuit
 
 **Problem**: V8's irregexp engine JIT-compiles on first execution. Even simple regexes have pattern compilation + execution context overhead. While native code is cached for subsequent runs, `RegExp.exec()` allocates a `RegExpMatchArray` every time.
 
@@ -126,7 +175,9 @@ else if (/^\d{4}/.test(trimmedStr)) { ... }
 if (parsed._hasDate !== undefined) { /* direct Moment creation */ }
 ```
 
-## 5. GC Pressure
+## 5. Allocation Pressure and GC
+
+Representative techniques: lazy `_d`, `_cold` omission, clone strategy, UTC arithmetic helpers
 
 **Problem**: Excessive object allocation triggers frequent GC. Promotion from Young Generation (nursery) to Old Generation (tenuring) causes stop-the-world pauses.
 
@@ -147,7 +198,9 @@ if (parsed._hasDate !== undefined) { /* direct Moment creation */ }
 - Smaller Moment byte size -> faster Young Gen GC
 - Fewer properties from `_cold` reduction -> less mark-and-sweep work
 
-## 6. Template Literal JIT Optimization
+## 6. Cheap String Assembly
+
+Representative techniques: `PAD2`, `padYear`, `formatCommonEn`, token render caches
 
 **Problem**: Template literals `` `${a}-${b}` `` are optimized by V8 as Tagged Templates. After the first evaluation, the "template object" is cached, making string concatenation fast.
 
@@ -164,7 +217,9 @@ const PAD2 = ["00","01","02",...,"99"];
 return `${PAD2[this.$H]}:${PAD2[this.$m]}:${PAD2[this.$s]}`;
 ```
 
-## 7. Function Inlining Heuristics
+## 7. Small, Inline-Friendly Helpers
+
+Representative techniques: `_ensureFields`, `_dayOfWeek`, digit parsers
 
 **Problem**: TurboFan decides whether to inline functions based on call count. Non-inlined calls have stack frame + `call`/`ret` overhead.
 
@@ -181,7 +236,9 @@ return `${PAD2[this.$H]}:${PAD2[this.$m]}:${PAD2[this.$s]}`;
 - `_cold` property access: variable Shape prevented V8 from inlining
 - Function call argument objects: `checkOverflow(parsed)` receives `parsed` with potentially varying Shape
 
-## 8. Prototype Chain Depth
+## 8. Own-Property Hot Data
+
+Representative techniques: `$y/$M/$D/$W/$H/$m/$s/$ms` field cache
 
 **Problem**: Property access traversing instance -> prototype -> prototype requires a Shape check at each step.
 
@@ -199,7 +256,9 @@ Access depth:
   this.year()   -> prototype method (depth 1)  -> near-zero cost with IC
 ```
 
-## 9. Integer Optimization (Smi / Double)
+## 9. Integer Arithmetic Instead of Calendar Objects
+
+Representative techniques: `ymdToEpochDays`, `_epochDaysToYMD`, `_dayOfWeek`, floor/ceil helpers
 
 **Problem**: V8 represents integers as Smi (Small Integer, 31-bit signed) with a tag bit. Values outside Smi range are boxed to HeapNumber, slowing arithmetic.
 
@@ -217,6 +276,8 @@ Math.floor(tm / 12)        // result in Smi range
 
 ## 10. Monomorphic Method Calls
 
+Representative techniques: stable Moment shape, prototype method reuse
+
 **Problem**: V8 optimizes when the same function is called with the same `this` Shape. Different Shapes trigger deoptimization.
 
 **moment2's design**: All `Moment.prototype` methods are called with Moment instances as `this`. Since normal-moment Shape is completely fixed, every method call is monomorphic.
@@ -227,7 +288,9 @@ a.year()  // this.shape === Moment_shape (IC: monomorphic)
 b.month() // this.shape === Moment_shape (IC: monomorphic)
 ```
 
-## 11. Try/Catch Deoptimization
+## 11. Avoiding Cold Error Machinery on Hot Paths
+
+Representative techniques: `formatCommonEn`, `_cold` separation, fast-path bypasses
 
 **Problem**: Functions with `try { } catch { }` blocks have restricted TurboFan optimization (exception handling requires conservative code generation).
 
@@ -237,19 +300,36 @@ b.month() // this.shape === Moment_shape (IC: monomorphic)
 
 **Mitigation**: `formatCommonEn` is locale "en" fixed and never hits the try/catch path. Other locales may hit it. Pre-building locale cache entries can avoid it if needed.
 
-## 12. Arguments Object Optimization
+## 12. Avoiding Unnecessary Generality
 
-**Problem**: Rest parameters (`...args`) and the `arguments` object limit V8 optimization.
+Representative techniques: special-casing common formats, direct string factory paths, UTC/local specialized branches
 
-**moment2's usage**:
+**Problem**: General-purpose parsers and formatters often pay broad dispatch costs even when a few bytes are enough to route the input to a much smaller path.
+
+**Representative patterns in moment2**:
 ```typescript
-export function createDate(year, month, day, ...args) { // rest params
-  const [hour, minute, second, ms] = args;
+if (!format && (locale?._abbr ?? "en") === "en") {
+  if ((len === 10 || (len >= 19 && len <= 29)) && str.charCodeAt(4) === 45 && str.charCodeAt(7) === 45) {
+    const fast = parseCommonISO(str);
+    if (fast) return fast;
+  }
+}
+
+const c0 = trimmed.charCodeAt(0);
+const isDigit = c0 >= 48 && c0 <= 57;
+const isSlash = c0 === 47;
+const isSign = c0 === 43 || c0 === 45;
 ```
 
-V8 can optimize rest params to some degree, but Array creation is unavoidable. Currently not a bottleneck, but inline-able if needed.
+The gain here is broader than V8 specifics:
+- less work on rejected inputs
+- fewer expensive subsystems reached per parse
+- better branch locality because common input classes stabilize quickly
+- a clearer hot/cold split that benefits any modern JIT
 
-## 13. Object Literal Shape Stability
+## 13. Short-Lived Parse Objects and Shape Stability
+
+Representative techniques: parse result objects, `_hasDate` fast-path tagging
 
 **Problem**: Functions returning object literals with consistent key order let V8 memorize and optimize the Shape.
 
@@ -269,7 +349,11 @@ Two return paths with different key orders -> 2 Shapes. V8 adapts polymorphicall
 
 **Improvement**: Unifying key orders would make it monomorphic, but the objects are ephemeral.
 
-## 14. Sakamoto's Day-of-Week Algorithm
+Related recent change: format parsing now also compiles token streams to cached opcode arrays, so repeated parses reuse both the format structure and the token-handler dispatch decisions.
+
+## 14. Arithmetic Calendar Helpers
+
+Representative techniques: `_dayOfWeek`, `ymdToEpochDays`, `_epochDaysToYMD`
 
 **Problem**: `d.getDay()` requires a Date object. Day-of-week recalculation after `setFullYear()` also goes through Date API.
 
@@ -411,6 +495,8 @@ export function isLeapYear(y: number): boolean {
 
 ## 17. CPU Pipeline Optimization
 
+Representative techniques: switch dispatch, first-char classification, redundant-load elimination
+
 ### 17a. Integer Coercion for Smi Maintenance
 
 ```typescript
@@ -450,6 +536,26 @@ this._offset = -d.getTimezoneOffset();
 ```
 
 `_getD()` includes `this._d` existence check + `_ensureFields()` + conditional `new Date()`. One variable binding eliminates redundant loads where V8's CSE (Common Subexpression Elimination) wouldn't apply.
+
+### 17d. Switch Dispatch Beats Generic Token Lookups
+
+Recent parse-format work compiles format strings to opcode arrays and resolves handlers with nested `switch` dispatch on first char and token length.
+
+```typescript
+switch (cc) {
+  case 89 /* Y */:
+    switch (len) {
+      case 6: return hYYYYYY;
+      case 5: return hYYYYY;
+      case 4: return hYYYY;
+    }
+}
+```
+
+Why it helps:
+- branch structure is simple and repetitive
+- hot token families (`Y`, `M`, `D`, `H`, `m`, `s`) stay on tight dispatch paths
+- repeated format strings skip both tokenization and handler-resolution overhead via cached opcodes
 
 ## 18. `_epochDaysToYMD` — Date Generation via Arithmetic
 
@@ -682,13 +788,13 @@ This is not intentional design (it's a byproduct of class field initializers run
 
 ## 23. Multi-Layer Cache Strategy
 
-moment2 leverages V8's cache hierarchy at multiple levels:
+moment2 uses multiple cache layers. Some are engine-agnostic application caches, some are JS-engine inline caches, and some are hardware caches underneath both:
 
 ```
 Layer 5: LRU Cache          LruMap (expandLocaleCache, tokenizeCache, expandedFormatCache)
 Layer 4: Locale Cache        _localeCache Map, _monthsCache, _weekdaysCache
 Layer 3: Field Cache         $y $M $D $W $H $m $s $ms (8 fields)
-Layer 2: V8 IC               Fixed Shape + Monomorphic property access
+Layer 2: JS Engine IC        Fixed Shape + Monomorphic property access
 Layer 1: CPU Cache           L1 (32KB), L2 (256KB-1MB), TLB (64 entry L1, 2048 L2)
 ```
 
@@ -785,9 +891,9 @@ class LruMap<K, V> {
 
 **Key point**: `Map` preserves insertion order -> head = oldest, tail = newest. `get()` uses `delete+set` for O(1) access-order update. Eviction removes the head (oldest) in O(1).
 
-### 23f. V8 Internal Caches
+### 23f. Engine-Internal Caches
 
-Indirect benefits from V8's implicit caches:
+Indirect benefits from engine-managed caches:
 
 | Cache | Target | Effect |
 |-----------|------|------|
@@ -796,6 +902,8 @@ Indirect benefits from V8's implicit caches:
 | String interning | Identical content strings | Same string literals shared in heap (reference comparison) |
 | Shape cache | Object Shape | Same Class -> Shape transition tree cached |
 | Feedback vector | Call-site type info | IC-collected type info persists across function calls |
+
+The names differ across V8 and JSC, but the high-level effect is similar: stable object layouts and stable call sites are rewarded.
 
 ## 24. TurboFan Optimization and Deoptimization
 

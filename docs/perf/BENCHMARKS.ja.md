@@ -126,12 +126,18 @@ moment2 wins on both runtimes. Absolute speeds differ slightly (V8 vs JSC), but 
 |------|---------|---------|
 | `test/bench.ts` | custom (hrtime) | moment.js vs moment2, cold+warm |
 | `test/bench-datefns2.ts` | custom (hrtime) | moment2 vs date-fns, cold+warm |
+| `test/bench-regression.ts` | custom (hrtime) | 負の epoch の UTC 演算、invalid parse の伸び、巨大 month 正規化の回帰ガード |
 | `test/bench-suite.ts` | benchmark.js | moment2 vs date-fns, locale format, ops/sec |
 | `test/bench-mem.ts` | custom | memory footprint (heapUsed/rss) |
 | `test/bench-cold-warm.ts` | custom | cold start analysis |
 | `test/bench-temporal.ts` | custom (hrtime) | moment2 vs native Temporal, cold+warm |
 
-Run: `bun test/bench-*.ts` (individual files) or `bun run bench` (package.json script).
+よく使うコマンド:
+- `bun run bench` -> 主ベンチマーク表 (`test/bench.ts`)
+- `bun run bench:guard` -> 回帰閾値チェック (`test/bench-regression.ts`)
+- `bun run bench:mem` -> モジュールのメモリ footprint (`test/bench-mem.ts`)
+- `bun test test/bench-cold-warm.ts` -> locale cold/warm 挙動
+- `bun test test/bench-temporal.ts` -> Temporal 比較
 
 ## moment2 vs native Temporal (Node.js 26)
 

@@ -1,8 +1,20 @@
 # Performance Techniques
 
-moment2 で使っている高速化手法のまとめ。特に「メモリアクセスが遅い」という前提に立った L2 キャッシュ観点の設計。
+moment2 で現在採用している、実装レベルの高速化手法のまとめ。
+
+この文書は「コード上で何をしているか」を整理するためのカタログであり、「なぜ効くのか」を理論的に掘るための文書ではない。
+
+実際の性能改善要因も、L2 キャッシュやメモリアクセスだけには限られない。allocation 削減、Date/regex/Intl の回避、繰り返しパースの省略、遅延評価、整数演算化、キャッシュ再利用など、複数の要因が混ざっている。
+
+「なぜ効くか」を engine / runtime 観点も含めて見たい場合は [ANALYSIS.md](./ANALYSIS.md) を参照。
+
+この文書は現行コードに存在する手法を主に扱う。commit 履歴全体には、その前段階の実装、後で吸収された中間形、捨てられた試行も含まれる。
+
+以下のコード例は説明のために簡略化している。実際のホットパスは `src/moment-class.ts`、`src/display/format.ts`、`src/core/factory-*.ts`、`src/parse.ts` に分散している。
 
 ## 1. フィールドキャッシュ（Decomposed Date Cache）
+
+対象ホットパス: getter、format、calendar math
 
 **問題**: `d.getFullYear()` などの Date API は毎回 V8 のネイティブ関数を呼ぶ。プロトタイプチェーンを辿り、C++ バインディングを経由する。
 
@@ -19,6 +31,8 @@ year() { return this._isValid ? this.$y : NaN; }
 ```
 
 ## 2. Lazy Field Initialization（`_dirty` flag）
+
+対象ホットパス: `moment()`、getter、mutation 後の read
 
 **問題**: コンストラクタで毎回 `_refreshFields()` を呼ぶと、Date の生成＋8 フィールド読み取り＋8 プロパティ書き込みが必ず発生する。`moment()` のように結果を使わずに捨てるケースでは全て無駄。
 
@@ -48,6 +62,8 @@ private _ensureFields(): void {
 
 ## 3. エラー状態の分離（`_cold` を減らす）
 
+対象ホットパス: `isValid()`、constructor fast path
+
 **問題**: `_cold` オブジェクトに `_i` (input), `_f` (format) など常にある情報を入れていたため、全ての Moment に `_cold` が生えていた。`isValid()` の fast path (`if (!cold) return true`) が死んでいた。
 
 **解決**: `_i`, `_f`, `_strict` は `_cold` から出して直接インスタンスプロパティにする。`_cold` はエラー時（overflow, empty, nullInput, invalidMonth 等）のみ生成する。
@@ -74,74 +90,114 @@ isValid() {
 }
 ```
 
-## 4. インライン Digit Extraction（charCodeAt 直接計算）
+## 4. 正規表現より先に Digit Parser を当てる
 
-**問題**: `parseCommonISO` で `four()`/`two()` 関数を呼ぶと、スタックフレーム＋関数呼び出しのオーバーヘッドがある。
+対象ホットパス: ISO 文字列パース
 
-**解決**: `charCodeAt(i) - 48` を直接インライン展開。`((c0)*10 + c1)*100 + (c2*10 + c3)` のように一気に計算。
+**問題**: ISO パースはホットパス。最初に正規表現へ流すと、パターン起動コスト、match 配列の確保、余分な文字列処理が先に発生する。
 
-**効果**: parse: 60ns → 40ns (1.5x)。関数呼び出しが消え、分岐予測が当たりやすくなる。
+**解決**: 高速 ISO パスは `charCodeAt` ベースを維持しつつ、`parse4Digits`、`p1`、`p2`、`p3`、`p4`、`p5`、`p6` のような小さな digit helper で数値化する。共通点は「regex ではなく生の文字列バイトを直接読む」こと。
+
+**効果**: 実装の helper 境界は変わっても、本質的な勝ち筋は変わらない。すなわち「regex plumbing より digit arithmetic」。
 
 ```typescript
-// Before: 関数呼び出し4回
-const year = four(str, 0);  // two(str,0)→two(str,2)→計算
-const month1 = two(str, 5);
-const day = two(str, 8);
+// 現行スタイル: raw charCodeAt を使う小さな helper
+const year = parse4Digits(str, 0);
+const month1 = p2(str, 5);
+const day = p2(str, 8);
 
-// After: インライン charCodeAt
-const y0 = str.charCodeAt(0) - 48, y1 = str.charCodeAt(1) - 48;
-const y2 = str.charCodeAt(2) - 48, y3 = str.charCodeAt(3) - 48;
-const year = y0 * 1000 + y1 * 100 + y2 * 10 + y3;
-const m0 = str.charCodeAt(5) - 48, m1 = str.charCodeAt(6) - 48;
-const month1 = m0 * 10 + m1;
+function p2(str: string, idx: number): number | null {
+  const a = str.charCodeAt(idx), b = str.charCodeAt(idx + 1);
+  if (a < 48 || a > 57 || b < 48 || b > 57) return null;
+  return (a - 48) * 10 + (b - 48);
+}
 ```
 
 ## 5. `createFromString` での Fast Path バイパス
 
-**問題**: `parseCommonISO` が成功した後も、`checkOverflow()`、`createUTCDate()`/`createDate()`、フォーマット検出の正規表現（3-4回）を実行していた。`str.trim()` も余分。
+対象ホットパス: string factory entrypoint
 
-**解決**: `_hasDate` フラグをパース結果に付けておき、`createFromString` の先頭でチェック。該当すれば即座に `new Date(...)` して Moment を返す。18行で完結。
+**問題**: `parseString()` が成功しても、汎用 constructor 経路には overflow bookkeeping、fallback parse、formatted-input 系の処理がまだ残っている。
 
-**効果**: parse ISO: 500ns → 330ns (1.5x)。正規表現エンジンの起動を回避。
+**解決**: パース結果に `_hasDate` が立っていれば、full / lite の両 factory が先頭で即判定し、`createDateSafe(...)` で直ちに `Moment` を組み立てる。
+
+**効果**: よくある ISO 文字列は余分な parse 段を踏まない。同じショートカットが `src/core/factory-shared.ts` と `src/core/factory-lite-impl.ts` の両方にある。
 
 ```typescript
 if (parsed._hasDate !== undefined) {
-  const { year, month, day, hour, minute, second, millisecond, offset } = parsed;
-  const d = offset !== undefined
-    ? new Date(Date.UTC(year!, month!, day!, ...))
-    : new Date(year!, month!, day!, ...);
-  return new Moment({ _d: d, ... });
+  return new Moment({
+    _d: createDateSafe(
+      parsed.year, parsed.month, parsed.day,
+      parsed.hour ?? 0, parsed.minute ?? 0,
+      parsed.second ?? 0, parsed.millisecond ?? 0,
+      parsed.offset !== undefined,
+    ),
+    _offset: parsed.offset,
+    _isUTC: parsed.offset !== undefined,
+    _i: str,
+  });
 }
-// 従来の checkOverflow + 正規表現 + createDate は上を通らなかった
+// 汎用の parsed-object 経路は、上を通らなかった場合だけ実行される
 ```
 
-## 6. `_addSimple` DAY の while→if-else 最適化
+## 6. Predicate Pushdown と parse hot/cold 分離
 
-**問題**: `add(1, 'day')` で `while (this.$D > daysInMonth(...))` のループが常に実行される。1日加算で月を跨ぐことは稀だが、ループの条件チェックは毎回走る。
+対象ホットパス: format 指定なしの `parseString()`
 
-**解決**: `rounded` が小さい場合は `if-else` で1回だけチェック。`daysInMonth()` の呼び出しも最小化。
+**問題**: 汎用 string parser は、先頭数文字を見れば不要だと分かる処理まで早い段階で走らせがち。locale preparse、広い ISO 判定、RFC 判定、regex fallback が全部重なると無駄が大きい。
+
+**解決**: `parseString()` はできるだけ早く reject / route する。
+- `en` かつ no-format は専用 fast path
+- `charCodeAt` で digit/slash/sign start を先に分類
+- `parseCommonISO` / `parseCommonISOExtended` を先に試す
+- RFC 2822 や table-driven ISO は安い predicate が外れたときだけ到達する
 
 ```typescript
-// Before: while ループ（毎回 daysInMonth を呼ぶ）
-this.$D += rounded;
-while (this.$D > daysInMonth(this.$y, this.$M)) {
-  this.$D -= daysInMonth(this.$y, this.$M);
-  this.$M++;
-}
-
-// After: 稀なケースだけ処理
-this.$D += rounded;
-const maxDay = daysInMonth(this.$y, this.$M);
-if (this.$D > maxDay) {
-  this.$D -= maxDay;
-  this.$M++;
-  if (this.$D > daysInMonth(this.$y, this.$M)) {
-    this.$D = daysInMonth(this.$y, this.$M);
+if (!format && (locale?._abbr ?? "en") === "en") {
+  if ((len === 10 || (len >= 19 && len <= 29)) && str.charCodeAt(4) === 45 && str.charCodeAt(7) === 45) {
+    const fast = parseCommonISO(str);
+    if (fast) return fast;
   }
 }
+
+const c0 = trimmed.charCodeAt(0);
+const isDigit = c0 >= 48 && c0 <= 57;
+const isSlash = c0 === 47;
+const isSign = c0 === 43 || c0 === 45;
 ```
 
-## 7. `_epochDaysToYMD` 算術による Date 生成回避
+## 7. UTC カレンダー演算 (`ymdToEpochDays` + `daysInMonthFast`)
+
+対象ホットパス: UTC の add/subtract/startOf/endOf の month/year 系
+
+**問題**: UTC の month/year 変更を `Date` や `Date.UTC` ベースで処理すると、ネイティブ往復や month 正規化の余分なコストが乗る。
+
+**解決**: UTC 変更経路は整数演算で閉じる。
+- `normalizeMonth()` で month index を正規化
+- `daysInMonthFast()` で月末日数をテーブル引き
+- `ymdToEpochDays()` で Y/M/D を epoch days に戻す
+
+```typescript
+const tm = this.$y * 12 + this.$M + totalMonths;
+const y = Math.floor(tm / 12);
+const m = normalizeMonth(tm);
+let d_ = this.$D;
+if (d_ > 28) {
+  const md = daysInMonthFast(y, m);
+  if (d_ > md) d_ = md;
+}
+
+this._t =
+  ymdToEpochDays(y, m, d_) * 86400000 +
+  this.$H * 3600000 +
+  this.$m * 60000 +
+  this.$s * 1000 +
+  this.$ms;
+```
+
+## 8. `_epochDaysToYMD` 算術による Date 生成回避
+
+対象ホットパス: UTC field refresh
 
 **問題**: UTC モードで `_refreshFields()` するとき、`new Date(t)` を作らずにフィールドを計算したい（メモリアロケーション回避）。
 
@@ -162,11 +218,13 @@ private static _epochDaysToYMD(z: number): [number, number, number] {
 }
 ```
 
-## 8. フォーマット Fast Path (`formatCommonEn`)
+## 9. フォーマット Fast Path (`formatCommonEn`)
+
+対象ホットパス: よく使われる英語フォーマット
 
 **問題**: フォーマットはトークンを1文字ずつ解釈する汎用ループを通る。`YYYY-MM-DD` のようなよくあるパターンでも毎回ループする。
 
-**解決**: よく使われるフォーマット（`YYYY-MM-DD`, `HH:mm:ss`, `YYYY-MM-DDTHH:mm:ss.SSSZ` など）を switch で直接処理。Locale が "en" かつ年が 0-9999 のときだけ有効。
+**解決**: よく使われるフォーマット（`YYYY-MM-DD`, `HH:mm:ss`, `YYYY-MM-DDTHH:mm:ss.SSSZ`, `LL`, `LT`, `LLLL` など）を `src/display/format.ts` の switch で直接処理。Locale が `en`、Moment が valid、年が `0..9999` のときだけ有効。`_dirty` ならここで1回だけ field refresh する。
 
 **効果**: `format('YYYY-MM-DD')`: 400ns → 35ns (11x)。PAD2 テーブルルックアップ＋テンプレートリテラル1発。
 
@@ -182,22 +240,57 @@ function formatCommonEn(m: Moment, format: string): string | undefined {
 }
 ```
 
-## 9. LRU キャッシュによるフォーマット展開結果の再利用
+## 10. フォーマットパイプラインの二段キャッシュ
 
-**問題**: `LLLL` などのロケール依存トークンは毎回展開すると重い。
+対象ホットパス: 同じパターンの繰り返し format
 
-**解決**: `LruMap<string, string>(500)` に展開結果をキャッシュ。同じロケール＋同じフォーマットなら2回目以降はキャッシュヒット。
+**問題**: format の繰り返しコストは2種類ある。
+- `L`, `LL`, `LLLL` など locale token の展開
+- 展開後 format に対する render function 配列の再構築
+
+**解決**:
+- `expandLocaleCache` が `${locale}:${format}` 単位で locale token 展開をキャッシュ
+- `formatRenderCache` が render function 配列をキャッシュ
+- locale 側も `_localeRenderFns` を保持でき、locale 固有の再利用が可能
 
 ```typescript
-const expandedCacheKey = `${locale || "en"}:${format}`;
-let expandedFormat = expandedFormatCache.get(expandedCacheKey);
-if (!expandedFormat) {
-  expandedFormat = format.replaceAll(/LTS|LT|.../g, ...);
-  expandedFormatCache.set(expandedCacheKey, expandedFormat);
+const cacheKey = `${m._l}:${format}`;
+const cached = expandLocaleCache.get(cacheKey);
+if (cached !== undefined) return cached;
+
+let fns = localeRenderCache?.[format];
+if (!fns) {
+  fns = formatRenderCache.get(format) ?? buildRenderFns(format);
 }
 ```
 
-## 10. コンストラクタの条件付き Cold Field コピー
+## 11. Bytecode 化した format parser
+
+対象ホットパス: 同じ format 文字列での `parseWithFormat()` 反復
+
+**問題**: format 文字列を毎回 token 化し、毎回汎用 lookup で handler を探すと、反復パース時のオーバーヘッドが無視できない。
+
+**解決**: format 文字列を一度 opcode 配列にコンパイルしてキャッシュし、以後は直接 handler 参照を実行する。handler 選択自体も、先頭文字と token 長を使う `switch` dispatch で縮めている。
+
+```typescript
+type Op =
+  | { kind: "token"; handler: TokenHandler; name: string }
+  | { kind: "literal"; value: string };
+
+const BYTECODE_CACHE = new LruMap<string, Op[]>(1000);
+
+function compileFormatToOpcodes(format: string): Op[] {
+  const cached = BYTECODE_CACHE.get(format);
+  if (cached) return cached;
+  const ops = tokenizeFormat(format).map(...);
+  BYTECODE_CACHE.set(format, ops);
+  return ops;
+}
+```
+
+## 12. コンストラクタの条件付き Cold Field コピー
+
+対象ホットパス: constructor / parse result materialization
 
 **問題**: `coldFieldKeys` 配列を毎回イテレーションして `_cold` オブジェクトを生成していた。ほとんどの Moment は cold data を持たない。
 
@@ -217,7 +310,9 @@ if (c._overflow !== undefined || c._empty !== undefined || ...) {
 }
 ```
 
-## 11. `clone()` での `_d` 共有回避
+## 13. `clone()` での `_d` 共有回避
+
+対象ホットパス: clone 後の mutation 正しさと eager allocation 回避
 
 **問題**: `Object.create(Moment.prototype)` で clone すると `_d` が共有される。元の moment の Date を clone が書き換える。
 
@@ -239,20 +334,27 @@ clone(): Moment {
 }
 ```
 
-## 12. `differenceInCalendarDays` 最適化
+## 14. 負の epoch でも安全な UTC floor/ceil helper
 
-**問題**: diff は `valueOf()` の差を計算して割るだけ。通常はこれで十分。
+対象ホットパス: UTC `startOf` / `endOf`
 
-**解決**: `diff(input, 'days')` は単に `(this._t - other._t) / 86400000` の floor。moment のキャッシュから直接計算するので Date 経由より速い。
+**問題**: `Math.floor(t / unitMs) * unitMs` だけで UTC `startOf/endOf` を書くと、負の epoch 付近で扱いが雑になりやすい。Date ベースで逃げると不要な allocation も増える。
+
+**解決**: `floorUnitEpoch()` と `endOfUnitEpoch()` を共通 helper にし、UTC の day/hour/minute/second の `startOf/endOf` を整数演算で閉じる。
 
 ```typescript
-case DAY: {
-  const diff = this.valueOf() - other.valueOf();
-  return Math.floor(diff / 86400000);
+export function floorUnitEpoch(value: number, unitMs: number): number {
+  return value - euclideanModulo(value, unitMs);
+}
+
+export function endOfUnitEpoch(value: number, unitMs: number): number {
+  return value + (unitMs - 1) - euclideanModulo(value, unitMs);
 }
 ```
 
-## 13. `_dayOfWeek` 算術計算 (Tomohiko Sakamoto)
+## 15. `_dayOfWeek` 算術計算 (Tomohiko Sakamoto)
+
+対象ホットパス: field mutation 後の曜日再計算
 
 **問題**: `d.getDay()` で曜日を取得すると Date オブジェクトが必要。
 
@@ -268,7 +370,9 @@ function _dayOfWeek(y: number, m: number, d: number): number {
 
 ---
 
-## 14. `format()` が native `Intl.DateTimeFormat` より 10-22x 速い理由
+## 16. `format()` が native `Intl.DateTimeFormat` より 10-22x 速い理由
+
+この節は個別ケースの説明であり、moment2 の全ての最適化を説明する一般理論ではない。
 
 **問題**: なぜ moment2 の `format('YYYY-MM-DD')` (〜40ns) が Node.js ネイティブの `Intl.DateTimeFormat.format()` (〜600ns) より速いのか？
 
@@ -294,9 +398,17 @@ fmt.format(date);  // → ~600ns, ICU C++ calls, locale+calendar+digit resolutio
 
 **結論**: 単純な `YYYY-MM-DD` フォーマットには Intl.DateTimeFormat はオーバースペック。moment2 の format は「キャッシュされた整数の sprintf」であり、ICU パイプラインと比較するのがナンセンスなほど軽い。
 
-## 計測結果
+## 17. 計測結果
 
-最新のベンチマーク数値は [BENCHMARKS.md](./BENCHMARKS.md) を参照（2026-05-07, macOS arm64 M4）。
+数値は時点ごとのスナップショットだが、履歴全体の流れとしては次の順で改善が積まれてきた。
+- まず construction / getter コスト
+- 次に mutation と UTC 算術
+- 次に parse の分類と dispatch
+- 最後に format の specialized path と cache layering
+
+この順番には意味がある。後段の多くの改善は、前段で shape 安定化、lazy field refresh、UTC 整数演算化が済んでいることを前提に効いている。
+
+最新のベンチマーク数値は [BENCHMARKS.md](./BENCHMARKS.md) を参照（2026-05-16, macOS arm64 M4）。
 
 代表値（抜粋）:
 

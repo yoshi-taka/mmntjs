@@ -1,8 +1,32 @@
 # Performance Analysis (Low-Level)
 
-moment2 の高速化を、L2 キャッシュ以外の CPU/V8 観点で読み解く。
+[TECHNIQUES.md](./TECHNIQUES.md) にある手法が、なぜ効きやすいのかを整理する文書。
 
-## 1. Hidden Class（Shape）安定性
+これは最適化手法の一覧ではなく、その背後にある主要因の整理である。主に allocation pressure、hot-path specialization、deferred work、branch 挙動、object layout の安定性、重い subsystem の回避という観点で説明する。
+
+このリポジトリの標準ベンチ runtime は Bun (JavaScriptCore) だが、Shape / Inline Cache / Deopt の説明として最も公開情報が多いので本文では V8 用語を使う。ただしそれは説明モデルであり、「V8 だけが本質」という意味ではない。高レベルな結論自体は Node 26 側でもクロスチェック済み。
+
+実務上の役割分担はこう考えるとよい。
+- `TECHNIQUES.md` = コードで何をしているか
+- `ANALYSIS.md` = それがなぜ速くなりやすいか
+
+並行して見るべき説明軸もある。
+- アルゴリズム軸: 演算量や定数倍の仕事量そのものを減らす
+- runtime / engine 軸: IC 安定化、inline しやすさ、deopt 回避
+- allocation / GC 軸: `Date` や短命 helper object を減らす
+- API specialization 軸: よく使われる moment.js 互換ケースを専用化する
+- compatibility-aware design 軸: moment.js の意味論、DST、parse の癖を壊さない範囲で速くする
+
+履歴を最初から見ると、うまく効いた最適化はだいたい次の反復に収束している。
+- 早く classify し、早く reject する
+- hot path と cold path を物理的にも論理的にも分ける
+- calendar object の仕事を、意味論を保てる範囲で整数演算に置き換える
+- 最終値だけでなく、展開済み表現やコンパイル済み表現もキャッシュする
+- 互換性の主要ケースを専用化しつつ、端の挙動は壊さない
+
+## 1. 安定した Object Layout
+
+代表的な手法: field cache、`_cold` 分離、constructor の key-order 固定
 
 **問題**: V8 は同じプロパティ順で作成されたオブジェクトを同じ Shape（Hidden Class）に割り当て、プロパティアクセスをインデックス計算（C++ の構造体アクセス相当）に最適化する。Shape が変わると Deopt → 再最適化が走る。
 
@@ -30,6 +54,8 @@ cold._overflow  // ある Moment は number、別の Moment は undefined → �
 ```
 
 ## 2. 分岐予測と分岐削減
+
+代表的な手法: `_ensureFields`、day fast path、UTC arithmetic fast path
 
 **問題**: 条件分岐が多いと CPU の分岐予測ミス (branch mispredict) が発生。パイプラインがフラッシュされ ~15 cycle のペナルティ。
 
@@ -64,25 +90,46 @@ private _ensureFields(): void {
 
 `_dirty` は初回アクセス後 `false` になる。2回目以降の `if (this._dirty)` は「常に不成立」と学習され、CPU の分岐予測子が "strongly not-taken" になる → 予測ミスゼロ。
 
-### 2c. `_addSimple` DAY の while→if 変換
+### 2c. DAY add/subtract は timestamp fast path に残す
 
 ```typescript
-// Before: while ループ。daysInMonth を毎回呼ぶ
-while (this.$D > daysInMonth(this.$y, this.$M)) { ... }
-
-// After: if-else。最初の月内収まるのが99%
-if (this.$D > daysInMonth(this.$y, this.$M)) {   // 予測: not taken
-  this.$D -= daysInMonth(this.$y, this.$M);
-  this.$M++;
-  if (this.$D > daysInMonth(this.$y, this.$M)) {  // 予測: not taken（2ヶ月跨ぎは極稀）
-    this.$D = daysInMonth(this.$y, this.$M);
-  }
+if (this._isUTC) {
+  this._t += rounded * 86400000;
+  this._d = undefined;
+} else {
+  const dt = this._d ?? (this._d = new Date(this._t));
+  dt.setDate(dt.getDate() + rounded);
+  this._t = dt.getTime();
 }
+
+this._dirty = true;
 ```
 
-`add(1,'day')` で月を跨ぐ確率は 1/31 ≈ 3%。2ヶ月跨ぐ確率は 0% に近い。while ループはループ回数が 1 で終わることが分かっていてもループ構造のオーバーヘッド（条件判断＋分岐＋カウンタ）がある。if-else にすると LuaJIT や V8 の最適化コンパイラが丸ごと分岐削除できる可能性もある。
+`add(1,'day')` は十分にホットなので `add()` に専用経路がある。UTC は `_t` への整数加算1発、local は `Date#setDate` 1回だけで済ませ、どちらも field 再計算はその場でやらず `_dirty` を立てるだけにしている。最も多いカレンダー increment で汎用 unit mutation を踏まないのが効く。
 
-## 3. String Representation と charCodeAt
+### 2d. UTC カレンダー演算で `Date.UTC` と負 epoch の罠を避ける
+
+```typescript
+const tm = this.$y * 12 + this.$M + totalMonths;
+const y = Math.floor(tm / 12);
+const m = normalizeMonth(tm);
+const d_ = this.$D > 28 ? Math.min(this.$D, daysInMonthFast(y, m)) : this.$D;
+
+this._t =
+  ymdToEpochDays(y, m, d_) * 86400000 +
+  this.$H * 3600000 +
+  this.$m * 60000 +
+  this.$s * 1000 +
+  this.$ms;
+```
+
+重要なのは次の2点。
+- UTC の month/year 変更で `Date` 生成や `Date.UTC(...)` 呼び出しを避けられる
+- `floorUnitEpoch` / `endOfUnitEpoch` により、UTC `startOf/endOf` を負の epoch でも安全に扱える。ここは `test/bench-regression.ts` で回帰監視している
+
+## 3. String Representation と直接 digit parsing
+
+代表的な手法: `parseCommonISO`、digit helper、fast path での trim 回避
 
 **問題**: V8 の文字列には複数の内部表現がある。
 - SeqString: 連続したメモリ領域（charCodeAt は O(1)、キャッシュフレンドリー）
@@ -108,7 +155,9 @@ if (len === 10 && charCodeAt(4) === 45 && charCodeAt(7) === 45) {
 }
 ```
 
-## 4. Regex エンジン起動コスト
+## 4. 重い Subsystem を避ける: Regex
+
+代表的な手法: fast ISO parser、`_hasDate` short-circuit
 
 **問題**: V8 の irregexp エンジンは初回実行時に JIT コンパイルを行う。たとえ単純な正規表現でも、パターンコンパイル＋実行コンテキスト生成のオーバーヘッドがある。2回目以降はネイティブコードがキャッシュされるが、`RegExp.exec()` の戻り値（`RegExpMatchArray`）のアロケーションは毎回発生する。
 
@@ -129,7 +178,9 @@ else if (/^\d{4}/.test(trimmedStr)) { ... }
 if (parsed._hasDate !== undefined) { /* 直接 Moment 生成 */ }
 ```
 
-## 5. GC Pressure（ガベージコレクション負荷）
+## 5. Allocation Pressure と GC
+
+代表的な手法: lazy `_d`、`_cold` omission、clone strategy、UTC arithmetic helper
 
 **問題**: オブジェクトの生成が多すぎると GC が頻発する。特に Young Generation (nursery) から Old Generation への昇格 (tenuring) は stop-the-world を引き起こす。
 
@@ -150,7 +201,9 @@ if (parsed._hasDate !== undefined) { /* 直接 Moment 生成 */ }
 - fast path で Moment のバイトサイズが小さいほど Young Gen の GC が速い
 - `_cold` 削減によって Moment のプロパティ数が減り、GC のマーク＆スイープ対象が減る
 
-## 6. Template Literal の JIT 最適化
+## 6. 安い文字列組み立て
+
+代表的な手法: `PAD2`、`padYear`、`formatCommonEn`、token render cache
 
 **問題**: JavaScript のテンプレートリテラル `` `${a}-${b}` `` は V8 によって Tagged Template として最適化される。初回以降は「テンプレートオブジェクト」がキャッシュされ、文字列結合が高速になる。
 
@@ -167,7 +220,9 @@ const PAD2 = ["00","01","02",...,"99"];
 return `${PAD2[this.$H]}:${PAD2[this.$m]}:${PAD2[this.$s]}`;
 ```
 
-## 7. Function Inlining Heuristics
+## 7. 小さく inline しやすい helper
+
+代表的な手法: `_ensureFields`、`_dayOfWeek`、digit parser
 
 **問題**: V8 の TurboFan JIT は関数の呼び出し回数（ヒット数）に応じてインライン展開を判断する。インライン展開されない関数呼び出しはスタフレーム生成＋`call`/`ret` 命令のオーバーヘッド。
 
@@ -184,7 +239,9 @@ return `${PAD2[this.$H]}:${PAD2[this.$m]}:${PAD2[this.$s]}`;
 - `_cold` のプロパティアクセス: `cold._overflow` は Shape が不定の場合、V8 はインライン化を諦める
 - 関数呼び出しの引数オブジェクト: `checkOverflow(parsed)` の `parsed` は毎回異なる Shape を持つ可能性がある
 
-## 8. Prototype Chain Depth
+## 8. Hot data を own property に置く
+
+代表的な手法: `$y/$M/$D/$W/$H/$m/$s/$ms` field cache
 
 **問題**: プロパティアクセスがインスタンス→プロトタイプ→プロトタイプとチェーンを辿るたびに Shape チェックが必要。
 
@@ -202,7 +259,9 @@ return `${PAD2[this.$H]}:${PAD2[this.$m]}:${PAD2[this.$s]}`;
   this.year()   → prototype method (depth 1)  → IC が効けばほぼコストゼロ
 ```
 
-## 9. 整数演算の最適化（Smi / Double）
+## 9. Calendar object より整数演算
+
+代表的な手法: `ymdToEpochDays`、`_epochDaysToYMD`、`_dayOfWeek`、floor/ceil helper
 
 **問題**: V8 は整数を Smi (Small Integer, 31-bit signed) として表現し、オブジェクトへのポインタにタグを付けて区別する。Smi 範囲を超えると HeapNumber にボックス化され、演算が遅くなる。
 
@@ -220,6 +279,8 @@ Math.floor(tm / 12)        // 結果は Smi 範囲
 
 ## 10. Monomorphic なメソッド呼び出し
 
+代表的な手法: 安定した Moment shape、prototype method の再利用
+
 **問題**: V8 は同じ関数が同じ Shape の `this` で呼ばれると、インラインキャッシュを最適化する。異なる Shape で呼ばれるとデオプティマイズ。
 
 **moment2 の設計**: `Moment.prototype` 上のメソッドは常に `Moment` インスタンスを `this` として呼ばれる。Shape が（通常時は）完全に固定されているため、V8 はすべてのメソッド呼び出しをモノモーフィックに処理できる。
@@ -232,7 +293,9 @@ b.month() // this.shape === Moment_shape (IC: monomorphic, same Shape)
 
 **比較**: date-fns の `format(b, "yyyy-MM-dd")` は第一引数に `Date` を受け取る。Date の Shape も V8 で固定されているため同様にモノモーフィックだが、戻り値の Moment ラップが不要な分だけ速い。
 
-## 11. Try/Catch の Deoptimization
+## 11. Hot path から cold error machinery を外す
+
+代表的な手法: `formatCommonEn`、`_cold` 分離、fast-path bypass
 
 **問題**: `try { } catch { }` ブロックがある関数は V8 の TurboFan が最適化を制限する（例外ハンドリングのための安全なコード生成が必要）。
 
@@ -242,19 +305,36 @@ b.month() // this.shape === Moment_shape (IC: monomorphic, same Shape)
 
 **対策**: フォーマットの `formatCommonEn` はロケール "en" 固定なので try/catch パスを通らない。他のロケールでは try/catch が入る可能性がある。必要ならロケールキャッシュを事前構築することで回避可能。
 
-## 12. Arguments Object の最適化
+## 12. 不要な汎用性を持ち込まない
 
-**問題**: 残余引数 (`...args`) や `arguments` オブジェクトを使うと V8 の最適化が制限される。
+代表的な手法: common format の special case、直接 string factory path、UTC/local の分岐専用化
 
-**moment2 の該当箇所**:
+**問題**: 汎用 parser / formatter は、先頭数文字を見れば行かなくてよい経路まで広く踏みがち。入力 routing が遅いと、それだけで余分な parse コストが乗る。
+
+**moment2 の代表例**:
 ```typescript
-export function createDate(year, month, day, ...args) { // rest params
-  const [hour, minute, second, ms] = args;
+if (!format && (locale?._abbr ?? "en") === "en") {
+  if ((len === 10 || (len >= 19 && len <= 29)) && str.charCodeAt(4) === 45 && str.charCodeAt(7) === 45) {
+    const fast = parseCommonISO(str);
+    if (fast) return fast;
+  }
+}
+
+const c0 = trimmed.charCodeAt(0);
+const isDigit = c0 >= 48 && c0 <= 57;
+const isSlash = c0 === 47;
+const isSign = c0 === 43 || c0 === 45;
 ```
 
-V8 は rest params をある程度最適化できるが、`Array` の生成は避けられない。**現状は問題になっていない**が、さらに追い込むならインライン化したい。
+ここでの利得は V8 固有というより広い。
+- reject できる入力で余分な仕事をしない
+- 高コスト subsystem へ到達する回数を減らす
+- よく来る入力クラスで分岐履歴が安定する
+- hot/cold の分離が明確になり、JIT 全般に有利
 
-## 13. Object リテラルの Shape 安定性
+## 13. 短命な parse object と shape 安定性
+
+代表的な手法: parse result object、`_hasDate` による fast-path tag
 
 **問題**: 関数が毎回同じキー順のオブジェクトリテラルを返す場合、V8 はその Shape を覚えて最適化する。
 
@@ -275,9 +355,13 @@ function parseCommonISO(str) {
 - 2つの return パスでキー順が異なる → 2つの Shape が存在
 - 呼び出し元でどちらの Shape が来るかは文字列の形式に依存 → V8 は Polymorphic に適応する
 
+関連する最近の変更として、format parsing 側も token 列を opcode 配列へコンパイルしてキャッシュするようになった。繰り返し parse では format 構造と token-handler dispatch の両方を再利用できる。
+
 **改善**: キー順を統一すれば Monomorphic になるが、戻り値のオブジェクト自体は short-lived（parse 後に即消費される）なので実害は小さい。
 
-## 14. アルゴリズム: Sakamoto の曜日計算
+## 14. 算術的な calendar helper
+
+代表的な手法: `_dayOfWeek`、`ymdToEpochDays`、`_epochDaysToYMD`
 
 **問題**: `d.getDay()` で曜日を取得するには Date オブジェクトが必要。また `setFullYear()` 後の曜日再計算も Date API 経由だと遅い。
 
@@ -421,6 +505,8 @@ export function isLeapYear(y: number): boolean {
 
 ## 17. CPU パイプラインに乗せる工夫
 
+代表的な手法: switch dispatch、先頭文字分類、冗長 load 削減
+
 ### 17a. 整数強制による Smi 維持
 
 V8 では 31-bit符号付き整数を Smi (Small Integer) としてタグ付きポインタで表現する。Smi 範囲外は HeapNumber にボックス化され、演算時にアンボックス化が必要。
@@ -464,6 +550,26 @@ this._offset = -d.getTimezoneOffset();
 ```
 
 `_getD()` は `this._d` の存在確認＋`_ensureFields()`＋条件付き `new Date()` を含むため、高コスト。1回の変数束縛でこれらの load を削減。V8 の CSE (Common Subexpression Elimination) が効かないケースでも手動で削減している。
+
+### 17d. generic lookup より switch dispatch
+
+最近の parse-format 最適化では、format 文字列を opcode 配列へコンパイルし、handler 解決を先頭文字と token 長の入れ子 `switch` に落としている。
+
+```typescript
+switch (cc) {
+  case 89 /* Y */:
+    switch (len) {
+      case 6: return hYYYYYY;
+      case 5: return hYYYYY;
+      case 4: return hYYYY;
+    }
+}
+```
+
+効く理由は次の通り。
+- 分岐構造が単純で反復的
+- `Y`, `M`, `D`, `H`, `m`, `s` のようなホット token 群が短い dispatch path に乗る
+- 同じ format 文字列では tokenize と handler 解決の両方を opcode cache で飛ばせる
 
 ## 18. `_epochDaysToYMD` — 算術による Date 生成回避
 
@@ -713,13 +819,13 @@ moment2 のような JavaScript ライブラリでページサイズを直接制
 
 ## 23. 多層キャッシュ戦略
 
-moment2 は V8 の各階層のキャッシュ機構を多層的に活用している。下層ほどハードウェア寄り、上層ほどアプリケーションロジック。
+moment2 は複数層のキャッシュを使っている。engine 非依存のアプリケーションキャッシュ、JS engine の inline cache、さらにその下の CPU キャッシュが重なっている。
 
 ```
 Layer 5: LRU キャッシュ     LruMap (expandLocaleCache, tokenizeCache, expandedFormatCache)
 Layer 4: ロケールキャッシュ   _localeCache Map, _monthsCache, _weekdaysCache
 Layer 3: フィールドキャッシュ $y $M $D $W $H $m $s $ms (8 fields)
-Layer 2: V8 IC (Inline Cache) Shape 固定 + Monomorphic プロパティアクセス
+Layer 2: JS Engine IC        Shape 固定 + Monomorphic プロパティアクセス
 Layer 1: CPU キャッシュ       L1 (32KB), L2 (256KB-1MB), TLB (64 entry L1, 2048 L2)
 ```
 
@@ -884,9 +990,9 @@ class LruMap<K, V> {
 
 **eviction 判断**: tokenizeCache(1000) はフォーマット文字列をキャッシュする。実用的なフォーマット数は高々数十なので、eviction はほとんど発生しない。expandLocaleCache(500) も同様。
 
-### 23f. V8 の内部キャッシュ
+### 23f. engine 内部キャッシュ
 
-V8 が暗黙的に行うキャッシュで、moment2 が間接的に恩恵を受けているもの:
+engine が暗黙的に行うキャッシュで、moment2 が間接的に恩恵を受けているもの:
 
 | キャッシュ | 対象 | 効果 |
 |-----------|------|------|
@@ -895,6 +1001,8 @@ V8 が暗黙的に行うキャッシュで、moment2 が間接的に恩恵を受
 | **String インターン** | 同一内容の文字列 | 同じ文字列リテラルはヒープ上で共有される（比較が参照一致になる） |
 | **Shape キャッシュ** | オブジェクトの Shape | 同じ Class から生成されたオブジェクトは Shape 遷移ツリーがキャッシュされる |
 | **フィードバックベクター** | 各呼び出しサイトの型情報 | IC が収集した型情報はフィードバックベクターに蓄積される（関数が無効化されない限り保持） |
+
+名称は V8 と JSC で一致しない部分もあるが、高レベルの効果は似ている。つまり、安定した object layout と安定した call site は報われやすい。
 
 **コードキャッシュの具体例**: 5000回実行される `moment()` は TurboFan により高度に最適化されたコードにコンパイルされる。ループの定数伝搬、分岐の単純化、不要なプロパティチェックの削除等が適用される。
 

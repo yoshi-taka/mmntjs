@@ -1,8 +1,20 @@
 # Performance Techniques
 
-Techniques used to accelerate moment2, viewed from the L2 cache perspective — assuming memory access is the bottleneck.
+Implementation-level performance techniques currently used in moment2.
+
+This document answers "what do we do in the code". It is a catalog of concrete hot-path techniques, not a full theory of why they help.
+
+Performance here does not come from a single source such as L2 cache locality. Different techniques help for different reasons: fewer allocations, less Date/regex/Intl work, less repeated parsing, less eagerly paid work, more direct arithmetic, and better cache reuse.
+
+If you want the "why this tends to work" view, including engine/runtime discussion, read [ANALYSIS.md](./ANALYSIS.md).
+
+This file focuses on techniques that are present in the current code. The full commit history also contains intermediate forms, discarded experiments, and steps that were later subsumed by stronger versions of the same idea.
+
+Examples below are intentionally simplified. The current code paths live across `src/moment-class.ts`, `src/display/format.ts`, `src/core/factory-*.ts`, and `src/parse.ts`.
 
 ## 1. Field Cache (Decomposed Date Cache)
+
+Hot path: getters, formatters, calendar math
 
 **Problem**: `d.getFullYear()` and similar Date APIs hit V8's native C++ bindings on every call, traversing the prototype chain.
 
@@ -19,6 +31,8 @@ year() { return this._isValid ? this.$y : NaN; }
 ```
 
 ## 2. Lazy Field Initialization (`_dirty` flag)
+
+Hot path: `moment()`, getters, post-mutation reads
 
 **Problem**: Calling `_refreshFields()` in every constructor unconditionally generates a Date + reads/writes 8 fields. For throwaway `moment()` calls this is pure waste.
 
@@ -48,6 +62,8 @@ private _ensureFields(): void {
 
 ## 3. Error State Separation (reducing `_cold`)
 
+Hot path: `isValid()`, constructor fast path
+
 **Problem**: The old `_cold` object held `_i` (input), `_f` (format), etc., which exist on every Moment. This made `_cold` always present, killing the `isValid()` fast path (`if (!cold) return true`).
 
 **Solution**: Promote `_i`, `_f`, `_strict` from `_cold` to direct instance properties. `_cold` is now only created on errors (overflow, empty, nullInput, invalidMonth, etc.).
@@ -74,74 +90,114 @@ isValid() {
 }
 ```
 
-## 4. Inline Digit Extraction (direct charCodeAt)
+## 4. Digit Parsers Instead of Regex-First Parsing
 
-**Problem**: `parseCommonISO` called helper functions `four()`/`two()` incurring stack frame + call overhead.
+Hot path: ISO string parsing
 
-**Solution**: Inline `charCodeAt(i) - 48` directly. Compute the full number in one expression: `((c0)*10 + c1)*100 + (c2*10 + c3)`.
+**Problem**: ISO parsing is hot. Regex-first parsing pays pattern startup cost, match-array allocation, and extra substring handling before any date fields exist.
 
-**Effect**: parse: 60ns -> 40ns (1.5x). Function calls eliminated, branch prediction improves.
+**Solution**: The fast ISO path stays `charCodeAt`-based and uses tiny digit helpers such as `parse4Digits`, `p1`, `p2`, `p3`, `p4`, `p5`, `p6`. This keeps parsing on raw string bytes and avoids the regex engine for common inputs.
+
+**Effect**: The hot path remains allocation-light and predictable. Exact helper boundaries changed over time, but the core win is still "digit arithmetic over regex plumbing".
 
 ```typescript
-// Before: 4 function calls
-const year = four(str, 0);
-const month1 = two(str, 5);
-const day = two(str, 8);
+// Current style: tiny digit helpers over raw charCodeAt
+const year = parse4Digits(str, 0);
+const month1 = p2(str, 5);
+const day = p2(str, 8);
 
-// After: inline charCodeAt
-const y0 = str.charCodeAt(0) - 48, y1 = str.charCodeAt(1) - 48;
-const y2 = str.charCodeAt(2) - 48, y3 = str.charCodeAt(3) - 48;
-const year = y0 * 1000 + y1 * 100 + y2 * 10 + y3;
-const m0 = str.charCodeAt(5) - 48, m1 = str.charCodeAt(6) - 48;
-const month1 = m0 * 10 + m1;
+function p2(str: string, idx: number): number | null {
+  const a = str.charCodeAt(idx), b = str.charCodeAt(idx + 1);
+  if (a < 48 || a > 57 || b < 48 || b > 57) return null;
+  return (a - 48) * 10 + (b - 48);
+}
 ```
 
 ## 5. Fast Path Bypass in `createFromString`
 
-**Problem**: After `parseCommonISO` succeeds, the code still ran `checkOverflow()`, `createUTCDate()`/`createDate()`, and format-detection regex (3-4 times). `str.trim()` was also extraneous.
+Hot path: string factory entrypoints
 
-**Solution**: Tag parse results with a `_hasDate` flag. Check it at the top of `createFromString`. If set, immediately `new Date(...)` and return a Moment in 18 lines.
+**Problem**: After `parseString()` succeeds, the generic constructor path still has more work available: overflow bookkeeping, fallback parsing, and full formatted-input handling.
 
-**Effect**: parse ISO: 500ns -> 330ns (1.5x). Regex engine startup avoided.
+**Solution**: Tag parse results with `_hasDate`. Both full and lite factories check that flag first and immediately materialize a `Moment` via `createDateSafe(...)`, bypassing the slower general path.
+
+**Effect**: Common ISO strings avoid extra parse stages, and the same shortcut exists in both `src/core/factory-shared.ts` and `src/core/factory-lite-impl.ts`.
 
 ```typescript
 if (parsed._hasDate !== undefined) {
-  const { year, month, day, hour, minute, second, millisecond, offset } = parsed;
-  const d = offset !== undefined
-    ? new Date(Date.UTC(year!, month!, day!, ...))
-    : new Date(year!, month!, day!, ...);
-  return new Moment({ _d: d, ... });
+  return new Moment({
+    _d: createDateSafe(
+      parsed.year, parsed.month, parsed.day,
+      parsed.hour ?? 0, parsed.minute ?? 0,
+      parsed.second ?? 0, parsed.millisecond ?? 0,
+      parsed.offset !== undefined,
+    ),
+    _offset: parsed.offset,
+    _isUTC: parsed.offset !== undefined,
+    _i: str,
+  });
 }
-// checkOverflow + regex + createDate only reached when above is skipped
+// General parsed-object construction only runs when the fast path is skipped.
 ```
 
-## 6. `_addSimple` DAY: while -> if-else
+## 6. Predicate Pushdown and Parse Hot/Cold Separation
 
-**Problem**: `add(1, 'day')` always runs `while (this.$D > daysInMonth(...))`. Crossing a month boundary on a single-day add is rare, but the loop check fires every time.
+Hot path: `parseString()` without explicit format
 
-**Solution**: Use if-else for small increments. Minimize `daysInMonth()` calls.
+**Problem**: A generic string parser tends to do expensive work too early: locale preparse, broad ISO attempts, RFC checks, and regex-based fallbacks even when the first few bytes already rule most of that out.
+
+**Solution**: `parseString()` now rejects or routes inputs as early as possible.
+- `en` + no-format calls get a dedicated fast path.
+- simple `charCodeAt` checks classify digit/slash/sign starts.
+- `parseCommonISO` and `parseCommonISOExtended` run before broader paths.
+- RFC 2822 and table-driven ISO parsing are only reached when the cheaper predicates fail.
 
 ```typescript
-// Before: while loop (calls daysInMonth every iteration)
-this.$D += rounded;
-while (this.$D > daysInMonth(this.$y, this.$M)) {
-  this.$D -= daysInMonth(this.$y, this.$M);
-  this.$M++;
-}
-
-// After: if-else for rare cases
-this.$D += rounded;
-const maxDay = daysInMonth(this.$y, this.$M);
-if (this.$D > maxDay) {
-  this.$D -= maxDay;
-  this.$M++;
-  if (this.$D > daysInMonth(this.$y, this.$M)) {
-    this.$D = daysInMonth(this.$y, this.$M);
+if (!format && (locale?._abbr ?? "en") === "en") {
+  if ((len === 10 || (len >= 19 && len <= 29)) && str.charCodeAt(4) === 45 && str.charCodeAt(7) === 45) {
+    const fast = parseCommonISO(str);
+    if (fast) return fast;
   }
 }
+
+const c0 = trimmed.charCodeAt(0);
+const isDigit = c0 >= 48 && c0 <= 57;
+const isSlash = c0 === 47;
+const isSign = c0 === 43 || c0 === 45;
 ```
 
-## 7. `_epochDaysToYMD` — Date Allocation Avoidance via Arithmetic
+## 7. UTC Calendar Arithmetic (`ymdToEpochDays` + `daysInMonthFast`)
+
+Hot path: UTC add/subtract/startOf/endOf month/year paths
+
+**Problem**: UTC month/year mutations are surprisingly expensive if they bounce through `Date`, `Date.UTC`, or repeated month-normalization helpers on every call.
+
+**Solution**: The UTC mutation path computes everything in integer space:
+- `normalizeMonth()` wraps the month index.
+- `daysInMonthFast()` uses a tiny table + leap-year branch.
+- `ymdToEpochDays()` turns Y/M/D back into epoch days without allocating a `Date`.
+
+```typescript
+const tm = this.$y * 12 + this.$M + totalMonths;
+const y = Math.floor(tm / 12);
+const m = normalizeMonth(tm);
+let d_ = this.$D;
+if (d_ > 28) {
+  const md = daysInMonthFast(y, m);
+  if (d_ > md) d_ = md;
+}
+
+this._t =
+  ymdToEpochDays(y, m, d_) * 86400000 +
+  this.$H * 3600000 +
+  this.$m * 60000 +
+  this.$s * 1000 +
+  this.$ms;
+```
+
+## 8. `_epochDaysToYMD` — Date Allocation Avoidance via Arithmetic
+
+Hot path: UTC field refresh
 
 **Problem**: UTC-mode `_refreshFields()` needs year/month/day from epoch ms. Creating a `new Date(t)` allocates memory.
 
@@ -162,11 +218,13 @@ private static _epochDaysToYMD(z: number): [number, number, number] {
 }
 ```
 
-## 8. Format Fast Path (`formatCommonEn`)
+## 9. Format Fast Path (`formatCommonEn`)
+
+Hot path: common English formats
 
 **Problem**: The general format loop interprets tokens one character at a time. Even `YYYY-MM-DD` goes through the full loop.
 
-**Solution**: Handle common formats (`YYYY-MM-DD`, `HH:mm:ss`, `YYYY-MM-DDTHH:mm:ss.SSSZ`, etc.) in a switch statement. Only active for locale "en" and year 0-9999.
+**Solution**: Handle common formats (`YYYY-MM-DD`, `HH:mm:ss`, `YYYY-MM-DDTHH:mm:ss.SSSZ`, `LL`, `LT`, `LLLL`, etc.) in `src/display/format.ts`. Only active for locale `en`, valid moments, and year `0..9999`. The fast path also checks `_dirty` and forces one field refresh only when needed.
 
 **Effect**: `format('YYYY-MM-DD')`: 400ns -> 35ns (11x). PAD2 table lookup + template literal in one shot.
 
@@ -182,22 +240,57 @@ function formatCommonEn(m: Moment, format: string): string | undefined {
 }
 ```
 
-## 9. LRU Cache for Format Expansion
+## 10. Two-Level Caching in the Format Pipeline
 
-**Problem**: Locale-dependent tokens like `LLLL` are expensive to expand every time.
+Hot path: repeated formatting of the same patterns
 
-**Solution**: `LruMap<string, string>(500)` caches expansion results. Same locale + same format hits the cache on second use.
+**Problem**: Formatting has two separate recurring costs:
+- expanding locale tokens like `L`, `LL`, `LLLL`
+- rebuilding token render functions for the final expanded format
+
+**Solution**:
+- `expandLocaleCache` caches locale-token expansion by `${locale}:${format}`
+- `formatRenderCache` caches compiled render-function arrays
+- locales can also keep `_localeRenderFns` on their config object for locale-specific reuse
 
 ```typescript
-const expandedCacheKey = `${locale || "en"}:${format}`;
-let expandedFormat = expandedFormatCache.get(expandedCacheKey);
-if (!expandedFormat) {
-  expandedFormat = format.replaceAll(/LTS|LT|.../g, ...);
-  expandedFormatCache.set(expandedCacheKey, expandedFormat);
+const cacheKey = `${m._l}:${format}`;
+const cached = expandLocaleCache.get(cacheKey);
+if (cached !== undefined) return cached;
+
+let fns = localeRenderCache?.[format];
+if (!fns) {
+  fns = formatRenderCache.get(format) ?? buildRenderFns(format);
 }
 ```
 
-## 10. Conditional Cold Field Copy in Constructor
+## 11. Bytecode-Compiled Format Parsing
+
+Hot path: `parseWithFormat()` on repeated format strings
+
+**Problem**: Re-tokenizing format strings and dispatching token handlers through generic lookups on every parse adds avoidable overhead.
+
+**Solution**: Compile format strings into cached opcode arrays once, then execute them with direct handler references. Handler selection itself is reduced to nested `switch` dispatch keyed by first char and token length.
+
+```typescript
+type Op =
+  | { kind: "token"; handler: TokenHandler; name: string }
+  | { kind: "literal"; value: string };
+
+const BYTECODE_CACHE = new LruMap<string, Op[]>(1000);
+
+function compileFormatToOpcodes(format: string): Op[] {
+  const cached = BYTECODE_CACHE.get(format);
+  if (cached) return cached;
+  const ops = tokenizeFormat(format).map(...);
+  BYTECODE_CACHE.set(format, ops);
+  return ops;
+}
+```
+
+## 12. Conditional Cold Field Copy in Constructor
+
+Hot path: constructor / parse result materialization
 
 **Problem**: Iterating `coldFieldKeys` array on every Moment to build a `_cold` object. Most Moments have no cold data.
 
@@ -217,7 +310,9 @@ if (c._overflow !== undefined || c._empty !== undefined || ...) {
 }
 ```
 
-## 11. `clone()` — Avoiding `_d` Sharing
+## 13. `clone()` — Avoiding `_d` Sharing
+
+Hot path: clone + later mutation correctness without extra eager allocation
 
 **Problem**: `Object.create(Moment.prototype)` shares `_d` between original and clone. The clone's mutations corrupt the original's Date.
 
@@ -239,20 +334,27 @@ clone(): Moment {
 }
 ```
 
-## 12. `differenceInCalendarDays` Optimization
+## 14. Negative-Epoch-Safe UTC Floor/Ceil Helpers
 
-**Problem**: diff just computes `valueOf()` difference and divides. That's usually sufficient.
+Hot path: UTC `startOf` / `endOf`
 
-**Solution**: `diff(input, 'days')` is simply `(this._t - other._t) / 86400000` floored. Uses the cached `_t` directly, avoiding Date API.
+**Problem**: `Math.floor(t / unitMs) * unitMs` is easy to write, but it is wrong or awkward around negative epochs if you do not normalize carefully. Date-heavy `startOf/endOf` paths also allocate unnecessarily.
+
+**Solution**: `floorUnitEpoch()` and `endOfUnitEpoch()` centralize the arithmetic for UTC `startOf/endOf` on day/hour/minute/second boundaries.
 
 ```typescript
-case DAY: {
-  const diff = this.valueOf() - other.valueOf();
-  return Math.floor(diff / 86400000);
+export function floorUnitEpoch(value: number, unitMs: number): number {
+  return value - euclideanModulo(value, unitMs);
+}
+
+export function endOfUnitEpoch(value: number, unitMs: number): number {
+  return value + (unitMs - 1) - euclideanModulo(value, unitMs);
 }
 ```
 
-## 13. Arithmetic `_dayOfWeek` (Tomohiko Sakamoto)
+## 15. Arithmetic `_dayOfWeek` (Tomohiko Sakamoto)
+
+Hot path: UTC/local calendar recomputation after field mutation
 
 **Problem**: `d.getDay()` requires a Date object.
 
@@ -268,7 +370,9 @@ function _dayOfWeek(y: number, m: number, d: number): number {
 
 ---
 
-## 14. Why `format()` is 10-22x faster than native `Intl.DateTimeFormat`
+## 16. Why `format()` is 10-22x faster than native `Intl.DateTimeFormat`
+
+This section is a focused case study, not a general model for all optimizations in moment2.
 
 **Question**: Why is moment2's `format('YYYY-MM-DD')` (~40ns) faster than Node.js's native `Intl.DateTimeFormat.format()` (~600ns)?
 
@@ -294,7 +398,15 @@ fmt.format(date);  // -> ~600ns, ICU C++ calls, locale+calendar+digit resolution
 
 **Conclusion**: For simple `YYYY-MM-DD` formatting, Intl.DateTimeFormat is over-engineered. moment2's format is "sprintf on cached integers" — comparing against the ICU pipeline is apples-to-oranges.
 
-## Benchmark Results
+## 17. Benchmark Results
+
+These numbers are snapshots. The broader implementation trajectory from the full history has been:
+- construction/getter costs reduced first
+- then mutation and UTC arithmetic costs
+- then parse classification and parse dispatch
+- then format specialization and cache layering
+
+That order matters: many later wins build on earlier shape stabilization, lazy field refresh, and integer-based UTC paths.
 
 Latest benchmark data: see [BENCHMARKS.md](./BENCHMARKS.md) (2026-05-16, macOS arm64 M4).
 
