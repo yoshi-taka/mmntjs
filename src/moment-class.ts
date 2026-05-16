@@ -602,7 +602,7 @@ export class Moment {
     if (c._strict !== undefined) {
       this._strict = c._strict;
     }
-    const hasExtraCold = hasExtraColdConfig(c);
+    let hasExtraCold = false;
     if (
       c._overflow !== undefined ||
       c._empty !== undefined ||
@@ -611,8 +611,7 @@ export class Moment {
       c._invalidFormat !== undefined ||
       c._weekdayMismatch !== undefined ||
       c._userInvalidated !== undefined ||
-      c._parsedDateParts !== undefined ||
-      hasExtraCold
+      (hasExtraCold = hasExtraColdConfig(c))
     ) {
       this._initCold(c, hasExtraCold);
     }
