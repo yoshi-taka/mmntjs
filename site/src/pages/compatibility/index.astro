@@ -1,0 +1,82 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { compatibilitySnapshot } from "../../content/site";
+import { withBase } from "../../lib/urls";
+
+const statusGuide = [
+  ["Compatible", "Behavior is expected to match within the documented scope and is covered by direct tests."],
+  ["Mostly compatible", "Behavior is broadly aligned, but some known edge cases remain and are documented."],
+  ["Partial", "Useful support exists, but adoption should be limited to the documented subset."],
+  ["Not supported", "Do not assume equivalent behavior without a dedicated compatibility layer."],
+];
+
+const unsupported = [
+  "Assume core mmntjs does not provide an IANA timezone database by itself.",
+  "Treat known parsing edge cases as migration review items, not invisible footnotes.",
+  "Use separate timezone support when your application depends on moment-timezone-style data behavior.",
+];
+---
+
+<BaseLayout
+  title="Compatibility | mmntjs"
+  description="Area-by-area compatibility guidance for teams evaluating mmntjs as a safer path away from moment.js."
+  currentPath="/compatibility/"
+>
+  <section class="page-intro panel">
+    <p class="eyebrow">Compatibility</p>
+    <h1>Compatibility should be inspectable.</h1>
+    <p>
+      This page exists to show what matches moment.js, what is partial, what is unsupported, and
+      where teams should read more before rollout.
+    </p>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Matrix</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Area</th>
+          <th>Status</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {compatibilitySnapshot.map(([area, status, notes]) => (
+          <tr>
+            <td>{area}</td>
+            <td><span class="tag">{status}</span></td>
+            <td>{notes}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="grid">
+    <article class="panel section">
+      <p class="eyebrow">Status Vocabulary</p>
+      <ul>
+        {statusGuide.map(([title, text]) => <li><strong>{title}</strong>: {text}</li>)}
+      </ul>
+    </article>
+    <article class="panel section">
+      <p class="eyebrow">Known Differences</p>
+      <ul>
+        <li>Current known gaps are concentrated in specific parsing edge cases rather than broad API areas.</li>
+        <li>Invalid-date and offset-sensitive behavior are documented explicitly because they drive migration risk.</li>
+        <li>Compatibility claims should always be read with the documented scope in mind.</li>
+      </ul>
+      <div class="actions">
+        <a class="button" href={withBase("/docs/known-differences/")}>Known Differences</a>
+      </div>
+    </article>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Unsupported Or Separate Scope</p>
+    <ul>
+      {unsupported.map((item) => <li>{item}</li>)}
+    </ul>
+  </section>
+</BaseLayout>

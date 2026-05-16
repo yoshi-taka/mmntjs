@@ -1,0 +1,59 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { performancePrinciples } from "../../content/site";
+
+const workloads = [
+  "Parse",
+  "Format",
+  "Add and subtract",
+  "startOf and endOf",
+  "diff",
+  "Duration",
+  "Locale formatting",
+  "Bulk transformations",
+];
+---
+
+<BaseLayout
+  title="Performance | mmntjs"
+  description="Performance guidance for mmntjs with emphasis on reproducible, workload-specific claims."
+  currentPath="/performance/"
+>
+  <section class="page-intro panel">
+    <p class="eyebrow">Performance</p>
+    <h1>Performance should be explained, not advertised.</h1>
+    <p>
+      The goal of this page is to show what is measured, how it is measured, and how to interpret
+      the numbers without treating microbenchmarks as universal truth.
+    </p>
+  </section>
+
+  <section class="grid">
+    <article class="panel section">
+      <p class="eyebrow">Principles</p>
+      <ul>
+        {performancePrinciples.map((item) => <li>{item}</li>)}
+      </ul>
+    </article>
+    <article class="panel section">
+      <p class="eyebrow">Methodology</p>
+      <ul>
+        <li>Show benchmark hardware and runtime.</li>
+        <li>Separate cold and warm paths where relevant.</li>
+        <li>Call out when compared APIs are not semantically identical.</li>
+      </ul>
+    </article>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Workloads</p>
+    <div class="cards">
+      {workloads.map((item) => (
+        <article class="card">
+          <h3>{item}</h3>
+          <p>Document reproducible benchmark cases for this workload and explain why it matters in real code.</p>
+        </article>
+      ))}
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,64 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { migrationPhases } from "../../content/site";
+
+const checklist = [
+  "Inventory custom parsing and custom format usage.",
+  "Identify timezone and locale heavy modules early.",
+  "Verify invalid-date behavior in both UI and business logic paths.",
+  "Expand rollout only after production-like comparisons pass.",
+];
+---
+
+<BaseLayout
+  title="Migration | mmntjs"
+  description="Practical rollout guidance for teams migrating away from moment.js without a risky rewrite."
+  currentPath="/migration/"
+>
+  <section class="page-intro panel">
+    <p class="eyebrow">Migration</p>
+    <h1>Roll out in stages, not in hope.</h1>
+    <p>
+      This page is for teams that need a realistic adoption path: evaluate first, replace in a
+      small surface, compare behavior, then expand with confidence.
+    </p>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Staged Rollout</p>
+    <div class="cards">
+      {migrationPhases.map(([phase, text]) => (
+        <article class="card">
+          <h3>{phase}</h3>
+          <p>{text}</p>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section class="grid">
+    <article class="panel section">
+      <p class="eyebrow">Good Fit</p>
+      <ul>
+        <li>Large codebases with deep moment.js usage.</li>
+        <li>Teams that need behavioral continuity before broader modernization.</li>
+        <li>Owners who can stage adoption by module, package, or service.</li>
+      </ul>
+    </article>
+    <article class="panel section">
+      <p class="eyebrow">Use Caution</p>
+      <ul>
+        <li>Critical timezone-data workflows that assume full IANA behavior in core.</li>
+        <li>Codebases with little or no regression testing around date parsing and formatting.</li>
+        <li>Rollouts that demand a same-day global replacement without verification time.</li>
+      </ul>
+    </article>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Risk Checklist</p>
+    <ul>
+      {checklist.map((item) => <li>{item}</li>)}
+    </ul>
+  </section>
+</BaseLayout>

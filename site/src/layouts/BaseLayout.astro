@@ -1,0 +1,345 @@
+---
+import { topNav } from "../content/site";
+import { withBase } from "../lib/urls";
+
+interface Props {
+  title: string;
+  description?: string;
+  currentPath?: string;
+}
+
+const {
+  title,
+  description = "mmntjs is a compatibility-first migration bridge away from moment.js.",
+  currentPath = "/",
+} = Astro.props;
+
+function isActive(href: string): boolean {
+  if (href === "/") {
+    return currentPath === "/";
+  }
+  return currentPath.startsWith(href);
+}
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0a0d14;
+        --panel: #101522;
+        --panel-2: #151c2c;
+        --line: #263247;
+        --text: #edf2fb;
+        --muted: #a3b1c7;
+        --accent: #a6c6ff;
+        --accent-strong: #dbe8ff;
+        --ok: #91d3ac;
+        --warn: #ead5a2;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: linear-gradient(180deg, #0a0d14 0%, #0f1420 100%);
+        color: var(--text);
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        line-height: 1.6;
+      }
+
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      a:hover {
+        color: var(--accent-strong);
+      }
+
+      a:visited {
+        color: var(--accent);
+      }
+
+      code,
+      pre {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      }
+
+      code {
+        font-size: 0.93em;
+      }
+
+      pre {
+        overflow-x: auto;
+        margin: 0;
+        padding: 1rem;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #0c111b;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        padding: 0.85rem 0.9rem;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        color: var(--accent-strong);
+        font-weight: 600;
+      }
+
+      main {
+        width: min(1160px, calc(100vw - 32px));
+        margin: 0 auto;
+        padding: 20px 0 72px;
+      }
+
+      header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 10px 0 28px;
+      }
+
+      .brand-wrap {
+        display: grid;
+        gap: 4px;
+      }
+
+      .brand {
+        color: var(--text);
+        font-size: 1.05rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+      }
+
+      .brand-note {
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      nav {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+
+      nav a {
+        padding: 0.45rem 0.7rem;
+        border: 1px solid transparent;
+        border-radius: 999px;
+        color: var(--muted);
+      }
+
+      nav a.active {
+        border-color: var(--line);
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--text);
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: rgba(16, 21, 34, 0.86);
+        backdrop-filter: blur(8px);
+      }
+
+      .eyebrow {
+        margin: 0 0 12px;
+        color: var(--accent);
+        font-size: 0.82rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .page-intro {
+        margin-bottom: 24px;
+        padding: 24px;
+      }
+
+      .page-intro h1 {
+        margin: 0;
+        font-size: clamp(2.2rem, 5.6vw, 4rem);
+        line-height: 1;
+      }
+
+      .page-intro p {
+        margin: 14px 0 0;
+        max-width: 800px;
+        color: var(--muted);
+        font-size: 1.04rem;
+      }
+
+      .section {
+        margin-top: 18px;
+        padding: 24px;
+      }
+
+      .section h2,
+      .section h3 {
+        margin: 0 0 12px;
+      }
+
+      .section p,
+      .section li {
+        color: var(--muted);
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .card {
+        display: block;
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .card h3 {
+        margin: 0 0 8px;
+        color: var(--text);
+        font-size: 1.02rem;
+      }
+
+      .card p,
+      .card li {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .meta-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .meta-row {
+        display: grid;
+        grid-template-columns: 140px 1fr;
+        gap: 12px;
+      }
+
+      .label {
+        color: var(--accent-strong);
+        font-weight: 600;
+      }
+
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.28rem 0.55rem;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        color: var(--accent-strong);
+        font-size: 0.86rem;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        padding: 0 14px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        color: var(--text);
+      }
+
+      .button.primary {
+        background: var(--accent);
+        border-color: transparent;
+        color: #0b1220;
+        font-weight: 700;
+      }
+
+      footer {
+        margin-top: 28px;
+        padding-top: 20px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      @media (max-width: 960px) {
+        header,
+        .grid,
+        .cards,
+        .meta-row {
+          grid-template-columns: 1fr;
+          display: grid;
+        }
+
+        header {
+          justify-content: stretch;
+        }
+
+        nav {
+          justify-content: flex-start;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="brand-wrap">
+          <a class="brand" href={withBase("/")}>mmntjs</a>
+          <div class="brand-note">Compatibility-first migration bridge away from moment.js</div>
+        </div>
+        <nav>
+          {topNav.map((link) => (
+            <a
+              class={!link.external && isActive(link.href) ? "active" : undefined}
+              href={link.external ? link.href : withBase(link.href)}
+              target={link.external ? "_blank" : undefined}
+              rel={link.external ? "noreferrer" : undefined}
+            >
+              {link.label}
+            </a>
+          ))}
+        </nav>
+      </header>
+      <slot />
+      <footer>
+        mmntjs is positioned as a practical migration bridge: preserve behavior first, modernize on your own schedule.
+      </footer>
+    </main>
+  </body>
+</html>

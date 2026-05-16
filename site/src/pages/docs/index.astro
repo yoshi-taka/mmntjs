@@ -1,0 +1,50 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { docsPages } from "../../content/site";
+import { withBase } from "../../lib/urls";
+
+const primaryDocs = docsPages.filter((page) =>
+  ["getting-started", "installation", "migration-notes", "known-differences", "parsing", "invalid-dates", "timezone-parsezone"].includes(page.slug),
+);
+
+const referenceDocs = docsPages.filter((page) => !primaryDocs.includes(page));
+---
+
+<BaseLayout
+  title="Docs | mmntjs"
+  description="Practical, migration-oriented documentation for evaluating and adopting mmntjs."
+  currentPath="/docs/"
+>
+  <section class="page-intro panel">
+    <p class="eyebrow">Docs</p>
+    <h1>Documentation organized for migration risk.</h1>
+    <p>
+      The docs prioritize the questions large codebases ask first: what is compatible, what is
+      risky, what to test, and how to roll out incrementally.
+    </p>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Start Here</p>
+    <div class="cards">
+      {primaryDocs.map((page) => (
+        <a class="card" href={withBase(`/docs/${page.slug}/`)}>
+          <h3>{page.title}</h3>
+          <p>{page.summary}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Reference Paths</p>
+    <div class="cards">
+      {referenceDocs.map((page) => (
+        <a class="card" href={withBase(`/docs/${page.slug}/`)}>
+          <h3>{page.title}</h3>
+          <p>{page.summary}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+</BaseLayout>

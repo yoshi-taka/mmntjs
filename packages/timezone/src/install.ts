@@ -26,6 +26,17 @@ interface MomentTz {
 type MomentInstance = MomentLike & {
   tz(tz?: string): MomentInstance;
   _z?: { name: string; abbr: (ts: number) => string };
+  utcOffset(offset?: number | string, keepLocalTime?: boolean): number | MomentInstance;
+  isValid(): boolean;
+  year(): number;
+  month(): number;
+  date(): number;
+  hour(): number;
+  minute(): number;
+  second(): number;
+  millisecond(): number;
+  clone(): MomentInstance;
+  valueOf(): number;
 };
 
 export type MomentLike = {
@@ -94,7 +105,7 @@ function getOffset(tz: string, timestamp: number): number {
     offsetCache.set(tz, domain);
   }
 
-  const key = Math.round(timestamp / 60000);
+  const key = Math.round(timestamp / 1000);
 
   const cached = domain.get(key);
   if (cached !== undefined) {
@@ -148,6 +159,13 @@ function isZoneName(s: string): boolean {
   }
 }
 
+/** Check if a string input has an explicit timezone offset (e.g. +09:00, Z) */
+function hasExplicitOffset(input: string): boolean {
+  // Strip leading/trailing whitespace, check for trailing Z or +/-HH:MM or +/-HHMM
+  const trimmed = input.trim();
+  return /(Z|[+-]\d{2}:?\d{2})\s*$/.test(trimmed);
+}
+
 export function installTimezone(moment: MomentLike): MomentLike {
   if (moment.tz) {
     return moment;
@@ -155,12 +173,73 @@ export function installTimezone(moment: MomentLike): MomentLike {
 
   moment.momentProperties.push("_z");
 
+  /**
+   * Parse a wall-clock time string in a given timezone.
+   * moment-timezone interprets the wall-clock components as being in the target zone,
+   * NOT as local time followed by conversion.
+   */
+  function parseInZone(input: string, zone: string, format?: string): MomentInstance {
+    // oxlint-disable-next-line no-explicit-any
+    const m = format ? (moment as any)(input, format) : (moment as any)(input);
+    if (!m.isValid()) {
+      return m;
+    }
+
+    const y = m.year();
+    const M = m.month();
+    const d = m.date();
+    const h = m.hour();
+    const min = m.minute();
+    const s = m.second();
+    const ms = m.millisecond();
+
+    const guess = Date.UTC(y, M, d, h, min, s, ms);
+    const initialOffset = getOffset(zone, guess);
+    let ts = guess - initialOffset * 60000;
+    let secondOffset = getOffset(zone, ts);
+
+    if (initialOffset !== secondOffset) {
+      const ts2 = guess - secondOffset * 60000;
+      const thirdOffset = getOffset(zone, ts2);
+      if (thirdOffset === secondOffset) {
+        const d2 = new Date(ts2);
+        const wall = d2.toLocaleString("en-US", {
+          timeZone: zone,
+          hour12: false,
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        const wallH = parseInt(wall.slice(0, 2), 10);
+        if (wallH === h && wall.slice(3, 5) === String(min).padStart(2, "0")) {
+          ts = ts2;
+        } else {
+          const preOffset = Math.min(initialOffset, secondOffset);
+          ts = guess - preOffset * 60000;
+          secondOffset = Math.max(initialOffset, secondOffset);
+        }
+      } else {
+        const preOffset = Math.min(initialOffset, secondOffset);
+        ts = guess - preOffset * 60000;
+        secondOffset = Math.max(initialOffset, secondOffset);
+      }
+    }
+
+    // oxlint-disable-next-line no-explicit-any
+    const result = (moment as any)(ts) as MomentInstance;
+    result.utcOffset(secondOffset, false);
+    result._z = { name: zone, abbr: (t: number) => getAbbr(zone, t) };
+    return result;
+  }
+
   // oxlint-disable-next-line no-explicit-any
   function momentTz(input?: any, formatOrZone?: any, zoneOrStrict?: any, _fourth?: any): any {
     if (typeof formatOrZone === "string" && isZoneName(formatOrZone)) {
       const tz = normalizeTz(formatOrZone);
       if (input === undefined || input === null) {
         return moment().tz(tz);
+      }
+      if (typeof input === "string" && !hasExplicitOffset(input)) {
+        return parseInZone(input, tz);
       }
       const m = moment(input);
       return m.tz(tz);
@@ -174,8 +253,22 @@ export function installTimezone(moment: MomentLike): MomentLike {
     ) {
       const fmt = formatOrZone;
       const tz = normalizeTz(zoneOrStrict);
-      const m = moment(input, fmt);
-      return m.tz(tz);
+      return parseInZone(input, tz, fmt);
+    }
+
+    if (
+      typeof input === "string" &&
+      typeof formatOrZone === "string" &&
+      typeof zoneOrStrict === "boolean"
+    ) {
+      const fmt = formatOrZone;
+      const strict = zoneOrStrict;
+      if (typeof _fourth === "string" && isZoneName(_fourth)) {
+        const tz = normalizeTz(_fourth);
+        return parseInZone(input, tz, fmt);
+      }
+      const m = moment(input, fmt, strict);
+      return m;
     }
 
     if (typeof input === "string" && typeof formatOrZone === "string") {
@@ -191,7 +284,7 @@ export function installTimezone(moment: MomentLike): MomentLike {
   }
 
   // oxlint-disable-next-line no-explicit-any
-  function fnTz(this: any, tz?: string): any {
+  function fnTz(this: any, tz?: string, keepTime?: boolean): any {
     if (tz === undefined) {
       return this._z ? this._z.name : Intl.DateTimeFormat().resolvedOptions().timeZone;
     }
@@ -204,10 +297,10 @@ export function installTimezone(moment: MomentLike): MomentLike {
     if (zoneInfo) {
       m._z = zoneInfo;
       const targetOffset = zoneInfo.offset(timestamp);
-      m.utcOffset(targetOffset, false);
+      m.utcOffset(targetOffset, keepTime);
     } else {
       const targetOffset = getOffset(tz, timestamp);
-      m.utcOffset(targetOffset, false);
+      m.utcOffset(targetOffset, keepTime);
       m._z = { name: tz, abbr: (_ts: number) => getAbbr(tz, _ts) };
     }
 

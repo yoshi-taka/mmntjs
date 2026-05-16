@@ -1,0 +1,181 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import {
+  compatibilitySnapshot,
+  docsPages,
+  githubUrl,
+  migrationPhases,
+  performancePrinciples,
+  qualityProof,
+} from "../content/site";
+import { withBase } from "../lib/urls";
+
+const faqPreview = [
+  "Why not just use Temporal?",
+  "Is mmntjs a full replacement for moment.js?",
+  "Does it include timezone data?",
+  "Why not dayjs, date-fns, or Luxon?",
+  "How should we migrate safely?",
+];
+---
+
+<BaseLayout
+  title="mmntjs"
+  description="A safer path away from moment.js for teams that need compatibility, measurable quality, and incremental migration."
+  currentPath="/"
+>
+  <section class="page-intro panel">
+    <p class="eyebrow">Moment-compatible migration bridge</p>
+    <h1>A safer path away from moment.js.</h1>
+    <p>
+      mmntjs is a compatibility-first replacement for teams that cannot justify a risky date/time
+      rewrite today, but still want a smaller, better-tested path forward.
+    </p>
+    <div class="actions">
+      <a class="button primary" href={withBase("/compatibility/")}>See Compatibility</a>
+      <a class="button" href={githubUrl} target="_blank" rel="noreferrer">View GitHub</a>
+      <a class="button" href={withBase("/migration/")}>Read Migration Guide</a>
+    </div>
+    <div class="grid" style="margin-top: 20px;">
+      <div class="panel section">
+        <p class="eyebrow">Install</p>
+        <pre><code>npm install moment@npm:mmntjs</code></pre>
+      </div>
+      <div class="panel section">
+        <p class="eyebrow">Drop-in import</p>
+        <pre><code>import moment from "moment";
+
+moment("2024-01-01").add(1, "day");</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid">
+    <article class="panel section">
+      <p class="eyebrow">Problem</p>
+      <h2>Most teams keep moment.js because replacing it is risky.</h2>
+      <p>
+        Date/time rewrites rarely fail in the obvious paths. They fail in parsing edge cases,
+        invalid-date handling, DST transitions, offsets, and locale behavior that production code
+        has quietly depended on for years.
+      </p>
+    </article>
+    <article class="panel section">
+      <p class="eyebrow">Quick Start</p>
+      <h2>Start small, then verify.</h2>
+      <p>
+        Evaluate mmntjs in one module, run the tests you already trust, and expand only after
+        checking compatibility-sensitive behavior.
+      </p>
+      <div class="actions">
+        <a class="button" href={withBase("/docs/getting-started/")}>Getting Started</a>
+      </div>
+    </article>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Why mmntjs</p>
+    <div class="cards">
+      <article class="card">
+        <h3>Compatibility-first</h3>
+        <p>The project is organized around preserving moment.js behavior where compatibility is promised.</p>
+      </article>
+      <article class="card">
+        <h3>Smaller modern implementation</h3>
+        <p>It aims to reduce runtime and bundle cost without asking teams to rewrite date logic upfront.</p>
+      </article>
+      <article class="card">
+        <h3>Bridge to modern APIs</h3>
+        <p>Adopt incrementally today, then move new code toward Temporal over time rather than via a forced rewrite.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Compatibility Snapshot</p>
+    <h2>Proof should come before persuasion.</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Area</th>
+          <th>Status</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {compatibilitySnapshot.map(([area, status, notes]) => (
+          <tr>
+            <td>{area}</td>
+            <td><span class="tag">{status}</span></td>
+            <td>{notes}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+    <div class="actions">
+      <a class="button" href={withBase("/compatibility/")}>Open Full Compatibility Page</a>
+    </div>
+  </section>
+
+  <section class="grid">
+    <article class="panel section">
+      <p class="eyebrow">Quality</p>
+      <h2>Quality is part of the product surface.</h2>
+      <ul>
+        {qualityProof.map((item) => <li>{item}</li>)}
+      </ul>
+      <div class="actions">
+        <a class="button" href={withBase("/quality/")}>Quality Methodology</a>
+      </div>
+    </article>
+    <article class="panel section">
+      <p class="eyebrow">Performance</p>
+      <h2>Performance claims are scoped and reproducible.</h2>
+      <ul>
+        {performancePrinciples.map((item) => <li>{item}</li>)}
+      </ul>
+      <div class="actions">
+        <a class="button" href={withBase("/performance/")}>Benchmark Methodology</a>
+      </div>
+    </article>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Migration Path</p>
+    <h2>Sell safety more than novelty.</h2>
+    <div class="cards">
+      {migrationPhases.map(([phase, text]) => (
+        <article class="card">
+          <h3>{phase}</h3>
+          <p>{text}</p>
+        </article>
+      ))}
+    </div>
+    <div class="actions">
+      <a class="button" href={withBase("/migration/")}>Read Migration Guide</a>
+    </div>
+  </section>
+
+  <section class="grid">
+    <article class="panel section">
+      <p class="eyebrow">FAQ Preview</p>
+      <h2>Answer the objections directly.</h2>
+      <ul>
+        {faqPreview.map((item) => <li>{item}</li>)}
+      </ul>
+      <div class="actions">
+        <a class="button" href={withBase("/faq/")}>Full FAQ</a>
+      </div>
+    </article>
+    <article class="panel section">
+      <p class="eyebrow">Docs</p>
+      <h2>Start with migration-sensitive topics.</h2>
+      <ul>
+        {docsPages.slice(0, 5).map((page) => <li><a href={withBase(`/docs/${page.slug}/`)}>{page.title}</a></li>)}
+      </ul>
+      <div class="actions">
+        <a class="button" href={withBase("/docs/")}>Browse Docs</a>
+      </div>
+    </article>
+  </section>
+</BaseLayout>

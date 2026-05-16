@@ -23,6 +23,7 @@
     "mmntjs": "^1.0.0"
   },
   "devDependencies": {
+    "fast-check": "^4.0.0",
     "moment-timezone": "^0.5.46",
     "tsup": "^8.3.0",
     "typescript": "^5.4.0"

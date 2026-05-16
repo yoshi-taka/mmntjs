@@ -1,0 +1,54 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { docsPages } from "../../content/site";
+import { withBase } from "../../lib/urls";
+
+export function getStaticPaths() {
+  return docsPages.map((page) => ({
+    params: { slug: page.slug },
+    props: { page },
+  }));
+}
+
+const { page } = Astro.props;
+---
+
+<BaseLayout
+  title={`${page.title} | mmntjs Docs`}
+  description={page.summary}
+  currentPath={`/docs/${page.slug}/`}
+>
+  <section class="page-intro panel">
+    <p class="eyebrow">Docs</p>
+    <h1>{page.title}</h1>
+    <p>{page.summary}</p>
+  </section>
+
+  <section class="panel section">
+    <div class="meta-list">
+      <div class="meta-row">
+        <div class="label">Purpose</div>
+        <div>{page.purpose}</div>
+      </div>
+      <div class="meta-row">
+        <div class="label">Document first</div>
+        <div>
+          <ul>
+            {page.focus.map((item) => <li>{item}</li>)}
+          </ul>
+        </div>
+      </div>
+      <div class="meta-row">
+        <div class="label">Related</div>
+        <div>
+          {page.related.map((link, index) => (
+            <>
+              {index > 0 ? " · " : ""}
+              <a href={withBase(link.href)}>{link.label}</a>
+            </>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

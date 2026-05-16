@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
-  "entry": ["src/index.ts", "src/bin/cli.ts", "src/temporal-entry.ts", "test/mutation.test.ts", "test/properties/basic.test.ts", "test/properties/boundary.test.ts", "test/iso-parse-temporal-oracle.test.ts", "test/regression/crashes.test.ts", "test/browser-bundle-compare.ts", "packages/timezone/src/index.ts", "packages/timezone/test/basic.test.ts"],
+  "entry": ["src/index.ts", "src/bin/cli.ts", "src/temporal-entry.ts", "test/mutation.test.ts", "test/properties/basic.test.ts", "test/properties/boundary.test.ts", "test/iso-parse-temporal-oracle.test.ts", "test/regression/crashes.test.ts", "test/browser-bundle-compare.ts", "packages/timezone/src/index.ts", "packages/timezone/test/basic.test.ts", "packages/timezone/test/compat.test.ts", "packages/timezone/test/properties.test.ts"],
   "ignorePatterns": [
     "moment/**",
     "lib/**",
@@ -35,7 +35,8 @@
     "test/duration-between.test.ts",
     "test/factory-input-format.test.ts",
     "test/locale-mgmt.test.ts",
-    "docs/**"
+    "docs/**",
+    "site/**"
   ],
   "ignoreDependencies": ["acorn", "benchmark", "date-fns", "dayjs", "luxon", "moment-timezone"],
   "duplicates": {

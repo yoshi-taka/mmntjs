@@ -1,0 +1,56 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { qualityProof } from "../../content/site";
+
+const sections = [
+  ["Differential testing", "Use upstream moment.js behavior as the oracle instead of relying on local assumptions."],
+  ["Edge-case corpus", "Preserve previously discovered failures as regression fixtures so migration safety improves over time."],
+  ["Fuzzing and properties", "Explore parsing, formatting, duration, and operation space beyond hand-written examples."],
+  ["DST and timezone boundaries", "Test mode transitions and local-time edge cases where production regressions are expensive."],
+  ["Release discipline", "Treat compatibility changes and known behavior shifts as first-class release notes."],
+];
+---
+
+<BaseLayout
+  title="Quality | mmntjs"
+  description="Why teams should trust mmntjs with production date/time behavior."
+  currentPath="/quality/"
+>
+  <section class="page-intro panel">
+    <p class="eyebrow">Quality</p>
+    <h1>Quality means preserving semantics, not just passing unit tests.</h1>
+    <p>
+      For a compatibility-focused date library, quality work is about semantic equivalence,
+      regression preservation, and honest handling of edge cases.
+    </p>
+  </section>
+
+  <section class="grid">
+    <article class="panel section">
+      <p class="eyebrow">Evidence</p>
+      <ul>
+        {qualityProof.map((item) => <li>{item}</li>)}
+      </ul>
+    </article>
+    <article class="panel section">
+      <p class="eyebrow">Philosophy</p>
+      <ul>
+        <li>Behavior snapshots matter more than isolated implementation coverage.</li>
+        <li>Known differences should be documented before they surprise users.</li>
+        <li>Timezone, DST, and invalid inputs deserve explicit test strategy, not assumptions.</li>
+      </ul>
+    </article>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Testing Areas</p>
+    <div class="cards">
+      {sections.map(([title, text]) => (
+        <article class="card">
+          <h3>{title}</h3>
+          <p>{text}</p>
+        </article>
+      ))}
+    </div>
+  </section>
+</BaseLayout>
