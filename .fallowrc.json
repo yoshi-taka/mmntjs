@@ -34,7 +34,8 @@
     "test/parse-main.test.ts",
     "test/duration-between.test.ts",
     "test/factory-input-format.test.ts",
-    "test/locale-mgmt.test.ts"
+    "test/locale-mgmt.test.ts",
+    "docs/**"
   ],
   "ignoreDependencies": ["acorn", "benchmark", "date-fns", "dayjs", "luxon", "moment-timezone"],
   "duplicates": {

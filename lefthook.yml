@@ -2,5 +2,5 @@ pre-commit:
   commands:
     lint:
       run: bun run lint
-    knip:
-      run: bun run knip
+    audit:
+      run: bun run audit:static
