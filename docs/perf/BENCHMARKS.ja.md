@@ -137,23 +137,23 @@ Run: `bun test/bench-*.ts` (individual files) or `bun run bench` (package.json s
 
 ```
 Operation                           warm m2   warm tmp       %
-now/create                              98ns       698ns  710.3%
-parse ISO string                       347ns       188ns   54.1%
-parse [y,M,d]                          355ns       103ns   29.1%
-get year                                 8ns        12ns  154.5%
-add 1 day                               84ns       497ns  591.1%
-add 1 month                            196ns       448ns  228.4%
-diff in days                            25ns       313ns 1239.1%
-format YYYY-MM-DD                       38ns       135ns  351.2%
-startOf month                           14ns       282ns 2029.1%
-daysInMonth                             14ns        14ns   98.4%
+now/create                              70ns       657ns  934.2%
+parse ISO string                       424ns       177ns   41.8%
+parse [y,M,d]                          322ns       100ns   31.0%
+get year                                 8ns        12ns  151.9%
+add 1 day                               89ns       537ns  603.1%
+add 1 month                            203ns       454ns  223.6%
+diff in days                            26ns       348ns 1331.0%
+format YYYY-MM-DD                       64ns       132ns  205.4%
+startOf month                           14ns       284ns 1992.9%
+daysInMonth                             16ns        14ns   85.9%
 ```
 
 (`%` = tmp / m2 × 100. `<100` = Temporal faster, `>100` = moment2 faster.)
 
-**moment2 wins 7/10, Temporal wins 2/10, 1 tie.**
+**moment2 wins 7/10, Temporal wins 3/10.**
 
-Temporal wins at parsing (C++ `PlainDate.from` and constructor are fast) and equals at `daysInMonth` (both are property reads). moment2 wins everywhere else because:
+Temporal wins at parsing (C++ `PlainDate.from` and constructor are fast) and `daysInMonth` (C++ property read vs moment2's function call). moment2 wins everywhere else because:
 
 - **Object allocation**: Every Temporal operation (`add`, `since`, `with`) creates a new PlainDate/Duration object. moment2 mutates cached fields in-place.
 - **Cached fields**: moment2's `$y/$M/$D` are plain JS numbers. Temporal's `.year`/`.month`/`.day` go through C++ getter calls.
