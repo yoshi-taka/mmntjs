@@ -147,22 +147,13 @@ export class Duration {
   _isValid = true;
 
   constructor(input?: DurationLike, unit?: string) {
-    this._locale = getCurrentLocale();
-
-    // If called from moment(), override with the moment's locale
-    if (input && typeof input === "object" && (input as Record<string, unknown>)._isAMomentObject) {
-      this._locale = ((input as Record<string, unknown>)._l as string | undefined) ?? this._locale;
-    }
-
     if (input == null) {
+      this._locale = getCurrentLocale();
       this._milliseconds = 0;
       this._days = 0;
       this._months = 0;
     } else if (typeof input === "number") {
-      if (isNaN(input)) {
-        this._isValid = false;
-        this._milliseconds = NaN;
-      } else if (unit) {
+      if (unit && !isNaN(input)) {
         const aliasKey = unitAliasToKey[unit];
         if (aliasKey === "years" || aliasKey === "months") {
           if (aliasKey === "years") {
@@ -182,10 +173,14 @@ export class Duration {
             this._milliseconds = Math.round(input * ms);
           }
         }
+      } else if (isNaN(input)) {
+        this._isValid = false;
+        this._milliseconds = NaN;
       } else {
         this._milliseconds = input;
       }
     } else if (typeof input === "string") {
+      this._locale = getCurrentLocale();
       if (unit) {
         const aliasKey = unitAliasToKey[unit];
         if (aliasKey) {
@@ -225,12 +220,16 @@ export class Duration {
         }
       }
     } else if (input instanceof Duration) {
+      this._locale = input._locale;
       this._milliseconds = input._milliseconds;
       this._days = input._days;
       this._months = input._months;
-      this._locale = input._locale;
       this._isValid = input._isValid;
     } else if (isObject(input)) {
+      this._locale = getCurrentLocale();
+      if ((input as { _isAMomentObject?: boolean })._isAMomentObject) {
+        this._locale = (input as { _l?: string })._l ?? this._locale;
+      }
       this._parseObject(input as DurationInput);
     }
 

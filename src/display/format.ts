@@ -179,6 +179,14 @@ function fmtAmPm(h: number): string {
   return h < 12 ? "AM" : "PM";
 }
 
+function ordinalSuffix(d: number): string {
+  if (d > 10 && d < 14) {
+    return "th";
+  }
+  const r = d % 10;
+  return r === 1 ? "st" : r === 2 ? "nd" : r === 3 ? "rd" : "th";
+}
+
 function formatCommonEn(m: FormattableMoment, format: string): string | undefined {
   const raw = m as unknown as {
     _l: string;
@@ -242,6 +250,22 @@ function formatCommonEn(m: FormattableMoment, format: string): string | undefine
       return enWeekdaysShort[raw.$W];
     case "dd":
       return enWeekdaysMin[raw.$W];
+    case "Do":
+      return `${raw.$D}${ordinalSuffix(raw.$D)}`;
+    case "MMMM":
+      return enMonths[raw.$M];
+    case "MMM":
+      return enMonthsShort[raw.$M];
+    case "A":
+      return fmtAmPm(raw.$H);
+    case "a":
+      return fmtAmPm(raw.$H).toLowerCase();
+    case "h":
+      return String(fmt12H(raw.$H));
+    case "h:mm:ss a":
+      return `${fmt12H(raw.$H)}:${PAD2[raw.$m]}:${PAD2[raw.$s]} ${fmtAmPm(raw.$H).toLowerCase()}`;
+    case "dddd, MMMM Do YYYY, h:mm:ss a":
+      return `${enWeekdays[raw.$W]}, ${enMonths[raw.$M]} ${raw.$D}${ordinalSuffix(raw.$D)} ${padYear(y)}, ${fmt12H(raw.$H)}:${PAD2[raw.$m]}:${PAD2[raw.$s]} ${fmtAmPm(raw.$H).toLowerCase()}`;
   }
   return undefined;
 }

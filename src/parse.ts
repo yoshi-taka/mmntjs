@@ -6,7 +6,6 @@ import {
   localeLongDateFormat,
   localeMonths,
   localeMonthsShort,
-  localePreparse,
 } from "./locale-runtime";
 
 export let parseTwoDigitYearFn: ((input: string) => number) | undefined;
@@ -96,6 +95,9 @@ export function parseString(
     return null;
   }
 
+  const preparseFn = (locale as never as { _config?: { preparse?: (s: string) => string } })._config
+    ?.preparse;
+
   if (format) {
     // Fast path: known ISO format strings bypass localePreparse + parseWithFormat.
     if (typeof format === "string" && !strict) {
@@ -104,14 +106,14 @@ export function parseString(
         return fast as unknown as ParsedData;
       }
     }
-    const preparsed = localePreparse(locObj as never, str);
+    const preparsed = preparseFn ? preparseFn(str) : str;
     if (isArray(format)) {
       return parseWithFormats(preparsed, format, locale, strict) as unknown as ParsedData;
     }
     return parseWithFormat(preparsed, format, locale, strict) as unknown as ParsedData;
   }
 
-  str = localePreparse(locObj as never, str);
+  str = preparseFn ? preparseFn(str) : str;
   const trimmed = str;
 
   let blank = true;
