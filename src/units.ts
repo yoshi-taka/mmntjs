@@ -124,6 +124,41 @@ export function normalizeUnitCode(unit: string): UnitCode {
   if (!unit) {
     return INVALID_UNIT;
   }
+  if (unit.length === 1) {
+    switch (unit.charCodeAt(0)) {
+      case 89:
+      case 121:
+        return YEAR; // Y / y
+      case 77:
+        return MONTH; // M
+      case 68:
+        return DATE; // D
+      case 100:
+        return DAY; // d
+      case 72:
+      case 104:
+        return HOUR; // H / h
+      case 109:
+        return MINUTE; // m
+      case 115:
+      case 83:
+        return SECOND; // S / s
+      case 119:
+        return WEEK; // w
+      case 87:
+        return ISO_WEEK; // W
+      case 69:
+        return ISO_WEEKDAY; // E
+      case 101:
+        return WEEKDAY; // e
+      case 81:
+        return QUARTER; // Q
+    }
+    return INVALID_UNIT;
+  }
+  if (unit.length === 2 && unit === "ms") {
+    return MILLISECOND;
+  }
   return _codeAliases[unit] ?? INVALID_UNIT;
 }
 
@@ -176,7 +211,7 @@ export function isLeapYear(y: number): boolean {
   return (y & 15) === 0;
 }
 
-const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] as const;
+const DAYS_IN_MONTH = new Int8Array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]);
 
 export function daysInMonthFast(year: number, month0to11: number): number {
   if (month0to11 === 1) {
