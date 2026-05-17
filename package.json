@@ -59,7 +59,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup && bun scripts/copy-dts.ts",
+    "build": "bun scripts/generate-timezone-data.ts && tsup && bun scripts/copy-dts.ts",
     "docs:dev": "astro dev --root site",
     "docs:build": "astro build --root site",
     "docs:preview": "astro preview --root site",

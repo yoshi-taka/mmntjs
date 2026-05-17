@@ -1,12 +1,15 @@
 # mmntjs-timezone
 
-Drop-in replacement for `moment-timezone` — powered by native Intl API.
+Drop-in replacement for `moment-timezone`.
 
 ## Architecture
 
-mmntjs-timezone is a **thin compatibility layer** over the native `Intl.DateTimeFormat` API.
+mmntjs-timezone is moving toward a compatibility-first architecture:
 
-It does NOT bundle the IANA timezone database. All timezone data comes from the runtime.
+- Moment Timezone compatible packed-data APIs remain the public boundary
+- runtime-loaded zones/links/countries are stored in an internal registry
+- built-in IANA zone fallback currently still uses `Intl` until bundled authoritative data lands
+- the long-term target is full tzdata-backed compatibility with lazy decode and compact storage
 
 ```
 moment-timezone          mmntjs-timezone
@@ -55,24 +58,21 @@ Hand-written expected strings are NOT used for timezone-specific values.
 - Offset cache uses `Math.floor(timestamp / 1000)` — deterministic per-second
 - All tests pass across 6 timezone environments (UTC, America/New_York, Europe/Berlin, Asia/Tokyo, Australia/Sydney, America/Los_Angeles)
 
-## Intentional Compatibility Limits
+## Current Status
 
-These APIs exist as **no-op compatibility shims** and do NOT provide full drop-in behavior:
+The package now exposes the core packed-data compatibility APIs and preloads bundled authoritative tzdata generated from `moment-timezone` at build time:
 
-| API | Behavior | Rationale |
-|-----|----------|-----------|
-| `moment.tz.add(data)` | No-op (warns via console) | Timezone data comes from runtime Intl, not packed tzdb |
-| `moment.tz.link(links)` | No-op | Zone aliases use Intl's resolution |
-| `moment.tz.countries()` | Returns `[]` | Country data requires external data source |
-| `moment.tz.zonesForCountry(code)` | Returns `[]` | Country → zone mapping requires external data |
+- `moment.tz.add(data)`
+- `moment.tz.link(links)`
+- `moment.tz.load(bundle)`
+- `moment.tz.unpack(data)`
+- `moment.tz.unpackBase60(input)`
+- `moment.tz.countries()`
+- `moment.tz.zonesForCountry(code)`
 
-### Why not full parity?
+Current limitation:
 
-- **No packed tzdb**: moment-timezone bundles the IANA timezone database (~35KB gzipped). mmntjs-timezone relies on the host environment's `Intl` support. This means:
-  - Smaller bundle size
-  - Always up-to-date with the OS timezone data
-  - No data loading step
-  - Some DST transition edge cases may differ from moment-timezone (the IANA database has exact transition rules; Intl resolves transitions at the API level)
+- internal storage still uses unpacked JS arrays/objects rather than the planned compact typed-array / lazy-decode representation
 
 ### Intl-backed abbreviation limitations
 

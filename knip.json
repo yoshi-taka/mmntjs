@@ -32,6 +32,7 @@
     "date-fns",
     "dayjs",
     "luxon",
+    "moment-timezone",
     "@rspack/cli",
     "@rspack/core",
     "@date-fns/tz",

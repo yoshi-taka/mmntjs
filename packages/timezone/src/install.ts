@@ -1,5 +1,12 @@
+/* oxlint-disable no-explicit-any, no-unnecessary-type-assertion, no-unnecessary-condition, prefer-nullish-coalescing, prefer-optional-chain, prefer-string-replace-all, no-new-array, no-useless-spread, prefer-function-type */
+
+import { BUILTIN_TIMEZONE_DATA_RAW } from "./builtin-data.generated";
+
 interface MomentFnProps {
-  tz: (this: unknown, tz?: string) => unknown;
+  tz: (this: unknown, tz?: string, keepTime?: boolean) => unknown;
+  zoneName?: (this: unknown) => string;
+  zoneAbbr?: (this: unknown) => string;
+  isDST?: (this: unknown) => boolean;
   [key: string]: unknown;
 }
 
@@ -9,23 +16,54 @@ interface MomentTzZone {
   offset: (ts: number) => number;
   utcOffset: (ts: number) => number;
   parse: (ts: number) => number;
+  countries?: () => string[];
+}
+
+interface CountryWithOffset {
+  name: string;
+  offset: number;
+}
+
+interface TimezoneDataBundle {
+  version?: string;
+  zones?: unknown;
+  links?: unknown;
+  countries?: unknown;
 }
 
 interface MomentTz {
-  (input?: unknown, formatOrZone?: unknown, zoneOrStrict?: unknown, fourth?: unknown): MomentLike;
+  (
+    input?: unknown,
+    formatOrZone?: unknown,
+    zoneOrStrict?: unknown,
+    fourth?: unknown,
+  ): MomentInstance;
   guess: (preferCache?: boolean) => string;
   names: () => string[];
   zone: (name: string) => MomentTzZone | null;
+  zoneExists?: (name: string) => boolean;
   add: (data: unknown) => void;
   link: (links: unknown) => void;
-  setDefault: (tz: string) => void;
+  load?: (data: TimezoneDataBundle) => void;
+  setDefault: (tz?: string) => MomentLike;
   countries: () => string[];
-  zonesForCountry: (code: string) => string[];
+  zonesForCountry: (code: string, withOffset?: boolean) => string[] | CountryWithOffset[] | null;
+  unpack?: (data: string) => UnpackedZone;
+  unpackBase60?: (input: string) => number;
+  version?: string;
+  dataVersion?: string;
+  Zone?: new (packedString?: string) => MomentTzZone;
+  _zones?: Record<string, string | DecodedZonePayload>;
+  _links?: Record<string, string>;
+  _names?: Record<string, string>;
+  _countries?: Record<string, { name: string; zones: string[] }>;
+  moveInvalidForward?: boolean;
+  moveAmbiguousForward?: boolean;
 }
 
 type MomentInstance = MomentLike & {
-  tz(tz?: string): MomentInstance;
-  _z?: { name: string; abbr: (ts: number) => string };
+  tz(tz?: string, keepTime?: boolean): MomentInstance | string;
+  _z?: MomentTzZone | null;
   utcOffset(offset?: number | string, keepLocalTime?: boolean): number | MomentInstance;
   isValid(): boolean;
   year(): number;
@@ -37,15 +75,32 @@ type MomentInstance = MomentLike & {
   millisecond(): number;
   clone(): MomentInstance;
   valueOf(): number;
+  utc(): MomentInstance;
 };
 
 export type MomentLike = {
   fn: MomentFnProps;
   momentProperties: string[];
-  defaultZone?: string;
+  defaultZone?: string | null;
   tz?: MomentTz;
+  updateOffset?: ((m: MomentInstance, keepTime?: boolean) => void) | undefined;
   (...args: unknown[]): MomentInstance;
 };
+
+interface UnpackedZone {
+  name: string;
+  abbrs: string[];
+  offsets: number[];
+  untils: number[];
+  population: number;
+}
+
+interface DecodedZonePayload {
+  abbrs: string[];
+  offsets: Int16Array | Int32Array;
+  untils: Float64Array;
+  population: number;
+}
 
 const offsetCache = new Map<string, Map<number, number>>();
 const MAX_DOMAIN_CACHE_SIZE = 1000;
@@ -98,16 +153,473 @@ const ABBR_OFFSET_ZONES: Record<string, string> = {
   "Africa/El_Aaiun": "+01",
 };
 
+function normalizeName(name: string): string {
+  return name.toLowerCase().replace(/\//g, "_");
+}
+
 function normalizeTz(tz: string): string {
   const u = tz.toUpperCase();
   if (u === "UTC" || u === "GMT") {
     return u;
   }
-  const aliased = ZONE_ALIAS[tz];
-  if (aliased) {
-    return aliased;
+  return ZONE_ALIAS[tz] ?? tz;
+}
+
+function charCodeToInt(charCode: number): number {
+  if (charCode > 96) {
+    return charCode - 87;
   }
-  return tz;
+  if (charCode > 64) {
+    return charCode - 29;
+  }
+  return charCode - 48;
+}
+
+function unpackBase60(input: string): number {
+  let i = 0;
+  const parts = input.split(".");
+  const whole = parts[0] ?? "";
+  const fractional = parts[1] ?? "";
+  let multiplier = 1;
+  let out = 0;
+  let sign = 1;
+
+  if (input.charCodeAt(0) === 45) {
+    i = 1;
+    sign = -1;
+  }
+
+  for (; i < whole.length; i++) {
+    out = 60 * out + charCodeToInt(whole.charCodeAt(i));
+  }
+
+  for (i = 0; i < fractional.length; i++) {
+    multiplier /= 60;
+    out += charCodeToInt(fractional.charCodeAt(i)) * multiplier;
+  }
+
+  return out * sign;
+}
+
+function arrayToInt(values: string[]): number[] {
+  return values.map((value) => unpackBase60(value));
+}
+
+function mapIndices<T>(source: T[], indices: number[]): T[] {
+  const out: T[] = new Array(indices.length) as T[];
+  for (let i = 0; i < indices.length; i++) {
+    out[i] = source[indices[i]];
+  }
+  return out;
+}
+
+function unpack(packed: string): UnpackedZone {
+  const data = packed.split("|");
+  const offsets = arrayToInt((data[2] ?? "").split(" "));
+  const indices = arrayToInt((data[3] ?? "").split(""));
+  const untils = arrayToInt((data[4] ?? "").split(" "));
+
+  for (let i = 0; i < indices.length; i++) {
+    untils[i] = Math.round((untils[i - 1] || 0) + untils[i] * 60000);
+  }
+  untils[indices.length - 1] = Number.POSITIVE_INFINITY;
+
+  return {
+    name: data[0] ?? "",
+    abbrs: mapIndices((data[1] ?? "").split(" "), indices),
+    offsets: mapIndices(offsets, indices),
+    untils,
+    population: Number(data[5] ?? 0) | 0,
+  };
+}
+
+function closest(num: number, arr: ArrayLike<number>): number {
+  const len = arr.length;
+  if (len === 0) {
+    return -1;
+  }
+  if (num < arr[0]) {
+    return 0;
+  }
+  if (len > 1 && arr[len - 1] === Number.POSITIVE_INFINITY && num >= (arr[len - 2] ?? 0)) {
+    return len - 1;
+  }
+  if (num >= (arr[len - 1] ?? 0)) {
+    return -1;
+  }
+
+  let lo = 0;
+  let hi = len - 1;
+  while (hi - lo > 1) {
+    const mid = Math.floor((lo + hi) / 2);
+    if ((arr[mid] ?? 0) <= num) {
+      lo = mid;
+    } else {
+      hi = mid;
+    }
+  }
+  return hi;
+}
+
+class InternalZone implements MomentTzZone {
+  name: string;
+  private readonly canonicalKey: string;
+  private lastIndex = -1;
+  private lastStart = Number.NEGATIVE_INFINITY;
+  private lastEnd = Number.POSITIVE_INFINITY;
+
+  constructor(name: string, canonicalKey: string) {
+    this.name = name;
+    this.canonicalKey = canonicalKey;
+  }
+
+  _index(timestamp: number): number {
+    const target = +timestamp;
+    if (this.lastIndex >= 0 && target >= this.lastStart && target < this.lastEnd) {
+      return this.lastIndex;
+    }
+    const untils = getDecodedZonePayload(this.canonicalKey).untils;
+    const idx = closest(target, untils);
+    if (idx >= 0) {
+      this.lastIndex = idx;
+      this.lastStart =
+        idx > 0 ? (untils[idx - 1] ?? Number.NEGATIVE_INFINITY) : Number.NEGATIVE_INFINITY;
+      this.lastEnd = untils[idx] ?? Number.POSITIVE_INFINITY;
+    }
+    return idx;
+  }
+
+  countries(): string[] {
+    ensureBuiltinCountryData();
+    const out: string[] = [];
+    for (const [code, country] of Object.entries(countryStore)) {
+      if (country.zones.includes(this.name)) {
+        out.push(code);
+      }
+    }
+    return out;
+  }
+
+  parse(timestamp: number): number {
+    const payload = getDecodedZonePayload(this.canonicalKey);
+    const target = +timestamp;
+    const max = payload.untils.length - 1;
+    for (let i = 0; i < max; i++) {
+      let offset = payload.offsets[i] ?? 0;
+      const offsetNext = payload.offsets[i + 1] ?? offset;
+      const offsetPrev = payload.offsets[i ? i - 1 : i] ?? offset;
+
+      if (offset < offsetNext && timezoneFlags.moveAmbiguousForward) {
+        offset = offsetNext;
+      } else if (offset > offsetPrev && timezoneFlags.moveInvalidForward) {
+        offset = offsetPrev;
+      }
+
+      if (target < (payload.untils[i] ?? Number.POSITIVE_INFINITY) - offset * 60000) {
+        return payload.offsets[i] ?? 0;
+      }
+    }
+    return payload.offsets[max] ?? 0;
+  }
+
+  abbr(ts: number): string {
+    const idx = this._index(ts);
+    const payload = getDecodedZonePayload(this.canonicalKey);
+    return idx >= 0 ? (payload.abbrs[idx] ?? "") : "";
+  }
+
+  offset(ts: number): number {
+    return this.utcOffset(ts);
+  }
+
+  utcOffset(ts: number): number {
+    const idx = this._index(ts);
+    const payload = getDecodedZonePayload(this.canonicalKey);
+    return idx >= 0 ? (payload.offsets[idx] ?? 0) : 0;
+  }
+}
+
+class CompatZone implements MomentTzZone {
+  name = "";
+  private readonly payload: DecodedZonePayload;
+  private lastIndex = -1;
+  private lastStart = Number.NEGATIVE_INFINITY;
+  private lastEnd = Number.POSITIVE_INFINITY;
+
+  constructor(packedString?: string) {
+    const unpacked = unpack(packedString ?? "||0|0||0");
+    this.name = unpacked.name;
+    this.payload = createDecodedZonePayload(unpacked);
+  }
+
+  private index(timestamp: number): number {
+    const target = +timestamp;
+    if (this.lastIndex >= 0 && target >= this.lastStart && target < this.lastEnd) {
+      return this.lastIndex;
+    }
+    const idx = closest(target, this.payload.untils);
+    if (idx >= 0) {
+      this.lastIndex = idx;
+      this.lastStart =
+        idx > 0
+          ? (this.payload.untils[idx - 1] ?? Number.NEGATIVE_INFINITY)
+          : Number.NEGATIVE_INFINITY;
+      this.lastEnd = this.payload.untils[idx] ?? Number.POSITIVE_INFINITY;
+    }
+    return idx;
+  }
+
+  countries(): string[] {
+    ensureBuiltinCountryData();
+    const out: string[] = [];
+    for (const [code, country] of Object.entries(countryStore)) {
+      if (country.zones.includes(this.name)) {
+        out.push(code);
+      }
+    }
+    return out;
+  }
+
+  parse(timestamp: number): number {
+    const target = +timestamp;
+    const max = this.payload.untils.length - 1;
+    for (let i = 0; i < max; i++) {
+      let offset = this.payload.offsets[i] ?? 0;
+      const offsetNext = this.payload.offsets[i + 1] ?? offset;
+      const offsetPrev = this.payload.offsets[i ? i - 1 : i] ?? offset;
+      if (offset < offsetNext && timezoneFlags.moveAmbiguousForward) {
+        offset = offsetNext;
+      } else if (offset > offsetPrev && timezoneFlags.moveInvalidForward) {
+        offset = offsetPrev;
+      }
+      if (target < (this.payload.untils[i] ?? Number.POSITIVE_INFINITY) - offset * 60000) {
+        return this.payload.offsets[i] ?? 0;
+      }
+    }
+    return this.payload.offsets[max] ?? 0;
+  }
+
+  abbr(ts: number): string {
+    const idx = this.index(ts);
+    return idx >= 0 ? (this.payload.abbrs[idx] ?? "") : "";
+  }
+
+  offset(ts: number): number {
+    return this.utcOffset(ts);
+  }
+
+  utcOffset(ts: number): number {
+    const idx = this.index(ts);
+    return idx >= 0 ? (this.payload.offsets[idx] ?? 0) : 0;
+  }
+}
+
+const zoneStore: Record<string, string | DecodedZonePayload> = Object.create(null) as Record<
+  string,
+  string | DecodedZonePayload
+>;
+const linkStore: Record<string, string> = Object.create(null) as Record<string, string>;
+const nameStore: Record<string, string> = Object.create(null) as Record<string, string>;
+const countryStore: Record<string, { name: string; zones: string[] }> = Object.create(
+  null,
+) as Record<string, { name: string; zones: string[] }>;
+const zoneWrapperCache = new Map<string, MomentTzZone>();
+const decodedZonePayloadCache = new Map<string, DecodedZonePayload>();
+const abbrInternPool = new Map<string, string>();
+const timezoneFlags = {
+  moveInvalidForward: true,
+  moveAmbiguousForward: false,
+};
+
+let builtinZoneDataLoaded = false;
+let builtinLinkDataLoaded = false;
+let builtinCountryDataLoaded = false;
+let builtinTimezoneZoneDataParsed: string[] | null = null;
+let builtinTimezoneLinkDataParsed: string[] | null = null;
+let builtinTimezoneCountryDataParsed: string[] | null = null;
+
+let sortedZoneNamesCache: string[] | null = null;
+
+function internString(value: string): string {
+  const cached = abbrInternPool.get(value);
+  if (cached) {
+    return cached;
+  }
+  abbrInternPool.set(value, value);
+  return value;
+}
+
+function createDecodedZonePayload(unpacked: UnpackedZone): DecodedZonePayload {
+  const offsets = unpacked.offsets.some((value) => value > 32767 || value < -32768)
+    ? Int32Array.from(unpacked.offsets)
+    : Int16Array.from(unpacked.offsets);
+  return {
+    abbrs: unpacked.abbrs.map((abbr) => internString(abbr)),
+    offsets,
+    untils: Float64Array.from(unpacked.untils),
+    population: unpacked.population,
+  };
+}
+
+function getDecodedZonePayload(canonicalKey: string): DecodedZonePayload {
+  const cached = decodedZonePayloadCache.get(canonicalKey);
+  if (cached) {
+    return cached;
+  }
+  const source = zoneStore[canonicalKey];
+  if (!source) {
+    throw new Error(`Missing timezone payload for ${canonicalKey}`);
+  }
+  const payload = typeof source === "string" ? createDecodedZonePayload(unpack(source)) : source;
+  zoneStore[canonicalKey] = payload;
+  decodedZonePayloadCache.set(canonicalKey, payload);
+  return payload;
+}
+
+function addPackedZoneEntry(name: string, value: string | DecodedZonePayload): void {
+  const normalized = normalizeName(name);
+  zoneStore[normalized] = value;
+  nameStore[normalized] = name;
+  zoneWrapperCache.delete(name);
+  decodedZonePayloadCache.delete(normalized);
+  sortedZoneNamesCache = null;
+}
+
+function addZone(packed: unknown): void {
+  if (typeof packed === "string") {
+    const split = packed.split("|");
+    addPackedZoneEntry(split[0] ?? "", packed);
+    return;
+  }
+  if (Array.isArray(packed)) {
+    for (const item of packed) {
+      addZone(item);
+    }
+    return;
+  }
+  if (packed && typeof packed === "object") {
+    for (const [name, value] of Object.entries(packed as Record<string, unknown>)) {
+      if (typeof value === "string") {
+        addZone(value);
+        continue;
+      }
+      if (value && typeof value === "object") {
+        const entry = value as Partial<UnpackedZone>;
+        addPackedZoneEntry(
+          name,
+          createDecodedZonePayload({
+            name,
+            abbrs: [...(entry.abbrs ?? [])],
+            offsets: [...(entry.offsets ?? [])],
+            untils: [...(entry.untils ?? [])],
+            population: entry.population ?? 0,
+          }),
+        );
+      }
+    }
+  }
+}
+
+function addLink(links: unknown): void {
+  const linkList: string[] = [];
+  if (typeof links === "string") {
+    linkList.push(links);
+  } else if (Array.isArray(links)) {
+    for (const entry of links) {
+      if (typeof entry === "string") {
+        linkList.push(entry);
+      }
+    }
+  } else if (links && typeof links === "object") {
+    for (const [alias, target] of Object.entries(links as Record<string, unknown>)) {
+      if (typeof target === "string") {
+        linkList.push(`${alias}|${target}`);
+      }
+    }
+  }
+
+  for (const aliasEntry of linkList) {
+    const alias = aliasEntry.split("|");
+    const name0 = alias[0];
+    const name1 = alias[1];
+    if (!name0 || !name1) {
+      continue;
+    }
+    const normal0 = normalizeName(name0);
+    const normal1 = normalizeName(name1);
+    linkStore[normal0] = normal1;
+    nameStore[normal0] = name0;
+    linkStore[normal1] = normal0;
+    nameStore[normal1] = name1;
+    sortedZoneNamesCache = null;
+  }
+}
+
+function addCountries(data: unknown): void {
+  if (Array.isArray(data)) {
+    for (const item of data) {
+      if (typeof item !== "string") {
+        continue;
+      }
+      const split = item.split("|");
+      const code = (split[0] ?? "").toUpperCase();
+      const zones = (split[1] ?? "").split(" ").filter(Boolean);
+      if (code) {
+        countryStore[code] = { name: code, zones };
+      }
+    }
+    return;
+  }
+
+  if (data && typeof data === "object") {
+    for (const [codeKey, value] of Object.entries(data as Record<string, unknown>)) {
+      const code = codeKey.toUpperCase();
+      if (Array.isArray(value)) {
+        countryStore[code] = {
+          name: code,
+          zones: value.filter((v): v is string => typeof v === "string"),
+        };
+        continue;
+      }
+      if (value && typeof value === "object") {
+        const zones = (value as { zones?: unknown }).zones;
+        if (Array.isArray(zones)) {
+          countryStore[code] = {
+            name: code,
+            zones: zones.filter((v): v is string => typeof v === "string"),
+          };
+        }
+      }
+    }
+  }
+}
+
+function getZoneRecord(name: string, caller?: typeof getZoneRecord): InternalZone | null {
+  const normalized = normalizeName(normalizeTz(name));
+  const cached = zoneWrapperCache.get(name);
+  if (cached instanceof InternalZone) {
+    return cached;
+  }
+  const zone = zoneStore[normalized];
+  if (zone) {
+    const resolved = new InternalZone(nameStore[normalized] ?? name, normalized);
+    zoneWrapperCache.set(name, resolved);
+    return resolved;
+  }
+  ensureBuiltinLinkData();
+  if (linkStore[normalized] && caller !== getZoneRecord) {
+    const target = getZoneRecord(linkStore[normalized], getZoneRecord);
+    if (target) {
+      const alias = new InternalZone(nameStore[normalized] ?? name, normalizeName(target.name));
+      zoneWrapperCache.set(name, alias);
+      return alias;
+    }
+  }
+  return null;
+}
+
+function getZone(name: string): MomentTzZone | null {
+  return getZoneRecord(name);
 }
 
 function getAbbr(tz: string, ts: number): string {
@@ -124,7 +636,7 @@ function getAbbr(tz: string, ts: number): string {
       const full = d.toLocaleString(loc, { timeZone: tz, timeZoneName: "short" });
       const m = full.match(/\s(\S+)$/);
       if (m) {
-        const abbr = m[1];
+        const abbr = m[1] ?? "";
         if (/^[A-Z]{2,5}$/.test(abbr) && abbr !== "Time") {
           return abbr;
         }
@@ -135,10 +647,10 @@ function getAbbr(tz: string, ts: number): string {
   }
 
   if (tz in KNOWN_ABBR) {
-    return KNOWN_ABBR[tz];
+    return KNOWN_ABBR[tz] ?? "";
   }
   if (tz in ABBR_OFFSET_ZONES) {
-    return ABBR_OFFSET_ZONES[tz];
+    return ABBR_OFFSET_ZONES[tz] ?? "";
   }
 
   const offset = getOffset(tz, ts);
@@ -159,9 +671,7 @@ function getOffset(tz: string, timestamp: number): number {
     offsetCache.set(tz, domain);
   }
 
-  const key = timestamp;
-
-  const cached = domain.get(key);
+  const cached = domain.get(timestamp);
   if (cached !== undefined) {
     return cached;
   }
@@ -182,54 +692,131 @@ function getOffset(tz: string, timestamp: number): number {
   const m = parts.match(/GMT([+-]\d{1,2})(?::(\d{2}))?/);
   let offset = 0;
   if (m) {
-    const hrs = parseInt(m[1], 10);
+    const hrs = parseInt(m[1] ?? "0", 10);
     const min = m[2] ? parseInt(m[2], 10) : 0;
     const s = hrs >= 0 ? 1 : -1;
     offset = hrs * 60 + s * min;
   }
 
-  domain.set(key, offset);
+  domain.set(timestamp, offset);
   return offset;
 }
 
-let zoneNamesSet: Set<string> | null = null;
+function hasExplicitOffset(input: string): boolean {
+  return /(Z|[+-]\d{2}:?\d{2})\s*$/.test(input.trim());
+}
+
+function getNames(): string[] {
+  if (sortedZoneNamesCache) {
+    return [...sortedZoneNamesCache];
+  }
+  ensureBuiltinLinkData();
+  const out = new Set<string>();
+  for (const key of Object.keys(nameStore)) {
+    if (nameStore[key] && (zoneStore[key] || zoneStore[linkStore[key] ?? ""] || linkStore[key])) {
+      out.add(nameStore[key]);
+    }
+  }
+
+  for (const name of Object.keys(ZONE_ALIAS)) {
+    out.add(name);
+    out.add(ZONE_ALIAS[name]);
+  }
+
+  sortedZoneNamesCache = [...out].sort();
+  return [...sortedZoneNamesCache];
+}
+
+function getCountryNames(): string[] {
+  ensureBuiltinCountryData();
+  return Object.keys(countryStore).sort();
+}
+
+function zonesForCountry(
+  code: string,
+  withOffset?: boolean,
+): string[] | CountryWithOffset[] | null {
+  ensureBuiltinCountryData();
+  const country = countryStore[code.toUpperCase()];
+  if (!country) {
+    return null;
+  }
+  const zones = [...country.zones].sort();
+  if (withOffset) {
+    const now = Date.now();
+    return zones
+      .map((name) => {
+        const zone = getZone(name);
+        return zone ? { name, offset: zone.utcOffset(now) } : null;
+      })
+      .filter((entry): entry is CountryWithOffset => entry !== null);
+  }
+  return zones;
+}
+
 function isZoneName(s: string): boolean {
   const u = s.toUpperCase();
   if (u === "UTC" || u === "GMT") {
     return true;
   }
-  if (!s.includes("/")) {
-    return false;
-  }
-  try {
-    zoneNamesSet ??= new Set(
-      (Intl as unknown as { supportedValuesOf: (k: string) => string[] }).supportedValuesOf(
-        "timeZone",
-      ),
-    );
-    if (zoneNamesSet.has(s)) {
-      return true;
-    }
-    if (s in ZONE_ALIAS) {
-      return zoneNamesSet.has(ZONE_ALIAS[s]);
-    }
-    // Reverse alias lookup: s may be a canonical name whose legacy key exists in Intl
-    for (const [alias, canonical] of Object.entries(ZONE_ALIAS)) {
-      if (canonical === s && zoneNamesSet.has(alias)) {
-        return true;
-      }
-    }
-    return false;
-  } catch {
-    return s.includes("/");
-  }
+  return !!getZoneRecord(s);
 }
 
-/** Check if a string input has an explicit timezone offset (e.g. +09:00, Z) */
-function hasExplicitOffset(input: string): boolean {
-  // Strip leading/trailing whitespace, check for trailing Z or +/-HH:MM or +/-HHMM
-  const trimmed = input.trim();
-  return /(Z|[+-]\d{2}:?\d{2})\s*$/.test(trimmed);
+function loadData(data: TimezoneDataBundle): void {
+  addZone(data.zones);
+  addLink(data.links);
+  addCountries(data.countries);
+}
+
+function parseBuiltinZoneData(): string[] {
+  builtinTimezoneZoneDataParsed ??= BUILTIN_TIMEZONE_DATA_RAW.zones
+    ? BUILTIN_TIMEZONE_DATA_RAW.zones.split("\n")
+    : [];
+  return builtinTimezoneZoneDataParsed;
+}
+
+function parseBuiltinLinkData(): string[] {
+  builtinTimezoneLinkDataParsed ??= BUILTIN_TIMEZONE_DATA_RAW.links
+    ? BUILTIN_TIMEZONE_DATA_RAW.links.split("\n")
+    : [];
+  return builtinTimezoneLinkDataParsed;
+}
+
+function parseBuiltinCountryData(): string[] {
+  builtinTimezoneCountryDataParsed ??= BUILTIN_TIMEZONE_DATA_RAW.countries
+    ? BUILTIN_TIMEZONE_DATA_RAW.countries.split("\n")
+    : [];
+  return builtinTimezoneCountryDataParsed;
+}
+
+function ensureBuiltinZoneData(moment?: MomentLike): void {
+  if (builtinZoneDataLoaded) {
+    return;
+  }
+  addZone(parseBuiltinZoneData());
+  if (moment?.tz) {
+    moment.tz.dataVersion = BUILTIN_TIMEZONE_DATA_RAW.version;
+    if (BUILTIN_TIMEZONE_DATA_RAW.tzVersion) {
+      moment.tz.version = BUILTIN_TIMEZONE_DATA_RAW.tzVersion;
+    }
+  }
+  builtinZoneDataLoaded = true;
+}
+
+function ensureBuiltinLinkData(): void {
+  if (builtinLinkDataLoaded) {
+    return;
+  }
+  addLink(parseBuiltinLinkData());
+  builtinLinkDataLoaded = true;
+}
+
+function ensureBuiltinCountryData(): void {
+  if (builtinCountryDataLoaded) {
+    return;
+  }
+  addCountries(parseBuiltinCountryData());
+  builtinCountryDataLoaded = true;
 }
 
 export function installTimezone(moment: MomentLike): MomentLike {
@@ -237,33 +824,38 @@ export function installTimezone(moment: MomentLike): MomentLike {
     return moment;
   }
 
+  ensureBuiltinZoneData(moment);
+
   moment.momentProperties.push("_z");
 
-  /**
-   * Parse a wall-clock time string in a given timezone.
-   * moment-timezone interprets the wall-clock components as being in the target zone,
-   * NOT as local time followed by conversion.
-   */
   function parseInZone(input: string, zone: string, format?: string): MomentInstance {
-    // oxlint-disable-next-line no-explicit-any
-    const m = format ? (moment as any)(input, format) : (moment as any)(input);
-    if (!m.isValid()) {
-      return m;
+    const parsed = format ? (moment as any).utc(input, format) : (moment as any).utc(input);
+    if (!parsed.isValid()) {
+      return parsed;
     }
 
-    const y = m.year();
-    const M = m.month();
-    const d = m.date();
-    const h = m.hour();
-    const min = m.minute();
-    const s = m.second();
-    const ms = m.millisecond();
+    const y = parsed.year();
+    const M = parsed.month();
+    const d = parsed.date();
+    const h = parsed.hour();
+    const min = parsed.minute();
+    const s = parsed.second();
+    const ms = parsed.millisecond();
+    const zoneInfo = getZone(zone);
 
-    // Determine wall clock in target zone at a given UTC timestamp
+    if (zoneInfo instanceof InternalZone) {
+      const base = Date.UTC(y, M, d, h, min, s, ms);
+      const offset = zoneInfo.parse(base);
+      const result = moment(base + offset * 60000);
+      const resolvedOffset = zoneInfo.utcOffset(result.valueOf());
+      result.utcOffset(resolvedOffset === 0 ? 0 : -resolvedOffset, false);
+      result._z = zoneInfo;
+      return result;
+    }
+
     function wallParts(ts: number): { h: number; min: number; s: number } | null {
       try {
-        const dt = new Date(ts);
-        const wall = dt.toLocaleString("en-US", {
+        const wall = new Date(ts).toLocaleString("en-US", {
           timeZone: zone,
           hour12: false,
           hour: "2-digit",
@@ -275,81 +867,76 @@ export function installTimezone(moment: MomentLike): MomentLike {
           return null;
         }
         return {
-          h: parseInt(parts[1], 10),
-          min: parseInt(parts[2], 10),
-          s: parseInt(parts[3], 10),
+          h: parseInt(parts[1] ?? "0", 10),
+          min: parseInt(parts[2] ?? "0", 10),
+          s: parseInt(parts[3] ?? "0", 10),
         };
       } catch {
         return null;
       }
     }
 
-    // Build the set of candidate offsets to try.
-    // Start with the offset at the wall-clock-as-UTC timestamp.
     const guess = Date.UTC(y, M, d, h, min, s, ms);
     const trialOffsets = new Set<number>();
-
-    // Gather offsets from interesting reference points
-    const refs = [
+    for (const ref of [
       guess,
-      Date.UTC(y, M, d, 0, 0, 0, 0), // midnight UTC
-      Date.UTC(y, M, d, 12, 0, 0, 0), // noon UTC
-      Date.UTC(y, M, d - 1, 12, 0, 0, 0), // previous noon UTC
-    ];
-    for (const r of refs) {
-      trialOffsets.add(getOffset(zone, r));
+      Date.UTC(y, M, d),
+      Date.UTC(y, M, d, 12),
+      Date.UTC(y, M, d - 1, 12),
+    ]) {
+      trialOffsets.add(getOffset(zone, ref));
+    }
+    for (const offset of [...trialOffsets]) {
+      trialOffsets.add(offset + 30);
+      trialOffsets.add(offset - 30);
     }
 
-    // Also add ±30m around each candidate
-    const baseOffsets = [...trialOffsets];
-    for (const o of baseOffsets) {
-      trialOffsets.add(o + 30);
-      trialOffsets.add(o - 30);
-    }
-
-    // Try offsets sorted by preference: larger (DST side) first for fall-back.
     const sorted = [...trialOffsets].sort((a, b) => b - a);
     let bestTs = 0;
-    let bestOffset = sorted[0];
+    let bestOffset = sorted[0] ?? 0;
     let found = false;
-
-    for (const o of sorted) {
-      const candidateTs = guess - o * 60000;
-      const actualO = getOffset(zone, candidateTs);
-      if (actualO !== o) {
+    for (const offset of sorted) {
+      const candidateTs = guess - offset * 60000;
+      if (getOffset(zone, candidateTs) !== offset) {
         continue;
-      } // this offset isn't actually in use here
+      }
       const wp = wallParts(candidateTs);
       if (wp && wp.h === h && wp.min === min && wp.s === s) {
         bestTs = candidateTs;
-        bestOffset = o;
+        bestOffset = offset;
         found = true;
         break;
       }
     }
 
     if (!found) {
-      // Spring-forward gap: no wall-clock time exists for this input.
       const offA = getOffset(zone, guess);
       const tsA = guess - offA * 60000;
       const offB = getOffset(zone, tsA);
       const postGapOff = Math.max(offA, offB);
       const gapMinutes = Math.abs(offB - offA);
-      // Advance wall-clock by the gap duration, then apply post-gap offset
-      const adjustedGuess = guess + gapMinutes * 60000;
       bestOffset = postGapOff;
-      bestTs = adjustedGuess - bestOffset * 60000;
+      bestTs = guess + gapMinutes * 60000 - bestOffset * 60000;
     }
 
-    // oxlint-disable-next-line no-explicit-any
-    const result = (moment as any)(bestTs) as MomentInstance;
+    const result = moment(bestTs);
     result.utcOffset(bestOffset === 0 ? 0 : bestOffset, false);
-    result._z = { name: zone, abbr: (t: number) => getAbbr(zone, t) };
+    result._z = zoneInfo ?? {
+      name: zone,
+      abbr: (t: number) => getAbbr(zone, t),
+      offset: () => -bestOffset,
+      utcOffset: () => -bestOffset,
+      parse: () => -bestOffset,
+    };
     return result;
   }
 
-  // oxlint-disable-next-line no-explicit-any
-  function momentTz(input?: any, formatOrZone?: any, zoneOrStrict?: any, _fourth?: any): any {
+  function momentTz(
+    input?: unknown,
+    formatOrZone?: unknown,
+    zoneOrStrict?: unknown,
+    fourth?: unknown,
+  ): MomentInstance {
     if (typeof formatOrZone === "string" && isZoneName(formatOrZone)) {
       const tz = normalizeTz(formatOrZone);
       if (input === undefined || input === null) {
@@ -358,8 +945,7 @@ export function installTimezone(moment: MomentLike): MomentLike {
       if (typeof input === "string" && !hasExplicitOffset(input)) {
         return parseInZone(input, tz);
       }
-      const m = moment(input);
-      return m.tz(tz);
+      return moment(input).tz(tz);
     }
 
     if (
@@ -368,208 +954,149 @@ export function installTimezone(moment: MomentLike): MomentLike {
       typeof zoneOrStrict === "string" &&
       isZoneName(zoneOrStrict)
     ) {
-      const fmt = formatOrZone;
-      const tz = normalizeTz(zoneOrStrict);
-      return parseInZone(input, tz, fmt);
+      return parseInZone(input, normalizeTz(zoneOrStrict), formatOrZone);
     }
 
     if (
       typeof input === "string" &&
       typeof formatOrZone === "string" &&
-      typeof zoneOrStrict === "boolean"
+      typeof zoneOrStrict === "boolean" &&
+      typeof fourth === "string" &&
+      isZoneName(fourth)
     ) {
-      const fmt = formatOrZone;
-      const strict = zoneOrStrict;
-      if (typeof _fourth === "string" && isZoneName(_fourth)) {
-        const tz = normalizeTz(_fourth);
-        return parseInZone(input, tz, fmt);
-      }
-      const m = moment(input, fmt, strict);
-      return m;
+      return parseInZone(input, normalizeTz(fourth), formatOrZone);
     }
 
     if (typeof input === "string" && typeof formatOrZone === "string") {
-      const m = moment(input, formatOrZone);
-      return m;
+      return moment(input, formatOrZone);
     }
-
     if (typeof input === "string") {
       return moment().tz(input);
     }
-
     return input !== undefined ? moment(input) : moment();
   }
 
-  // oxlint-disable-next-line no-explicit-any
-  function fnTz(this: any, tz?: string, keepTime?: boolean): any {
+  function fnTz(this: MomentInstance, tz?: string, keepTime?: boolean): MomentInstance | string {
     if (tz === undefined) {
       return this._z ? this._z.name : Intl.DateTimeFormat().resolvedOptions().timeZone;
     }
 
-    tz = normalizeTz(tz);
-    const timestamp = this.valueOf();
-    const m = this.clone();
-
-    const zoneInfo = moment.tz!.zone(tz);
-    if (zoneInfo) {
-      m._z = zoneInfo;
-      const targetOffset = -zoneInfo.offset(timestamp);
-      m.utcOffset(targetOffset === 0 ? 0 : targetOffset, keepTime);
-    } else {
-      const targetOffset = getOffset(tz, timestamp);
-      m.utcOffset(targetOffset === 0 ? 0 : targetOffset, keepTime);
-      m._z = { name: tz, abbr: (_ts: number) => getAbbr(tz, _ts) };
+    const normalized = normalizeTz(tz);
+    const zoneInfo = getZone(normalized);
+    if (!zoneInfo) {
+      return this.clone();
     }
 
+    const m = this.clone();
+    m._z = zoneInfo;
+    const targetOffset = -zoneInfo.utcOffset(m.valueOf());
+    m.utcOffset(targetOffset === 0 ? 0 : targetOffset, keepTime);
+    m._z = zoneInfo;
     return m;
   }
 
-  moment.tz = momentTz as unknown as MomentTz;
-  moment.fn.tz = fnTz;
+  moment.tz = momentTz as MomentTz;
+  moment.fn.tz = fnTz as unknown as (this: unknown, tz?: string, keepTime?: boolean) => unknown;
+  moment.defaultZone = null;
 
-  const origZoneName = moment.fn.zoneName as (() => string) | undefined;
-  const origZoneAbbr = moment.fn.zoneAbbr as (() => string) | undefined;
-  const origIsDST = (moment.fn as unknown as Record<string, unknown>).isDST as
-    | ((...args: unknown[]) => boolean)
-    | undefined;
-  (moment.fn as unknown as Record<string, unknown>).isDST = function (
-    this: Record<string, unknown>,
-  ): boolean {
-    if (this._z) {
-      const z = (this._z as MomentTzZone).name;
-      const ts = (this as unknown as { valueOf(): number }).valueOf();
-      const d = new Date(ts);
-      const year = d.getUTCFullYear();
-      const janOff = getOffset(z, Date.UTC(year, 0, 1));
-      const julOff = getOffset(z, Date.UTC(year, 6, 1));
-      const standardOff = Math.min(janOff, julOff);
-      const currentOff = getOffset(z, ts);
-      return currentOff !== standardOff;
-    }
-    return origIsDST ? origIsDST.call(this) : false;
+  moment.tz.version = BUILTIN_TIMEZONE_DATA_RAW.tzVersion || "0.6.2";
+  moment.tz.dataVersion = BUILTIN_TIMEZONE_DATA_RAW.version || "";
+  moment.tz.Zone = CompatZone;
+  moment.tz._zones = zoneStore;
+  moment.tz._links = linkStore;
+  moment.tz._names = nameStore;
+  moment.tz._countries = countryStore;
+  moment.tz.unpack = unpack;
+  moment.tz.unpackBase60 = unpackBase60;
+  moment.tz.load = function (data: TimezoneDataBundle): void {
+    loadData(data);
+    moment.tz!.dataVersion = data.version ?? "";
   };
-  (moment.fn as unknown as Record<string, unknown>).zoneName = function (
-    this: Record<string, unknown>,
-  ): string {
-    if (this._z) {
-      return (this._z as MomentTzZone).abbr((this as unknown as { valueOf(): number }).valueOf());
-    }
-    return origZoneName ? origZoneName.call(this) : "";
+  moment.tz.add = function (data: unknown): void {
+    addZone(data);
   };
-  (moment.fn as unknown as Record<string, unknown>).zoneAbbr = function (
-    this: Record<string, unknown>,
-  ): string {
-    if (this._z) {
-      return (this._z as MomentTzZone).abbr((this as unknown as { valueOf(): number }).valueOf());
-    }
-    return origZoneAbbr ? origZoneAbbr.call(this) : "";
+  moment.tz.link = function (links: unknown): void {
+    addLink(links);
   };
-
+  moment.tz.zone = function (name: string): MomentTzZone | null {
+    return getZone(name);
+  };
+  moment.tz.zoneExists = function (name: string): boolean {
+    return !!getZone(name);
+  };
   moment.tz.guess = function (_preferCache?: boolean): string {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
   };
-
   moment.tz.names = function (): string[] {
-    try {
-      return (Intl as unknown as { supportedValuesOf: (k: string) => string[] })
-        .supportedValuesOf("timeZone")
-        .sort();
-    } catch {
-      return [
-        "UTC",
-        "America/New_York",
-        "America/Chicago",
-        "America/Denver",
-        "America/Los_Angeles",
-        "Europe/London",
-        "Europe/Paris",
-        "Europe/Berlin",
-        "Europe/Moscow",
-        "Asia/Tokyo",
-        "Asia/Shanghai",
-        "Asia/Hong_Kong",
-        "Asia/Singapore",
-        "Asia/Seoul",
-        "Asia/Kolkata",
-        "Australia/Sydney",
-        "Pacific/Auckland",
-        "Africa/Cairo",
-        "Africa/Johannesburg",
-      ];
-    }
+    return getNames();
   };
-
-  function resolveZoneName(name: string): string | null {
-    const normalized = normalizeTz(name);
-    try {
-      const names = moment.tz!.names();
-      if (names.includes(normalized)) {
-        return normalized;
-      }
-    } catch {
-      /* skip */
-    }
-    // Check reverse alias (e.g. Asia/Kolkata → Asia/Calcutta on macOS)
-    for (const [alias, target] of Object.entries(ZONE_ALIAS)) {
-      if (normalized === target || normalized === alias) {
-        try {
-          const names = moment.tz!.names();
-          if (names.includes(alias)) {
-            return alias;
-          }
-          if (names.includes(target)) {
-            return target;
-          }
-        } catch {
-          /* skip */
-        }
-        return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
-      }
-    }
-    return null;
-  }
-  moment.tz.zone = function (name: string): MomentTzZone | null {
-    const resolved = resolveZoneName(name);
-    if (!resolved) {
-      return null;
-    }
-    return {
-      name,
-      abbr: (ts: number) => getAbbr(resolved, ts),
-      offset: (ts: number) => {
-        const o = -getOffset(resolved, ts);
-        return o === 0 ? 0 : o;
-      },
-      utcOffset: (ts: number) => {
-        const o = -getOffset(resolved, ts);
-        return o === 0 ? 0 : o;
-      },
-      parse: (ts: number) => {
-        const o = -getOffset(resolved, ts);
-        return o === 0 ? 0 : o;
-      },
-    };
-  };
-
-  moment.tz.add = function (_data: unknown): void {
-    console.warn(
-      "[moment2-timezone] .tz.add() is a no-op — timezone data comes from the runtime Intl API",
-    );
-  };
-
-  moment.tz.link = function (_links: unknown): void {};
-
-  moment.tz.setDefault = function (tz: string): void {
-    moment.defaultZone = tz;
-  };
-
   moment.tz.countries = function (): string[] {
-    return [];
+    return getCountryNames();
   };
+  moment.tz.zonesForCountry = function (
+    code: string,
+    withOffset?: boolean,
+  ): string[] | CountryWithOffset[] | null {
+    return zonesForCountry(code, withOffset);
+  };
+  moment.tz.setDefault = function (tz?: string): MomentLike {
+    moment.defaultZone = tz ? normalizeTz(tz) : undefined;
+    return moment;
+  };
+  Object.defineProperty(moment.tz, "moveInvalidForward", {
+    get() {
+      return timezoneFlags.moveInvalidForward;
+    },
+    set(value: boolean) {
+      timezoneFlags.moveInvalidForward = !!value;
+    },
+    enumerable: true,
+    configurable: true,
+  });
+  Object.defineProperty(moment.tz, "moveAmbiguousForward", {
+    get() {
+      return timezoneFlags.moveAmbiguousForward;
+    },
+    set(value: boolean) {
+      timezoneFlags.moveAmbiguousForward = !!value;
+    },
+    enumerable: true,
+    configurable: true,
+  });
 
-  moment.tz.zonesForCountry = function (_code: string): string[] {
-    return [];
-  };
+  const origZoneName = moment.fn.zoneName;
+  const origZoneAbbr = moment.fn.zoneAbbr;
+  const origIsDST = moment.fn.isDST;
+
+  moment.fn.isDST = function (this: { _z?: MomentTzZone | null; valueOf(): number }): boolean {
+    if (this._z) {
+      const z = this._z.name;
+      const ts = this.valueOf();
+      if (this._z instanceof InternalZone) {
+        const year = new Date(ts).getUTCFullYear();
+        const janOff = this._z.utcOffset(Date.UTC(year, 0, 1));
+        const julOff = this._z.utcOffset(Date.UTC(year, 6, 1));
+        return this._z.utcOffset(ts) !== Math.max(janOff, julOff);
+      }
+      const year = new Date(ts).getUTCFullYear();
+      const janOff = getOffset(z, Date.UTC(year, 0, 1));
+      const julOff = getOffset(z, Date.UTC(year, 6, 1));
+      return getOffset(z, ts) !== Math.min(janOff, julOff);
+    }
+    return origIsDST ? origIsDST.call(this) : false;
+  } as unknown as (this: unknown) => boolean;
+  moment.fn.zoneName = function (this: { _z?: MomentTzZone | null; valueOf(): number }): string {
+    if (this._z) {
+      return this._z.abbr(this.valueOf());
+    }
+    return origZoneName ? origZoneName.call(this) : "";
+  } as unknown as (this: unknown) => string;
+  moment.fn.zoneAbbr = function (this: { _z?: MomentTzZone | null; valueOf(): number }): string {
+    if (this._z) {
+      return this._z.abbr(this.valueOf());
+    }
+    return origZoneAbbr ? origZoneAbbr.call(this) : "";
+  } as unknown as (this: unknown) => string;
 
   return moment;
 }

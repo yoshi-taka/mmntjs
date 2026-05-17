@@ -1,7 +1,7 @@
 {
   "name": "mmntjs-timezone",
   "version": "1.0.0",
-  "description": "Drop-in replacement for moment-timezone — powered by native Intl API",
+  "description": "Drop-in replacement for moment-timezone",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -16,7 +16,7 @@
   "sideEffects": false,
   "files": ["dist"],
   "scripts": {
-    "build": "tsup && bun ../../scripts/copy-dts.ts",
+    "build": "bun ../../scripts/generate-timezone-data.ts && tsup && bun ../../scripts/copy-dts.ts",
     "test": "bun test"
   },
   "peerDependencies": {
