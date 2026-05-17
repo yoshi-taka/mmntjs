@@ -43,6 +43,12 @@ function charCodeToInt(charCode: number): number {
   return charCode - 48;
 }
 
+function intToChar(d: number): string {
+  if (d < 10) return String.fromCharCode(48 + d);
+  if (d < 36) return String.fromCharCode(87 + d);
+  return String.fromCharCode(29 + d);
+}
+
 function unpackBase60(input: string): number {
   let i = 0;
   const parts = input.split(".");
@@ -78,13 +84,7 @@ function packBase60(n: number): string {
     remaining = Math.floor(remaining / 60);
   }
   if (digits.length === 0) digits.push(0);
-  const whole = digits
-    .map((d) => {
-      if (d < 10) return String.fromCharCode(48 + d);
-      if (d < 36) return String.fromCharCode(87 + d);
-      return String.fromCharCode(29 + d);
-    })
-    .join("");
+  const whole = digits.map(intToChar).join("");
   if (frac > 0) {
     let fracStr = ".";
     let f = frac;
@@ -100,9 +100,12 @@ function packBase60(n: number): string {
 }
 
 function encodeIndex(i: number): string {
-  if (i < 10) return String.fromCharCode(48 + i);
-  if (i < 36) return String.fromCharCode(87 + i);
-  return String.fromCharCode(29 + i);
+  return intToChar(i);
+}
+
+/* encode a numeric ID (0-3599) as 2-char base-60 */
+function encodeZoneId(n: number): string {
+  return intToChar(Math.floor(n / 60)) + intToChar(n % 60);
 }
 
 /* ------------------------------------------------------------------ */
@@ -256,6 +259,65 @@ function collectCountryStrings(): string[] {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Name dictionary helpers                                            */
+/* ------------------------------------------------------------------ */
+
+function buildNameTable(
+  zones: string[],
+  links: string[],
+  countries: string[],
+): { names: string[]; tblByName: Map<string, number> } {
+  const all = new Set<string>();
+  for (const z of zones) {
+    const n = z.split("|")[0];
+    if (n) all.add(n);
+  }
+  for (const l of links) {
+    const [a, b] = l.split("|");
+    if (a) all.add(a);
+    if (b) all.add(b);
+  }
+  for (const c of countries) {
+    const pipe = c.indexOf("|");
+    if (pipe > 0) {
+      for (const n of c.slice(pipe + 1).split(" ")) {
+        if (n) all.add(n);
+      }
+    }
+  }
+  const names = [...all].sort();
+  const tblByName = new Map(names.map((n, i) => [n, i]));
+  return { names, tblByName };
+}
+
+function applyNameIds(
+  zones: string[],
+  links: string[],
+  countries: string[],
+  tblByName: Map<string, number>,
+): { zones: string[]; links: string[]; countries: string[] } {
+  return {
+    zones: zones.map((z) => {
+      const pipe = z.indexOf("|");
+      const name = z.slice(0, pipe);
+      return encodeZoneId(tblByName.get(name)!) + z.slice(pipe);
+    }),
+    links: links.map((l) => {
+      const [a, b] = l.split("|");
+      return `${encodeZoneId(tblByName.get(a)!)}|${encodeZoneId(tblByName.get(b)!)}`;
+    }),
+    countries: countries.map((c) => {
+      const pipe = c.indexOf("|");
+      const code = c.slice(0, pipe);
+      const zoneRefs = c.slice(pipe + 1).split(" ").map((n) =>
+        String(tblByName.get(n)!)
+      ).join(" ");
+      return code + "|" + zoneRefs;
+    }),
+  };
+}
+
+/* ------------------------------------------------------------------ */
 /*  serialize & write                                                  */
 /* ------------------------------------------------------------------ */
 
@@ -265,21 +327,22 @@ function writeBlobFile(
   links: string[],
   countries: string[],
   label: string,
+  compatExport?: boolean,
 ): void {
-  const zonesBlob = zones.join("\n");
-  const linksBlob = links.join("\n");
-  const countriesBlob = countries.join("\n");
+  const { names, tblByName } = buildNameTable(zones, links, countries);
+  const { zones: idZones, links: idLinks, countries: idCountries } =
+    applyNameIds(zones, links, countries, tblByName);
 
-  const content = `export const BUILTIN_TZDATA:{
-  version:string;tzVersion:string;
-  zonesBlob:string;linksBlob:string;countriesBlob:string;
-}={
-  version:${JSON.stringify(tz.dataVersion ?? "")},
-  tzVersion:${JSON.stringify(tz.version ?? "")},
-  zonesBlob:${JSON.stringify(zonesBlob)},
-  linksBlob:${JSON.stringify(linksBlob)},
-  countriesBlob:${JSON.stringify(countriesBlob)},
-};
+  const zonesBlob = idZones.join("\n");
+  const linksBlob = idLinks.join("\n");
+  const countriesBlob = idCountries.join("\n");
+  const namesBlob = names.join("\n");
+
+  // compact TS: single-char property names + compat aliases
+  const compat = compatExport
+    ? `\nexport const BUILTIN_TZDATA={version:V,tzVersion:T,zonesBlob:Z,linksBlob:L,countriesBlob:C,namesBlob:N};`
+    : "";
+  const content = `export const V=${JSON.stringify(tz.dataVersion ?? "")},T=${JSON.stringify(tz.version ?? "")},Z=${JSON.stringify(zonesBlob)},L=${JSON.stringify(linksBlob)},C=${JSON.stringify(countriesBlob)},N=${JSON.stringify(namesBlob)};${compat}
 `;
   mkdirSync(join(outFile, ".."), { recursive: true });
   writeFileSync(outFile, content);
@@ -287,10 +350,12 @@ function writeBlobFile(
   const zLen = zonesBlob.length;
   const lLen = linksBlob.length;
   const cLen = countriesBlob.length;
+  const nLen = namesBlob.length;
   console.log(`[generate-timezone-data] wrote ${outFile}  (${label})`);
-  console.log(`  zones:  ${(zLen / 1024).toFixed(1)} KB  (${zones.length} zones)`);
-  console.log(`  links:  ${(lLen / 1024).toFixed(1)} KB  (${links.length} links)`);
+  console.log(`  zones:  ${(zLen / 1024).toFixed(1)} KB  (${idZones.length} zones)`);
+  console.log(`  links:  ${(lLen / 1024).toFixed(1)} KB  (${idLinks.length} links)`);
   console.log(`  countries: ${(cLen / 1024).toFixed(1)} KB  (...)`);
+  console.log(`  names:  ${(nLen / 1024).toFixed(1)} KB  (${names.length} names)`);
 }
 
 /* ------------------------------------------------------------------ */
@@ -308,6 +373,7 @@ writeBlobFile(
   links,
   countries,
   "full",
+  true, // includes compat BUILTIN_TZDATA export for tests
 );
 
 // 1970-2030 range

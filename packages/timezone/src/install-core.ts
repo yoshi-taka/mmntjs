@@ -328,7 +328,10 @@ let _countriesBlob = "";
 let _totalZoneCount = 0;
 let _materializedCount = 0;
 
-/* lightweight indexes (built lazily from blobs, no string decoding) */
+/* name table: index → full zone name */
+let _nameTable: string[] = [];
+
+/* lightweight indexes (built lazily from blobs) */
 const _zoneIdx = new Map<string, { name: string; start: number; end: number }>();
 const _linkIdx = new Map<string, string>();
 const _linkNameIdx = new Map<string, string>(); // normalized → original name for link aliases
@@ -342,7 +345,10 @@ function ensureIndexBuilt(): void {
   if (indexBuilt || !builtinZoneDataLoaded) return;
   indexBuilt = true;
 
-  // Build lightweight zone index: scan blob for line boundaries and zone names
+  // Parse name table for ID resolution
+  const nt = _nameTable;
+
+  // Build lightweight zone index: scan blob for line boundaries and zone names (as IDs)
   let pos = 0;
   while (pos < _zonesBlob.length) {
     const start = pos;
@@ -350,15 +356,17 @@ function ensureIndexBuilt(): void {
     const end = nl >= 0 ? nl : _zonesBlob.length;
     pos = nl >= 0 ? nl + 1 : _zonesBlob.length;
     if (start === end) continue;
-    // find first "|" to extract zone name
+    // find first "|" to extract zone ID (2-char base-60)
     const pipe = _zonesBlob.indexOf("|", start);
     if (pipe < 0 || pipe >= end) continue;
-    const name = _zonesBlob.slice(start, pipe);
-    _zoneIdx.set(normalizeName(name), { name, start, end });
+    const idStr = _zonesBlob.slice(start, pipe);
+    const id = charCodeToInt(idStr.charCodeAt(0)) * 60 + charCodeToInt(idStr.charCodeAt(1));
+    const name = nt[id] ?? "";
+    if (name) _zoneIdx.set(normalizeName(name), { name, start, end });
   }
   _totalZoneCount = _zoneIdx.size;
 
-  // Build lightweight link index
+  // Build lightweight link index (IDs)
   pos = 0;
   while (pos < _linksBlob.length) {
     const nl = _linksBlob.indexOf("\n", pos);
@@ -367,19 +375,25 @@ function ensureIndexBuilt(): void {
     if (!line) continue;
     const pipe = line.indexOf("|");
     if (pipe < 0) continue;
-    const from = line.slice(0, pipe),
-      to = line.slice(pipe + 1);
-    if (from && to) {
-      const nf = normalizeName(from),
-        nt = normalizeName(to);
-      _linkIdx.set(nf, nt);
-      _linkIdx.set(nt, nf);
-      _linkNameIdx.set(nf, from);
-      _linkNameIdx.set(nt, to);
+    const fromId = line.slice(0, pipe),
+      toId = line.slice(pipe + 1);
+    if (fromId && toId) {
+      const fi = charCodeToInt(fromId.charCodeAt(0)) * 60 + charCodeToInt(fromId.charCodeAt(1));
+      const ti = charCodeToInt(toId.charCodeAt(0)) * 60 + charCodeToInt(toId.charCodeAt(1));
+      const from = nt[fi] ?? "",
+        to = nt[ti] ?? "";
+      if (from && to) {
+        const nf = normalizeName(from),
+          ntNorm = normalizeName(to);
+        _linkIdx.set(nf, ntNorm);
+        _linkIdx.set(ntNorm, nf);
+        _linkNameIdx.set(nf, from);
+        _linkNameIdx.set(ntNorm, to);
+      }
     }
   }
 
-  // Build lightweight country index
+  // Build lightweight country index (zone refs are numeric IDs)
   pos = 0;
   while (pos < _countriesBlob.length) {
     const nl = _countriesBlob.indexOf("\n", pos);
@@ -392,8 +406,10 @@ function ensureIndexBuilt(): void {
     const zones = line
       .slice(pipe + 1)
       .split(" ")
+      .filter(Boolean)
+      .map((idStr) => nt[parseInt(idStr, 10)] ?? "")
       .filter(Boolean);
-    if (code) _countryIdx.set(code, zones);
+    if (code && zones.length > 0) _countryIdx.set(code, zones);
   }
 
   // Free links/countries blobs immediately after indexing — no longer needed
@@ -407,7 +423,10 @@ function materializeZone(normalized: string): boolean {
   if (!entry) return false;
   if (normalized in zoneStore) return true;
   const line = _zonesBlob.slice(entry.start, entry.end);
-  addPackedZoneEntry(entry.name, line);
+  // Replace ID prefix with full name so unpack() returns correct name
+  const pipe = line.indexOf("|");
+  const fullLine = entry.name + line.slice(pipe);
+  addPackedZoneEntry(entry.name, fullLine);
   // eagerly unpack so first abbr()/utcOffset() doesn't pay decode cost
   getDecodedZonePayload(normalized);
   // GC the zones blob once all builtin zones have been materialized
@@ -687,6 +706,7 @@ function ensureBuiltinZoneData(
         zonesBlob: string;
         linksBlob: string;
         countriesBlob: string;
+        namesBlob?: string;
       }
     | undefined,
 ): void {
@@ -694,6 +714,7 @@ function ensureBuiltinZoneData(
   _zonesBlob = data.zonesBlob;
   _linksBlob = data.linksBlob;
   _countriesBlob = data.countriesBlob;
+  if (data.namesBlob) _nameTable = data.namesBlob.split("\n");
   if (moment?.tz) {
     moment.tz.dataVersion = data.version;
     if (data.tzVersion) moment.tz.version = data.tzVersion;
@@ -713,6 +734,7 @@ export function installTimezone(
     zonesBlob: string;
     linksBlob: string;
     countriesBlob: string;
+    namesBlob?: string;
   },
 ): MomentLike {
   if (moment.tz) return moment;

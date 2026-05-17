@@ -1,8 +1,15 @@
 import moment from "mmntjs";
 import { installTimezone, type MomentLike, type MomentTz } from "./install-core";
-import { BUILTIN_TZDATA } from "./builtin-data.generated";
+import { Z, L, C, N, V, T } from "./builtin-data.generated";
 
-installTimezone(moment as unknown as MomentLike, BUILTIN_TZDATA);
+installTimezone(moment as unknown as MomentLike, {
+  version: V,
+  tzVersion: T,
+  zonesBlob: Z,
+  linksBlob: L,
+  countriesBlob: C,
+  namesBlob: N,
+});
 
 export default moment;
 export const tz: MomentTz = (moment as unknown as MomentLike).tz!;

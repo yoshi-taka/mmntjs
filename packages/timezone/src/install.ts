@@ -401,6 +401,9 @@ let _zonesBlob = "";
 let _linksBlob = "";
 let _countriesBlob = "";
 
+/* name table: index → full zone name */
+let _nameTable: string[] = [];
+
 /* lightweight indexes */
 const _zoneIdx = new Map<string, { name: string; start: number; end: number }>();
 const _linkIdx = new Map<string, string>();
@@ -743,6 +746,9 @@ function ensureIndexBuilt(): void {
   if (indexBuilt || !builtinZoneDataLoaded) return;
   indexBuilt = true;
 
+  const nt = _nameTable;
+
+  // Build zone index from ID-based blob
   let pos = 0;
   while (pos < _zonesBlob.length) {
     const start = pos;
@@ -752,13 +758,13 @@ function ensureIndexBuilt(): void {
     if (start === end) continue;
     const pipe = _zonesBlob.indexOf("|", start);
     if (pipe < 0 || pipe >= end) continue;
-    _zoneIdx.set(normalizeName(_zonesBlob.slice(start, pipe)), {
-      name: _zonesBlob.slice(start, pipe),
-      start,
-      end,
-    });
+    const idStr = _zonesBlob.slice(start, pipe);
+    const id = charCodeToInt(idStr.charCodeAt(0)) * 60 + charCodeToInt(idStr.charCodeAt(1));
+    const name = nt[id] ?? "";
+    if (name) _zoneIdx.set(normalizeName(name), { name, start, end });
   }
 
+  // Build link index from ID-based blob
   pos = 0;
   while (pos < _linksBlob.length) {
     const nl = _linksBlob.indexOf("\n", pos);
@@ -767,18 +773,25 @@ function ensureIndexBuilt(): void {
     if (!line) continue;
     const pipe = line.indexOf("|");
     if (pipe < 0) continue;
-    const from = line.slice(0, pipe),
-      to = line.slice(pipe + 1);
-    if (from && to) {
-      const nf = normalizeName(from),
-        nt = normalizeName(to);
-      _linkIdx.set(nf, nt);
-      _linkIdx.set(nt, nf);
-      _linkNameIdx.set(nf, from);
-      _linkNameIdx.set(nt, to);
+    const fromId = line.slice(0, pipe),
+      toId = line.slice(pipe + 1);
+    if (fromId && toId) {
+      const fi = charCodeToInt(fromId.charCodeAt(0)) * 60 + charCodeToInt(fromId.charCodeAt(1));
+      const ti = charCodeToInt(toId.charCodeAt(0)) * 60 + charCodeToInt(toId.charCodeAt(1));
+      const from = nt[fi] ?? "",
+        to = nt[ti] ?? "";
+      if (from && to) {
+        const nf = normalizeName(from),
+          ntNorm = normalizeName(to);
+        _linkIdx.set(nf, ntNorm);
+        _linkIdx.set(ntNorm, nf);
+        _linkNameIdx.set(nf, from);
+        _linkNameIdx.set(ntNorm, to);
+      }
     }
   }
 
+  // Build country index from ID-based blob
   pos = 0;
   while (pos < _countriesBlob.length) {
     const nl = _countriesBlob.indexOf("\n", pos);
@@ -791,8 +804,10 @@ function ensureIndexBuilt(): void {
     const zones = line
       .slice(pipe + 1)
       .split(" ")
+      .filter(Boolean)
+      .map((idStr) => nt[parseInt(idStr, 10)] ?? "")
       .filter(Boolean);
-    if (code) _countryIdx.set(code, zones);
+    if (code && zones.length > 0) _countryIdx.set(code, zones);
   }
 }
 
@@ -801,7 +816,8 @@ function materializeZone(normalized: string): boolean {
   if (!entry) return false;
   if (normalized in zoneStore) return true;
   const line = _zonesBlob.slice(entry.start, entry.end);
-  addPackedZoneEntry(entry.name, line);
+  const pipe = line.indexOf("|");
+  addPackedZoneEntry(entry.name, entry.name + line.slice(pipe));
   getDecodedZonePayload(normalized);
   return true;
 }
@@ -824,6 +840,7 @@ function ensureBuiltinZoneData(
     zonesBlob: string;
     linksBlob: string;
     countriesBlob: string;
+    namesBlob?: string;
   },
 ): void {
   if (builtinZoneDataLoaded || !data) {
@@ -832,6 +849,7 @@ function ensureBuiltinZoneData(
   _zonesBlob = data.zonesBlob;
   _linksBlob = data.linksBlob;
   _countriesBlob = data.countriesBlob;
+  if (data.namesBlob) _nameTable = data.namesBlob.split("\n");
   if (moment?.tz) {
     moment.tz.dataVersion = data.version;
     if (data.tzVersion) {
@@ -849,6 +867,7 @@ export function installTimezone(
     zonesBlob: string;
     linksBlob: string;
     countriesBlob: string;
+    namesBlob?: string;
   },
 ): MomentLike {
   if (moment.tz) {
