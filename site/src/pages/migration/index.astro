@@ -89,6 +89,68 @@ const comparisonChecklist = [
   </section>
 
   <section class="panel section">
+    <p class="eyebrow">Migration Approaches by Build Tool</p>
+    <p>
+      mmntjs supports three migration patterns. Which one works best depends on your package manager and test runner.
+    </p>
+    <table class="table">
+      <thead>
+        <tr><th>Approach</th><th>npm / yarn</th><th>pnpm</th><th>Jest / webpack</th><th>vitest</th><th>bun</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>A: npm alias</strong><br/><code>"moment": "npm:mmntjs"</code></td>
+          <td>✅ 一行で完了</td>
+          <td>⚠️ 要 root overrides <br/><code>"moment": "link:../mmntjs/dist"</code></td>
+          <td>✅</td>
+          <td>✅ (<code>pool: threads</code> 推奨)</td>
+          <td>✅</td>
+        </tr>
+        <tr>
+          <td><strong>B: Direct import</strong><br/><code>mmntjs migrate --apply</code></td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+        </tr>
+        <tr>
+          <td><strong>C: Preload alias</strong><br/><code>Module._resolveFilename</code> hook</td>
+          <td>✅ setup 1行</td>
+          <td>⚠️ root overrides + <code>link:</code> 必須</td>
+          <td>✅</td>
+          <td>⚠️ <code>pool: threads</code> 必須 <br/><code>forks</code> だと resolution 失敗</td>
+          <td>✅ <code>--preload</code> でOK</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>pnpm + vitest 利用時の注意点（Ghost実測より）</h4>
+    <ul>
+      <li>
+        <strong>pnpm overrides</strong>: root <code>package.json</code> の <code>pnpm.overrides</code> で
+        <code>"moment": "link:../mmntjs/dist"</code> を指定する。<code>file:</code> や <code>npm:</code> プロトコルは
+        pnpm の仮想 store と相性が悪い場合がある。
+      </li>
+      <li>
+        <strong>vitest pool</strong>: <code>pool: forks</code>（Ghost のデフォルト設定）だと fork 先 worker が
+        pnpm override による解決を継承せず <code>Failed to resolve import "moment"</code> になる。
+        <code>pool: threads</code> に変更すると解決する。
+      </li>
+      <li>
+        <strong>試してハマる不発手</strong>:
+        <code>vitest.resolve.alias</code> の <code>'moment'</code> キーは bare module specifier に効かない。
+        <code>node_modules/moment</code> の直接 symlink 置換は pnpm install で上書きされる。
+      </li>
+      <li>
+        <strong>moment-timezone</strong>: <code>from 'moment-timezone'</code> の import がある場合、
+        単に <code>mmntjs</code> に alias してよい。ただし mmntjs の timezone package は
+        単体では動かず main があって初めて初期化される点に注意。
+      </li>
+    </ul>
+  </section>
+
+  <section class="panel section">
     <p class="eyebrow">Concrete Rollout Examples</p>
     <div class="cards">
       {rolloutExamples.map((example) => (
