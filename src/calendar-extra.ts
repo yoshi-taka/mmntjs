@@ -14,15 +14,6 @@ type CalendarAwareMoment = Moment & {
   $W: number;
 };
 
-function dayOfWeek(y: number, m: number, d: number): number {
-  const t = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
-  let year = y;
-  year -= m < 2 ? 1 : 0;
-  return (
-    (year + Math.floor(year / 4) - Math.floor(year / 100) + Math.floor(year / 400) + t[m] + d) % 7
-  );
-}
-
 function firstWeekOffset(year: number, dow: number, doy: number, _utc: boolean): number {
   const fwd = 7 + dow - doy;
   const janFwd = new Date(Date.UTC(year, 0, fwd));
@@ -115,11 +106,8 @@ export function isoWeekdayMoment(m: CalendarAwareMoment, d?: unknown): number | 
     } else {
       dt.setDate(dt.getDate() + diff);
     }
-    m.$D = m._isUTC ? dt.getUTCDate() : dt.getDate();
-    m.$M = m._isUTC ? dt.getUTCMonth() : dt.getMonth();
-    m.$y = m._isUTC ? dt.getUTCFullYear() : dt.getFullYear();
-    m.$W = dayOfWeek(m.$y, m.$M, m.$D);
     m._t = dt.getTime();
+    m._refreshFields();
     m._updateOffset(true);
     return m;
   }
@@ -128,6 +116,7 @@ export function isoWeekdayMoment(m: CalendarAwareMoment, d?: unknown): number | 
 
 export function dayOfYearMoment(m: CalendarAwareMoment, d?: number): number | Moment {
   if (d !== undefined) {
+    m._ensureFields();
     const year = m.$y;
     const day = Number(d);
     const dt = m._getD();
@@ -136,10 +125,8 @@ export function dayOfYearMoment(m: CalendarAwareMoment, d?: number): number | Mo
     } else {
       dt.setFullYear(year, 0, day);
     }
-    m.$D = m._isUTC ? dt.getUTCDate() : dt.getDate();
-    m.$M = m._isUTC ? dt.getUTCMonth() : dt.getMonth();
-    m.$W = dayOfWeek(m.$y, m.$M, m.$D);
     m._t = dt.getTime();
+    m._refreshFields();
     m._updateOffset(true);
     return m;
   }
@@ -179,11 +166,13 @@ export function isoWeekYearMoment(m: CalendarAwareMoment, y?: number): number | 
     const mondayOfWeek1 = m._isUTC
       ? new Date(Date.UTC(y, 0, 4 - (jan4Day - 1)))
       : new Date(y, 0, 4 - (jan4Day - 1));
-    const target = new Date(
-      mondayOfWeek1.getTime() + ((currentWeek - 1) * 7 + (currentDay - 1)) * 86400000,
-    );
-    m._t = target.getTime();
-    m._d = target;
+    const origDt = m._getD();
+    const origMs = origDt.getTime();
+    const targetMs =
+      mondayOfWeek1.getTime() + ((currentWeek - 1) * 7 + (currentDay - 1)) * 86400000;
+    const timeOfDay = m._isUTC ? origMs % 86400000 : origMs - new Date(origMs).setHours(0, 0, 0, 0);
+    m._t = targetMs + timeOfDay;
+    m._d = undefined;
     m._refreshFields();
     return m;
   }

@@ -1,4 +1,5 @@
 import { describe, test, expect, beforeEach } from "bun:test";
+import fc from "fast-check";
 import moment from "../src/index.ts";
 import originalMoment from "../moment/moment.js";
 
@@ -286,5 +287,73 @@ describe("moment.locale() edge cases", () => {
     moment.locale("en");
     const result = moment.locale(["xx-a", "xx-b"]);
     expect(result).toBe("en");
+  });
+});
+
+describe("property-based locale management patterns", () => {
+  const monthIndices = fc.integer({ min: 0, max: 11 });
+  const weekdayIndices = fc.integer({ min: 0, max: 6 });
+
+  test("months() by index matches moment.js", () => {
+    fc.assert(
+      fc.property(monthIndices, (i) => {
+        expect(moment.months(i)).toBe(originalMoment.months(i));
+        expect(moment.monthsShort(i)).toBe(originalMoment.monthsShort(i));
+      }),
+      { numRuns: 50 },
+    );
+  });
+
+  test("weekdays() by index matches moment.js", () => {
+    fc.assert(
+      fc.property(weekdayIndices, (i) => {
+        expect(moment.weekdays(i)).toBe(originalMoment.weekdays(i));
+        expect(moment.weekdaysShort(i)).toBe(originalMoment.weekdaysShort(i));
+        expect(moment.weekdaysMin(i)).toBe(originalMoment.weekdaysMin(i));
+      }),
+      { numRuns: 50 },
+    );
+  });
+
+  test("localeData()._months matches moment.js", () => {
+    fc.assert(
+      fc.property(monthIndices, (i) => {
+        const ld = moment.localeData("en");
+        const old = originalMoment.localeData("en");
+        expect(ld._months[i]).toBe(old._months[i]);
+        expect(ld._monthsShort[i]).toBe(old._monthsShort[i]);
+      }),
+      { numRuns: 50 },
+    );
+  });
+
+  test("localeData()._weekdays matches moment.js", () => {
+    fc.assert(
+      fc.property(weekdayIndices, (i) => {
+        const ld = moment.localeData("en");
+        const old = originalMoment.localeData("en");
+        expect(ld._weekdays[i]).toBe(old._weekdays[i]);
+        // mmntjs does not expose _weekdaysShort/_weekdaysMin on localeData
+      }),
+      { numRuns: 50 },
+    );
+  });
+
+  test("locale() with unknown locale keeps current locale (same as moment.js)", () => {
+    fc.assert(
+      fc.property(fc.string({ minLength: 4, maxLength: 8 }), (name) => {
+        const safeName = name.replaceAll(/[^a-z]/gi, "x").toLowerCase();
+        if (safeName === "en" || safeName.length < 2) {
+          return;
+        }
+        moment.locale("en");
+        originalMoment.locale("en");
+        const mResult = moment.locale(safeName as string);
+        const oResult = originalMoment.locale(safeName as string);
+        expect(mResult).toBe(oResult);
+        expect(moment.locale()).toBe(originalMoment.locale());
+      }),
+      { numRuns: 100 },
+    );
   });
 });

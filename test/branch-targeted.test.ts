@@ -525,7 +525,175 @@ describe("Branch-targeted: duration partial objects", () => {
 });
 
 // ---------------------------------------------------------------------------
-// 10. Exhaustive month/day overflow lattice
+// 10. Branch-targeted: locale week boundaries (boundary-extra.ts)
+// ---------------------------------------------------------------------------
+
+function defineTestLocale(name: string, dow: number) {
+  moment.defineLocale(name, { week: { dow } } as unknown as Record<string, unknown>);
+  originalMoment.defineLocale(name, { week: { dow } } as unknown as never);
+}
+
+function cleanupTestLocale(name: string) {
+  moment.defineLocale(name, null as unknown as Record<string, unknown>);
+  originalMoment.defineLocale(name, null as unknown as never);
+  moment.locale("en");
+  originalMoment.locale("en");
+}
+
+describe("Branch-targeted: locale week boundaries", () => {
+  const dows = [0, 1, 2, 3, 4, 5, 6];
+  const dates = [
+    "2024-01-15T06:00:00",
+    "2024-06-15T14:30:00",
+    "2024-09-01T22:15:00",
+    "2024-03-10T02:00:00",
+    "2024-11-03T01:30:00",
+  ];
+
+  dows.forEach((dow) => {
+    const localeName = `x-bt-${dow}`;
+
+    test(`startOf("week") with dow=${dow} matches oracle`, () => {
+      defineTestLocale(localeName, dow);
+      for (const dateStr of dates) {
+        const m2 = moment(dateStr).locale(localeName);
+        const mOrig = originalMoment(dateStr).locale(localeName);
+        const start2 = m2.startOf("week");
+        const startOrig = mOrig.startOf("week");
+        expect(start2.valueOf()).toBe(startOrig.valueOf());
+        expect(start2.day()).toBe(startOrig.day());
+        expect(start2.isoWeekday()).toBe(startOrig.isoWeekday());
+        expect(start2.format("HH:mm:ss")).toBe(startOrig.format("HH:mm:ss"));
+      }
+      cleanupTestLocale(localeName);
+    });
+
+    test(`endOf("week") with dow=${dow} matches oracle`, () => {
+      defineTestLocale(localeName, dow);
+      for (const dateStr of dates) {
+        const m2 = moment(dateStr).locale(localeName);
+        const mOrig = originalMoment(dateStr).locale(localeName);
+        const end2 = m2.endOf("week");
+        const endOrig = mOrig.endOf("week");
+        expect(end2.valueOf()).toBe(endOrig.valueOf());
+        expect(end2.day()).toBe(endOrig.day());
+        expect(end2.isoWeekday()).toBe(endOrig.isoWeekday());
+        expect(end2.format("HH:mm:ss")).toBe(endOrig.format("HH:mm:ss"));
+      }
+      cleanupTestLocale(localeName);
+    });
+  });
+
+  test("startOf isoWeek matches oracle", () => {
+    for (const dateStr of dates) {
+      const m2 = moment(dateStr).startOf("isoWeek");
+      const mOrig = originalMoment(dateStr).startOf("isoWeek");
+      expect(m2.valueOf()).toBe(mOrig.valueOf());
+      expect(m2.isoWeekday()).toBe(mOrig.isoWeekday());
+      expect(m2.format("HH:mm:ss")).toBe(mOrig.format("HH:mm:ss"));
+    }
+  });
+
+  test("endOf isoWeek matches oracle", () => {
+    for (const dateStr of dates) {
+      const m2 = moment(dateStr).endOf("isoWeek");
+      const mOrig = originalMoment(dateStr).endOf("isoWeek");
+      expect(m2.valueOf()).toBe(mOrig.valueOf());
+      expect(m2.isoWeekday()).toBe(mOrig.isoWeekday());
+      expect(m2.format("HH:mm:ss")).toBe(mOrig.format("HH:mm:ss"));
+    }
+  });
+
+  test("startOf/endOf week with random locale dow (property)", () => {
+    fc.assert(
+      fc.property(
+        fc.date({ min: new Date("1900-01-01"), max: new Date("2100-01-01"), noInvalidDate: true }),
+        fc.integer({ min: 0, max: 6 }),
+        (d, dow) => {
+          const localeName = `x-bt-prop-${dow}`;
+          if (!moment.locales().includes(localeName)) {
+            moment.defineLocale(localeName, { week: { dow } } as unknown as Record<
+              string,
+              unknown
+            >);
+          }
+          if (!originalMoment.locales().includes(localeName)) {
+            originalMoment.defineLocale(localeName, { week: { dow } } as unknown as never);
+          }
+          const m2 = moment(d).locale(localeName);
+          const mOrig = originalMoment(d).locale(localeName);
+
+          const s2 = m2.clone().startOf("week");
+          const sOrig = mOrig.clone().startOf("week");
+          expect(s2.valueOf()).toBe(sOrig.valueOf());
+          expect(s2.day()).toBe(sOrig.day());
+
+          const e2 = m2.clone().endOf("week");
+          const eOrig = mOrig.clone().endOf("week");
+          expect(e2.valueOf()).toBe(eOrig.valueOf());
+          expect(e2.day()).toBe(eOrig.day());
+
+          // Idempotence: startOf(startOf(x)) === startOf(x)
+          expect(s2.clone().startOf("week").valueOf()).toBe(s2.valueOf());
+          // startOf <= endOf
+          expect(s2.valueOf()).toBeLessThanOrEqual(e2.valueOf());
+        },
+      ),
+      { numRuns: 200 },
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 11. Branch-targeted: locale extra week methods (weekday, week, weekYear)
+// ---------------------------------------------------------------------------
+
+describe("Branch-targeted: locale week methods", () => {
+  const testDates = ["2024-01-15", "2024-06-15", "2024-09-01", "2024-12-31"];
+  const dows = [0, 1, 2, 3, 4, 5, 6];
+
+  dows.forEach((dow) => {
+    const localeName = `x-bt-wk-${dow}`;
+
+    test(`weekday setter with dow=${dow} matches oracle`, () => {
+      defineTestLocale(localeName, dow);
+      for (const dateStr of testDates) {
+        for (const targetWd of [0, 1, 3, 6]) {
+          const m2 = moment(dateStr).locale(localeName);
+          const mOrig = originalMoment(dateStr).locale(localeName);
+          m2.weekday(targetWd);
+          mOrig.weekday(targetWd);
+          expect(m2.weekday()).toBe(mOrig.weekday());
+          expect(m2.valueOf()).toBe(mOrig.valueOf());
+        }
+      }
+      cleanupTestLocale(localeName);
+    });
+
+    test(`week getter with dow=${dow} matches oracle`, () => {
+      defineTestLocale(localeName, dow);
+      for (const dateStr of testDates) {
+        const m2 = moment(dateStr).locale(localeName);
+        const mOrig = originalMoment(dateStr).locale(localeName);
+        expect(m2.week()).toBe(mOrig.week());
+      }
+      cleanupTestLocale(localeName);
+    });
+
+    test(`weekYear getter with dow=${dow} matches oracle`, () => {
+      defineTestLocale(localeName, dow);
+      for (const dateStr of testDates) {
+        const m2 = moment(dateStr).locale(localeName);
+        const mOrig = originalMoment(dateStr).locale(localeName);
+        expect(m2.weekYear()).toBe(mOrig.weekYear());
+      }
+      cleanupTestLocale(localeName);
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 12. Exhaustive month/day overflow lattice
 // ---------------------------------------------------------------------------
 
 describe("Branch-targeted: month/day lattice", () => {

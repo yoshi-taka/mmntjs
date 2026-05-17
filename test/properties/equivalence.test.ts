@@ -764,6 +764,118 @@ describe("Equivalence partitioning: get/set", () => {
 });
 
 describe("Equivalence partitioning: moment() constructor with empty/undefined/null", () => {
+  test("locale dow=0 (Sunday) startOf/endOf week matches moment", () => {
+    fc.assert(
+      fc.property(
+        fc.date({ min: new Date("1900-01-01"), max: new Date("2100-01-01"), noInvalidDate: true }),
+        (d) => {
+          moment.locale("en");
+          originalMoment.locale("en");
+          const m2 = moment(d);
+          const mOrig = originalMoment(d);
+
+          const s2 = m2.clone().startOf("week");
+          const sOrig = mOrig.clone().startOf("week");
+          expect(s2.valueOf()).toBe(sOrig.valueOf());
+          expect(s2.day()).toBe(sOrig.day());
+
+          const e2 = m2.clone().endOf("week");
+          const eOrig = mOrig.clone().endOf("week");
+          expect(e2.valueOf()).toBe(eOrig.valueOf());
+          expect(e2.day()).toBe(eOrig.day());
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+
+  test("locale dow=3 (Wednesday) startOf/endOf week matches moment", () => {
+    fc.assert(
+      fc.property(
+        fc.date({ min: new Date("1900-01-01"), max: new Date("2100-01-01"), noInvalidDate: true }),
+        (d) => {
+          moment.defineLocale("x-eq-wed", { week: { dow: 3 } } as unknown as Record<
+            string,
+            unknown
+          >);
+          originalMoment.defineLocale("x-eq-wed", { week: { dow: 3 } } as unknown as never);
+
+          const m2 = moment(d).locale("x-eq-wed");
+          const mOrig = originalMoment(d).locale("x-eq-wed");
+
+          const s2 = m2.clone().startOf("week");
+          const sOrig = mOrig.clone().startOf("week");
+          expect(s2.valueOf()).toBe(sOrig.valueOf());
+          expect(s2.day()).toBe(sOrig.day());
+
+          const e2 = m2.clone().endOf("week");
+          const eOrig = mOrig.clone().endOf("week");
+          expect(e2.valueOf()).toBe(eOrig.valueOf());
+          expect(e2.day()).toBe(eOrig.day());
+
+          moment.locale("en");
+          originalMoment.locale("en");
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+
+  test("locale dow=6 (Saturday) startOf/endOf week matches moment", () => {
+    fc.assert(
+      fc.property(
+        fc.date({ min: new Date("1900-01-01"), max: new Date("2100-01-01"), noInvalidDate: true }),
+        (d) => {
+          moment.defineLocale("x-eq-sat", { week: { dow: 6 } } as unknown as Record<
+            string,
+            unknown
+          >);
+          originalMoment.defineLocale("x-eq-sat", { week: { dow: 6 } } as unknown as never);
+
+          const m2 = moment(d).locale("x-eq-sat");
+          const mOrig = originalMoment(d).locale("x-eq-sat");
+
+          const s2 = m2.clone().startOf("week");
+          const sOrig = mOrig.clone().startOf("week");
+          expect(s2.valueOf()).toBe(sOrig.valueOf());
+          expect(s2.day()).toBe(sOrig.day());
+
+          const e2 = m2.clone().endOf("week");
+          const eOrig = mOrig.clone().endOf("week");
+          expect(e2.valueOf()).toBe(eOrig.valueOf());
+          expect(e2.day()).toBe(eOrig.day());
+
+          moment.locale("en");
+          originalMoment.locale("en");
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+
+  test("locale dow boundary: 0-6 all valid startOf/endOf", () => {
+    for (const dow of [0, 1, 2, 3, 4, 5, 6]) {
+      const localeName = `x-eq-all-${dow}`;
+      moment.defineLocale(localeName, { week: { dow } } as unknown as Record<string, unknown>);
+      originalMoment.defineLocale(localeName, { week: { dow } } as unknown as never);
+
+      const m2 = moment("2024-06-15").locale(localeName);
+      const mOrig = originalMoment("2024-06-15").locale(localeName);
+
+      const s2 = m2.clone().startOf("week");
+      const sOrig = mOrig.clone().startOf("week");
+      expect(s2.day()).toBe(sOrig.day());
+      expect(s2.valueOf()).toBe(sOrig.valueOf());
+
+      const e2 = m2.clone().endOf("week");
+      const eOrig = mOrig.clone().endOf("week");
+      expect(e2.day()).toBe(eOrig.day());
+      expect(e2.valueOf()).toBe(eOrig.valueOf());
+    }
+    moment.locale("en");
+    originalMoment.locale("en");
+  });
+
   test("empty array matches moment", () => {
     fc.assert(
       fc.property(fc.constantFrom([] as unknown[]), (input) => {

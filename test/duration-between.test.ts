@@ -1,4 +1,5 @@
 import { describe, test, expect } from "bun:test";
+import fc from "fast-check";
 import { diffMomentsForDuration } from "../src/duration-between.ts";
 
 type MomentParts = {
@@ -133,5 +134,40 @@ describe("diffMomentsForDuration", () => {
     const result = diffMomentsForDuration(a, b);
     expect(result.months).toBe(-1);
     expect(Math.abs(result.milliseconds)).toBe(2 * 24 * 60 * 60 * 1000);
+  });
+});
+
+describe("property-based diffMomentsForDuration", () => {
+  const yearRange = fc.integer({ min: 1970, max: 2050 });
+  const monthRange = fc.integer({ min: 0, max: 11 });
+  const dayRange = fc.integer({ min: 1, max: 28 });
+  const dateTriple = fc.tuple(yearRange, monthRange, dayRange);
+
+  test("diff from same moment is zero", () => {
+    fc.assert(
+      fc.property(dateTriple, ([y, m, d]) => {
+        const a = makeMoment({ y, m, d });
+        const result = diffMomentsForDuration(a, a);
+        expect(result).toEqual({ months: 0, milliseconds: 0, days: 0 });
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  test("diff opposite signs: diff(a,b) ≈ -diff(b,a)", () => {
+    fc.assert(
+      fc.property(dateTriple, dateTriple, ([y1, m1, d1], [y2, m2, d2]) => {
+        const a = makeMoment({ y: y1, m: m1, d: d1 });
+        const b = makeMoment({ y: y2, m: m2, d: d2 });
+        const ab = diffMomentsForDuration(a, b);
+        const ba = diffMomentsForDuration(b, a);
+        expect(ab.months).toBe(-ba.months);
+        // When months=0, ms should be exact negation
+        if (ab.months === 0) {
+          expect(Math.abs(ab.milliseconds + ba.milliseconds)).toBeLessThanOrEqual(1);
+        }
+      }),
+      { numRuns: 100 },
+    );
   });
 });

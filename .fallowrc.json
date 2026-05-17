@@ -37,6 +37,7 @@
     "test/factory-input-format.test.ts",
     "test/locale-mgmt.test.ts",
     "test/grafana-compat/**",
+    "test/kibana-compat/**",
     "docs/**",
     "site/**"
   ],

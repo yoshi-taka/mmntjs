@@ -138,8 +138,12 @@ export function localeWeekYear(m: LocaleAwareMoment, y?: number): number | Momen
     const fwdlw = (7 + fwdDay - dow) % 7;
     const offset = -fwdlw + fwd - 1;
     const week1Start = new Date(jan1.getTime() + offset * 86400000);
-    m._d = new Date(week1Start.getTime() + ((currentWeek - 1) * 7 + currentDay) * 86400000);
-    m._t = m._d.getTime();
+    const origDt = m._getD();
+    const origMs = origDt.getTime();
+    const timeOfDay = m._isUTC ? origMs % 86400000 : origMs - new Date(origMs).setHours(0, 0, 0, 0);
+    const targetMs = week1Start.getTime() + ((currentWeek - 1) * 7 + currentDay) * 86400000;
+    m._t = targetMs + timeOfDay;
+    m._d = undefined;
     m._refreshFields();
     return m;
   }

@@ -1,4 +1,5 @@
 import { describe, test, expect } from "bun:test";
+import fc from "fast-check";
 import moment from "../src/index.ts";
 import originalMoment from "../moment/moment.js";
 
@@ -122,5 +123,110 @@ describe("locale-extra week methods", () => {
       expect(r).toBe(m);
       expect(m.locale()).toBe("en");
     });
+  });
+});
+
+describe("property-based locale extra patterns", () => {
+  const safeMin = new Date("1900-01-01");
+  const safeMax = new Date("2100-01-01");
+  const safeDates = fc.date({ min: safeMin, max: safeMax, noInvalidDate: true });
+  const weekNumbers = fc.integer({ min: 1, max: 53 });
+  const weekYears = fc.integer({ min: 1950, max: 2050 });
+
+  test("weekday getter matches moment.js", () => {
+    fc.assert(
+      fc.property(safeDates, (d) => {
+        const m = moment(d);
+        const o = originalMoment(d);
+        expect(m.weekday()).toBe(o.weekday());
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  test("weekday setter matches moment.js", () => {
+    fc.assert(
+      fc.property(safeDates, fc.integer({ min: 0, max: 6 }), (d, wd) => {
+        const m = moment(d);
+        const o = originalMoment(d);
+        m.weekday(wd);
+        o.weekday(wd);
+        expect(m.weekday()).toBe(o.weekday());
+        expect(m.valueOf()).toBe(o.valueOf());
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  test("week getter matches moment.js", () => {
+    fc.assert(
+      fc.property(safeDates, (d) => {
+        const m = moment(d);
+        const o = originalMoment(d);
+        expect(m.week()).toBe(o.week());
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  test("week setter matches moment.js", () => {
+    fc.assert(
+      fc.property(safeDates, weekNumbers, (d, w) => {
+        const m = moment(d);
+        const o = originalMoment(d);
+        m.week(w);
+        o.week(w);
+        expect(m.week()).toBe(o.week());
+        expect(m.valueOf()).toBe(o.valueOf());
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  test("weekYear getter matches moment.js", () => {
+    fc.assert(
+      fc.property(safeDates, (d) => {
+        const m = moment(d);
+        const o = originalMoment(d);
+        expect(m.weekYear()).toBe(o.weekYear());
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  test("weekYear setter matches moment.js", () => {
+    fc.assert(
+      fc.property(safeDates, weekYears, (d, wy) => {
+        const m = moment(d);
+        const o = originalMoment(d);
+        m.weekYear(wy);
+        o.weekYear(wy);
+        expect(m.weekYear()).toBe(o.weekYear());
+        expect(m.valueOf()).toBe(o.valueOf());
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  test("weeksInYear matches moment.js", () => {
+    fc.assert(
+      fc.property(weekYears, (y) => {
+        const m = moment().year(y);
+        const o = originalMoment().year(y);
+        expect(m.weeksInYear()).toBe(o.weeksInYear());
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  test("isoWeeksInYear matches moment.js", () => {
+    fc.assert(
+      fc.property(weekYears, (y) => {
+        const m = moment().year(y);
+        const o = originalMoment().year(y);
+        expect(m.isoWeeksInYear()).toBe(o.isoWeeksInYear());
+      }),
+      { numRuns: 100 },
+    );
   });
 });

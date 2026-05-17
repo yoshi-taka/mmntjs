@@ -80,7 +80,7 @@ export function startOfExtraMoment(m: BoundaryAwareMoment, code: UnitCode): void
       m.$m = 0;
       m.$s = 0;
       m.$ms = 0;
-      m.$W = dow;
+      m.$W = utc ? d.getUTCDay() : d.getDay();
       m._t = d.getTime();
       break;
     }
@@ -101,7 +101,7 @@ export function startOfExtraMoment(m: BoundaryAwareMoment, code: UnitCode): void
       m.$m = 0;
       m.$s = 0;
       m.$ms = 0;
-      m.$W = 1;
+      m.$W = utc ? d.getUTCDay() : d.getDay();
       m._t = d.getTime();
       break;
     }
@@ -152,7 +152,7 @@ export function endOfExtraMoment(m: BoundaryAwareMoment, code: UnitCode): void {
       m.$m = 59;
       m.$s = 59;
       m.$ms = 999;
-      m.$W = dow;
+      m.$W = utc ? d.getUTCDay() : d.getDay();
       m._t = d.getTime();
       break;
     }
@@ -173,7 +173,7 @@ export function endOfExtraMoment(m: BoundaryAwareMoment, code: UnitCode): void {
       m.$m = 59;
       m.$s = 59;
       m.$ms = 999;
-      m.$W = 1;
+      m.$W = utc ? d.getUTCDay() : d.getDay();
       m._t = d.getTime();
       break;
     }

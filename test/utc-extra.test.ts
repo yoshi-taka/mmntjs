@@ -1,5 +1,7 @@
 import { describe, test, expect, beforeEach } from "bun:test";
+import fc from "fast-check";
 import moment from "../src/index.ts";
+import originalMoment from "../moment/moment.js";
 
 beforeEach(() => {
   moment.locale("en");
@@ -264,5 +266,78 @@ describe("parseZone with format and offset", () => {
   test("with format and no offset in string, falls back to regex", () => {
     const m = moment.parseZone("2024-01-15 10:30:00 +05:30", "YYYY-MM-DD HH:mm:ss");
     expect(m.isValid()).toBe(true);
+  });
+});
+
+describe("property-based UTC/offset patterns", () => {
+  const safeMin = new Date("1900-01-01");
+  const safeMax = new Date("2100-01-01");
+  const safeDates = fc.date({ min: safeMin, max: safeMax, noInvalidDate: true });
+  const offsetMinutes = fc.integer({ min: -720, max: 840 });
+
+  test("utcOffset setter matches moment.js", () => {
+    fc.assert(
+      fc.property(safeDates, offsetMinutes, (d, offset) => {
+        const m = moment.utc(d);
+        const o = originalMoment.utc(d);
+        m.utcOffset(offset);
+        o.utcOffset(offset);
+        expect(m.utcOffset()).toBe(o.utcOffset());
+        expect(m.valueOf()).toBe(o.valueOf());
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  test("UTC->local->UTC round-trip preserves epoch", () => {
+    fc.assert(
+      fc.property(safeDates, (d) => {
+        const m = moment.utc(d);
+        const epoch = m.valueOf();
+        m.local();
+        expect(m.isLocal()).toBe(true);
+        m.utc();
+        expect(m.isUTC()).toBe(true);
+        expect(m.valueOf()).toBe(epoch);
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  test("local->UTC->local round-trip preserves epoch", () => {
+    fc.assert(
+      fc.property(safeDates, (d) => {
+        const m = moment(d);
+        const epoch = m.valueOf();
+        m.utc();
+        expect(m.isUTC()).toBe(true);
+        m.local();
+        expect(m.isLocal()).toBe(true);
+        expect(m.valueOf()).toBe(epoch);
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  test("utcOffset with keepLocalTime preserves wall clock", () => {
+    fc.assert(
+      fc.property(safeDates, offsetMinutes, (d, offset) => {
+        const m = moment(d);
+        const wallStr = m.format("HH:mm:ss.SSS");
+        m.utcOffset(offset, true);
+        expect(m.format("HH:mm:ss.SSS")).toBe(wallStr);
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  test("isDST returns boolean for any moment", () => {
+    fc.assert(
+      fc.property(safeDates, (d) => {
+        const m = moment(d);
+        expect(typeof m.isDST()).toBe("boolean");
+      }),
+      { numRuns: 100 },
+    );
   });
 });

@@ -438,6 +438,191 @@ makeMutations([
     },
   },
 
+  // === Phase 3: boundary-extra.ts ===
+  {
+    name: "boundary-extra: startOf WEEK $W = 0 constant (was dow)",
+    file: "src/boundary-extra.ts",
+    patterns: [
+      [
+        /m\.\$W = utc \? d\.getUTCDay\(\) : d\.getDay\(\);\n\s*m\._t = d\.getTime\(\);\n\s*break;\n\s*\}\n\s*case ISO_WEEK:\n\s*\{/g,
+        "m.$W = 0;\n    m._t = d.getTime();\n    break;\n    }\n    case ISO_WEEK:\n    {",
+      ],
+    ],
+    inputs: fc.date({
+      min: new Date("2000-01-01"),
+      max: new Date("2030-12-31"),
+      noInvalidDate: true,
+    }),
+    testFn: (input: unknown) => {
+      const d = input as Date;
+      const m2 = moment.utc(d).startOf("week");
+      const mOrig = originalMoment.utc(d).startOf("week");
+      return m2.day() === mOrig.day() && m2.valueOf() === mOrig.valueOf();
+    },
+  },
+  {
+    name: "boundary-extra: startOf ISO_WEEK $W = 0 constant (was 1)",
+    file: "src/boundary-extra.ts",
+    patterns: [
+      [
+        /m\.\$W = utc \? d\.getUTCDay\(\) : d\.getDay\(\);\n\s*m\._t = d\.getTime\(\);\n\s*break;\n\s*\}\n\s*\}\n\s*}/g,
+        "m.$W = 0;\n    m._t = d.getTime();\n    break;\n    }\n    }\n}",
+      ],
+    ],
+    inputs: fc.date({
+      min: new Date("2000-01-01"),
+      max: new Date("2030-12-31"),
+      noInvalidDate: true,
+    }),
+    testFn: (input: unknown) => {
+      const d = input as Date;
+      const m2 = moment.utc(d).startOf("isoWeek");
+      const mOrig = originalMoment.utc(d).startOf("isoWeek");
+      return m2.isoWeekday() === mOrig.isoWeekday() && m2.valueOf() === mOrig.valueOf();
+    },
+  },
+  {
+    name: "boundary-extra: endOf WEEK $W = 0 constant (was d.getDay)",
+    file: "src/boundary-extra.ts",
+    patterns: [
+      [
+        /m\.\$W = utc \? d\.getUTCDay\(\) : d\.getDay\(\);\n\s*m\._t = d\.getTime\(\);\n\s*break;\n\s*\}\n\s*case ISO_WEEK:\n\s*\{/g,
+        "m.$W = 0;\n    m._t = d.getTime();\n    break;\n    }\n    case ISO_WEEK:\n    {",
+      ],
+    ],
+    inputs: fc.date({
+      min: new Date("2000-01-01"),
+      max: new Date("2030-12-31"),
+      noInvalidDate: true,
+    }),
+    testFn: (input: unknown) => {
+      const d = input as Date;
+      const m2 = moment.utc(d).endOf("week");
+      const mOrig = originalMoment.utc(d).endOf("week");
+      return m2.day() === mOrig.day() && m2.valueOf() === mOrig.valueOf();
+    },
+  },
+  {
+    name: "boundary-extra: endOf ISO_WEEK $W = 0 constant (was d.getDay)",
+    file: "src/boundary-extra.ts",
+    patterns: [
+      [
+        /m\.\$W = utc \? d\.getUTCDay\(\) : d\.getDay\(\);\n\s*m\._t = d\.getTime\(\);\n\s*break;\n\s*\}\n\s*\}\n\s*}/g,
+        "m.$W = 0;\n    m._t = d.getTime();\n    break;\n    }\n    }\n}",
+      ],
+    ],
+    inputs: fc.date({
+      min: new Date("2000-01-01"),
+      max: new Date("2030-12-31"),
+      noInvalidDate: true,
+    }),
+    testFn: (input: unknown) => {
+      const d = input as Date;
+      const m2 = moment.utc(d).endOf("isoWeek");
+      const mOrig = originalMoment.utc(d).endOf("isoWeek");
+      return m2.isoWeekday() === mOrig.isoWeekday() && m2.valueOf() === mOrig.valueOf();
+    },
+  },
+  {
+    name: "boundary-extra: startOf WEEK locale dow ignored (constant 0)",
+    file: "src/boundary-extra.ts",
+    patterns: [
+      [
+        /const dow = weekCfg\.dow;\n\s*const day = utc \? d\.getUTCDay\(\) : d\.getDay\(\);\n\s*const diff = \(day - dow \+ 7\) % 7;/g,
+        "const dow = 0;\n    const day = utc ? d.getUTCDay() : d.getDay();\n    const diff = (day - dow + 7) % 7;",
+      ],
+    ],
+    inputs: fc.date({
+      min: new Date("2000-01-01"),
+      max: new Date("2030-12-31"),
+      noInvalidDate: true,
+    }),
+    testFn: (input: unknown) => {
+      const d = input as Date;
+      moment.defineLocale("x-mut-loc", { week: { dow: 3 } } as unknown as Record<string, unknown>);
+      originalMoment.defineLocale("x-mut-loc", { week: { dow: 3 } } as unknown as never);
+      const m2 = moment.utc(d).locale("x-mut-loc").startOf("week");
+      const mOrig = originalMoment.utc(d).locale("x-mut-loc").startOf("week");
+      moment.locale("en");
+      originalMoment.locale("en");
+      return m2.day() === mOrig.day() && m2.valueOf() === mOrig.valueOf();
+    },
+  },
+  {
+    name: "boundary-extra: endOf WEEK locale dow ignored (constant 0)",
+    file: "src/boundary-extra.ts",
+    patterns: [
+      [
+        /const dow = weekCfg\.dow;\n\s*const weekDay = utc \? d\.getUTCDay\(\) : d\.getDay\(\);\n\s*const diff = \(weekDay - dow \+ 7\) % 7;/g,
+        "const dow = 0;\n    const weekDay = utc ? d.getUTCDay() : d.getDay();\n    const diff = (weekDay - dow + 7) % 7;",
+      ],
+    ],
+    inputs: fc.date({
+      min: new Date("2000-01-01"),
+      max: new Date("2030-12-31"),
+      noInvalidDate: true,
+    }),
+    testFn: (input: unknown) => {
+      const d = input as Date;
+      moment.defineLocale("x-mut-end", { week: { dow: 3 } } as unknown as Record<string, unknown>);
+      originalMoment.defineLocale("x-mut-end", { week: { dow: 3 } } as unknown as never);
+      const m2 = moment.utc(d).locale("x-mut-end").endOf("week");
+      const mOrig = originalMoment.utc(d).locale("x-mut-end").endOf("week");
+      moment.locale("en");
+      originalMoment.locale("en");
+      return m2.day() === mOrig.day() && m2.valueOf() === mOrig.valueOf();
+    },
+  },
+  {
+    name: "calendar-extra: isoWeekday setter no _refreshFields",
+    file: "src/calendar-extra.ts",
+    patterns: [
+      [
+        /m\._t = dt\.getTime\(\);\n\s*m\._refreshFields\(\);/g,
+        "m._t = dt.getTime();\n    // _refreshFields removed",
+      ],
+    ],
+    inputs: fc.tuple(
+      fc.date({ min: new Date("2000-01-01"), max: new Date("2030-12-31"), noInvalidDate: true }),
+      fc.integer({ min: 1, max: 7 }),
+    ),
+    testFn: (input: unknown) => {
+      const [d, wd] = input as [Date, number];
+      const m2 = moment.utc(d);
+      const mOrig = originalMoment.utc(d);
+      m2.isoWeekday(wd);
+      mOrig.isoWeekday(wd);
+      return (
+        m2.valueOf() === mOrig.valueOf() &&
+        m2.format("HH:mm:ss.SSS") === mOrig.format("HH:mm:ss.SSS")
+      );
+    },
+  },
+  {
+    name: "calendar-extra: dayOfYear setter no _refreshFields",
+    file: "src/calendar-extra.ts",
+    patterns: [
+      [
+        /m\._ensureFields\(\);\n\s*const year = m\.\$y;\n\s*const day = Number\(d\);/g,
+        "const year = m.$y;\n    const day = Number(d);",
+      ],
+    ],
+    inputs: fc.tuple(
+      fc.date({ min: new Date("2000-01-01"), max: new Date("2030-12-31"), noInvalidDate: true }),
+      fc.integer({ min: 1, max: 366 }),
+    ),
+    testFn: (input: unknown) => {
+      const [d, doy] = input as [Date, number];
+      const m2 = moment.utc(d);
+      const mOrig = originalMoment.utc(d);
+      m2.dayOfYear(doy);
+      mOrig.dayOfYear(doy);
+      return (
+        m2.valueOf() === mOrig.valueOf() && m2.format("YYYY-MM-DD") === mOrig.format("YYYY-MM-DD")
+      );
+    },
+  },
+
   // === Phase 2: parse-format.ts ===
   {
     name: "units: isLeapYear bit check flipped (condition flip)",

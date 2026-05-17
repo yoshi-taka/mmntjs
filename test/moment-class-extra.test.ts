@@ -1,4 +1,5 @@
 import { describe, test, expect } from "bun:test";
+import fc from "fast-check";
 import moment from "../src/index.ts";
 import originalMoment from "../moment/moment.js";
 
@@ -176,5 +177,88 @@ describe("Moment class edge cases", () => {
       expect(moment("2024-02-01").daysInMonth()).toBe(29);
       expect(moment("2023-02-01").daysInMonth()).toBe(28);
     });
+  });
+});
+
+describe("property-based moment class patterns", () => {
+  const safeMin = new Date("1900-01-01");
+  const safeMax = new Date("2100-01-01");
+  const safeDates = fc.date({ min: safeMin, max: safeMax, noInvalidDate: true });
+  const getSetUnits = fc.constantFrom(
+    "year",
+    "month",
+    "date",
+    "hour",
+    "minute",
+    "second",
+    "millisecond",
+  );
+  const setValuesSafe = fc.integer({ min: 1, max: 59 });
+  const inclusivityModes = fc.constantFrom("()", "[)", "(]", "[]");
+
+  test("get() with random dates/units matches moment.js", () => {
+    fc.assert(
+      fc.property(safeDates, getSetUnits, (d, unit) => {
+        const m = moment(d);
+        const o = originalMoment(d);
+        expect(m.get(unit)).toBe(o.get(unit));
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  test("set() random values then get() matches moment.js", () => {
+    fc.assert(
+      fc.property(safeDates, getSetUnits, setValuesSafe, (d, unit, val) => {
+        const m = moment(d);
+        const o = originalMoment(d);
+        m.set(unit, val);
+        o.set(unit, val);
+        expect(m.get(unit)).toBe(o.get(unit));
+        expect(m.valueOf()).toBe(o.valueOf());
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  test("isBetween with random inclusivity matches moment.js", () => {
+    fc.assert(
+      fc.property(safeDates, safeDates, safeDates, inclusivityModes, (d, a, b, mode) => {
+        const m = moment(d);
+        const o = originalMoment(d);
+        const mA = moment(a);
+        const oA = originalMoment(a);
+        const mB = moment(b);
+        const oB = originalMoment(b);
+        expect(m.isBetween(mA, mB, "day", mode as "()")).toBe(
+          o.isBetween(oA, oB, "day", mode as "()"),
+        );
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  test("set/get round-trip: set(unit, get(unit)) is idempotent", () => {
+    fc.assert(
+      fc.property(safeDates, getSetUnits, (d, unit) => {
+        const m = moment(d);
+        const orig = m.get(unit);
+        m.set(unit, orig);
+        expect(m.get(unit)).toBe(orig);
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  test("valueOf invariant: utc().local() preserves epoch", () => {
+    fc.assert(
+      fc.property(safeDates, (d) => {
+        const m = moment(d);
+        const epoch = m.valueOf();
+        m.utc().local();
+        expect(m.valueOf()).toBe(epoch);
+      }),
+      { numRuns: 200 },
+    );
   });
 });

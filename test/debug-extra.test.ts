@@ -1,5 +1,7 @@
 import { describe, test, expect } from "bun:test";
+import fc from "fast-check";
 import moment from "../src/index.ts";
+import originalMoment from "../moment/moment.js";
 
 describe("debug-extra moment methods", () => {
   describe("toArray", () => {
@@ -119,6 +121,86 @@ describe("debug-extra moment methods", () => {
 
     test("invalid returns null", () => {
       expect(moment("invalid").toISOString()).toBeNull();
+    });
+  });
+
+  describe("property-based debug patterns", () => {
+    const safeMin = new Date("1900-01-01");
+    const safeMax = new Date("2100-01-01");
+    const safeDates = fc.date({ min: safeMin, max: safeMax, noInvalidDate: true });
+
+    test("toArray matches moment.js", () => {
+      fc.assert(
+        fc.property(safeDates, (d) => {
+          const m = moment(d);
+          const o = originalMoment(d);
+          expect(m.toArray()).toEqual(o.toArray());
+        }),
+        { numRuns: 200 },
+      );
+    });
+
+    test("toObject matches moment.js", () => {
+      fc.assert(
+        fc.property(safeDates, (d) => {
+          const m = moment(d);
+          const o = originalMoment(d);
+          expect(m.toObject()).toEqual(o.toObject());
+        }),
+        { numRuns: 200 },
+      );
+    });
+
+    test("toISOString matches moment.js for UTC", () => {
+      fc.assert(
+        fc.property(safeDates, (d) => {
+          const m = moment.utc(d);
+          const o = originalMoment.utc(d);
+          expect(m.toISOString()).toBe(o.toISOString());
+        }),
+        { numRuns: 200 },
+      );
+    });
+
+    test("parsingFlags key set matches moment.js", () => {
+      fc.assert(
+        fc.property(safeDates, (d) => {
+          const m = moment(d);
+          const o = originalMoment(d);
+          const mf = m.parsingFlags();
+          const of = (
+            o as unknown as { parsingFlags: () => Record<string, unknown> }
+          ).parsingFlags();
+          // Both -1 and -2 mean "no overflow" (mmntjs: -1, moment.js: -2)
+          if (of.overflow >= 0) {
+            expect(mf.overflow).toBe(of.overflow);
+          } else {
+            expect(mf.overflow).toBeLessThan(0);
+          }
+          expect(mf.empty).toBe(of.empty);
+          expect(mf.nullInput).toBe(of.nullInput);
+          expect(mf.userInvalidated).toBe(of.userInvalidated);
+        }),
+        { numRuns: 100 },
+      );
+    });
+
+    test("invalidAt matches moment.js for valid dates", () => {
+      fc.assert(
+        fc.property(safeDates, (d) => {
+          const m = moment(d);
+          const o = originalMoment(d);
+          const mVal = m.invalidAt();
+          const oVal = o.invalidAt();
+          // Both -1 and -2 mean "valid" (mmntjs: -1, moment.js: -2)
+          if (oVal >= 0) {
+            expect(mVal).toBe(oVal);
+          } else {
+            expect(mVal).toBeLessThan(0);
+          }
+        }),
+        { numRuns: 200 },
+      );
     });
   });
 });

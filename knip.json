@@ -28,7 +28,8 @@
     "test/properties/number-theory.test.ts",
     "test/browser-bundle-compare.ts",
     "moment/**",
-    "test/grafana-compat/**"
+    "test/grafana-compat/**",
+    "test/kibana-compat/**"
   ],
   "tags": ["-public"],
   "ignoreDependencies": [

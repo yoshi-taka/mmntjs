@@ -1,4 +1,5 @@
 import { describe, test, expect } from "bun:test";
+import fc from "fast-check";
 import moment from "../src/index.ts";
 
 describe("Duration constructor edge cases", () => {
@@ -236,5 +237,92 @@ describe("Duration as(unit)", () => {
   test("asWeeks", () => {
     const d = moment.duration(14, "days");
     expect(d.asWeeks()).toBe(2);
+  });
+});
+
+describe("property-based duration patterns", () => {
+  const safeMsec = fc.integer({ min: -86400000 * 365 * 5, max: 86400000 * 365 * 5 });
+  const durUnits = fc.constantFrom(
+    "milliseconds",
+    "seconds",
+    "minutes",
+    "hours",
+    "days",
+    "weeks",
+    "months",
+    "years",
+  );
+  const durAmounts = fc.integer({ min: -10000, max: 10000 });
+  const roundUnits = fc.constantFrom("s", "m", "h", "d", "w", "M", "y", "ms");
+  const roundModes = fc.constantFrom("halfExpand", "floor", "ceil", "trunc");
+  // Fixed-value units: month/year/quarter are calendar-based, not fixed ms
+  const fixedDurUnits = fc.constantFrom(
+    "milliseconds",
+    "seconds",
+    "minutes",
+    "hours",
+    "days",
+    "weeks",
+  );
+
+  test("duration from object getters", () => {
+    fc.assert(
+      fc.property(durUnits, durAmounts, (unit, amount) => {
+        const d = moment.duration(amount, unit as moment.unitOfTime.DurationConstructor);
+        expect(d.isValid()).toBe(true);
+        const getter = unit.replace(/s$/, "") as keyof typeof d;
+        if (typeof d[getter] === "function") {
+          expect(typeof (d[getter] as () => number)()).toBe("number");
+        }
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  test("duration as(unit) returns finite number", () => {
+    fc.assert(
+      fc.property(safeMsec, durUnits, (ms, unit) => {
+        const d = moment.duration(ms);
+        const as = d.as(unit as moment.unitOfTime.DurationConstructor);
+        expect(typeof as).toBe("number");
+        expect(isFinite(as)).toBe(true);
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  test("duration round-trip: adding fixed-unit duration preserves ms", () => {
+    fc.assert(
+      fc.property(durAmounts, fixedDurUnits, (amount, unit) => {
+        const d = moment.duration(amount, unit as moment.unitOfTime.DurationConstructor);
+        const ms = d.asMilliseconds();
+        const m = moment(0).add(d);
+        expect(m.valueOf()).toBe(ms);
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  test("duration humanize is a string", () => {
+    fc.assert(
+      fc.property(safeMsec, (ms) => {
+        const d = moment.duration(ms);
+        const h = d.humanize();
+        expect(typeof h).toBe("string");
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  test("duration round with various units", () => {
+    fc.assert(
+      fc.property(safeMsec, roundUnits, roundModes, (ms, unit, mode) => {
+        const d = moment.duration(ms);
+        d.round({ smallestUnit: unit as "s", roundingMode: mode as "halfExpand" });
+        expect(d.isValid()).toBe(true);
+        expect(d.asMilliseconds()).toBeGreaterThanOrEqual(-Math.abs(ms) - 86400000 * 365);
+      }),
+      { numRuns: 100 },
+    );
   });
 });
