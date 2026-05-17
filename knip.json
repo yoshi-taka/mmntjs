@@ -6,7 +6,8 @@
     "packages/timezone/src/index.ts",
     "packages/timezone/test/*.test.ts",
     "test/properties/basic.test.ts",
-    "test/properties/boundary.test.ts"
+    "test/properties/boundary.test.ts",
+    "test/properties/dst-oracle.test.ts"
   ],
   "project": ["src/**", "test/**", "packages/timezone/src/**"],
   "ignore": [
