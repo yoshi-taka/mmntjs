@@ -222,6 +222,14 @@ export class Locale {
     return this._config.week;
   }
 
+  firstDayOfWeek(): number {
+    return this._config.week?.dow ?? 0;
+  }
+
+  firstDayOfYear(): number {
+    return this._config.week?.doy ?? 6;
+  }
+
   meridiemParse(): RegExp | undefined {
     const mp = this._config.meridiemParse;
     if (mp instanceof RegExp) {

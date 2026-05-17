@@ -7,8 +7,8 @@
 const Module = require("node:module");
 const path = require("node:path");
 
-const ROOT = path.resolve(__dirname, "../../../..");
-const TZ_ROOT = path.resolve(__dirname, "../../../../packages/timezone");
+const ROOT = path.resolve(__dirname, "../../..");
+const TZ_ROOT = path.resolve(__dirname, "../../../packages/timezone");
 
 const aliases: Record<string, string> = {
   moment: path.join(ROOT, "dist/index.js"),
