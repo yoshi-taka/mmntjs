@@ -1,0 +1,10 @@
+{
+  "target": "parse",
+  "bugClass": "timezone without time in ISO week date",
+  "oracle": "upstream moment.js",
+  "added": "2026-05-17",
+  "source": "test/regression/crashes.test.ts",
+  "expected": {
+    "isValid": false
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "target": "parse",
+  "bugClass": "fixed parse crash",
+  "oracle": "upstream moment.js",
+  "added": "2026-05-17",
+  "source": "test/regression/crashes.test.ts (FIXED_PARSE)",
+  "expected": {}
+}

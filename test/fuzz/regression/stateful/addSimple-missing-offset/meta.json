@@ -1,0 +1,10 @@
+{
+  "target": "stateful",
+  "bugClass": "_addSimple missing offset refresh for year/quarter/month",
+  "oracle": "upstream moment.js",
+  "added": "2026-05-17",
+  "failureDescription": "_addSimple did not update _offset after local year/quarter/month mutation",
+  "expected": {
+    "isValid": true
+  }
+}

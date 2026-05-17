@@ -1,0 +1,8 @@
+{
+  "target": "parse",
+  "bugClass": "YYYYYYMMDD sign retention",
+  "oracle": "upstream moment.js",
+  "added": "2026-05-17",
+  "failureDescription": "sign dropped in compact YYYYMMDD format",
+  "expected": {}
+}

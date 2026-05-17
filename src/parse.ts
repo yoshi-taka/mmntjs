@@ -3075,6 +3075,9 @@ function classifyISODatePart(datePart: string): [fmt: string, allowTime: boolean
   if (len === 12 && (ch0 === 43 || ch0 === 45)) {
     return ["YYYYYYMMDD", true];
   }
+  if (len === 11 && (ch0 === 43 || ch0 === 45)) {
+    return ["YYYYYYMMDD", true];
+  }
   if (len === 8) {
     if (datePart.charCodeAt(4) === 87) {
       return ["GGGG[W]WWE", true];

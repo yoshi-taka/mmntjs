@@ -1,0 +1,8 @@
+{
+  "target": "parse",
+  "bugClass": "YYYYYY regex greedy match",
+  "oracle": "upstream moment.js",
+  "added": "2026-05-17",
+  "failureDescription": "6-digit year regex captured too many digits",
+  "expected": {}
+}

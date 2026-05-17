@@ -7,3 +7,10 @@ dist/
 node_modules/
 **/*.bak
 coverage/
+# Fuzz artifacts
+test/fuzz/crashes/
+test/fuzz/coverage/
+test/fuzz/corpus-summary.json
+# Keep corpus dirs (seed inputs committed), but not generated corpus-summary
+# Generated regression test file
+test/regression/generated.test.ts

@@ -1,0 +1,8 @@
+{
+  "target": "parse-zone",
+  "bugClass": "invalid date with extreme timezone offset",
+  "oracle": "upstream moment.js",
+  "added": "2026-05-17",
+  "failureDescription": "overflow not detected when combined with timezone",
+  "expected": {}
+}

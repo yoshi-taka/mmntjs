@@ -1,0 +1,8 @@
+{
+  "target": "parse",
+  "bugClass": "known-diff: DDD regex too restrictive",
+  "oracle": "upstream moment.js",
+  "added": "2026-05-17",
+  "failureDescription": "DDD regex required exactly 3 digits (d{3} fix) (moment2 and moment.js disagree on validity)",
+  "expected": {}
+}

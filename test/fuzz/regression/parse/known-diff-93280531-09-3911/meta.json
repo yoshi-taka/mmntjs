@@ -1,0 +1,11 @@
+{
+  "target": "parse",
+  "bugClass": "mixed format parse",
+  "oracle": "upstream moment.js",
+  "added": "2026-05-17",
+  "failureDescription": "Different local-time rendering for compact date with time offset",
+  "expected": {
+    "isValid": true,
+    "valueOf": 232209245460000
+  }
+}

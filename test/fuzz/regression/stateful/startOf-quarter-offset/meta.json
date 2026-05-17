@@ -1,0 +1,10 @@
+{
+  "target": "stateful",
+  "bugClass": "startOf quarter offset not refreshed",
+  "oracle": "upstream moment.js",
+  "added": "2026-05-17",
+  "failureDescription": "_startOfLocal returned before updating _offset for QUARTER/WEEK/ISO_WEEK",
+  "expected": {
+    "isValid": true
+  }
+}

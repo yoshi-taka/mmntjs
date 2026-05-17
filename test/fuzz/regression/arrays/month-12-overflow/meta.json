@@ -1,0 +1,8 @@
+{
+  "target": "arrays",
+  "bugClass": "month overflow via array constructor",
+  "oracle": "upstream moment.js",
+  "added": "2026-05-17",
+  "failureDescription": "moment.utc([2024,5,15,12,30]) treated as local time",
+  "expected": {}
+}

@@ -52,6 +52,32 @@ for tz in "${TZS[@]}"; do
   echo ""
 done
 
+# Run stateful model tests under multiple TZs (UTC/Local transition safety)
+echo "=== Stateful Model Tests (test/stateful-model.test.ts) ==="
+for tz in "${TZS[@]}"; do
+  echo "--- TZ=$tz ---"
+  if TZ="$tz" bun test "test/stateful-model.test.ts" 2>&1; then
+    echo "  ✅ PASS"
+  else
+    echo "  ❌ FAIL"
+    all_pass=false
+  fi
+  echo ""
+done
+
+# Run branch-targeted tests under multiple TZs
+echo "=== Branch-Targeted Tests (test/branch-targeted.test.ts) ==="
+for tz in "${TZS[@]}"; do
+  echo "--- TZ=$tz ---"
+  if TZ="$tz" bun test "test/branch-targeted.test.ts" 2>&1; then
+    echo "  ✅ PASS"
+  else
+    echo "  ❌ FAIL"
+    all_pass=false
+  fi
+  echo ""
+done
+
 # Run package timezone tests under all TZs
 echo "=== Package Timezone Tests (${PACKAGE_TEST_DIR}) ==="
 for tz in "${TZS[@]}"; do

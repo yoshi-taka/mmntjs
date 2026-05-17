@@ -1,0 +1,8 @@
+{
+  "target": "parse",
+  "bugClass": "year 0000 parsing",
+  "oracle": "upstream moment.js",
+  "added": "2026-05-17",
+  "failureDescription": "moment.utc() fallback overwriting ISO parser result",
+  "expected": {}
+}

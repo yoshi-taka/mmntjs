@@ -1534,6 +1534,9 @@ export class Moment {
         this.$M = m;
         this.$D = d_;
         this.$W = utc ? _dayOfWeek(y, m, d_) : this._d!.getDay();
+        if (!utc) {
+          this._offset = -this._d!.getTimezoneOffset();
+        }
         break;
       }
       case ISO_WEEK:
@@ -1847,7 +1850,7 @@ export class Moment {
           throw new Error("mmntjs startOf extra units are not initialized");
         }
         startOfExtraCallback(this, code);
-        return;
+        break;
       case DATE:
       case DAY:
         this._t = floorUnitEpoch(this._t, DAY_MS);
@@ -1912,7 +1915,7 @@ export class Moment {
           throw new Error("mmntjs startOf extra units are not initialized");
         }
         startOfExtraCallback(this, code);
-        return;
+        break;
       case DATE:
       case DAY:
         d.setHours(0, 0, 0, 0);
@@ -1994,7 +1997,7 @@ export class Moment {
           throw new Error("mmntjs endOf extra units are not initialized");
         }
         endOfExtraCallback(this, code);
-        return;
+        break;
       case DATE:
       case DAY:
         this._t = endOfUnitEpoch(this._t, DAY_MS);
@@ -2055,7 +2058,7 @@ export class Moment {
           throw new Error("mmntjs endOf extra units are not initialized");
         }
         endOfExtraCallback(this, code);
-        return;
+        break;
       case DATE:
       case DAY:
         d.setHours(0, 0, 0, 0);
