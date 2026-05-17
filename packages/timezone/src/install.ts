@@ -1,6 +1,6 @@
 /* oxlint-disable no-explicit-any, no-unnecessary-type-assertion, no-unnecessary-condition, prefer-nullish-coalescing, prefer-optional-chain, prefer-string-replace-all, no-new-array, no-useless-spread, prefer-function-type */
 
-import { BUILTIN_TIMEZONE_DATA_RAW } from "./builtin-data.generated";
+import { BUILTIN_TZDATA } from "./builtin-data.generated";
 
 interface MomentFnProps {
   tz: (this: unknown, tz?: string, keepTime?: boolean) => unknown;
@@ -53,7 +53,7 @@ interface MomentTz {
   version?: string;
   dataVersion?: string;
   Zone?: new (packedString?: string) => MomentTzZone;
-  _zones?: Record<string, string | DecodedZonePayload>;
+  _zones?: Record<string, string | PrebuiltZonePayload | DecodedZonePayload>;
   _links?: Record<string, string>;
   _names?: Record<string, string>;
   _countries?: Record<string, { name: string; zones: string[] }>;
@@ -100,6 +100,14 @@ interface DecodedZonePayload {
   offsets: Int16Array | Int32Array;
   untils: Float64Array;
   population: number;
+}
+
+interface PrebuiltZonePayload {
+  abbrs: string[];
+  offsets: number[];
+  ut: number;
+  ud: number[];
+  pop: number;
 }
 
 const offsetCache = new Map<string, Map<number, number>>();
@@ -290,7 +298,6 @@ class InternalZone implements MomentTzZone {
   }
 
   countries(): string[] {
-    ensureBuiltinCountryData();
     const out: string[] = [];
     for (const [code, country] of Object.entries(countryStore)) {
       if (country.zones.includes(this.name)) {
@@ -370,7 +377,6 @@ class CompatZone implements MomentTzZone {
   }
 
   countries(): string[] {
-    ensureBuiltinCountryData();
     const out: string[] = [];
     for (const [code, country] of Object.entries(countryStore)) {
       if (country.zones.includes(this.name)) {
@@ -414,10 +420,9 @@ class CompatZone implements MomentTzZone {
   }
 }
 
-const zoneStore: Record<string, string | DecodedZonePayload> = Object.create(null) as Record<
-  string,
-  string | DecodedZonePayload
->;
+const zoneStore: Record<string, string | PrebuiltZonePayload | DecodedZonePayload> = Object.create(
+  null,
+) as Record<string, string | PrebuiltZonePayload | DecodedZonePayload>;
 const linkStore: Record<string, string> = Object.create(null) as Record<string, string>;
 const nameStore: Record<string, string> = Object.create(null) as Record<string, string>;
 const countryStore: Record<string, { name: string; zones: string[] }> = Object.create(
@@ -432,12 +437,6 @@ const timezoneFlags = {
 };
 
 let builtinZoneDataLoaded = false;
-let builtinLinkDataLoaded = false;
-let builtinCountryDataLoaded = false;
-let builtinTimezoneZoneDataParsed: string[] | null = null;
-let builtinTimezoneLinkDataParsed: string[] | null = null;
-let builtinTimezoneCountryDataParsed: string[] | null = null;
-
 let sortedZoneNamesCache: string[] | null = null;
 
 function internString(value: string): string {
@@ -470,13 +469,35 @@ function getDecodedZonePayload(canonicalKey: string): DecodedZonePayload {
   if (!source) {
     throw new Error(`Missing timezone payload for ${canonicalKey}`);
   }
-  const payload = typeof source === "string" ? createDecodedZonePayload(unpack(source)) : source;
+  let payload: DecodedZonePayload;
+  if (typeof source === "string") {
+    payload = createDecodedZonePayload(unpack(source));
+  } else if ("ut" in source) {
+    const prebuilt = source as PrebuiltZonePayload;
+    const untils: number[] = [prebuilt.ut];
+    for (let i = 0; i < prebuilt.ud.length; i++) {
+      untils.push(untils[i] + prebuilt.ud[i]);
+    }
+    untils[untils.length - 1] = Number.POSITIVE_INFINITY;
+    payload = createDecodedZonePayload({
+      name: "",
+      abbrs: prebuilt.abbrs,
+      offsets: prebuilt.offsets,
+      untils,
+      population: prebuilt.pop,
+    });
+  } else {
+    payload = source;
+  }
   zoneStore[canonicalKey] = payload;
   decodedZonePayloadCache.set(canonicalKey, payload);
   return payload;
 }
 
-function addPackedZoneEntry(name: string, value: string | DecodedZonePayload): void {
+function addPackedZoneEntry(
+  name: string,
+  value: string | PrebuiltZonePayload | DecodedZonePayload,
+): void {
   const normalized = normalizeName(name);
   zoneStore[normalized] = value;
   nameStore[normalized] = name;
@@ -504,17 +525,21 @@ function addZone(packed: unknown): void {
         continue;
       }
       if (value && typeof value === "object") {
-        const entry = value as Partial<UnpackedZone>;
-        addPackedZoneEntry(
-          name,
-          createDecodedZonePayload({
+        if ("ut" in (value as Record<string, unknown>)) {
+          addPackedZoneEntry(name, value as PrebuiltZonePayload);
+        } else {
+          const entry = value as Partial<UnpackedZone>;
+          addPackedZoneEntry(
             name,
-            abbrs: [...(entry.abbrs ?? [])],
-            offsets: [...(entry.offsets ?? [])],
-            untils: [...(entry.untils ?? [])],
-            population: entry.population ?? 0,
-          }),
-        );
+            createDecodedZonePayload({
+              name,
+              abbrs: [...(entry.abbrs ?? [])],
+              offsets: [...(entry.offsets ?? [])],
+              untils: [...(entry.untils ?? [])],
+              population: entry.population ?? 0,
+            }),
+          );
+        }
       }
     }
   }
@@ -606,7 +631,6 @@ function getZoneRecord(name: string, caller?: typeof getZoneRecord): InternalZon
     zoneWrapperCache.set(name, resolved);
     return resolved;
   }
-  ensureBuiltinLinkData();
   if (linkStore[normalized] && caller !== getZoneRecord) {
     const target = getZoneRecord(linkStore[normalized], getZoneRecord);
     if (target) {
@@ -710,7 +734,6 @@ function getNames(): string[] {
   if (sortedZoneNamesCache) {
     return [...sortedZoneNamesCache];
   }
-  ensureBuiltinLinkData();
   const out = new Set<string>();
   for (const key of Object.keys(nameStore)) {
     if (nameStore[key] && (zoneStore[key] || zoneStore[linkStore[key] ?? ""] || linkStore[key])) {
@@ -728,7 +751,6 @@ function getNames(): string[] {
 }
 
 function getCountryNames(): string[] {
-  ensureBuiltinCountryData();
   return Object.keys(countryStore).sort();
 }
 
@@ -736,7 +758,6 @@ function zonesForCountry(
   code: string,
   withOffset?: boolean,
 ): string[] | CountryWithOffset[] | null {
-  ensureBuiltinCountryData();
   const country = countryStore[code.toUpperCase()];
   if (!country) {
     return null;
@@ -768,55 +789,20 @@ function loadData(data: TimezoneDataBundle): void {
   addCountries(data.countries);
 }
 
-function parseBuiltinZoneData(): string[] {
-  builtinTimezoneZoneDataParsed ??= BUILTIN_TIMEZONE_DATA_RAW.zones
-    ? BUILTIN_TIMEZONE_DATA_RAW.zones.split("\n")
-    : [];
-  return builtinTimezoneZoneDataParsed;
-}
-
-function parseBuiltinLinkData(): string[] {
-  builtinTimezoneLinkDataParsed ??= BUILTIN_TIMEZONE_DATA_RAW.links
-    ? BUILTIN_TIMEZONE_DATA_RAW.links.split("\n")
-    : [];
-  return builtinTimezoneLinkDataParsed;
-}
-
-function parseBuiltinCountryData(): string[] {
-  builtinTimezoneCountryDataParsed ??= BUILTIN_TIMEZONE_DATA_RAW.countries
-    ? BUILTIN_TIMEZONE_DATA_RAW.countries.split("\n")
-    : [];
-  return builtinTimezoneCountryDataParsed;
-}
-
 function ensureBuiltinZoneData(moment?: MomentLike): void {
   if (builtinZoneDataLoaded) {
     return;
   }
-  addZone(parseBuiltinZoneData());
+  addZone(BUILTIN_TZDATA.zones);
+  addLink(BUILTIN_TZDATA.links);
+  addCountries(BUILTIN_TZDATA.countries);
   if (moment?.tz) {
-    moment.tz.dataVersion = BUILTIN_TIMEZONE_DATA_RAW.version;
-    if (BUILTIN_TIMEZONE_DATA_RAW.tzVersion) {
-      moment.tz.version = BUILTIN_TIMEZONE_DATA_RAW.tzVersion;
+    moment.tz.dataVersion = BUILTIN_TZDATA.version;
+    if (BUILTIN_TZDATA.tzVersion) {
+      moment.tz.version = BUILTIN_TZDATA.tzVersion;
     }
   }
   builtinZoneDataLoaded = true;
-}
-
-function ensureBuiltinLinkData(): void {
-  if (builtinLinkDataLoaded) {
-    return;
-  }
-  addLink(parseBuiltinLinkData());
-  builtinLinkDataLoaded = true;
-}
-
-function ensureBuiltinCountryData(): void {
-  if (builtinCountryDataLoaded) {
-    return;
-  }
-  addCountries(parseBuiltinCountryData());
-  builtinCountryDataLoaded = true;
 }
 
 export function installTimezone(moment: MomentLike): MomentLike {
@@ -999,8 +985,8 @@ export function installTimezone(moment: MomentLike): MomentLike {
   moment.fn.tz = fnTz as unknown as (this: unknown, tz?: string, keepTime?: boolean) => unknown;
   moment.defaultZone = null;
 
-  moment.tz.version = BUILTIN_TIMEZONE_DATA_RAW.tzVersion || "0.6.2";
-  moment.tz.dataVersion = BUILTIN_TIMEZONE_DATA_RAW.version || "";
+  moment.tz.version = BUILTIN_TZDATA.tzVersion || "0.6.2";
+  moment.tz.dataVersion = BUILTIN_TZDATA.version || "";
   moment.tz.Zone = CompatZone;
   moment.tz._zones = zoneStore;
   moment.tz._links = linkStore;
