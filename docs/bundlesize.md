@@ -66,7 +66,7 @@ zone の indices フィールド（例: `0121212121...`）は大半が DST の�
 - 1次キー: region（`America/`, `Europe/` など）
 - 2次キー: offset文字列（DSTパターンの代理指標）
 - gzipが cross-zone パターンを検出しやすくなる
-- **効果**: +gzip ~~2.5%改善~~、brotli ~~0.9%改善~~
+- **効果**: gzip -2.5%、brotli -0.9%
 
 ## 総合効果チャート
 
