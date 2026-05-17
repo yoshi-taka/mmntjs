@@ -48,6 +48,22 @@ import type { ParseLocale } from "./parse-locale";
 
 export let momentProperties: string[] = [];
 
+let _defaultFormat = "YYYY-MM-DDTHH:mm:ssZ";
+let _defaultFormatUtc = "YYYY-MM-DDTHH:mm:ss[Z]";
+
+export function setDefaultFormat(fmt: string): void {
+  _defaultFormat = fmt;
+}
+export function getDefaultFormat(): string {
+  return _defaultFormat;
+}
+export function setDefaultFormatUtc(fmt: string): void {
+  _defaultFormatUtc = fmt;
+}
+export function getDefaultFormatUtc(): string {
+  return _defaultFormatUtc;
+}
+
 let updateOffsetCallback: ((m: Moment) => void) | undefined;
 let formatMomentCallback: ((m: FormattableMoment, format: string) => string) | undefined;
 let fromNowCallback: ((m: Moment, pref?: boolean) => string) | undefined;
@@ -2140,9 +2156,9 @@ export class Moment {
   format(format?: string): string {
     if (!format) {
       if (this._isUTC && this._offset === 0) {
-        format = "YYYY-MM-DDTHH:mm:ss[Z]";
+        format = _defaultFormatUtc;
       } else {
-        format = "YYYY-MM-DDTHH:mm:ssZ";
+        format = _defaultFormat;
       }
     }
     const formatter = formatMomentCallback;

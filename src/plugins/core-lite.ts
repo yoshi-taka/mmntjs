@@ -53,6 +53,35 @@ export function registerLiteCoreApi(target: LiteMomentTarget, deps: LiteCoreApiD
     enumerable: true,
     configurable: true,
   });
+  Object.defineProperty(target, "defaultFormat", {
+    get(): string {
+      return "YYYY-MM-DDTHH:mm:ssZ";
+    },
+    set(v: string) {
+      // lite build: no-op for compatibility
+    },
+    enumerable: true,
+    configurable: true,
+  });
+  Object.defineProperty(target, "defaultFormatUtc", {
+    get(): string {
+      return "YYYY-MM-DDTHH:mm:ss[Z]";
+    },
+    set(v: string) {
+      // lite build: no-op for compatibility
+    },
+    enumerable: true,
+    configurable: true,
+  });
+  momentRecord.createFromInputFallback = function (_input?: unknown): void {
+    // no-op hook for compatibility
+  };
+  momentRecord.config = function (_key?: string, _value?: unknown): void {
+    // no-op for compatibility
+  };
+  momentRecord.report = function (_type?: string): void {
+    // no-op for compatibility
+  };
   momentRecord.ISO_8601 = "ISO_8601";
   momentRecord.unix = function (ts: number): MomentLite {
     return target(ts * 1000);

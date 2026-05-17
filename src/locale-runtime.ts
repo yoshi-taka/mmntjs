@@ -266,6 +266,255 @@ export class Locale {
   postformat(str: string): string {
     return localePostformat(this, str);
   }
+
+  // ---------- parsing helpers (months/weekdays) ----------
+
+  private _configCache(): Record<string, unknown> {
+    return this._config as unknown as Record<string, unknown>;
+  }
+
+  private _buildMonthsRegex(strict: boolean, short: boolean): RegExp {
+    const cacheKey = `_${short ? "monthsShort" : "months"}${strict ? "Strict" : ""}Regex`;
+    const cfg = this._configCache();
+    const cached = cfg[cacheKey] as RegExp | undefined;
+    if (cached) {
+      return cached;
+    }
+
+    if (short) {
+      const names = this._monthsShort;
+      const escaped = names.map((n: string) => n.replaceAll(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&"));
+      const prefix = strict ? "^(?:" : "(?:";
+      const suffix = strict ? ")$" : ")";
+      const pattern = prefix + escaped.join("|") + suffix;
+      const regex = new RegExp(pattern, "i");
+      cfg[cacheKey] = regex;
+      return regex;
+    }
+
+    const fullNames = this._months;
+    const escapedFull = fullNames.map((n: string) =>
+      n.replaceAll(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&"),
+    );
+    if (strict) {
+      const pattern = `^(${escapedFull.join("|")})$`;
+      const regex = new RegExp(pattern, "i");
+      cfg[cacheKey] = regex;
+      return regex;
+    }
+    const shortNames = this._monthsShort;
+    const shortLower = shortNames.map((n: string) => n.replaceAll(/\.$/g, "").toLowerCase());
+    const escapedShort = shortLower.map((n: string) =>
+      n.replaceAll(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&"),
+    );
+    const all = [...new Set([...escapedFull, ...escapedShort])];
+    const sorted = [...all].sort((a, b) => b.length - a.length);
+    const pattern = `^(${sorted.join("|")})`;
+    const regex = new RegExp(pattern, "i");
+    cfg[cacheKey] = regex;
+    return regex;
+  }
+
+  private _buildWeekdaysRegex(strict: boolean, kind: "format" | "short" | "min"): RegExp {
+    const keyMap = { format: "weekdays", short: "weekdaysShort", min: "weekdaysMin" };
+    const cacheKey = `_${keyMap[kind]}${strict ? "Strict" : ""}Regex`;
+    const cfg = this._configCache();
+    const cached = cfg[cacheKey] as RegExp | undefined;
+    if (cached) {
+      return cached;
+    }
+
+    let primaryNames: string[];
+    if (kind === "format") {
+      primaryNames = this._weekdays;
+    } else if (kind === "short") {
+      primaryNames = this.weekdaysShortArray();
+    } else {
+      primaryNames = this.weekdaysMinArray();
+    }
+
+    const escaped = primaryNames.map((n: string) => n.replaceAll(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&"));
+    if (strict) {
+      const pattern = `^(${escaped.join("|")})$`;
+      const regex = new RegExp(pattern, "i");
+      cfg[cacheKey] = regex;
+      return regex;
+    }
+    const allNames: string[] = [];
+    const collectEscaped = (arr: string[]) => {
+      for (const n of arr) {
+        allNames.push(n.replaceAll(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&"));
+      }
+    };
+    collectEscaped(this._weekdays);
+    collectEscaped(this.weekdaysShortArray());
+    collectEscaped(this.weekdaysMinArray());
+    const unique = [...new Set(allNames)];
+    const sorted = [...unique].sort((a, b) => b.length - a.length);
+    const pattern = `^(${sorted.join("|")})`;
+    const regex = new RegExp(pattern, "i");
+    cfg[cacheKey] = regex;
+    return regex;
+  }
+
+  monthsParse(monthName: string, format?: string, strict?: boolean): number {
+    if (typeof monthName !== "string") {
+      return -1;
+    }
+    const short = format === "MMM" || format === "MM";
+    const names = short ? this._monthsShort : this._months;
+    const idx = names.findIndex((n: string) => n.toLowerCase() === monthName.toLowerCase());
+    if (idx >= 0) {
+      return idx;
+    }
+    const lower = monthName.toLowerCase();
+    for (let i = 0; i < names.length; i++) {
+      if (names[i].toLowerCase().startsWith(lower)) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  monthsRegex(strict: boolean): RegExp {
+    return this._buildMonthsRegex(strict, false);
+  }
+
+  monthsShortRegex(strict: boolean): RegExp {
+    const cacheKey = `_monthsShort${strict ? "Strict" : ""}Regex`;
+    const cfg = this._configCache();
+    const cached = cfg[cacheKey] as RegExp | undefined;
+    if (cached) {
+      return cached;
+    }
+
+    const shortNames = this._monthsShort;
+    const escaped = shortNames.map((n: string) => n.replaceAll(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&"));
+    if (strict) {
+      const pattern = `^(${escaped.join("|")})$`;
+      const regex = new RegExp(pattern, "i");
+      cfg[cacheKey] = regex;
+      return regex;
+    }
+    const fullNames = this._months;
+    const fullEscaped = fullNames.map((n: string) =>
+      n.replaceAll(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&"),
+    );
+    const all = [...new Set([...escaped, ...fullEscaped])];
+    const sorted = [...all].sort((a, b) => b.length - a.length);
+    const pattern = `^(${sorted.join("|")})`;
+    const regex = new RegExp(pattern, "i");
+    cfg[cacheKey] = regex;
+    return regex;
+  }
+
+  weekdaysParse(weekdayName: string, format?: string, strict?: boolean): number {
+    if (typeof weekdayName !== "string") {
+      return -1;
+    }
+    const kind = format === "dd" ? "min" : format === "ddd" ? "short" : "format";
+    let names: string[];
+    if (kind === "format") {
+      names = this._weekdays;
+    } else if (kind === "short") {
+      names = this.weekdaysShortArray();
+    } else {
+      names = this.weekdaysMinArray();
+    }
+
+    const idx = names.findIndex((n: string) => n.toLowerCase() === weekdayName.toLowerCase());
+    if (idx >= 0) {
+      return idx;
+    }
+    const lower = weekdayName.toLowerCase();
+    for (let i = 0; i < names.length; i++) {
+      if (names[i].toLowerCase().startsWith(lower)) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  weekdaysRegex(strict: boolean): RegExp {
+    return this._buildWeekdaysRegex(strict, "format");
+  }
+
+  weekdaysShortRegex(strict: boolean): RegExp {
+    return this._buildWeekdaysRegex(strict, "short");
+  }
+
+  weekdaysMinRegex(strict: boolean): RegExp {
+    return this._buildWeekdaysRegex(strict, "min");
+  }
+
+  // ---------- calendar / display ----------
+
+  calendar(key?: string, m?: Moment, now?: Moment): string {
+    const cal = this._config.calendar as Record<string, unknown> | undefined;
+    if (!cal) {
+      const defaults: Record<string, string> = {
+        sameDay: "[Today at] LT",
+        nextDay: "[Tomorrow at] LT",
+        nextWeek: "dddd [at] LT",
+        lastDay: "[Yesterday at] LT",
+        lastWeek: "[Last] dddd [at] LT",
+        sameElse: "L",
+      };
+      return defaults[key ?? "sameElse"] ?? defaults.sameElse;
+    }
+    const val = cal[key ?? "sameElse"];
+    if (typeof val === "function") {
+      return val(m, now);
+    }
+    return String(val ?? "");
+  }
+
+  // ---------- relative time ----------
+
+  pastFuture(diff: number, relTime: string): string {
+    const rt = this._config.relativeTime as Record<string, unknown> | undefined;
+    if (diff > 0) {
+      const f = rt?.future ?? "in %s";
+      if (typeof f === "function") {
+        return f(relTime);
+      }
+      return String(f).replace("%s", relTime);
+    }
+    const p = rt?.past ?? "%s ago";
+    if (typeof p === "function") {
+      return p(relTime);
+    }
+    return String(p).replace("%s", relTime);
+  }
+
+  // ---------- locale config merge ----------
+
+  set(config: Record<string, unknown>): void {
+    for (const key of Object.keys(config)) {
+      const val = config[key];
+      if (val !== undefined) {
+        (this._config as Record<string, unknown>)[key] = val;
+        // Also update underscore-prefixed cache if applicable
+        if (!key.startsWith("_")) {
+          (this._config as Record<string, unknown>)[`_${key}`] = val;
+        }
+      }
+    }
+  }
+
+  // ---------- eras ----------
+
+  eras(): Record<string, unknown>[] {
+    const e = this._config.eras;
+    return Array.isArray(e) ? (e as Record<string, unknown>[]) : [];
+  }
+
+  // ---------- locale week ----------
+
+  week(m: Moment): number {
+    // locale-aware week of year — delegates to moment's week()
+    return m.week();
+  }
 }
 
 export {

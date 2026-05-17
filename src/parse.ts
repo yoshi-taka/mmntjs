@@ -3404,18 +3404,26 @@ function getLocaleMonthsFull(loc: ParseLocale): string[] {
     `^(${sortByLengthDesc(allFull).map(escapeRegex).join("|")})`,
     "i",
   );
-  const monthsShort = localeMonthsShort(loc as never);
-  const shortArr = Array.isArray(monthsShort) ? monthsShort : [];
-  const shortLower = shortArr.map((m: string) => m.toLowerCase());
-  // Strip trailing periods from short months for matching
-  const shortNoPeriod = shortLower
-    .map((m: string) => m.replace(/\.$/, ""))
-    .filter((m) => m.length > 0);
-  const all = [...new Set([...allFull, ...shortLower, ...shortNoPeriod])];
-  (loc as CachedParseLocale)._monthsRegex = new RegExp(
-    `^(${sortByLengthDesc(all).map(escapeRegex).join("|")})`,
-    "i",
-  );
+  const parseExact = !!(loc as CachedParseLocale)._config.monthsParseExact;
+  // When monthsParseExact is true, non-strict regex only matches full month names (no short fallback)
+  if (parseExact) {
+    (loc as CachedParseLocale)._monthsRegex = new RegExp(
+      `^(${sortByLengthDesc(allFull).map(escapeRegex).join("|")})`,
+      "i",
+    );
+  } else {
+    const monthsShort = localeMonthsShort(loc as never);
+    const shortArr = Array.isArray(monthsShort) ? monthsShort : [];
+    const shortLower = shortArr.map((m: string) => m.toLowerCase());
+    const shortNoPeriod = shortLower
+      .map((m: string) => m.replace(/\.$/, ""))
+      .filter((m) => m.length > 0);
+    const all = [...new Set([...allFull, ...shortLower, ...shortNoPeriod])];
+    (loc as CachedParseLocale)._monthsRegex = new RegExp(
+      `^(${sortByLengthDesc(all).map(escapeRegex).join("|")})`,
+      "i",
+    );
+  }
   return lower;
 }
 

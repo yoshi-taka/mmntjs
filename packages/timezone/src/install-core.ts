@@ -305,6 +305,16 @@ class InternalZone implements MomentTzZone {
     const payload = getDecodedZonePayload(this.canonicalKey);
     return idx >= 0 ? (payload.offsets[idx] ?? 0) : 0;
   }
+
+  countries(): string[] {
+    const out: string[] = [];
+    for (const [code, country] of Object.entries(countryStore)) {
+      if (country.zones.includes(this.name)) {
+        out.push(code);
+      }
+    }
+    return out;
+  }
 }
 
 class CompatZone implements MomentTzZone {

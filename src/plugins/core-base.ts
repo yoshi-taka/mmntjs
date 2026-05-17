@@ -4,6 +4,10 @@ import {
   setAddCallback,
   setUpdateOffsetCallback,
   getUpdateOffsetCallback,
+  setDefaultFormat,
+  getDefaultFormat,
+  setDefaultFormatUtc,
+  getDefaultFormatUtc,
 } from "../moment-class";
 import { isMoment, isDate, isArray, hasOwnProp } from "../utils";
 import { normalizeUnits } from "../units";
@@ -62,6 +66,26 @@ export function registerBaseCoreApi(target: CoreMomentTarget, deps: CoreApiDeps)
     },
     set(v: ((str: string) => number) | undefined) {
       deps.setParseTwoDigitYear(v ?? undefined);
+    },
+    enumerable: true,
+    configurable: true,
+  });
+  Object.defineProperty(target, "defaultFormat", {
+    get(): string {
+      return getDefaultFormat();
+    },
+    set(v: string) {
+      setDefaultFormat(v);
+    },
+    enumerable: true,
+    configurable: true,
+  });
+  Object.defineProperty(target, "defaultFormatUtc", {
+    get(): string {
+      return getDefaultFormatUtc();
+    },
+    set(v: string) {
+      setDefaultFormatUtc(v);
     },
     enumerable: true,
     configurable: true,
@@ -156,6 +180,15 @@ export function registerBaseCoreApi(target: CoreMomentTarget, deps: CoreApiDeps)
     }
     return null;
   });
+  momentRecord.createFromInputFallback = function (input?: unknown): void {
+    // no-op hook: ecosystem may override for custom fallback parsing
+  };
+  momentRecord.config = function (_key?: string, _value?: unknown): void {
+    // no-op: provided for moment.js compatibility
+  };
+  momentRecord.report = function (_type?: string): void {
+    // no-op: provided for moment.js compatibility
+  };
   momentRecord.invalid = function (input?: unknown): Moment {
     const config: Record<string, unknown> = {
       _d: new Date(NaN),
