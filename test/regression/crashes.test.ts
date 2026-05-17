@@ -45,7 +45,17 @@ test("FIXED (parse): timezone without time in ISO week date stays invalid", () =
   expect(m2.isValid()).toBe(mo.isValid());
 });
 
-const FIXED_UTC = ["constructoror.", ""];
+const FIXED_UTC = [
+  "constructoror.",
+  "",
+  "0010",
+  "0011",
+  "0000",
+  "0066",
+  "0050",
+  "0055",
+  "-110990-09",
+];
 
 test.each(FIXED_UTC)("FIXED (utc): %s", (input) => {
   const m2 = moment.utc(input);
@@ -57,50 +67,6 @@ test.each(FIXED_UTC)("FIXED (utc): %s", (input) => {
 });
 
 // ── Group 2: KNOWN_DIFF — pin current mmntjs behavior ──
-
-test("KNOWN_DIFF: short numeric strings in utc (0011 → year 2001 month 11)", () => {
-  const m2 = moment.utc("0011");
-  expect(m2.isValid()).toBe(true);
-  expect(m2.year()).toBe(2001);
-  expect(m2.month()).toBe(10); // 0-indexed, 10 = November
-  expect(m2.date()).toBe(1);
-});
-
-test('KNOWN_DIFF: utc("0000") → year 2000', () => {
-  const m2 = moment.utc("0000");
-  expect(m2.isValid()).toBe(true);
-  expect(m2.year()).toBe(2000);
-  expect(m2.month()).toBe(0);
-});
-
-test('KNOWN_DIFF: utc("0066") → year 1966 (2-digit year 66)', () => {
-  const m2 = moment.utc("0066");
-  expect(m2.isValid()).toBe(true);
-  // moment.js: year 66 AD; mmntjs: 2-digit "66" → 1966 (69/68 split)
-  expect(m2.year()).toBe(1966);
-  expect(m2.month()).toBe(0);
-});
-
-test('KNOWN_DIFF: utc("0050") → year 1950 (2-digit year 50)', () => {
-  const m2 = moment.utc("0050");
-  expect(m2.isValid()).toBe(true);
-  expect(m2.year()).toBe(1950);
-  expect(m2.month()).toBe(0);
-});
-
-test('KNOWN_DIFF: utc("0055") → year 1955 (2-digit year 55)', () => {
-  const m2 = moment.utc("0055");
-  expect(m2.isValid()).toBe(true);
-  expect(m2.year()).toBe(1955);
-  expect(m2.month()).toBe(0);
-});
-
-test('KNOWN_DIFF: negative year sign handling in utc ("-110990-09")', () => {
-  // moment.js drops sign → 1109-09; mmntjs preserves sign → -110990-09
-  const m2 = moment.utc("-110990-09");
-  expect(m2.isValid()).toBe(true);
-  expect(m2.format("YYYY-MM-DD")).toBe("-110990-09-01");
-});
 
 test('KNOWN_DIFF: mixed format parse ("93280531 09-3911")', () => {
   // mmntjs: 9328-05-31 09:00:00, moment.js: 9328-06-02 09:11:00

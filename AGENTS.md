@@ -98,6 +98,19 @@
 6. **format Z/ZZ/z/zz**: moment.js と完全一致
 7. **うるう秒**: 非サポート（JS Date / Unix epoch に従う）
 
+### 2026-05-17: `moment.utc()` fallback が正しくパースされた結果を上書きする問題を修正
+`src/plugins/utc.ts` で `new Date(str + " UTC")` が常に試行され、ISO パーサーが正しく解釈した結果を上書きしていた。
+- **修正**: `m._isValid` が true（パーサー成功）の場合は `new Date(str + " UTC")` をスキップし、算術変換（local→UTC）を行う
+- **影響を受けた入力**: `moment.utc("0010")`, `"0011"`, `"0000"`, `"0066"`, `"0050"`, `"0055"`, `"-110990-09"` — 全て moment.js と一致するように修正
+- **テスト**: 6件の KNOWN_DIFF → FIXED_UTC に移動、全1403テストパス
+
+### 2026-05-17: タイムゾーンブロブの圧縮パック形式に完全移行
+`packages/timezone/src/builtin-data.generated.ts` を pre-unpacked JSON（2.74MB）から moment-timezone のオリジナル base-60 パック形式に変更。
+- **効果**: 2.74MB → 725KB（73%削減、2.0MB減）
+- **仕組み**: パック文字列（`name|abbrs|offsets|indices|untils|population`）をそのまま保持。ランタイムの `unpack()` が初回アクセス時に遅延デコード
+- **生成**: `_zones` の生パック文字列をそのまま出力、`unpackPacked` / デルタエンコード / abbrTable の全中間処理を削除
+- **テスト**: 全1403テストパス、タイムゾーン358テストパス
+
 ## 確認済みエッジケース
 
 **治ったもの:**
@@ -109,15 +122,12 @@
 - `-0501350128` — YYYYYYMMDD 形式で sign を保持
 - `+085501-757` — DDD regex を `\d{3}` に修正
 
-**未対応（pre-existing、moment.js のアンカーなしregexとの差異）:**
-- `-055555-05`: moment2=INVALID, moment.js=0555-05-01
-- `-881802-88`: moment2=8818-02-01, moment.js=INVALID
-- `-000700-005`: moment2=-0700-05-01, moment.js=0007-01-05
-
 ## 残っている課題
 
 ### 1. moment.js のアンカーなし regex マッチングとの差異
-`parseWithFormat` は `^` アンカー付き regex で現在位置からマッチする。moment.js は `String.match(regex)` で文字列全体からマッチ位置を探す。この差異により sign-prefixed 文字列のパース結果が一部異なる。本質的には `parseWithFormat` に non-anchored マッチングの skip logic を追加するか、`parseISOWithTable` で個別対応が必要。
+`parseWithFormat` は `^` アンカー付き regex で現在位置からマッチする。moment.js は `String.match(regex)` で文字列全体からマッチ位置を探す。
+
+**対応状況**: 3つの sign-prefixed edge case は `trySignPrefixedDateFallback` を追加して修正済み（FIXED_PARSE に含む）。残る本質的差異は `parseWithFormat` に non-anchored マッチングの skip logic を追加するか、`parseISOWithTable` で個別対応が必要。
 
 ### 2. fuzz継続
 ファザーは永遠に新しいエッジケースを発見し続ける。`bun run fuzz` で実行可能。crash 最小化は `bun run fuzz:ddmin -- crash-xxx`。

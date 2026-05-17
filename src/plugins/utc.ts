@@ -97,9 +97,13 @@ export function registerUtcApi(target: UtcMomentTarget, deps: UtcApiDeps): void 
       return m;
     }
     if (!m._isUTC && isString(input)) {
-      const utcDate = new Date(`${input} UTC`);
-      if (!isNaN(utcDate.getTime())) {
-        m._d = utcDate;
+      if (!m._isValid) {
+        const utcDate = new Date(`${input} UTC`);
+        if (!isNaN(utcDate.getTime())) {
+          m._d = utcDate;
+        } else {
+          m._d = new Date(absTime - m._d!.getTimezoneOffset() * 60000);
+        }
       } else {
         m._d = new Date(absTime - m._d!.getTimezoneOffset() * 60000);
       }
