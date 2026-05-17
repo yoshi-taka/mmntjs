@@ -59,7 +59,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "bun scripts/generate-timezone-data.ts && tsup && bun scripts/copy-dts.ts",
+    "build": "mkdir -p packages/timezone/node_modules && ln -sfn ../../.. packages/timezone/node_modules/mmntjs && bun scripts/generate-timezone-data.ts && tsup && bun scripts/copy-dts.ts",
     "docs:dev": "astro dev --root site",
     "docs:build": "astro build --root site",
     "docs:preview": "astro preview --root site",
