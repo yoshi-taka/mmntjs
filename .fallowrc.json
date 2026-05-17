@@ -36,6 +36,7 @@
     "test/duration-between.test.ts",
     "test/factory-input-format.test.ts",
     "test/locale-mgmt.test.ts",
+    "test/grafana-compat/**",
     "docs/**",
     "site/**"
   ],
