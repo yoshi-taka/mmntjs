@@ -17,17 +17,21 @@ import { isArray, isObject, isDate, isMoment, hasOwnProp, zeroFill, createDateSa
 import {
   DATE,
   DAY,
+  DAY_MS,
   endOfUnitEpoch,
   euclideanModulo,
   floorUnitEpoch,
   HOUR,
+  HOUR_MS,
   INVALID_UNIT,
   ISO_WEEK,
   MILLISECOND,
   MINUTE,
+  MINUTE_MS,
   MONTH,
   QUARTER,
   SECOND,
+  SECOND_MS,
   WEEK,
   YEAR,
   normalizeUnitCode,
@@ -113,11 +117,6 @@ let isUtcCallback: ((m: Moment) => boolean) | undefined;
 let isUtcOffsetCallback: ((m: Moment) => boolean) | undefined;
 let isDSTCallback: ((m: Moment) => boolean) | undefined;
 let hasAlignedHourOffsetCallback: ((m: Moment, other?: MomentInput) => boolean) | undefined;
-
-const SECOND_MS = 1000;
-const MINUTE_MS = 60000;
-const HOUR_MS = 3600000;
-const DAY_MS = 86400000;
 
 const TIME_UNIT_MS: Record<number, number> = {
   [HOUR]: HOUR_MS,
@@ -551,8 +550,8 @@ export class Moment {
         this.$ms = this._d.getUTCMilliseconds();
       } else {
         const t = this._t;
-        const totalDays = Math.floor(t / 86400000);
-        const totalSec = Math.floor(t / 1000);
+        const totalDays = Math.floor(t / DAY_MS);
+        const totalSec = Math.floor(t / SECOND_MS);
         this.$W = euclideanModulo(totalDays + 4, 7);
         const [y, M, D] = Moment._epochDaysToYMD(totalDays);
         this.$y = y;
@@ -561,7 +560,7 @@ export class Moment {
         this.$H = euclideanModulo(Math.floor(totalSec / 3600), 24);
         this.$m = euclideanModulo(Math.floor(totalSec / 60), 60);
         this.$s = euclideanModulo(totalSec, 60);
-        this.$ms = euclideanModulo(t, 1000);
+        this.$ms = euclideanModulo(t, SECOND_MS);
       }
     } else {
       const d = this._getD();

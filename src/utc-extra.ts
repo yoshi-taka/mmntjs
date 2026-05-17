@@ -1,3 +1,4 @@
+import { MINUTE_MS } from "./units";
 import { createDateSafe, isString } from "./utils";
 import { parseString } from "./parse";
 import type { ParseLocale } from "./parse-locale";
@@ -70,12 +71,34 @@ export function utcMoment(m: UtcMoment, keepLocalTime?: boolean): Moment {
 }
 
 function parseOffsetString(offset: string): number {
-  const match = offset.match(/([+-])(\d{2}):?(\d{2})$/);
-  if (!match) {
+  const len = offset.length;
+  if (len < 5) {
     return NaN;
   }
-  const sign = match[1] === "+" ? 1 : -1;
-  return sign * (parseInt(match[2], 10) * 60 + parseInt(match[3], 10));
+  const c0 = offset.charCodeAt(0);
+  if (c0 !== 43 && c0 !== 45) {
+    return NaN;
+  }
+  const sign = c0 === 43 ? 1 : -1;
+  const h1 = offset.charCodeAt(1) - 48;
+  const h2 = offset.charCodeAt(2) - 48;
+  if (h1 < 0 || h1 > 9 || h2 < 0 || h2 > 9) {
+    return NaN;
+  }
+  const hours = h1 * 10 + h2;
+  let mi = 3;
+  if (offset.charCodeAt(3) === 58) {
+    mi = 4;
+  }
+  if (len < mi + 2) {
+    return NaN;
+  }
+  const m1 = offset.charCodeAt(mi) - 48;
+  const m2 = offset.charCodeAt(mi + 1) - 48;
+  if (m1 < 0 || m1 > 9 || m2 < 0 || m2 > 9) {
+    return NaN;
+  }
+  return sign * (hours * 60 + (m1 * 10 + m2));
 }
 
 export function utcOffsetMoment(
@@ -106,7 +129,7 @@ export function utcOffsetMoment(
     m._isUTC = true;
   } else {
     const oldAbsTime = m.valueOf();
-    m._d = new Date(oldAbsTime + numOffset * 60000);
+    m._d = new Date(oldAbsTime + numOffset * MINUTE_MS);
     m._t = m._d.getTime();
     m._offset = numOffset;
     m._isUTC = true;
@@ -137,7 +160,7 @@ export function parseZoneMoment(
           : parseString(m._i, undefined, m._getLocale() as unknown as ParseLocale);
       if (parsed?.offset !== undefined) {
         (clone as unknown as { _ensureFields: () => void })._ensureFields();
-        clone._d = new Date(clone.valueOf() + parsed.offset * 60000);
+        clone._d = new Date(clone.valueOf() + parsed.offset * MINUTE_MS);
         clone._t = clone._d.getTime();
         clone._offset = parsed.offset;
         clone._isUTC = true;

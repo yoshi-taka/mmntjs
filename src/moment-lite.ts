@@ -2,15 +2,19 @@ import { getLiteLocale, getLiteCurrentLocale } from "./locale-lite";
 import type { LiteLocale as Locale } from "./locale-lite";
 import { isObject, isDate, isMoment, hasOwnProp, zeroFill, createDateSafe } from "./utils";
 import {
+  DAY_MS,
   endOfUnitEpoch,
   euclideanModulo,
   floorUnitEpoch,
+  HOUR_MS,
+  MINUTE_MS,
   normalizeUnits,
   normalizeUnitCode,
   normalizeMonth,
   daysInMonth,
   daysInMonthFast,
   isLeapYear,
+  SECOND_MS,
   ymdToEpochDays,
   YEAR,
   MONTH,
@@ -27,11 +31,6 @@ import { parseString, type ParsedData } from "./parse-lite-strict";
 import { formatMomentBasic } from "./display/format-basic";
 import type { ParseLocale } from "./parse-locale";
 import type { FormattableMoment } from "./display/types";
-
-const SECOND_MS = 1000;
-const MINUTE_MS = 60000;
-const HOUR_MS = 3600000;
-const DAY_MS = 86400000;
 
 const TIME_UNIT_MS: Record<number, number> = {
   [HOUR]: HOUR_MS,

@@ -198,6 +198,11 @@ export function ymdToEpochDays(y: number, m: number, d: number): number {
   return era * 146097 + doe - 719468;
 }
 
+export const SECOND_MS = 1000;
+export const MINUTE_MS = 60000;
+export const HOUR_MS = 3600000;
+export const DAY_MS = 86400000;
+
 export function isLeapYear(y: number): boolean {
   if (!isFinite(y)) {
     return false;

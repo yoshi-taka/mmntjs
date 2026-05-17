@@ -3,6 +3,11 @@ interface MomentFnProps {
   [key: string]: unknown;
 }
 
+const SECOND_MS = 1000;
+const MINUTE_MS = 60000;
+const HOUR_MS = 3600000;
+const DAY_MS = 86400000;
+
 /** @public */
 export class MomentTzZone {
   readonly name: string;
@@ -292,7 +297,6 @@ const KNOWN_ABBR: Record<string, string> = {
   "Asia/Dhaka": "BST",
   "Asia/Kathmandu": "NPT",
   "Asia/Colombo": "IST",
-  "Pacific/Chatham": "",
   "Pacific/Fiji": "FJT",
   "Pacific/Norfolk": "NFT",
   "Pacific/Guam": "ChST",
@@ -301,6 +305,9 @@ const KNOWN_ABBR: Record<string, string> = {
   "Africa/Johannesburg": "SAST",
   "Africa/Nairobi": "EAT",
   "Africa/Lagos": "WAT",
+};
+
+const ABBR_OFFSET_ZONES: Record<string, string> = {
   "Africa/Casablanca": "+01",
   "Africa/El_Aaiun": "+01",
 };
@@ -467,35 +474,31 @@ function computeOffsetRaw(zd: ZoneData, tz: string, timestamp: number): number {
   }
   const wall = extractWallParts(dtf, timestamp);
   const wallTs = Date.UTC(wall.year, wall.month - 1, wall.day, wall.hour, wall.minute, wall.second);
-  return Math.round((wallTs - timestamp) / 60000) || 0;
+  return Math.round((wallTs - timestamp) / MINUTE_MS) || 0;
 }
 
 function getOffset(zd: ZoneData, tz: string, timestamp: number): number {
-  // 1. Day-level cache: check if this UTC day is known stable.
-  const dayKey = Math.floor(timestamp / 86400000);
+  const dayKey = Math.floor(timestamp / DAY_MS);
   const dayCached = zd.dayOffsetCache.get(dayKey);
   if (dayCached !== undefined) {
     return dayCached;
   }
 
-  // 2. Second-level cache: exact-second lookup.
-  const secKey = (timestamp / 1000) | 0;
+  const secKey = (timestamp / SECOND_MS) | 0;
   const cached = zd.offsetCache.get(secKey);
   if (cached !== undefined) {
     return cached;
   }
 
-  // 3. Compute via Intl.
   const offset = computeOffsetRaw(zd, tz, timestamp);
   zd.offsetCache.set(secKey, offset);
 
-  // 4. Probe day stability (once per day).
   if (!zd.probedDays?.has(dayKey)) {
     (zd.probedDays ??= new Set()).add(dayKey);
-    const dayStart = dayKey * 86400000;
+    const dayStart = dayKey * DAY_MS;
     const offStart = computeOffsetRaw(zd, tz, dayStart);
-    const offNoon = computeOffsetRaw(zd, tz, dayStart + 43200000);
-    const offEnd = computeOffsetRaw(zd, tz, dayStart + 86399999);
+    const offNoon = computeOffsetRaw(zd, tz, dayStart + 12 * HOUR_MS);
+    const offEnd = computeOffsetRaw(zd, tz, dayStart + DAY_MS - 1);
     if (offStart === offNoon && offNoon === offEnd) {
       zd.dayOffsetCache.set(dayKey, offStart);
     }
@@ -535,33 +538,28 @@ function getAbbr(tz: string, ts: number): string {
 
   const zd = ensureZoneData(tz);
 
-  // 1. Day-level cache: check if this UTC day is known stable for abbr.
-  const dayKey = Math.floor(ts / 86400000);
+  const dayKey = Math.floor(ts / DAY_MS);
   const dayCached = zd.abbrDayCache.get(dayKey);
   if (dayCached !== undefined) {
     return dayCached;
   }
 
-  // 2. Second-level cache: exact-second lookup.
-  const secKey = Math.floor(ts / 1000);
+  const secKey = Math.floor(ts / SECOND_MS);
   const cached = zd.abbrCache.get(secKey);
   if (cached !== undefined) {
     return cached;
   }
 
-  // 3. Compute abbreviation.
   const abbr = computeAbbr(zd, tz, ts);
 
-  // 4. Store at second level.
   zd.abbrCache.set(secKey, abbr);
 
-  // 5. Probe day stability (once per day).
   if (!zd.abbrProbedDays?.has(dayKey)) {
     (zd.abbrProbedDays ??= new Set()).add(dayKey);
-    const dayStart = dayKey * 86400000;
+    const dayStart = dayKey * DAY_MS;
     const a0 = computeAbbr(zd, tz, dayStart);
-    const a1 = computeAbbr(zd, tz, dayStart + 43200000);
-    const a2 = computeAbbr(zd, tz, dayStart + 86399999);
+    const a1 = computeAbbr(zd, tz, dayStart + 12 * HOUR_MS);
+    const a2 = computeAbbr(zd, tz, dayStart + DAY_MS - 1);
     if (a0 === a1 && a1 === a2) {
       zd.abbrDayCache.set(dayKey, a0);
     }
@@ -592,28 +590,22 @@ function computeAbbr(zd: ZoneData, tz: string, ts: number): string {
     }
   }
 
-  // Known abbreviation fallback (zones where Intl doesn't give a short name).
   if (tz in KNOWN_ABBR) {
-    const known = KNOWN_ABBR[tz];
-    if (known === "") {
-      const offset = getOffsetByZone(tz, ts);
-      const abs = Math.abs(offset);
-      const hrs = Math.floor(abs / 60);
-      const min = abs % 60;
-      const sign = offset >= 0 ? "+" : "-";
-      return `${sign}${PAD2[hrs]}${PAD2[min]}`;
-    }
-    if (known.startsWith("+") || known.startsWith("-")) {
-      return known;
-    }
-    return known;
+    return KNOWN_ABBR[tz];
+  }
+  if (tz === "Pacific/Chatham") {
+    const offset = getOffsetByZone(tz, ts);
+    const abs = Math.abs(offset);
+    const sign = offset >= 0 ? "+" : "-";
+    return `${sign}${PAD2[Math.floor(abs / 60)]}${PAD2[abs % 60]}`;
+  }
+  if (tz in ABBR_OFFSET_ZONES) {
+    return ABBR_OFFSET_ZONES[tz];
   }
   const offset = getOffsetByZone(tz, ts);
   const abs = Math.abs(offset);
-  const hrs = Math.floor(abs / 60);
-  const min = abs % 60;
   const sign = offset >= 0 ? "+" : "-";
-  return `GMT${sign}${PAD2[hrs]}${min ? PAD2[min] : ""}`;
+  return `GMT${sign}${PAD2[Math.floor(abs / 60)]}${abs % 60 ? PAD2[abs % 60] : ""}`;
 }
 
 let zoneNamesSet: Set<string> | null = null;
@@ -653,8 +645,43 @@ function isZoneNameIntl(s: string): boolean {
 }
 
 function hasExplicitOffset(input: string): boolean {
-  const trimmed = input.trim();
-  return /(Z|[+-]\d{2}:?\d{2})\s*$/.test(trimmed);
+  const len = input.length;
+  let i = len;
+  while (i > 0 && input.charCodeAt(i - 1) <= 32) {
+    i--;
+  }
+  if (i < 5) {
+    return false;
+  }
+  const last = input.charCodeAt(i - 1);
+  if (last === 90 || last === 122) {
+    return true;
+  }
+  if (last < 48 || last > 57) {
+    return false;
+  }
+  if (
+    i >= 7 &&
+    isDigit(input, i - 1) &&
+    isDigit(input, i - 2) &&
+    input.charCodeAt(i - 3) === 58 &&
+    isDigit(input, i - 4) &&
+    isDigit(input, i - 5)
+  ) {
+    const sign = input.charCodeAt(i - 6);
+    return sign === 43 || sign === 45;
+  }
+  if (
+    i >= 5 &&
+    isDigit(input, i - 1) &&
+    isDigit(input, i - 2) &&
+    isDigit(input, i - 3) &&
+    isDigit(input, i - 4)
+  ) {
+    const sign = input.charCodeAt(i - 5);
+    return sign === 43 || sign === 45;
+  }
+  return false;
 }
 
 /* ------------------------------------------------------------------ */
@@ -759,11 +786,11 @@ export function installTimezone(moment: MomentLike): MomentLike {
 
     const guess = Date.UTC(y, M, d, h, min, s, ms);
     const initialOffset = getOffsetByZone(zone, guess);
-    let ts = guess - initialOffset * 60000;
+    let ts = guess - initialOffset * MINUTE_MS;
     let secondOffset = getOffsetByZone(zone, ts);
 
     if (initialOffset !== secondOffset) {
-      const ts2 = guess - secondOffset * 60000;
+      const ts2 = guess - secondOffset * MINUTE_MS;
       const thirdOffset = getOffsetByZone(zone, ts2);
       if (thirdOffset === secondOffset) {
         const wc = getWallClock(ts2, zone);
@@ -771,12 +798,12 @@ export function installTimezone(moment: MomentLike): MomentLike {
           ts = ts2;
         } else {
           const preOffset = Math.min(initialOffset, secondOffset);
-          ts = guess - preOffset * 60000;
+          ts = guess - preOffset * MINUTE_MS;
           secondOffset = Math.max(initialOffset, secondOffset);
         }
       } else {
         for (const off of [initialOffset, secondOffset]) {
-          const candidateTs = guess - off * 60000;
+          const candidateTs = guess - off * MINUTE_MS;
           const wc = getWallClock(candidateTs, zone);
           if (wc.hour === h && wc.minute === min && wc.second === s) {
             ts = candidateTs;
@@ -792,7 +819,7 @@ export function installTimezone(moment: MomentLike): MomentLike {
       if (wc.hour !== h || wc.minute !== min || wc.second !== s) {
         const dstOff = Math.max(initialOffset, secondOffset);
         const springGuess = Date.UTC(y, M, d, h + 1, min, s, ms);
-        ts = springGuess - dstOff * 60000;
+        ts = springGuess - dstOff * MINUTE_MS;
         secondOffset = dstOff;
       }
     }
@@ -800,7 +827,7 @@ export function installTimezone(moment: MomentLike): MomentLike {
     if (initialOffset === secondOffset) {
       for (const offsetDelta of [60, -60]) {
         const testOff = secondOffset + offsetDelta;
-        const testTs = guess - testOff * 60000;
+        const testTs = guess - testOff * MINUTE_MS;
         const actualOff = getOffsetByZone(zone, testTs);
         if (actualOff !== testOff) {
           continue;

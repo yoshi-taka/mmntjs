@@ -1,3 +1,4 @@
+import { DAY_MS, MINUTE_MS } from "../units";
 import { localeInvalidDate } from "../locale-runtime";
 import { Duration } from "../duration";
 import {
@@ -101,12 +102,12 @@ export function formatCalendar(m: Moment, ref?: MomentInput, opts?: object): str
   } else {
     const thisOff = m.utcOffset();
     const thatOff = reference.utcOffset();
-    const thisDay = Math.floor((m.valueOf() + thisOff * 60000) / 86400000);
-    const thatDay = Math.floor((reference.valueOf() + thatOff * 60000) / 86400000);
+    const thisDay = Math.floor((m.valueOf() + thisOff * MINUTE_MS) / DAY_MS);
+    const thatDay = Math.floor((reference.valueOf() + thatOff * MINUTE_MS) / DAY_MS);
     const sameOffset = thisOff === thatOff;
     const dayDiff = sameOffset
       ? thisDay - thatDay
-      : thisDay - Math.floor((reference.valueOf() + thisOff * 60000) / 86400000);
+      : thisDay - Math.floor((reference.valueOf() + thisOff * MINUTE_MS) / DAY_MS);
 
     if (dayDiff < -6) {
       key = "sameElse";

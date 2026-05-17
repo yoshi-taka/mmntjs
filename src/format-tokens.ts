@@ -1,3 +1,4 @@
+import { SECOND_MS } from "./units";
 import type { Moment } from "./moment-class";
 import type { Locale } from "./locale-runtime";
 import {
@@ -459,7 +460,7 @@ export function fnyo(m: Moment): string {
 
 // Unix timestamp
 export function fnX(m: Moment): string {
-  return String(Math.floor(m.valueOf() / 1000));
+  return String(Math.floor(m.valueOf() / SECOND_MS));
 }
 export function fnx(m: Moment): string {
   return String(m.valueOf());
