@@ -133,6 +133,7 @@
     "knip": "^6.14.1",
     "lefthook": "^1.13.6",
     "luxon": "^3.7.2",
+    "moment-timezone": "^0.6.2",
     "oxfmt": "^0.49.0",
     "oxlint": "^1.65.0",
     "oxlint-tsgolint": "^0.22.1",
