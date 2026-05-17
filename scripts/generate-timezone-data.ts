@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { createRequire } from "node:module";
+import { encodeZoneLine } from "./tz-codec.ts";
 
 type TimezoneLike = {
   tz?: {
@@ -333,7 +334,16 @@ function writeBlobFile(
   const { zones: idZones, links: idLinks, countries: idCountries } =
     applyNameIds(zones, links, countries, tblByName);
 
-  const zonesBlob = idZones.join("\n");
+  // Apply permutation-group codec encoding to compress index sequences
+  const encodedZones = idZones.map(encodeZoneLine);
+  const totalPlain = idZones.reduce((s, z) => s + (z.split("|")[3] ?? "").length, 0);
+  const totalEncoded = encodedZones.reduce((s, z) => s + (z.split("|")[3] ?? "").length, 0);
+  const codecSaved = totalPlain - totalEncoded;
+  if (codecSaved > 0) {
+    console.log(`  codec:  saved ${(codecSaved / 1024).toFixed(1)} KB in indices (${(codecSaved / totalPlain * 100).toFixed(1)}%)`);
+  }
+
+  const zonesBlob = encodedZones.join("\n");
   const linksBlob = idLinks.join("\n");
   const countriesBlob = idCountries.join("\n");
   const namesBlob = names.join("\n");

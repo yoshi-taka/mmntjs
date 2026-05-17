@@ -156,10 +156,54 @@ function mapIndices<T>(source: T[], indices: number[]): T[] {
   return out;
 }
 
+/**
+ * Decode a compact run-encoded index string back to numeric indices.
+ * Handles both plain format (base-62 chars) and codec format (!-prefixed).
+ */
+function decodeIndicesCodec(encoded: string): number[] {
+  if (encoded[0] !== "!") {
+    return arrayToInt(encoded.split(""));
+  }
+  const indices: number[] = [];
+  let pos = 1;
+  const len = encoded.length;
+  while (pos < len) {
+    const ch = encoded[pos]!;
+    if (ch === "^" && pos + 4 <= len) {
+      const a = charCodeToInt(encoded.charCodeAt(pos + 1));
+      const b = charCodeToInt(encoded.charCodeAt(pos + 2));
+      const count = charCodeToInt(encoded.charCodeAt(pos + 3)) + 1;
+      for (let i = 0; i < count; i++) {
+        indices.push(a, b);
+      }
+      pos += 4;
+    } else if (ch === "~" && pos + 3 <= len) {
+      const a = charCodeToInt(encoded.charCodeAt(pos + 1));
+      const count = charCodeToInt(encoded.charCodeAt(pos + 2)) + 1;
+      for (let i = 0; i < count; i++) {
+        indices.push(a);
+      }
+      pos += 3;
+    } else if (ch === "@" && pos + 3 <= len) {
+      const start = charCodeToInt(encoded.charCodeAt(pos + 1));
+      const count = charCodeToInt(encoded.charCodeAt(pos + 2)) + 1;
+      const abbrCount = 62;
+      for (let i = 0; i < count; i++) {
+        indices.push((start + i) % abbrCount);
+      }
+      pos += 3;
+    } else {
+      indices.push(charCodeToInt(encoded.charCodeAt(pos)));
+      pos++;
+    }
+  }
+  return indices;
+}
+
 function unpack(packed: string): UnpackedZone {
   const data = packed.split("|");
   const offsets = arrayToInt((data[2] ?? "").split(" "));
-  const indices = arrayToInt((data[3] ?? "").split(""));
+  const indices = decodeIndicesCodec(data[3] ?? "");
   const untils = arrayToInt((data[4] ?? "").split(" "));
   for (let i = 0; i < indices.length; i++)
     untils[i] = Math.round((untils[i - 1] || 0) + untils[i] * 60000);
