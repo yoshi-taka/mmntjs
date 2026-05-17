@@ -316,7 +316,7 @@ const abbrInternPool = new Map<string, string>();
 const timezoneFlags = { moveInvalidForward: true, moveAmbiguousForward: false };
 
 let builtinZoneDataLoaded = false;
-let storesPopulated = false;
+let indexBuilt = false;
 let sortedZoneNamesCache: string[] | null = null;
 
 /* lazy blob data */
@@ -324,56 +324,91 @@ let _zonesBlob = "";
 let _linksBlob = "";
 let _countriesBlob = "";
 
+/* lightweight indexes (built lazily from blobs, no string decoding) */
+const _zoneIdx = new Map<string, { name: string; start: number; end: number }>();
+const _linkIdx = new Map<string, string>();
+const _linkNameIdx = new Map<string, string>(); // normalized → original name for link aliases
+const _countryIdx = new Map<string, string[]>();
+
 /* ------------------------------------------------------------------ */
 /*  Blob indexing (lazy, called on first zone access)                  */
 /* ------------------------------------------------------------------ */
 
-function ensureStoresPopulated(): void {
-  if (storesPopulated || !builtinZoneDataLoaded) return;
-  storesPopulated = true;
+function ensureIndexBuilt(): void {
+  if (indexBuilt || !builtinZoneDataLoaded) return;
+  indexBuilt = true;
 
-  // Zones blob: one packed string per line
-  for (const line of _zonesBlob.split("\n")) {
+  // Build lightweight zone index: scan blob for line boundaries and zone names
+  let pos = 0;
+  while (pos < _zonesBlob.length) {
+    const start = pos;
+    const nl = _zonesBlob.indexOf("\n", pos);
+    const end = nl >= 0 ? nl : _zonesBlob.length;
+    pos = nl >= 0 ? nl + 1 : _zonesBlob.length;
+    if (start === end) continue;
+    // find first "|" to extract zone name
+    const pipe = _zonesBlob.indexOf("|", start);
+    if (pipe < 0 || pipe >= end) continue;
+    const name = _zonesBlob.slice(start, pipe);
+    _zoneIdx.set(normalizeName(name), { name, start, end });
+  }
+
+  // Build lightweight link index
+  pos = 0;
+  while (pos < _linksBlob.length) {
+    const nl = _linksBlob.indexOf("\n", pos);
+    const line = nl >= 0 ? _linksBlob.slice(pos, nl) : _linksBlob.slice(pos);
+    pos = nl >= 0 ? nl + 1 : _linksBlob.length;
     if (!line) continue;
-    const name = line.split("|")[0];
-    const key = normalizeName(name);
-    if (!(key in zoneStore)) {
-      addPackedZoneEntry(name, line);
+    const pipe = line.indexOf("|");
+    if (pipe < 0) continue;
+    const from = line.slice(0, pipe),
+      to = line.slice(pipe + 1);
+    if (from && to) {
+      const nf = normalizeName(from),
+        nt = normalizeName(to);
+      _linkIdx.set(nf, nt);
+      _linkIdx.set(nt, nf);
+      _linkNameIdx.set(nf, from);
+      _linkNameIdx.set(nt, to);
     }
   }
-  _zonesBlob = ""; // free blob memory after parsing
 
-  // Links blob: "from|to" per line
-  for (const line of _linksBlob.split("\n")) {
+  // Build lightweight country index
+  pos = 0;
+  while (pos < _countriesBlob.length) {
+    const nl = _countriesBlob.indexOf("\n", pos);
+    const line = nl >= 0 ? _countriesBlob.slice(pos, nl) : _countriesBlob.slice(pos);
+    pos = nl >= 0 ? nl + 1 : _countriesBlob.length;
     if (!line) continue;
-    const parts = line.split("|");
-    const n0 = normalizeName(parts[0]!),
-      n1 = normalizeName(parts[1]!);
-    if (!(n0 in linkStore)) {
-      linkStore[n0] = n1;
-      nameStore[n0] = parts[0]!;
-    }
-    if (!(n1 in linkStore)) {
-      linkStore[n1] = n0;
-      nameStore[n1] = parts[1]!;
-    }
-    sortedZoneNamesCache = null;
-  }
-  _linksBlob = "";
-
-  // Countries blob: "CODE|zone1 zone2 ..." per line
-  for (const line of _countriesBlob.split("\n")) {
-    if (!line) continue;
-    const idx = line.indexOf("|");
-    if (idx < 0) continue;
-    const code = line.slice(0, idx).toUpperCase();
+    const pipe = line.indexOf("|");
+    if (pipe < 0) continue;
+    const code = line.slice(0, pipe).toUpperCase();
     const zones = line
-      .slice(idx + 1)
+      .slice(pipe + 1)
       .split(" ")
       .filter(Boolean);
-    if (code) countryStore[code] = { name: code, zones };
+    if (code) _countryIdx.set(code, zones);
   }
-  _countriesBlob = "";
+}
+
+/** Materialize a zone from the blob index into zoneStore on first access */
+function materializeZone(normalized: string): boolean {
+  const entry = _zoneIdx.get(normalized);
+  if (!entry) return false;
+  if (normalized in zoneStore) return true;
+  const line = _zonesBlob.slice(entry.start, entry.end);
+  addPackedZoneEntry(entry.name, line);
+  // eagerly unpack so first abbr()/utcOffset() doesn't pay decode cost
+  getDecodedZonePayload(normalized);
+  return true;
+}
+
+/** Look up a link from either dynamic linkStore or builtin linkIdx */
+function resolveLink(normalized: string): string | undefined {
+  const dynamic = linkStore[normalized];
+  if (dynamic) return dynamic;
+  return _linkIdx.get(normalized);
 }
 
 /* ------------------------------------------------------------------ */
@@ -540,18 +575,19 @@ function addCountries(data: unknown): void {
 /* ------------------------------------------------------------------ */
 
 function getZoneRecord(name: string, caller?: typeof getZoneRecord): InternalZone | null {
-  ensureStoresPopulated();
+  ensureIndexBuilt();
   const normalized = normalizeName(normalizeTz(name));
   const cached = zoneWrapperCache.get(name);
   if (cached instanceof InternalZone) return cached;
-  const zone = zoneStore[normalized];
-  if (zone) {
+  // Check dynamic zoneStore, then lazily materialize from blob index
+  if (normalized in zoneStore || materializeZone(normalized)) {
     const r = new InternalZone(nameStore[normalized] ?? name, normalized);
     zoneWrapperCache.set(name, r);
     return r;
   }
-  if (linkStore[normalized] && caller !== getZoneRecord) {
-    const target = getZoneRecord(linkStore[normalized], getZoneRecord);
+  const linkTarget = resolveLink(normalized);
+  if (linkTarget && caller !== getZoneRecord) {
+    const target = getZoneRecord(linkTarget, getZoneRecord);
     if (target) {
       const alias = new InternalZone(nameStore[normalized] ?? name, normalizeName(target.name));
       zoneWrapperCache.set(name, alias);
@@ -567,7 +603,10 @@ function getZone(name: string): MomentTzZone | null {
 
 function isZoneName(s: string): boolean {
   const u = s.toUpperCase();
-  return u === "UTC" || u === "GMT" || !!getZoneRecord(s);
+  if (u === "UTC" || u === "GMT") return true;
+  ensureIndexBuilt();
+  const n = normalizeName(normalizeTz(s));
+  return n in zoneStore || _zoneIdx.has(n) || !!resolveLink(n);
 }
 
 function hasExplicitOffset(input: string): boolean {
@@ -575,12 +614,13 @@ function hasExplicitOffset(input: string): boolean {
 }
 
 function getNames(): string[] {
-  ensureStoresPopulated();
+  ensureIndexBuilt();
   if (sortedZoneNamesCache) return [...sortedZoneNamesCache];
   const out = new Set<string>();
+  for (const [, entry] of _zoneIdx) out.add(entry.name);
+  for (const [, name] of _linkNameIdx) out.add(name);
   for (const key of Object.keys(nameStore)) {
-    if (nameStore[key] && (zoneStore[key] || zoneStore[linkStore[key] ?? ""] || linkStore[key]))
-      out.add(nameStore[key]);
+    if (nameStore[key] && (zoneStore[key] || resolveLink(key))) out.add(nameStore[key]);
   }
   for (const name of Object.keys(ZONE_ALIAS)) {
     out.add(name);
@@ -591,28 +631,31 @@ function getNames(): string[] {
 }
 
 function getCountryNames(): string[] {
-  ensureStoresPopulated();
-  return Object.keys(countryStore).sort();
+  ensureIndexBuilt();
+  const out = new Set([..._countryIdx.keys()]);
+  for (const key of Object.keys(countryStore)) out.add(key);
+  return [...out].sort();
 }
 
 function zonesForCountry(
   code: string,
   withOffset?: boolean,
 ): string[] | CountryWithOffset[] | null {
-  ensureStoresPopulated();
-  const country = countryStore[code.toUpperCase()];
-  if (!country) return null;
-  const zones = [...country.zones].sort();
+  ensureIndexBuilt();
+  const upper = code.toUpperCase();
+  let zones = countryStore[upper]?.zones ?? _countryIdx.get(upper);
+  if (!zones) return null;
+  const sorted = [...zones].sort();
   if (withOffset) {
     const now = Date.now();
-    return zones
+    return sorted
       .map((name) => {
         const z = getZone(name);
         return z ? { name, offset: z.utcOffset(now) } : null;
       })
       .filter((e): e is CountryWithOffset => e !== null);
   }
-  return zones;
+  return sorted;
 }
 
 function loadData(data: TimezoneDataBundle): void {
