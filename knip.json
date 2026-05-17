@@ -25,8 +25,7 @@
     "test/properties/number-theory.test.ts",
     "test/browser-bundle-compare.ts",
     "moment/**",
-    "packages/timezone/test/bench-compare.ts",
-    "packages/timezone/test/bench-timezone.ts"
+
   ],
   "tags": ["-public"],
   "ignoreDependencies": [
@@ -34,9 +33,6 @@
     "dayjs",
     "luxon",
     "@rspack/cli",
-    "@rspack/core",
-    "@date-fns/tz",
-    "@date-fns/utc",
-    "date-fns-tz"
+    "@rspack/core"
   ]
 }
