@@ -314,4 +314,74 @@ describe("SBST: coverage-guided weighted tests", () => {
       { numRuns: 150 },
     );
   });
+
+  test("weighted locale weekday/week getters match moment.js", () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 2000, max: 2030 }),
+        fc.integer({ min: 1, max: 12 }),
+        fc.integer({ min: 1, max: 28 }),
+        fc.mapToConstant(
+          { num: 5, build: () => "weekday" },
+          { num: 5, build: () => "week" },
+          { num: 5, build: () => "weekYear" },
+          { num: 4, build: () => "isoWeek" },
+          { num: 4, build: () => "isoWeekYear" },
+          { num: 3, build: () => "dayOfYear" },
+          { num: 3, build: () => "isoWeeksInYear" },
+        ),
+        (year, month, day, method) => {
+          const d = new Date(year, month - 1, day);
+          if (d.getTime() !== d.getTime()) {
+            return;
+          }
+          const m2 = moment(d);
+          const mOrig = originalMoment(d);
+          if (!m2.isValid() || !mOrig.isValid()) {
+            return;
+          }
+          const getter2 = (m2 as unknown as Record<string, () => number>)[method as string];
+          const getterOrig = (mOrig as unknown as Record<string, () => number>)[method as string];
+          expect(typeof getter2).toBe("function");
+          expect(typeof getterOrig).toBe("function");
+          expect(getter2.call(m2)).toBe(getterOrig.call(mOrig));
+        },
+      ),
+      { numRuns: 300 },
+    );
+  });
+
+  test("weighted locale ordinal vs moment.js", () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 1, max: 31 }), (day) => {
+        const m2 = moment(`2024-01-${String(day).padStart(2, "0")}T12:00:00`);
+        const mOrig = originalMoment(`2024-01-${String(day).padStart(2, "0")}T12:00:00`);
+        expect(m2.format("Do")).toBe(mOrig.format("Do"));
+      }),
+      { numRuns: 50 },
+    );
+  });
+
+  test("weighted locale months with format vs moment.js", () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 2000, max: 2030 }),
+        fc.integer({ min: 1, max: 12 }),
+        fc.integer({ min: 1, max: 28 }),
+        fc.mapToConstant(
+          { num: 8, build: () => "MMMM" },
+          { num: 8, build: () => "MMM" },
+          { num: 5, build: () => "MMMM YYYY" },
+          { num: 5, build: () => "Do MMMM" },
+        ),
+        (year, month, day, fmt) => {
+          const d = new Date(year, month - 1, day);
+          const m2 = moment(d);
+          const mOrig = originalMoment(d);
+          expect(m2.format(fmt)).toBe(mOrig.format(fmt));
+        },
+      ),
+      { numRuns: 200 },
+    );
+  });
 });
