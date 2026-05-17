@@ -2,6 +2,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { createRequire } from "node:module";
 import { encodeZoneLine } from "./tz-codec.ts";
+import { buildDeltaDict, encodeDictBlob } from "./tz-dual-codec.ts";
 
 type TimezoneLike = {
   tz?: {
@@ -331,8 +332,22 @@ function writeBlobFile(
   compatExport?: boolean,
 ): void {
   const { names, tblByName } = buildNameTable(zones, links, countries);
+
+  // Sort zones by region then offset schema to improve gzip/brotli compression
+  // by grouping zones with similar transition patterns adjacent in the blob.
+  const sortedZones = [...zones].sort((a, b) => {
+    const aName = a.slice(0, a.indexOf("|"));
+    const bName = b.slice(0, b.indexOf("|"));
+    const aRegion = aName.includes("/") ? aName.split("/")[0]! : "";
+    const bRegion = bName.includes("/") ? bName.split("/")[0]! : "";
+    if (aRegion !== bRegion) return aRegion.localeCompare(bRegion);
+    const aParts = a.split("|");
+    const bParts = b.split("|");
+    return (aParts[2] ?? "").localeCompare(bParts[2] ?? "");
+  });
+
   const { zones: idZones, links: idLinks, countries: idCountries } =
-    applyNameIds(zones, links, countries, tblByName);
+    applyNameIds(sortedZones, links, countries, tblByName);
 
   // Apply permutation-group codec encoding to compress index sequences
   const encodedZones = idZones.map(encodeZoneLine);
@@ -343,7 +358,17 @@ function writeBlobFile(
     console.log(`  codec:  saved ${(codecSaved / 1024).toFixed(1)} KB in indices (${(codecSaved / totalPlain * 100).toFixed(1)}%)`);
   }
 
-  const zonesBlob = encodedZones.join("\n");
+  // Apply duality-inspired delta dictionary compression
+  const deltaDict = buildDeltaDict(encodedZones);
+  const [deltaDictHeader, dualZones] = encodeDictBlob(encodedZones, deltaDict);
+  const zonesBlob = deltaDictHeader + "\n" + dualZones.join("\n");
+  const rawDeltaPlain = encodedZones.reduce((s, z) => s + (z.split("|")[4] ?? "").length, 0);
+  const rawDeltaEnc = dualZones.reduce((s, z) => s + (z.split("|")[4] ?? "").length, 0);
+  const dictSaved = rawDeltaPlain - rawDeltaEnc - deltaDictHeader.length;
+  if (dictSaved > 0) {
+    console.log(`  dict:   saved ${(dictSaved / 1024).toFixed(1)} KB in deltas (${(dictSaved / rawDeltaPlain * 100).toFixed(1)}%)`);
+  }
+
   const linksBlob = idLinks.join("\n");
   const countriesBlob = idCountries.join("\n");
   const namesBlob = names.join("\n");

@@ -200,11 +200,26 @@ function decodeIndicesCodec(encoded: string): number[] {
   return indices;
 }
 
+/** Parse raw delta string, expanding dictionary IDs when needed */
+function parseDeltas(raw: string): number[] {
+  const tokens = raw.split(" ");
+  if (_deltaDict.length > 0 && tokens.length > 0) {
+    // Delta dictionary mode: tokens are dictionary IDs
+    return tokens.map((t) => {
+      if (t === "") return 0;
+      const id = charCodeToInt(t.charCodeAt(0));
+      // Also handle multi-char IDs using unpackBase60
+      return _deltaDict[unpackBase60(t)] ?? 0;
+    });
+  }
+  return arrayToInt(tokens);
+}
+
 function unpack(packed: string): UnpackedZone {
   const data = packed.split("|");
   const offsets = arrayToInt((data[2] ?? "").split(" "));
   const indices = decodeIndicesCodec(data[3] ?? "");
-  const untils = arrayToInt((data[4] ?? "").split(" "));
+  const untils = parseDeltas(data[4] ?? "");
   for (let i = 0; i < indices.length; i++)
     untils[i] = Math.round((untils[i - 1] || 0) + untils[i] * 60000);
   untils[indices.length - 1] = Number.POSITIVE_INFINITY;
@@ -375,6 +390,9 @@ let _materializedCount = 0;
 /* name table: index → full zone name */
 let _nameTable: string[] = [];
 
+/* delta dictionary (parsed from !D| header line) */
+let _deltaDict: number[] = [];
+
 /* lightweight indexes (built lazily from blobs) */
 const _zoneIdx = new Map<string, { name: string; start: number; end: number }>();
 const _linkIdx = new Map<string, string>();
@@ -394,6 +412,22 @@ function ensureIndexBuilt(): void {
 
   // Build lightweight zone index: scan blob for line boundaries and zone names (as IDs)
   let pos = 0;
+  // Check for delta dictionary header line (!D|...)
+  if (
+    _zonesBlob.charCodeAt(0) === 33 /* '!' */ &&
+    _zonesBlob.charCodeAt(1) === 68 /* 'D' */ &&
+    _zonesBlob.charCodeAt(2) === 124 /* '|' */
+  ) {
+    const nl = _zonesBlob.indexOf("\n", 0);
+    if (nl >= 0) {
+      const headerLine = _zonesBlob.slice(0, nl);
+      const dictParts = headerLine.split("|");
+      if (dictParts[0] === "!D") {
+        _deltaDict = (dictParts[1] ?? "").split(" ").filter(Boolean).map(unpackBase60);
+      }
+      pos = nl + 1;
+    }
+  }
   while (pos < _zonesBlob.length) {
     const start = pos;
     const nl = _zonesBlob.indexOf("\n", pos);
