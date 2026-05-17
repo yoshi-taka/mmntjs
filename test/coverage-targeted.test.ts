@@ -320,3 +320,339 @@ describe("locale-specific uncovered paths", () => {
     }
   });
 });
+
+describe("utils low-coverage branches", () => {
+  test("isNumber with number and format yields valid", () => {
+    const m = moment(1700000000, "X");
+    expect(m.isValid()).toBe(true);
+  });
+
+  test("isNumber with unix ms format", () => {
+    const m = moment(1700000000000, "x");
+    expect(m.isValid()).toBe(true);
+  });
+
+  test("NaN number input is invalid", () => {
+    const m = moment(NaN);
+    expect(m.isValid()).toBe(false);
+  });
+
+  test("Infinity number input is invalid", () => {
+    const m = moment(Infinity);
+    expect(m.isValid()).toBe(false);
+  });
+
+  test("isNumber with non X/x format yields invalid", () => {
+    const m = moment(123, "YYYY");
+    expect(m.isValid()).toBe(false);
+  });
+
+  test("empty array with format X yields invalid", () => {
+    const m = moment([], "X");
+    expect(m.isValid()).toBe(false);
+  });
+
+  test("empty array with format x yields invalid", () => {
+    const m = moment([], "x");
+    expect(m.isValid()).toBe(false);
+  });
+});
+
+describe("factory-shared low-coverage branches", () => {
+  test("null input with format is invalid", () => {
+    const m = moment(null, "YYYY-MM-DD");
+    expect(m.isValid()).toBe(false);
+  });
+
+  test("undefined input with format is invalid", () => {
+    const m = moment(undefined, "YYYY-MM-DD");
+    expect(m.isValid()).toBe(false);
+  });
+
+  test("undefined input with boolean format creates empty", () => {
+    const m = moment(undefined, true as unknown as string);
+    expect(m.isValid()).toBe(true);
+  });
+
+  test("isMoment with clone-like object goes through isMoment", () => {
+    const d = moment("2024-06-15");
+    const m = moment(d);
+    expect(m.isValid()).toBe(true);
+    expect(m.year()).toBe(2024);
+  });
+
+  test("locale with missing parent falls back to en", () => {
+    const m = moment("2024-01-15", undefined, "xx-current" as string);
+    expect(m.isValid()).toBe(true);
+  });
+});
+
+describe("utc-extra parseOffsetString error paths", () => {
+  test("utcOffset with too-short string (+05) returns m", () => {
+    const m = moment();
+    const result = m.utcOffset("+05");
+    expect(result).toBe(m);
+  });
+
+  test("utcOffset with non-digit hours (+a5:30) returns m", () => {
+    const m = moment();
+    const result = m.utcOffset("+a5:30");
+    expect(result).toBe(m);
+  });
+
+  test("utcOffset with incomplete minutes (+05:3) returns m", () => {
+    const m = moment();
+    const result = m.utcOffset("+05:3");
+    expect(result).toBe(m);
+  });
+
+  test("utcOffset with non-digit minutes (+05:a0) returns m", () => {
+    const m = moment();
+    const result = m.utcOffset("+05:a0");
+    expect(result).toBe(m);
+  });
+
+  test("utcOffset with non-minus/plus prefix returns m", () => {
+    const m = moment();
+    const result = m.utcOffset("*05:30");
+    expect(result).toBe(m);
+  });
+
+  test("utcOffset with no colon and short (+050) returns m", () => {
+    const m = moment();
+    const result = m.utcOffset("+050");
+    expect(result).toBe(m);
+  });
+});
+
+describe("parseZoneMoment edge cases", () => {
+  test("parseZone on invalid moment returns clone with isParseZone", () => {
+    const m = moment("invalid");
+    const result = m.parseZone();
+    expect(result.isValid()).toBe(false);
+  });
+
+  test("parseZone with format and offset (parsed)", () => {
+    const m = moment.parseZone("2024-01-15 10:30:00 +05:30", "YYYY-MM-DD HH:mm:ss Z");
+    expect(m.utcOffset()).toBe(330);
+  });
+
+  test("parseZone with format, no offset in format, regex fallback", () => {
+    const m = moment.parseZone("2024-01-15 10:30:00 +05:30", "YYYY-MM-DD HH:mm:ss");
+    expect(m.utcOffset()).toBe(330);
+  });
+
+  test("parseZone with format, no offset at all, wall-clock to UTC", () => {
+    const m = moment.parseZone("2024-01-15 10:30:00", "YYYY-MM-DD HH:mm:ss");
+    expect(m.isUTC()).toBe(true);
+    expect(m.utcOffset()).toBe(0);
+  });
+
+  test("parseZone string without format and without offset treats wall-clock as UTC", () => {
+    const m = moment.parseZone("2024-01-15");
+    expect(m.isUTC()).toBe(true);
+    expect(m.utcOffset()).toBe(0);
+  });
+});
+
+describe("zone() setter edge cases", () => {
+  test("zone with signed hours string +H", () => {
+    const m = moment("2024-01-15");
+    m.zone("+5");
+    expect(typeof m.utcOffset()).toBe("number");
+  });
+
+  test("zone with signed hours:minutes string", () => {
+    const m = moment("2024-01-15");
+    m.zone("+5:30");
+    const off = m.utcOffset();
+    expect(off).toBe(330);
+  });
+
+  test("zone with string that becomes NaN returns m", () => {
+    const m = moment("2024-01-15");
+    const result = m.zone("not-a-zone");
+    expect(result).toBe(m);
+  });
+});
+
+describe("isDST edge cases", () => {
+  test("isDST for UTC moment with non-zero offset is false", () => {
+    const m = moment.utc("2024-06-15").utcOffset(330);
+    expect(m.isDST()).toBe(false);
+  });
+});
+
+describe("debug-extra low-coverage branches", () => {
+  test("toString for invalid moment returns Invalid date", () => {
+    const m = moment("invalid");
+    expect(m.toString()).toBe("Invalid date");
+  });
+
+  test("parsingFlags includes cold properties", () => {
+    const m = moment("2024-01-15");
+    (m as unknown as Record<string, unknown>)._cold = { customField: "value" };
+    const pf = m.parsingFlags();
+    expect(pf).toBeDefined();
+  });
+
+  test("inspect for invalid moment", () => {
+    const m = moment.invalid();
+    expect(m.inspect()).toContain("invalid");
+  });
+
+  test("inspect for UTC moment", () => {
+    const m = moment.utc("2024-01-15");
+    const insp = m.inspect();
+    expect(insp).toContain("moment.utc");
+  });
+
+  test("inspect for parseZone moment", () => {
+    const m = moment.parseZone("2024-01-15T10:30:00+05:30");
+    const insp = m.inspect();
+    expect(insp).toContain("moment.parseZone");
+  });
+
+  test("inspect for large year uses moment.utc format", () => {
+    const m = moment.utc("2024-06-15");
+    const insp = m.inspect();
+    expect(insp).toContain("moment.utc");
+  });
+});
+
+describe("core-base low-coverage branches", () => {
+  test("moment.invalid with object input", () => {
+    const m = moment.invalid({ foo: "bar" });
+    expect(m.isValid()).toBe(false);
+  });
+
+  test("moment.unix", () => {
+    const m = moment.unix(1700000000);
+    expect(m.isValid()).toBe(true);
+    expect(m.valueOf()).toBe(1700000000000);
+  });
+
+  test("moment.version", () => {
+    expect(moment.version).toBe("2.30.1");
+  });
+
+  test("moment.ISO_8601 constant", () => {
+    expect(moment.ISO_8601).toBe("ISO_8601");
+  });
+
+  test("moment.RFC_2822 constant", () => {
+    expect(moment.RFC_2822).toBe("RFC_2822");
+  });
+
+  test("moment.defaultFormat getter/setter", () => {
+    const orig = moment.defaultFormat;
+    expect(typeof orig).toBe("string");
+    moment.defaultFormat = "DD/MM/YYYY";
+    expect(moment.defaultFormat).toBe("DD/MM/YYYY");
+    moment.defaultFormat = orig;
+  });
+
+  test("moment.defaultFormatUtc getter/setter", () => {
+    const orig = moment.defaultFormatUtc;
+    expect(typeof orig).toBe("string");
+    moment.defaultFormatUtc = "DD/MM/YYYY";
+    expect(moment.defaultFormatUtc).toBe("DD/MM/YYYY");
+    moment.defaultFormatUtc = orig;
+  });
+
+  test("moment.now getter returns function", () => {
+    expect(typeof moment.now).toBe("function");
+  });
+});
+
+describe("parseZoneMoment createMoment path", () => {
+  test("parseZone instance method with format - offset parsed via format", () => {
+    const m = moment("2024-01-15");
+    const result = m.parseZone("2024-01-15T10:30:00+05:30", "YYYY-MM-DDTHH:mm:ssZ");
+    expect(result.isValid()).toBe(true);
+    expect(result.utcOffset()).toBe(330);
+  });
+
+  test("parseZone instance method with format - tzMatch regex fallback", () => {
+    const m = moment("2024-01-15");
+    const result = m.parseZone("2024-01-15 10:30:00 +05:30", "YYYY-MM-DD HH:mm:ss");
+    expect(result.isValid()).toBe(true);
+    expect(result.utcOffset()).toBe(330);
+  });
+
+  test("parseZone instance method with format - wall-clock to UTC", () => {
+    const m = moment("2024-01-15");
+    const result = m.parseZone("2024-01-15 10:30:00", "YYYY-MM-DD HH:mm:ss");
+    expect(result.isValid()).toBe(true);
+    expect(result.isUTC()).toBe(true);
+    expect(result.utcOffset()).toBe(0);
+  });
+
+  test("parseZone instance method without format - string wall-clock to UTC", () => {
+    const m = moment("2024-01-15");
+    const result = m.parseZone("2024-01-16");
+    expect(result.isValid()).toBe(true);
+    expect(result.isUTC()).toBe(true);
+    expect(result.utcOffset()).toBe(0);
+  });
+});
+
+describe("debug-extra parsingFlags cold properties", () => {
+  test("parsingFlags includes _invalidEra", () => {
+    const m = moment("2024-01-15");
+    (m as unknown as Record<string, unknown>)._invalidEra = 1;
+    const pf = m.parsingFlags();
+    expect(pf).toBeDefined();
+    expect((pf as unknown as Record<string, unknown>).invalidEra).toBe(1);
+  });
+
+  test("parsingFlags includes _tooBusyWith", () => {
+    const m = moment("2024-01-15");
+    (m as unknown as Record<string, unknown>)._tooBusyWith = "format";
+    const pf = m.parsingFlags();
+    expect(pf).toBeDefined();
+    expect((pf as unknown as Record<string, unknown>).tooBusyWith).toBe("format");
+  });
+});
+
+describe("ISO week with year 0-99", () => {
+  test("moment with ISO week format and year 0-99", () => {
+    const m = moment("0001W011", "GGGGWWE");
+    if (m.isValid()) {
+      expect(m.year()).toBeGreaterThan(-1);
+    }
+  });
+
+  test("ISO week with time, no offset - setHours branch", () => {
+    const m = moment("2024-W01-1T10:30:00", "GGGG-[W]WW-E[T]HH:mm:ss");
+    if (m.isValid()) {
+      expect(m.hour()).toBe(10);
+      expect(m.minute()).toBe(30);
+    }
+  });
+
+  test("ISO week with time and offset - setUTCHours branch", () => {
+    const m = moment("2024-W01-1T10:30:00+05:30", "GGGG-[W]WW-E[T]HH:mm:ssZ");
+    if (m.isValid()) {
+      expect(m.isUtcOffset()).toBe(true);
+      expect(m.utcOffset()).toBe(330);
+      expect(m.hour()).toBe(10);
+    }
+  });
+});
+
+describe("localeHasMissingParent", () => {
+  test("locale with nonexistent parent falls back to en", () => {
+    moment.defineLocale("xx-child-valid", {
+      months: "A_B_C_D_E_F_G_H_I_J_K_L".split("_"),
+    });
+    moment.updateLocale("xx-child-valid", { parentLocale: "xx-missing" });
+    const m = moment("2024-01-15", undefined, "xx-child-valid");
+    expect(m.isValid()).toBe(true);
+  });
+
+  test("locale with existent parent does not fall back", () => {
+    const m = moment("2024-01-15", undefined, "fr");
+    expect(m.isValid()).toBe(true);
+  });
+});

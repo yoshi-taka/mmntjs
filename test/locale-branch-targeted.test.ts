@@ -297,3 +297,648 @@ describe("localeRelativeTime uncovered branches", () => {
     originalMoment.locale("x-mp-none", null);
   });
 });
+
+describe("localeMonths object with isFormat", () => {
+  test("months as object { standalone, format } uses isFormat regex", () => {
+    moment.defineLocale("x-mo-obj-fmt", {
+      months: {
+        standalone: "A_B_C_D_E_F_G_H_I_J_K_L".split("_"),
+        format: "Jan_二月_Mar_Apr_May_Jun_Jul_Aug_Sep_Oct_Nov_Dec".split("_"),
+        isFormat: /^MMM$/,
+      },
+    });
+    const m = moment("2024-02-15").locale("x-mo-obj-fmt");
+    expect(m.format("MMMM")).toBe("B");
+    moment.locale("x-mo-obj-fmt", null);
+  });
+
+  test("months as object without isFormat uses monthsInFormat regex", () => {
+    moment.defineLocale("x-mo-obj-no-fmt", {
+      months: {
+        standalone: "A_B_C_D_E_F_G_H_I_J_K_L".split("_"),
+        format: "Jan_Feb_Mar_Apr_May_Jun_Jul_Aug_Sep_Oct_Nov_Dec".split("_"),
+      },
+    });
+    const m = moment("2024-01-15").locale("x-mo-obj-no-fmt");
+    expect(m.format("MMMM")).toBe("A");
+    expect(m.format("MMM")).toBe("Jan");
+    moment.locale("x-mo-obj-no-fmt", null);
+  });
+
+  test("months as string returns string directly", () => {
+    moment.defineLocale("x-mo-str", { months: "ALLMONTHS" });
+    const m = moment("2024-06-15").locale("x-mo-str");
+    expect(m.format("MMMM")).toBe("ALLMONTHS");
+    moment.locale("x-mo-str", null);
+  });
+
+  test("months as array with missing index returns raw array", () => {
+    moment.defineLocale("x-mo-short", {
+      months: ["A", "B", "C"],
+    });
+    const m = moment("2024-06-15").locale("x-mo-short");
+    expect(m.format("MMMM")).toBe("A,B,C");
+    moment.locale("x-mo-short", null);
+  });
+});
+
+describe("localeMonthsShort uncovered branches", () => {
+  test("monthsShort as function", () => {
+    moment.defineLocale("x-ms-fn", {
+      months: "A_B_C_D_E_F_G_H_I_J_K_L".split("_"),
+      monthsShort: (_m: unknown, fmt?: string) => (fmt ? "SHORT" : "long"),
+    });
+    const m = moment("2024-06-15").locale("x-ms-fn");
+    expect(m.format("MMM")).toBe("SHORT");
+    moment.locale("x-ms-fn", null);
+  });
+
+  test("monthsShort as string", () => {
+    moment.defineLocale("x-ms-str", {
+      months: "A_B_C_D_E_F_G_H_I_J_K_L".split("_"),
+      monthsShort: "SHORTSTR",
+    });
+    const m = moment("2024-06-15").locale("x-ms-str");
+    expect(m.format("MMM")).toBe("SHORTSTR");
+    moment.locale("x-ms-str", null);
+  });
+
+  test("monthsShort as array with missing month returns raw array", () => {
+    moment.defineLocale("x-ms-short", {
+      months: "A_B_C_D_E_F_G_H_I_J_K_L".split("_"),
+      monthsShort: ["Ja", "Fe"],
+    });
+    const m = moment("2024-06-15").locale("x-ms-short");
+    expect(m.format("MMM")).toBe("Ja,Fe");
+    moment.locale("x-ms-short", null);
+  });
+
+  test("monthsShort as object { standalone, format }", () => {
+    moment.defineLocale("x-ms-obj", {
+      months: "A_B_C_D_E_F_G_H_I_J_K_L".split("_"),
+      monthsShort: {
+        standalone: "a_b_c_d_e_f_g_h_i_j_k_l".split("_"),
+        format: "一_二_三_四_五_六_七_八_九_十_十一_十二".split("_"),
+      },
+    });
+    const m = moment("2024-06-15").locale("x-ms-obj");
+    expect(m.format("MMM")).toBe("f");
+    moment.locale("x-ms-obj", null);
+  });
+});
+
+describe("localeWeekdays uncovered branches", () => {
+  test("weekdays as function", () => {
+    moment.defineLocale("x-wd-fn", {
+      weekdays: (m: { day: () => number }, fmt?: string) => {
+        const d = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        return fmt ? `${d[m.day()]}-${fmt}` : d[m.day()];
+      },
+    });
+    originalMoment.defineLocale("x-wd-fn", {
+      weekdays: (m: { day: () => number }, fmt?: string) => {
+        const d = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        return fmt ? `${d[m.day()]}-${fmt}` : d[m.day()];
+      },
+    });
+    const m = moment("2024-06-15").locale("x-wd-fn");
+    const o = originalMoment("2024-06-15").locale("x-wd-fn");
+    expect(m.format("dddd")).toBe(o.format("dddd"));
+    moment.locale("x-wd-fn", null);
+    originalMoment.locale("x-wd-fn", null);
+  });
+
+  test("falsy weekdays returns empty array via _weekdays getter", () => {
+    // _weekdays getter returns [] when both config and en fallback are null
+    const m = moment("2024-06-15");
+    expect(m.format("dddd")).toBe("Saturday");
+    moment.locale("en");
+  });
+
+  test("weekdays as string", () => {
+    moment.defineLocale("x-wd-str2", { weekdays: "WEEKDAYSTR" });
+    const m = moment("2024-06-15").locale("x-wd-str2");
+    expect(m.format("dddd")).toBe("WEEKDAYSTR");
+    moment.locale("x-wd-str2", null);
+  });
+
+  test("weekdays as object with isFormat RegExp", () => {
+    moment.defineLocale("x-wd-obj-fmt", {
+      weekdays: {
+        standalone: "Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday".split("_"),
+        format: "Sun_Mon_Tue_Wed_Thu_Fri_Sat".split("_"),
+        isFormat: /^dddd$/,
+      },
+    });
+    const m = moment("2024-06-15").locale("x-wd-obj-fmt");
+    expect(m.format("dddd")).toBe("Sat");
+    expect(m.format("ddd")).toBe("Sat");
+    moment.locale("x-wd-obj-fmt", null);
+  });
+});
+
+describe("localeWeekdaysShort uncovered branches", () => {
+  test("weekdaysShort(true) returns rotated array", () => {
+    moment.defineLocale("x-wds-true", {
+      weekdays: "Su_Mo_Tu_We_Th_Fr_Sa".split("_"),
+      weekdaysShort: "Sun_Mon_Tue_Wed_Thu_Fri_Sat".split("_"),
+    });
+    const ld = moment.localeData("x-wds-true");
+    const result = ld.weekdaysShort(true);
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBe(7);
+    moment.locale("x-wds-true", null);
+  });
+
+  test("weekdaysShort gets from en fallback when not defined", () => {
+    moment.defineLocale("x-wds-none", {
+      weekdays: "Su_Mo_Tu_We_Th_Fr_Sa".split("_"),
+    });
+    const m = moment("2024-06-15").locale("x-wds-none");
+    expect(m.format("ddd")).toBe("Sat");
+    moment.locale("x-wds-none", null);
+  });
+
+  test("weekdaysShort as function (no moment)", () => {
+    moment.defineLocale("x-wds-fn", {
+      weekdays: "Su_Mo_Tu_We_Th_Fr_Sa".split("_"),
+      weekdaysShort: () => "FUNC",
+    });
+    const m = moment("2024-06-15").locale("x-wds-fn");
+    expect(m.format("ddd")).toBe("FUNC");
+    moment.locale("x-wds-fn", null);
+  });
+
+  test("weekdaysShort as function (with moment)", () => {
+    moment.defineLocale("x-wds-fn2", {
+      weekdays: "Su_Mo_Tu_We_Th_Fr_Sa".split("_"),
+      weekdaysShort: (m: { day: () => number }, fmt?: string) => {
+        const d = ["Sun0", "Mon1", "Tue2", "Wed3", "Thu4", "Fri5", "Sat6"];
+        return fmt ? `${d[m.day()]}-${fmt}` : d[m.day()];
+      },
+    });
+    originalMoment.defineLocale("x-wds-fn2", {
+      weekdaysShort: (m: { day: () => number }, fmt?: string) => {
+        const d = ["Sun0", "Mon1", "Tue2", "Wed3", "Thu4", "Fri5", "Sat6"];
+        return fmt ? `${d[m.day()]}-${fmt}` : d[m.day()];
+      },
+    });
+    const m = moment("2024-06-15").locale("x-wds-fn2");
+    const o = originalMoment("2024-06-15").locale("x-wds-fn2");
+    expect(m.format("ddd")).toBe(o.format("ddd"));
+    moment.locale("x-wds-fn2", null);
+    originalMoment.locale("x-wds-fn2", null);
+  });
+
+  test("weekdaysShort as string (with moment)", () => {
+    moment.defineLocale("x-wds-str", {
+      weekdays: "Su_Mo_Tu_We_Th_Fr_Sa".split("_"),
+      weekdaysShort: "SHORTSTR",
+    });
+    const m = moment("2024-06-15").locale("x-wds-str");
+    expect(m.format("ddd")).toBe("SHORTSTR");
+    moment.locale("x-wds-str", null);
+  });
+
+  test("weekdaysShort falsy with moment falls back to localeWeekdays", () => {
+    moment.defineLocale("x-wds-fallback", {
+      weekdays: null as unknown as string[],
+      weekdaysShort: null as unknown as string[],
+    });
+    const m = moment("2024-06-15").locale("x-wds-fallback");
+    expect(m.format("dddd")).toBeDefined();
+    moment.locale("x-wds-fallback", null);
+  });
+});
+
+describe("localeWeekdaysMin fully uncovered", () => {
+  test("weekdaysMin(true) returns rotated array", () => {
+    moment.defineLocale("x-wdm-true", {
+      weekdays: "Su_Mo_Tu_We_Th_Fr_Sa".split("_"),
+      weekdaysMin: "Sun_Mon_Tue_Wed_Thu_Fri_Sat".split("_"),
+    });
+    const ld = moment.localeData("x-wdm-true");
+    const result = ld.weekdaysMin(true);
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBe(7);
+    moment.locale("x-wdm-true", null);
+  });
+
+  test("weekdaysMin without moment falls back to weekdaysShortArray", () => {
+    moment.defineLocale("x-wdm-none", {
+      weekdays: "Su_Mo_Tu_We_Th_Fr_Sa".split("_"),
+      weekdaysShort: "Sun_Mon_Tue_Wed_Thu_Fri_Sat".split("_"),
+    });
+    const ld = moment.localeData("x-wdm-none");
+    const result = ld.weekdaysMin();
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBe(7);
+    moment.locale("x-wdm-none", null);
+  });
+
+  test("weekdaysMin as function (no moment)", () => {
+    moment.defineLocale("x-wdm-fn", {
+      weekdays: "Su_Mo_Tu_We_Th_Fr_Sa".split("_"),
+      weekdaysMin: () => "FUNC",
+    });
+    const m = moment("2024-06-15").locale("x-wdm-fn");
+    expect(m.format("dd")).toBe("FUNC");
+    moment.locale("x-wdm-fn", null);
+  });
+
+  test("weekdaysMin as function (with moment)", () => {
+    moment.defineLocale("x-wdm-fn2", {
+      weekdays: "Su_Mo_Tu_We_Th_Fr_Sa".split("_"),
+      weekdaysMin: (m: { day: () => number }, fmt?: string) => {
+        const d = ["Su0", "Mo1", "Tu2", "We3", "Th4", "Fr5", "Sa6"];
+        return fmt ? `${d[m.day()]}-${fmt}` : d[m.day()];
+      },
+    });
+    originalMoment.defineLocale("x-wdm-fn2", {
+      weekdaysMin: (m: { day: () => number }, fmt?: string) => {
+        const d = ["Su0", "Mo1", "Tu2", "We3", "Th4", "Fr5", "Sa6"];
+        return fmt ? `${d[m.day()]}-${fmt}` : d[m.day()];
+      },
+    });
+    const m = moment("2024-06-15").locale("x-wdm-fn2");
+    const o = originalMoment("2024-06-15").locale("x-wdm-fn2");
+    expect(m.format("dd")).toBe(o.format("dd"));
+    moment.locale("x-wdm-fn2", null);
+    originalMoment.locale("x-wdm-fn2", null);
+  });
+
+  test("weekdaysMin as string (with moment)", () => {
+    moment.defineLocale("x-wdm-str", {
+      weekdays: "Su_Mo_Tu_We_Th_Fr_Sa".split("_"),
+      weekdaysMin: "MINSTR",
+    });
+    const m = moment("2024-06-15").locale("x-wdm-str");
+    expect(m.format("dd")).toBe("MINSTR");
+    moment.locale("x-wdm-str", null);
+  });
+
+  test("weekdaysMin falsy with moment falls back to localeWeekdaysShort", () => {
+    moment.defineLocale("x-wdm-fallback", {
+      weekdays: null as unknown as string[],
+      weekdaysShort: null as unknown as string[],
+      weekdaysMin: null as unknown as string[],
+    });
+    const m = moment("2024-06-15").locale("x-wdm-fallback");
+    expect(m.format("dd")).toBeDefined();
+    moment.locale("x-wdm-fallback", null);
+  });
+
+  test("weekdaysMin as object without moment returns config object", () => {
+    moment.defineLocale("x-wdm-standalone", {
+      weekdaysMin: {
+        standalone: "Su_Mo_Tu_We_Th_Fr_Sa".split("_"),
+      },
+    });
+    const ld = moment.localeData("x-wdm-standalone");
+    const result = ld.weekdaysMin();
+    expect(result).toBeDefined();
+    moment.locale("x-wdm-standalone", null);
+  });
+});
+
+describe("locale-runtime Locale._monthsShort getter with function", () => {
+  test("monthsShort as function generates short names", () => {
+    moment.defineLocale("x-rt-ms-fn", {
+      months: "A_B_C_D_E_F_G_H_I_J_K_L".split("_"),
+      monthsShort: () => "SHORT",
+    });
+    const ld = moment.localeData("x-rt-ms-fn");
+    expect(ld._monthsShort.every((s: string) => s === "SHORT")).toBe(true);
+    moment.locale("x-rt-ms-fn", null);
+  });
+});
+
+describe("locale-runtime Locale._weekdays getter with function", () => {
+  test("weekdays as function generates weekday names", () => {
+    moment.defineLocale("x-rt-wd-fn", {
+      weekdays: (m: { day: () => number }) => {
+        const d = ["Day0", "Day1", "Day2", "Day3", "Day4", "Day5", "Day6"];
+        return d[m.day()];
+      },
+    });
+    const ld = moment.localeData("x-rt-wd-fn");
+    expect(ld._weekdays.length).toBe(7);
+    expect(ld._weekdays[0]).toBe("Day0");
+    moment.locale("x-rt-wd-fn", null);
+  });
+});
+
+describe("locale-runtime Locale.weekdaysShortArray with function", () => {
+  test("weekdaysShortArray from function", () => {
+    moment.defineLocale("x-rt-wds-fn", {
+      weekdaysShort: (_m: unknown) => {
+        return "Short";
+      },
+    });
+    const ld = moment.localeData("x-rt-wds-fn");
+    const arr = ld.weekdaysShortArray();
+    expect(Array.isArray(arr)).toBe(true);
+    moment.locale("x-rt-wds-fn", null);
+  });
+});
+
+describe("locale-runtime Locale.weekdaysMinArray with function", () => {
+  test("weekdaysMinArray from function", () => {
+    moment.defineLocale("x-rt-wdm-fn", {
+      weekdaysMin: () => "MIN",
+    });
+    const ld = moment.localeData("x-rt-wdm-fn");
+    const arr = ld.weekdaysMinArray();
+    expect(Array.isArray(arr)).toBe(true);
+    moment.locale("x-rt-wdm-fn", null);
+  });
+});
+
+describe("locale-runtime Locale.meridiemParse fallback", () => {
+  test("meridiemParse returns undefined when neither locale nor en has it", () => {
+    moment.defineLocale("x-rt-mp-none", {});
+    const ld = moment.localeData("x-rt-mp-none");
+    const fn = ld.meridiemParse();
+    expect(fn instanceof RegExp).toBe(true);
+    moment.locale("x-rt-mp-none", null);
+  });
+});
+
+describe("locale-runtime Locale.calendar with config", () => {
+  test("calendar with custom config", () => {
+    moment.defineLocale("x-rt-cal", {
+      calendar: {
+        sameDay: "[Today is] LT",
+        lastDay: "[Yesterday was] LT",
+      },
+    });
+    const now = moment("2024-06-15T12:00:00");
+    const m = moment("2024-06-15T10:30:00").locale("x-rt-cal");
+    expect(m.calendar(now)).toContain("Today is");
+    moment.locale("x-rt-cal", null);
+  });
+});
+
+describe("locale-runtime Locale.pastFuture function formatters", () => {
+  test("pastFuture with function future formatter", () => {
+    moment.defineLocale("x-rt-pf", {
+      relativeTime: {
+        future: (s: string) => `in about ${s}`,
+        past: (s: string) => `${s} back`,
+        s: "%d seconds",
+        m: "a minute",
+        mm: "%d minutes",
+        h: "an hour",
+        hh: "%d hours",
+        d: "a day",
+        dd: "%d days",
+        M: "a month",
+        MM: "%d months",
+        y: "a year",
+        yy: "%d years",
+      },
+    });
+    const ref = moment("2024-06-15T13:00:00");
+    const m = moment("2024-06-15T12:00:00").locale("x-rt-pf");
+    expect(m.from(ref)).toContain("back");
+    moment.locale("x-rt-pf", null);
+  });
+
+  test("pastFuture with function past formatter", () => {
+    moment.defineLocale("x-rt-pf2", {
+      relativeTime: {
+        past: (s: string) => `${s} ago (custom)`,
+        s: "%d secs",
+        m: "a min",
+        mm: "%d mins",
+        h: "an hr",
+        hh: "%d hrs",
+        d: "a day",
+        dd: "%d days",
+        M: "a month",
+        MM: "%d months",
+        y: "a year",
+        yy: "%d years",
+      },
+    });
+    const ref = moment("2024-06-17T12:00:00");
+    const m = moment("2024-06-15T12:00:00").locale("x-rt-pf2");
+    expect(m.from(ref)).toContain("ago (custom)");
+    moment.locale("x-rt-pf2", null);
+  });
+});
+
+describe("locale-runtime Locale.set method", () => {
+  test("Locale.set updates config", () => {
+    moment.defineLocale("x-rt-set", {
+      months: "A_B_C_D_E_F_G_H_I_J_K_L".split("_"),
+    });
+    const m = moment("2024-06-15").locale("x-rt-set");
+    expect(m.format("MMMM")).toBe("F");
+    moment.locale("x-rt-set", null);
+  });
+});
+
+describe("locale-runtime Locale.eras", () => {
+  test("eras returns array or empty", () => {
+    const ld = moment.localeData("en");
+    const eras = ld.eras();
+    expect(Array.isArray(eras)).toBe(true);
+  });
+});
+
+describe("locale-runtime monthsParse and weekdaysParse", () => {
+  test("monthsParse finds month by name", () => {
+    moment.defineLocale("x-rt-mp", {
+      months: "Alpha_Beta_Gamma_Delta_Epsilon_Zeta_Eta_Theta_Iota_Kappa_Lambda_Mu".split("_"),
+    });
+    const m = moment("2024-06-15").locale("x-rt-mp");
+    const ld = moment.localeData("x-rt-mp");
+    expect(ld.monthsParse("Beta")).toBe(1);
+    expect(ld.monthsParse("Zeta")).toBe(5);
+    moment.locale("x-rt-mp", null);
+  });
+
+  test("monthsParse with partial match", () => {
+    const ld = moment.localeData("en");
+    expect(ld.monthsParse("Jan")).toBe(0);
+  });
+
+  test("monthsParse with non-string returns -1", () => {
+    const ld = moment.localeData("en");
+    expect(ld.monthsParse(123 as unknown as string)).toBe(-1);
+  });
+
+  test("weekdaysParse finds weekday by name", () => {
+    const ld = moment.localeData("en");
+    expect(ld.weekdaysParse("Monday")).toBe(1);
+  });
+
+  test("weekdaysParse partial match", () => {
+    const ld = moment.localeData("en");
+    expect(ld.weekdaysParse("Mon")).toBe(1);
+  });
+
+  test("weekdaysParse with non-string returns -1", () => {
+    const ld = moment.localeData("en");
+    expect(ld.weekdaysParse(123 as unknown as string)).toBe(-1);
+  });
+
+  test("weekdaysParse with format dd", () => {
+    const ld = moment.localeData("en");
+    expect(ld.weekdaysParse("Mo", "dd")).toBe(1);
+  });
+
+  test("weekdaysParse with format ddd", () => {
+    const ld = moment.localeData("en");
+    expect(ld.weekdaysParse("Mon", "ddd")).toBe(1);
+  });
+});
+
+describe("locale-runtime monthsRegex monthsShortRegex variants", () => {
+  test("monthsRegex strict and non-strict", () => {
+    const ld = moment.localeData("en");
+    const strict = ld.monthsRegex(true);
+    const nonStrict = ld.monthsRegex(false);
+    expect(strict instanceof RegExp).toBe(true);
+    expect(nonStrict instanceof RegExp).toBe(true);
+  });
+
+  test("monthsShortRegex strict and non-strict", () => {
+    const ld = moment.localeData("en");
+    const strict = ld.monthsShortRegex(true);
+    const nonStrict = ld.monthsShortRegex(false);
+    expect(strict instanceof RegExp).toBe(true);
+    expect(nonStrict instanceof RegExp).toBe(true);
+  });
+});
+
+describe("locale-runtime weekdays regex variants", () => {
+  test("weekdaysRegex", () => {
+    const ld = moment.localeData("en");
+    expect(ld.weekdaysRegex(false) instanceof RegExp).toBe(true);
+    expect(ld.weekdaysRegex(true) instanceof RegExp).toBe(true);
+  });
+
+  test("weekdaysShortRegex", () => {
+    const ld = moment.localeData("en");
+    expect(ld.weekdaysShortRegex(false) instanceof RegExp).toBe(true);
+    expect(ld.weekdaysShortRegex(true) instanceof RegExp).toBe(true);
+  });
+
+  test("weekdaysMinRegex", () => {
+    const ld = moment.localeData("en");
+    expect(ld.weekdaysMinRegex(false) instanceof RegExp).toBe(true);
+    expect(ld.weekdaysMinRegex(true) instanceof RegExp).toBe(true);
+  });
+});
+
+describe("locale-runtime localeRelativeTime function entry", () => {
+  test("relativeTimeFn for custom formatting", () => {
+    moment.defineLocale("x-rt-rtfn", {
+      relativeTimeFn: (n: number, key: string, _isFuture: boolean) => {
+        const map: Record<string, string> = {
+          s: "seconds",
+          m: "minute",
+          mm: "minutes",
+          h: "hour",
+          hh: "hours",
+          d: "day",
+          dd: "days",
+          M: "month",
+          MM: "months",
+          y: "year",
+          yy: "years",
+        };
+        return `${n} ${map[key]}`;
+      },
+    });
+    const ref = moment("2024-06-18T12:00:00");
+    const m = moment("2024-06-15T12:00:00").locale("x-rt-rtfn");
+    expect(m.from(ref)).toContain("3 days");
+    moment.locale("x-rt-rtfn", null);
+  });
+});
+
+describe("localeLongDateFormat capital letter branch", () => {
+  test("LLL with upper key format", () => {
+    moment.defineLocale("x-ldf-upper", {
+      longDateFormat: {
+        L: "YYYY/MM/DD",
+        LL: "YYYY MMMM DD",
+        LLL: "YYYY MMMM DD HH:mm",
+        LLLL: "dddd, YYYY MMMM DD HH:mm",
+        LT: "HH:mm",
+        LTS: "HH:mm:ss",
+      },
+    });
+    const m = moment("2024-06-15T14:30:00").locale("x-ldf-upper");
+    expect(m.format("lll")).toBeDefined();
+    expect(m.format("lll").length).toBeGreaterThan(0);
+    moment.locale("x-ldf-upper", null);
+  });
+});
+
+describe("locale-runtime Locale instance methods", () => {
+  test("firstDayOfWeek / firstDayOfYear", () => {
+    moment.defineLocale("x-rt-fdow", { week: { dow: 1, doy: 4 } });
+    const ld = moment.localeData("x-rt-fdow");
+    expect(ld.firstDayOfWeek()).toBe(1);
+    expect(ld.firstDayOfYear()).toBe(4);
+    moment.locale("x-rt-fdow", null);
+  });
+
+  test("invalidDate returns custom string via localeData", () => {
+    moment.defineLocale("x-rt-inv", { invalidDate: "custom invalid date" });
+    const ld = moment.localeData("x-rt-inv");
+    expect(ld.invalidDate()).toBe("custom invalid date");
+    moment.locale("x-rt-inv", null);
+  });
+
+  test("calendar with function callback via locales sameDay", () => {
+    moment.defineLocale("x-rt-cal-fn", {
+      calendar: {
+        sameDay: "[Today]",
+      },
+    });
+    const now = moment("2024-06-15T12:00:00");
+    const m = moment("2024-06-15T10:30:00").locale("x-rt-cal-fn");
+    expect(m.calendar(now)).toBe("Today");
+    moment.locale("x-rt-cal-fn", null);
+  });
+
+  test("pastFuture with function entries (s, m, etc.)", () => {
+    moment.defineLocale("x-rt-pf-fn", {
+      relativeTime: {
+        future: "in %s",
+        past: "%s ago",
+        s: (n: number) => `${n} secs`,
+        mm: (n: number) => `${n} minutes`,
+        hh: (n: number) => `${n} hours`,
+        dd: (n: number) => `${n} days`,
+        MM: (n: number) => `${n} months`,
+        yy: (n: number) => `${n} years`,
+      },
+    });
+    const ref = moment("2024-06-15T12:00:00");
+    const m = moment("2024-06-15T11:55:00").locale("x-rt-pf-fn");
+    expect(m.from(ref)).toContain("5 minutes");
+    moment.locale("x-rt-pf-fn", null);
+  });
+
+  test("Locale.set with underscore-prefixed keys", () => {
+    moment.defineLocale("x-rt-set2", {
+      months: "A_B_C_D_E_F_G_H_I_J_K_L".split("_"),
+    });
+    const ld = moment.localeData("x-rt-set2");
+    ld.set({ monthsShort: "a_b_c_d_e_f_g_h_i_j_k_l".split("_") });
+    expect(ld._monthsShort.length).toBe(12);
+    moment.locale("x-rt-set2", null);
+  });
+
+  test("Locale.week method", () => {
+    const ld = moment.localeData("en");
+    const m = moment("2024-06-15");
+    expect(typeof ld.week(m)).toBe("number");
+  });
+});

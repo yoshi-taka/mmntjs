@@ -1,4 +1,3 @@
-import { zeroFill } from "./utils";
 import type { Locale } from "./locale-runtime";
 import type { Moment } from "./moment-class";
 
@@ -166,45 +165,4 @@ function toObjectDebugMoment(m: DebugMoment): Record<string, number> {
     seconds: m.second(),
     milliseconds: m.millisecond(),
   };
-}
-
-export function toISOStringKeepOffsetMoment(m: DebugMoment): string {
-  const d = m._getD();
-  const year = m._isUTC ? d.getUTCFullYear() : d.getFullYear();
-  const month = zeroFill((m._isUTC ? d.getUTCMonth() : d.getMonth()) + 1, 2);
-  const day = zeroFill(m._isUTC ? d.getUTCDate() : d.getDate(), 2);
-  const hour = zeroFill(m._isUTC ? d.getUTCHours() : d.getHours(), 2);
-  const min = zeroFill(m._isUTC ? d.getUTCMinutes() : d.getMinutes(), 2);
-  const sec = zeroFill(m._isUTC ? d.getUTCSeconds() : d.getSeconds(), 2);
-  const ms = zeroFill(m._isUTC ? d.getUTCMilliseconds() : d.getMilliseconds(), 3);
-  const offset = m._isUTC ? m._offset : -d.getTimezoneOffset();
-  const sign = offset >= 0 ? "+" : "-";
-  const absOffset = Math.abs(offset);
-  const offsetStr = `${sign}${zeroFill(Math.floor(absOffset / 60), 2)}:${zeroFill(absOffset % 60, 2)}`;
-  const yearStr =
-    year >= 0
-      ? year >= 10000
-        ? `+${zeroFill(year, 6)}`
-        : zeroFill(year, 4)
-      : `-${zeroFill(-year, 6)}`;
-  return `${yearStr}-${month}-${day}T${hour}:${min}:${sec}.${ms}${offsetStr}`;
-}
-
-export function toISOStringUtcMoment(m: DebugMoment): string {
-  const utcMs = m._isUTC ? m._t - m._offset * 60000 : m._t;
-  const utcDate = new Date(utcMs);
-  const year = utcDate.getUTCFullYear();
-  const month = zeroFill(utcDate.getUTCMonth() + 1, 2);
-  const day = zeroFill(utcDate.getUTCDate(), 2);
-  const hour = zeroFill(utcDate.getUTCHours(), 2);
-  const min = zeroFill(utcDate.getUTCMinutes(), 2);
-  const sec = zeroFill(utcDate.getUTCSeconds(), 2);
-  const ms = zeroFill(utcDate.getUTCMilliseconds(), 3);
-  const yearStr =
-    year >= 0
-      ? year >= 10000
-        ? `+${zeroFill(year, 6)}`
-        : zeroFill(year, 4)
-      : `-${zeroFill(-year, 6)}`;
-  return `${yearStr}-${month}-${day}T${hour}:${min}:${sec}.${ms}Z`;
 }
