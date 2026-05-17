@@ -1,7 +1,11 @@
 import { defineConfig } from 'tsup'
 
 export default defineConfig({
-  entry: ['src/index.ts'],
+  entry: {
+    index: 'src/index.ts',
+    logic: 'src/logic.ts',
+    '1970-2030': 'src/1970-2030.ts',
+  },
   format: ['cjs', 'esm'],
   dts: true,
   splitting: false,

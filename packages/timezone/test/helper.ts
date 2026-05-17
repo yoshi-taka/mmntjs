@@ -2,9 +2,10 @@
 import { expect } from "bun:test";
 import _moment from "mmntjs";
 import { installTimezone } from "../src/install";
+import { BUILTIN_TZDATA } from "../src/builtin-data.generated";
 import _momentTimezone from "moment-timezone";
 
-installTimezone(_moment as any);
+installTimezone(_moment as any, BUILTIN_TZDATA);
 
 export const moment = _moment as any;
 export const momentTimezone = _momentTimezone as any;

@@ -14,6 +14,7 @@
 /* oxlint-disable no-explicit-any */
 import _moment from "mmntjs";
 import { installTimezone } from "../src/install";
+import { BUILTIN_TZDATA } from "../src/builtin-data.generated";
 import _momentTimezone from "moment-timezone";
 import {
   toZonedTime as dfToZonedTime,
@@ -24,7 +25,7 @@ import {
 import { TZDate, tzOffset as adftTzOffset } from "@date-fns/tz";
 import { format as dfFormat } from "date-fns";
 
-installTimezone(_moment as any);
+installTimezone(_moment as any, BUILTIN_TZDATA);
 
 const moment = _moment as any;
 const momentTimezone = _momentTimezone as any;

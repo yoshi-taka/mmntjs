@@ -10,8 +10,9 @@
 import _moment from "mmntjs";
 import _momentTimezone from "moment-timezone";
 import { installTimezone } from "../../src/install";
+import { BUILTIN_TZDATA } from "../../src/builtin-data.generated";
 
-installTimezone(_moment);
+installTimezone(_moment, BUILTIN_TZDATA);
 
 const moment = _moment;
 const momentTimezone = _momentTimezone;

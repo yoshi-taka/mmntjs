@@ -11,7 +11,18 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
-    }
+    },
+    "./logic": {
+      "types": "./dist/logic.d.ts",
+      "import": "./dist/logic.js",
+      "require": "./dist/logic.cjs"
+    },
+    "./1970-2030": {
+      "types": "./dist/1970-2030.d.ts",
+      "import": "./dist/1970-2030.js",
+      "require": "./dist/1970-2030.cjs"
+    },
+    "./dist/*": "./dist/*"
   },
   "sideEffects": false,
   "files": ["dist"],

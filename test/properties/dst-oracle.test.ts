@@ -3,10 +3,9 @@ import { describe, test, expect } from "bun:test";
 import fc from "fast-check";
 import baseMoment from "../../src/index.ts";
 import { installTimezone } from "../../packages/timezone/src/install.ts";
-import momentTimezone from "moment-timezone";
+import { BUILTIN_TZDATA } from "../../packages/timezone/src/builtin-data.generated.ts";
 
-// oxlint-disable-next-line no-explicit-any
-installTimezone(baseMoment as any);
+installTimezone(baseMoment as any, BUILTIN_TZDATA);
 // oxlint-disable-next-line no-explicit-any
 const moment = baseMoment as any;
 // oxlint-disable-next-line no-explicit-any

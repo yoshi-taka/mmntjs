@@ -1,8 +1,9 @@
 /* oxlint-disable */
 import mmntjs from "../src/index.ts";
 import { installTimezone } from "../packages/timezone/src/install.ts";
+import { BUILTIN_TZDATA } from "../packages/timezone/src/builtin-data.generated.ts";
 
-installTimezone(mmntjs as any);
+installTimezone(mmntjs as any, BUILTIN_TZDATA);
 const moment = mmntjs as any;
 
 interface BenchResult {
