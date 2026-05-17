@@ -16,7 +16,7 @@ jobs:
       - uses: oven-sh/setup-bun@v2
 
       - run: bun install --frozen-lockfile
-      - run: ln -s "$PWD" packages/timezone/node_modules/mmntjs
+      - run: mkdir -p packages/timezone/node_modules && ln -sfn "$PWD" packages/timezone/node_modules/mmntjs
       - run: bun run build
       - run: bun run lint
       - run: TZ=UTC bun run test:hard
