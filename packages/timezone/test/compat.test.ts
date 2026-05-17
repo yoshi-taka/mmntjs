@@ -295,11 +295,9 @@ describe("moment.tz.zone()", () => {
     expect(typeof z.utcOffset(0)).toBe("number");
   });
 
-  test("zone.parse returns object with name and offset", () => {
+  test("zone.parse returns a number (offset in minutes)", () => {
     const z = moment.tz.zone("America/New_York");
-    const p = z.parse(0);
-    expect(p.name).toBe("America/New_York");
-    expect(typeof p.offset).toBe("number");
+    expect(typeof z.parse(0)).toBe("number");
   });
 });
 
