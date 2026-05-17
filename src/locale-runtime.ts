@@ -283,7 +283,7 @@ export class Locale {
 
     if (short) {
       const names = this._monthsShort;
-      const escaped = names.map((n: string) => n.replaceAll(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&"));
+      const escaped = names.map((n: string) => n.replaceAll(/[-/\\^$*+?.()|[\]{}]/g, "\\$&"));
       const prefix = strict ? "^(?:" : "(?:";
       const suffix = strict ? ")$" : ")";
       const pattern = prefix + escaped.join("|") + suffix;
@@ -293,9 +293,7 @@ export class Locale {
     }
 
     const fullNames = this._months;
-    const escapedFull = fullNames.map((n: string) =>
-      n.replaceAll(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&"),
-    );
+    const escapedFull = fullNames.map((n: string) => n.replaceAll(/[-/\\^$*+?.()|[\]{}]/g, "\\$&"));
     if (strict) {
       const pattern = `^(${escapedFull.join("|")})$`;
       const regex = new RegExp(pattern, "i");
@@ -305,7 +303,7 @@ export class Locale {
     const shortNames = this._monthsShort;
     const shortLower = shortNames.map((n: string) => n.replaceAll(/\.$/g, "").toLowerCase());
     const escapedShort = shortLower.map((n: string) =>
-      n.replaceAll(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&"),
+      n.replaceAll(/[-/\\^$*+?.()|[\]{}]/g, "\\$&"),
     );
     const all = [...new Set([...escapedFull, ...escapedShort])];
     const sorted = [...all].sort((a, b) => b.length - a.length);
@@ -333,7 +331,7 @@ export class Locale {
       primaryNames = this.weekdaysMinArray();
     }
 
-    const escaped = primaryNames.map((n: string) => n.replaceAll(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&"));
+    const escaped = primaryNames.map((n: string) => n.replaceAll(/[-/\\^$*+?.()|[\]{}]/g, "\\$&"));
     if (strict) {
       const pattern = `^(${escaped.join("|")})$`;
       const regex = new RegExp(pattern, "i");
@@ -343,7 +341,7 @@ export class Locale {
     const allNames: string[] = [];
     const collectEscaped = (arr: string[]) => {
       for (const n of arr) {
-        allNames.push(n.replaceAll(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&"));
+        allNames.push(n.replaceAll(/[-/\\^$*+?.()|[\]{}]/g, "\\$&"));
       }
     };
     collectEscaped(this._weekdays);
@@ -389,7 +387,7 @@ export class Locale {
     }
 
     const shortNames = this._monthsShort;
-    const escaped = shortNames.map((n: string) => n.replaceAll(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&"));
+    const escaped = shortNames.map((n: string) => n.replaceAll(/[-/\\^$*+?.()|[\]{}]/g, "\\$&"));
     if (strict) {
       const pattern = `^(${escaped.join("|")})$`;
       const regex = new RegExp(pattern, "i");
@@ -397,9 +395,7 @@ export class Locale {
       return regex;
     }
     const fullNames = this._months;
-    const fullEscaped = fullNames.map((n: string) =>
-      n.replaceAll(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&"),
-    );
+    const fullEscaped = fullNames.map((n: string) => n.replaceAll(/[-/\\^$*+?.()|[\]{}]/g, "\\$&"));
     const all = [...new Set([...escaped, ...fullEscaped])];
     const sorted = [...all].sort((a, b) => b.length - a.length);
     const pattern = `^(${sorted.join("|")})`;
