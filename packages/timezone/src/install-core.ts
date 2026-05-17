@@ -207,8 +207,6 @@ function parseDeltas(raw: string): number[] {
     // Delta dictionary mode: tokens are dictionary IDs
     return tokens.map((t) => {
       if (t === "") return 0;
-      const id = charCodeToInt(t.charCodeAt(0));
-      // Also handle multi-char IDs using unpackBase60
       return _deltaDict[unpackBase60(t)] ?? 0;
     });
   }
