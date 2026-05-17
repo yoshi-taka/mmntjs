@@ -104,12 +104,18 @@ export function registerUtcApi(target: UtcMomentTarget, deps: UtcApiDeps): void 
         } else {
           m._d = new Date(absTime - m._d!.getTimezoneOffset() * 60000);
         }
-      } else {
+      } else if (m._cold !== undefined) {
         m._d = new Date(absTime - m._d!.getTimezoneOffset() * 60000);
+      } else {
+        const utcDate = new Date(`${input} UTC`);
+        if (!isNaN(utcDate.getTime())) {
+          m._d = utcDate;
+        }
       }
     } else {
       m._d = new Date(absTime);
     }
+    m._d ??= new Date(NaN);
     m._t = m._d.getTime();
     m._isUTC = true;
     m._offset = 0;

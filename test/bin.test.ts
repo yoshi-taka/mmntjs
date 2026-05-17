@@ -396,6 +396,11 @@ describe("runInit", () => {
 
   test("exits with error when no package.json", () => {
     const d = tmpDir();
+    const origExit = process.exit;
+    const exitMock = mock((code?: number) => {
+      throw new Error(`process.exit(${code})`);
+    });
+    process.exit = exitMock;
     try {
       const out: string[] = [];
       const origLog = console.log;
@@ -405,12 +410,14 @@ describe("runInit", () => {
       try {
         runInit(d);
       } catch {
-        /* process.exit throws in bun test */
+        /* process.exit expected */
       }
       console.log = origLog;
       console.error = origErr;
+      expect(exitMock).toHaveBeenCalledWith(1);
       expect(out.some((l) => l.includes("No package.json found"))).toBe(true);
     } finally {
+      process.exit = origExit;
       rmSync(d, { recursive: true, force: true });
     }
   });

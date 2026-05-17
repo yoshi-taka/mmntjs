@@ -1,6 +1,7 @@
 /* oxlint-disable */
 import { describe, test, expect } from "bun:test";
 import fc from "fast-check";
+import _momentTimezone from "moment-timezone";
 import baseMoment from "../../src/index.ts";
 import { installTimezone } from "../../packages/timezone/src/install.ts";
 import { BUILTIN_TZDATA } from "../../packages/timezone/src/builtin-data.generated.ts";
@@ -9,7 +10,7 @@ installTimezone(baseMoment as any, BUILTIN_TZDATA);
 // oxlint-disable-next-line no-explicit-any
 const moment = baseMoment as any;
 // oxlint-disable-next-line no-explicit-any
-const originalMoment = momentTimezone as any;
+const originalMoment = _momentTimezone as any;
 originalMoment.suppressDeprecationWarnings = true;
 
 const DST_BOUNDARIES: Record<string, { spring: number; fall: number }> = {
