@@ -324,6 +324,10 @@ let _zonesBlob = "";
 let _linksBlob = "";
 let _countriesBlob = "";
 
+/* zone materialization tracking for blob GC */
+let _totalZoneCount = 0;
+let _materializedCount = 0;
+
 /* lightweight indexes (built lazily from blobs, no string decoding) */
 const _zoneIdx = new Map<string, { name: string; start: number; end: number }>();
 const _linkIdx = new Map<string, string>();
@@ -352,6 +356,7 @@ function ensureIndexBuilt(): void {
     const name = _zonesBlob.slice(start, pipe);
     _zoneIdx.set(normalizeName(name), { name, start, end });
   }
+  _totalZoneCount = _zoneIdx.size;
 
   // Build lightweight link index
   pos = 0;
@@ -390,6 +395,10 @@ function ensureIndexBuilt(): void {
       .filter(Boolean);
     if (code) _countryIdx.set(code, zones);
   }
+
+  // Free links/countries blobs immediately after indexing — no longer needed
+  _linksBlob = "";
+  _countriesBlob = "";
 }
 
 /** Materialize a zone from the blob index into zoneStore on first access */
@@ -401,6 +410,11 @@ function materializeZone(normalized: string): boolean {
   addPackedZoneEntry(entry.name, line);
   // eagerly unpack so first abbr()/utcOffset() doesn't pay decode cost
   getDecodedZonePayload(normalized);
+  // GC the zones blob once all builtin zones have been materialized
+  _materializedCount++;
+  if (_materializedCount >= _totalZoneCount && _zonesBlob) {
+    _zonesBlob = "";
+  }
   return true;
 }
 
