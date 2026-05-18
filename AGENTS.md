@@ -120,7 +120,7 @@
 - `-775505110` — dash分離＋YYYYMMDD マッチで moment.js 準拠
 - `8888W81` — ISO週overflow 検出を追加
 - `-0501350128` — YYYYYYMMDD 形式で sign を保持
-- `+085501-757` — DDD regex を `\d{3}` に修正
+- `+085501-757` — DDD regex を `\d{3}` に修正、dayOfYear overflow 検出を追加
 
 ## 残っている課題
 

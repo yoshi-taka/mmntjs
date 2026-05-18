@@ -97,6 +97,26 @@ export function createMomentFactory(deps: FactoryDeps) {
           };
       const jan4 = makeDate(isoWeekYear, 0, 4);
       const dayOfJan4 = useUtc ? jan4.getUTCDay() || 7 : jan4.getDay() || 7;
+      // ISO week overflow check (moment.js compat)
+      const dec31 = makeDate(isoWeekYear, 11, 31);
+      const dayOfDec31 = useUtc ? dec31.getUTCDay() || 7 : dec31.getDay() || 7;
+      const maxWeeks = dayOfJan4 === 4 || dayOfDec31 === 4 ? 53 : 52;
+      if (isoWeek < 1 || isoWeek > maxWeeks) {
+        return new Moment({
+          _d: new Date(NaN),
+          _dClone: false,
+          _i: str,
+          _f: format,
+          _l: locale,
+          _strict: strict,
+          _isValid: false,
+          _parsedDateParts: parsed._parsedDateParts,
+          _unusedTokens: parsed._unusedTokens,
+          _unusedInput: parsed._unusedInput,
+          _charsLeftOver: parsed._charsLeftOver,
+          _nullInput: false,
+        });
+      }
       const week1StartEpoch = makeDate(isoWeekYear, 0, 4 - (dayOfJan4 - 1)).getTime();
       const weekday = parsed._weekdayNum ?? 1;
       const d = new Date(week1StartEpoch + ((isoWeek - 1) * 7 + (weekday - 1)) * 86400000);
@@ -136,11 +156,26 @@ export function createMomentFactory(deps: FactoryDeps) {
     let mo = parsed.month;
     let d = parsed.day;
     if (parsed.dayOfYear !== undefined && mo === undefined && d === undefined) {
-      const date = createUTCDate(
-        y !== undefined ? y : new Date(deps.nowFn()).getFullYear(),
-        0,
-        parsed.dayOfYear,
-      );
+      const year0 = y !== undefined ? y : new Date(deps.nowFn()).getFullYear();
+      // dayOfYear overflow check (moment.js compat)
+      const daysMax = (year0 % 4 === 0 && year0 % 100 !== 0) || year0 % 400 === 0 ? 366 : 365;
+      if (parsed.dayOfYear < 1 || parsed.dayOfYear > daysMax) {
+        return new Moment({
+          _d: new Date(NaN),
+          _dClone: false,
+          _i: str,
+          _f: format,
+          _l: locale,
+          _strict: strict,
+          _isValid: false,
+          _parsedDateParts: parsed._parsedDateParts,
+          _unusedTokens: parsed._unusedTokens,
+          _unusedInput: parsed._unusedInput,
+          _charsLeftOver: parsed._charsLeftOver,
+          _nullInput: false,
+        });
+      }
+      const date = createUTCDate(year0, 0, parsed.dayOfYear);
       y = date.getUTCFullYear();
       mo = date.getUTCMonth();
       d = date.getUTCDate();

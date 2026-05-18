@@ -257,13 +257,13 @@ export const docsPages: DocPage[] = [
 ];
 
 export const compatibilitySnapshot = [
-  ["Parsing", "Mostly compatible", "Differentially tested against moment.js; known edge cases remain in some sign-prefixed inputs."],
+  ["Parsing", "Mostly compatible", "Differentially tested against moment.js; known edge cases remain in some sign-prefixed inputs (e.g. -775505110)."],
   ["Formatting", "Compatible", "Token and locale output are covered by upstream and locale-derived tests."],
   ["Manipulation", "Compatible", "add/subtract/startOf/endOf semantics are treated as compatibility-critical."],
   ["Query and comparison", "Compatible", "diff and comparison methods are covered by oracle and property tests."],
   ["Duration", "Compatible", "Construction, normalization, and relative-time behavior are part of the test matrix."],
   ["Locale", "Compatible", "Locale behavior is validated against the upstream locale suite."],
-  ["UTC and parseZone", "Compatible in core scope", "UTC and fixed-offset behavior are tested; IANA timezone data belongs to separate timezone support."],
+  ["UTC and parseZone", "Compatible", "UTC and fixed-offset behavior are tested; timezone package provides compatible IANA timezone data support."],
   ["Invalid dates", "Mostly compatible", "Invalid behavior is explicitly tested and documented because it affects migration safety."],
 ];
 
@@ -289,7 +289,7 @@ export const knownDifferences: KnownDifference[] = [
     momentBehavior:
       "moment.js can match some sign-prefixed strings through non-anchored regex fallback behavior.",
     mmntjsBehavior:
-      "mmntjs is still stricter in a small set of these malformed or edge-case inputs, especially around sign-prefixed parse forms discovered by fuzzing.",
+      "mmntjs is still stricter in a small set of these malformed or edge-case inputs (e.g. `-775505110`), especially around sign-prefixed parse forms discovered by fuzzing.",
     impact:
       "Relevant mainly if the application depends on odd legacy inputs rather than clean ISO, RFC 2822, or explicit format strings.",
     workaround:

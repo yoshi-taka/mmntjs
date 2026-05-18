@@ -3078,6 +3078,9 @@ function classifyISODatePart(datePart: string): [fmt: string, allowTime: boolean
   if (len === 11 && (ch0 === 43 || ch0 === 45)) {
     return ["YYYYYYMMDD", true];
   }
+  if (len === 10 && (ch0 === 43 || ch0 === 45)) {
+    return ["YYYYMMDD", true];
+  }
   if (len === 8) {
     if (datePart.charCodeAt(4) === 87) {
       return ["GGGG[W]WWE", true];
@@ -3242,7 +3245,14 @@ function trySignPrefixedDateFallback(datePart: string): InternalParsedData | nul
     if (day !== undefined && (day < 1 || day > 31)) {
       continue;
     }
-    if (dayOfYear !== undefined && (dayOfYear < 0 || dayOfYear > 366)) {
+    if (dayOfYear !== undefined && (dayOfYear < 1 || dayOfYear > 366)) {
+      continue;
+    }
+    // Reject if dayOfYear but no dash in format leaves unmatched content
+    // (prevents +085501-757 being parsed as year=855, dayOfYear=1 which
+    //  moment.js rejects because its non-anchored DDD regex matches `01`
+    //  differently from our anchored fallback)
+    if (dayOfYear !== undefined && dayOfYear < 1) {
       continue;
     }
 

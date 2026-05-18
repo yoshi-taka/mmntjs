@@ -344,119 +344,115 @@ const pageExamples = docExamples[page.slug] ?? [];
   description={page.summary}
   currentPath={`/docs/${page.slug}/`}
 >
-  <section class="page-intro panel">
-    <p class="eyebrow">Docs</p>
-    <h1>{page.title}</h1>
-    <p>{page.summary}</p>
-  </section>
+  <div class="docs-layout">
+    <article class="docs-article">
+      <section class="docs-intro">
+        <p class="eyebrow">Docs</p>
+        <h1>{page.title}</h1>
+        <p>{page.summary}</p>
+      </section>
 
-  <section class="panel section">
-    <div class="meta-list">
-      <div class="meta-row">
-        <div class="label">Purpose</div>
-        <div>{page.purpose}</div>
-      </div>
-      <div class="meta-row">
-        <div class="label">Document first</div>
-        <div>
-          <ul>
-            {page.focus.map((item) => <li>{item}</li>)}
-          </ul>
-        </div>
-      </div>
-      <div class="meta-row">
-        <div class="label">Related</div>
-        <div>
-          {page.related.map((link, index) => (
-            <>
-              {index > 0 ? " · " : ""}
-              <a href={withBase(link.href)}>{link.label}</a>
-            </>
+      {sections.length > 0 && (
+        <section class="docs-section">
+          <p class="eyebrow">Guidance</p>
+          {sections.map((section) => (
+            <section class="docs-prose-block">
+              <h2>{section.title}</h2>
+              {section.body.map((paragraph) => <p>{paragraph}</p>)}
+              {section.bullets && (
+                <ul>
+                  {section.bullets.map((item) => <li>{item}</li>)}
+                </ul>
+              )}
+            </section>
           ))}
-        </div>
-      </div>
-    </div>
-  </section>
+        </section>
+      )}
 
-  {sections.length > 0 && (
-    <section class="panel section">
-      <p class="eyebrow">Guidance</p>
-      <div class="cards">
-        {sections.map((section) => (
-          <article class="card">
-            <h3>{section.title}</h3>
-            {section.body.map((paragraph) => <p>{paragraph}</p>)}
-            {section.bullets && (
-              <ul>
-                {section.bullets.map((item) => <li>{item}</li>)}
-              </ul>
-            )}
-          </article>
+      {pageExamples.length > 0 && (
+        <section class="docs-section">
+          <p class="eyebrow">Examples</p>
+          <div class="example-list">
+            {pageExamples.map((example) => (
+              <article class="example-card">
+                <h3>{example.title}</h3>
+                <pre><code>{example.code}</code></pre>
+                {example.note && <p>{example.note}</p>}
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {pageKnownDifferences.length > 0 && (
+        <section class="docs-section">
+          <p class="eyebrow">Tracked Differences</p>
+          <div class="difference-list">
+            {pageKnownDifferences.map((item) => (
+              <article class="difference-card">
+                <p class="eyebrow">{item.category}</p>
+                <h3>{item.title}</h3>
+                <div class="meta-list">
+                  <div class="meta-row">
+                    <div class="label">moment.js</div>
+                    <div>{item.momentBehavior}</div>
+                  </div>
+                  <div class="meta-row">
+                    <div class="label">mmntjs</div>
+                    <div>{item.mmntjsBehavior}</div>
+                  </div>
+                  <div class="meta-row">
+                    <div class="label">Impact</div>
+                    <div>{item.impact}</div>
+                  </div>
+                  <div class="meta-row">
+                    <div class="label">Workaround</div>
+                    <div>{item.workaround}</div>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section class="docs-section">
+        <p class="eyebrow">How To Use This Doc</p>
+        <p>
+          Use this page as a migration review aid rather than as a generic tutorial. If the behavior in
+          this area is business-critical, compare it directly against your current moment.js usage and
+          record the outcome before expanding rollout.
+        </p>
+        {page.slug === "known-differences" && (
+          <p>
+            The goal is not to eliminate every caveat before evaluation starts. The goal is to make the
+            currently known caveats visible enough that they can be tested deliberately rather than
+            discovered accidentally in production.
+          </p>
+        )}
+      </section>
+    </article>
+
+    <aside class="docs-sidebar">
+      <div class="docs-sidebar-card">
+        <h2>Purpose</h2>
+        <p>{page.purpose}</p>
+      </div>
+      <div class="docs-sidebar-card">
+        <h2>Document first</h2>
+        <ul>
+          {page.focus.map((item) => <li>{item}</li>)}
+        </ul>
+      </div>
+      <div class="docs-sidebar-card">
+        <h2>Related</h2>
+        {page.related.map((link, index) => (
+          <span>
+            {index > 0 && <br />}
+            <a href={withBase(link.href)}>{link.label}</a>
+          </span>
         ))}
       </div>
-    </section>
-  )}
-
-  {pageExamples.length > 0 && (
-    <section class="panel section">
-      <p class="eyebrow">Examples</p>
-      <div class="cards">
-        {pageExamples.map((example) => (
-          <article class="card">
-            <h3>{example.title}</h3>
-            <pre><code>{example.code}</code></pre>
-            {example.note && <p>{example.note}</p>}
-          </article>
-        ))}
-      </div>
-    </section>
-  )}
-
-  {pageKnownDifferences.length > 0 && (
-    <section class="panel section">
-      <p class="eyebrow">Tracked Differences</p>
-      <div class="cards">
-        {pageKnownDifferences.map((item) => (
-          <article class="card">
-            <p class="eyebrow">{item.category}</p>
-            <h3>{item.title}</h3>
-            <div class="meta-list">
-              <div class="meta-row">
-                <div class="label">moment.js</div>
-                <div>{item.momentBehavior}</div>
-              </div>
-              <div class="meta-row">
-                <div class="label">mmntjs</div>
-                <div>{item.mmntjsBehavior}</div>
-              </div>
-              <div class="meta-row">
-                <div class="label">Impact</div>
-                <div>{item.impact}</div>
-              </div>
-              <div class="meta-row">
-                <div class="label">Workaround</div>
-                <div>{item.workaround}</div>
-              </div>
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
-  )}
-
-  <section class="panel section">
-    <p class="eyebrow">How To Use This Doc</p>
-    <p>
-      Use this page as a migration review aid rather than as a generic tutorial. If the behavior in
-      this area is business-critical, compare it directly against your current moment.js usage and
-      record the outcome before expanding rollout.
-    </p>
-    {page.slug === "known-differences" && (
-      <p>
-        The goal is not to eliminate every caveat before evaluation starts. The goal is to make the
-        currently known caveats visible enough that they can be tested deliberately rather than
-        discovered accidentally in production.
-      </p>
-    )}
-  </section>
+    </aside>
+  </div>
 </BaseLayout>
