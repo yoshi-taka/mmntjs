@@ -59,7 +59,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "mkdir -p packages/timezone/node_modules && ln -sfn ../../.. packages/timezone/node_modules/mmntjs && for dir in test/kibana-compat test/grafana-compat test/vscode-compat; do mkdir -p \"$dir/node_modules\" && ln -sfn ../../../dist/index.js \"$dir/node_modules/moment\" && ln -sfn ../../../dist/index.js \"$dir/node_modules/mmntjs\" && ln -sfn ../../../packages/timezone/dist/index.js \"$dir/node_modules/moment-timezone\"; done && bun scripts/generate-timezone-data.ts && tsup && bun scripts/copy-dts.ts && rm -rf dist/locale/test-locales.* dist/locale/test-locales.*.map && (cd packages/timezone && bun run build || true)",
+    "build": "mkdir -p packages/timezone/node_modules && ln -sfn ../../.. packages/timezone/node_modules/mmntjs && for dir in test/kibana-compat test/grafana-compat test/vscode-compat; do mkdir -p \"$dir/node_modules\" && ln -sfn ../../../dist/index.js \"$dir/node_modules/moment\" && ln -sfn ../../../dist/index.js \"$dir/node_modules/mmntjs\" && ln -sfn ../../../packages/timezone/dist/index.js \"$dir/node_modules/moment-timezone\"; done && bun scripts/generate-timezone-data.ts && tsup && bun scripts/copy-dts.ts && rm -rf dist/locale/test-locales.* dist/locale/test-locales.*.map && node -e \"require('fs').readdirSync('dist',{recursive:true}).filter(f=>f.endsWith('.map')).forEach(f=>{const p='dist/'+f;const m=JSON.parse(require('fs').readFileSync(p,'utf8'));delete m.sourcesContent;require('fs').writeFileSync(p,JSON.stringify(m))})\" && (cd packages/timezone && bun run build || true)",
     "docs:dev": "astro dev --root site",
     "docs:build": "astro build --root site",
     "docs:check": "bun run scripts/check-site-doc-drift.ts",
