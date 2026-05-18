@@ -1,4 +1,4 @@
-import moment2 from "../src/index.ts";
+import mmntjs from "../src/index.ts";
 import originalMoment from "../moment/moment.js";
 
 type SearchResult = {
@@ -76,7 +76,7 @@ function parserScore(m: any): number {
 function evaluate(goal: Goal, input: string): { score: number; found: boolean; agreement: string } {
   const strict = goal.strict ?? false;
   const perFormat = goal.formats
-    .map((format) => ({ format, parser: moment2(input, format as any, strict) }))
+    .map((format) => ({ format, parser: mmntjs(input, format as any, strict) }))
     .map((entry) => ({
       format: entry.format,
       valid: entry.parser.isValid(),
@@ -94,7 +94,7 @@ function evaluate(goal: Goal, input: string): { score: number; found: boolean; a
   if (ambiguous) score += 150;
   if (top && second && top.format !== second.format) score += 50;
 
-  const m2 = moment2(input, goal.formats as any, strict);
+  const m2 = mmntjs(input, goal.formats as any, strict);
   const orig = originalMoment(input, goal.formats as any, strict);
   const sameFormat = (m2 as any)._f === (orig as any)._f;
   const sameValidity = m2.isValid() === orig.isValid();

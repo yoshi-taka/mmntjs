@@ -178,7 +178,7 @@ This is deterministic per operation sequence. After N mutations followed by one 
 
 This is deterministic per code path. The allocation point depends on which operations are called and in what order. For a given program, the allocation always happens at the same point.
 
-**Potential non-determinacy**: The `_d` object is mutated in place by Date setters (e.g., `dt.setDate()`). If `_d` is shared (e.g., through an unclone operation), mutations could be visible unexpectedly. But moment2's `clone` properly copies `_d`, and mutations are always preceded by a local `_getD()` call that creates or reuses the instance's own `_d`.
+**Potential non-determinacy**: The `_d` object is mutated in place by Date setters (e.g., `dt.setDate()`). If `_d` is shared (e.g., through an unclone operation), mutations could be visible unexpectedly. But mmntjs's `clone` properly copies `_d`, and mutations are always preceded by a local `_getD()` call that creates or reuses the instance's own `_d`.
 
 ### 4.3 Parse caches
 

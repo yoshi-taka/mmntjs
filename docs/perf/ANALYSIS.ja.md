@@ -30,7 +30,7 @@
 
 **問題**: V8 は同じプロパティ順で作成されたオブジェクトを同じ Shape（Hidden Class）に割り当て、プロパティアクセスをインデックス計算（C++ の構造体アクセス相当）に最適化する。Shape が変わると Deopt → 再最適化が走る。
 
-**moment2 の実装**:
+**mmntjs の実装**:
 - Constructor は常に同じ順序でプロパティを代入:
   `_isAMomentObject → _l → _isUTC → _offset → (_d) → _t → _isValid → _dirty → (_i) → (_f) → (_strict) → (_cold)`
 - 条件付きの `_i/_f/_strict` 代入は `undefined` チェック後だが、代入タイミングは constructor 内で固定
@@ -59,7 +59,7 @@ cold._overflow  // ある Moment は number、別の Moment は undefined → �
 
 **問題**: 条件分岐が多いと CPU の分岐予測ミス (branch mispredict) が発生。パイプラインがフラッシュされ ~15 cycle のペナルティ。
 
-**moment2 の工夫**:
+**mmntjs の工夫**:
 
 ### 2a. Getter の早期 return
 
@@ -139,7 +139,7 @@ this._t =
 
 `str.trim()` は新しい**SlicedString** か **ConsString** を生成する可能性があり、以降の `charCodeAt` が遅くなる（特に ConsString は毎回ツリー探索）。
 
-**moment2 の対応**:
+**mmntjs の対応**:
 - `parseCommonISO` は `str.trim()` を呼ばず、元の文字列に対して直接 `charCodeAt`
 - `createFromString` の fast path でも `str.trim()` を排除
 - 引数の文字列は moment() に渡される時点でメモリ上に SeqString として存在する可能性が高い。そのまま使うのが最速
@@ -161,7 +161,7 @@ if (len === 10 && charCodeAt(4) === 45 && charCodeAt(7) === 45) {
 
 **問題**: V8 の irregexp エンジンは初回実行時に JIT コンパイルを行う。たとえ単純な正規表現でも、パターンコンパイル＋実行コンテキスト生成のオーバーヘッドがある。2回目以降はネイティブコードがキャッシュされるが、`RegExp.exec()` の戻り値（`RegExpMatchArray`）のアロケーションは毎回発生する。
 
-**moment2 の対応**:
+**mmntjs の対応**:
 - `createFromString` 内のフォーマット検出正規表現（`/^\d{4}-\d{2}-\d{2}([T ]|$)/` 等）を fast path で完全バイパス
 - `parseCommonISO` は正規表現ゼロ、`charCodeAt` ベース
 - `parseISOWithTable` のテーブルイテレーションも `regex.exec()` を使うが、事前の全体マッチで落とせる文字列は落とす
@@ -184,7 +184,7 @@ if (parsed._hasDate !== undefined) { /* 直接 Moment 生成 */ }
 
 **問題**: オブジェクトの生成が多すぎると GC が頻発する。特に Young Generation (nursery) から Old Generation への昇格 (tenuring) は stop-the-world を引き起こす。
 
-**moment2 で削減したアロケーション**:
+**mmntjs で削減したアロケーション**:
 
 | 削減したアロケーション | 理由 |
 |---|---|
@@ -207,7 +207,7 @@ if (parsed._hasDate !== undefined) { /* 直接 Moment 生成 */ }
 
 **問題**: JavaScript のテンプレートリテラル `` `${a}-${b}` `` は V8 によって Tagged Template として最適化される。初回以降は「テンプレートオブジェクト」がキャッシュされ、文字列結合が高速になる。
 
-**moment2 の活用**:
+**mmntjs の活用**:
 - `formatCommonEn` の datePart 構築
 - `_epochDaysToYMD` の戻り値タプル（実質テンプレート）
 - フォーマット結果の文字列生成
@@ -226,7 +226,7 @@ return `${PAD2[this.$H]}:${PAD2[this.$m]}:${PAD2[this.$s]}`;
 
 **問題**: V8 の TurboFan JIT は関数の呼び出し回数（ヒット数）に応じてインライン展開を判断する。インライン展開されない関数呼び出しはスタフレーム生成＋`call`/`ret` 命令のオーバーヘッド。
 
-**moment2 でインライン化が期待できるパターン**:
+**mmntjs でインライン化が期待できるパターン**:
 
 | 関数 | インライン化されやすい理由 |
 |---|---|
@@ -245,7 +245,7 @@ return `${PAD2[this.$H]}:${PAD2[this.$m]}:${PAD2[this.$s]}`;
 
 **問題**: プロパティアクセスがインスタンス→プロトタイプ→プロトタイプとチェーンを辿るたびに Shape チェックが必要。
 
-**moment2 の設計**:
+**mmntjs の設計**:
 - `$y $M $D $W $H $m $s $ms` → インスタンスの**Own Property**（Class field 初期化子で割り当て）
 - 未設定の `declare` フィールド（`_overflow` 等）→ インスタンスに存在しないので `undefined` を返す（プロトタイプにもないので V8 が fast path で処理）
 - `_cold` → own property（代入時のみ存在）
@@ -265,7 +265,7 @@ return `${PAD2[this.$H]}:${PAD2[this.$m]}:${PAD2[this.$s]}`;
 
 **問題**: V8 は整数を Smi (Small Integer, 31-bit signed) として表現し、オブジェクトへのポインタにタグを付けて区別する。Smi 範囲を超えると HeapNumber にボックス化され、演算が遅くなる。
 
-**moment2 の配慮**:
+**mmntjs の配慮**:
 - 日付の各フィールド（年・月・日・時・分・秒）は Smi 範囲内（`-2^30 ~ 2^30-1`）
 - `$ms`（ミリ秒）も 0-999 なので Smi
 - `_t`（タイムスタンプ）は `Date.now()` で 1.7e12 程度 → Smi 範囲（≈1e9）を超えるので HeapNumber。ただし `_t` は直接演算される（文字列化除く）
@@ -283,7 +283,7 @@ Math.floor(tm / 12)        // 結果は Smi 範囲
 
 **問題**: V8 は同じ関数が同じ Shape の `this` で呼ばれると、インラインキャッシュを最適化する。異なる Shape で呼ばれるとデオプティマイズ。
 
-**moment2 の設計**: `Moment.prototype` 上のメソッドは常に `Moment` インスタンスを `this` として呼ばれる。Shape が（通常時は）完全に固定されているため、V8 はすべてのメソッド呼び出しをモノモーフィックに処理できる。
+**mmntjs の設計**: `Moment.prototype` 上のメソッドは常に `Moment` インスタンスを `this` として呼ばれる。Shape が（通常時は）完全に固定されているため、V8 はすべてのメソッド呼び出しをモノモーフィックに処理できる。
 
 ```typescript
 // 全 Moment インスタンスは同じ Shape → メソッド呼び出しがモノモーフィック
@@ -299,7 +299,7 @@ b.month() // this.shape === Moment_shape (IC: monomorphic, same Shape)
 
 **問題**: `try { } catch { }` ブロックがある関数は V8 の TurboFan が最適化を制限する（例外ハンドリングのための安全なコード生成が必要）。
 
-**moment2 の該当箇所**:
+**mmntjs の該当箇所**:
 - `locale.ts` の `months()` 関数内の `try/catch`（ロケールデータのフォールバック処理）
 - これらはホットパス（`format()` からのロケールアクセス）にある → 潜在的に遅い
 
@@ -311,7 +311,7 @@ b.month() // this.shape === Moment_shape (IC: monomorphic, same Shape)
 
 **問題**: 汎用 parser / formatter は、先頭数文字を見れば行かなくてよい経路まで広く踏みがち。入力 routing が遅いと、それだけで余分な parse コストが乗る。
 
-**moment2 の代表例**:
+**mmntjs の代表例**:
 ```typescript
 if (!format && (locale?._abbr ?? "en") === "en") {
   if ((len === 10 || (len >= 19 && len <= 29)) && str.charCodeAt(4) === 45 && str.charCodeAt(7) === 45) {
@@ -338,7 +338,7 @@ const isSign = c0 === 43 || c0 === 45;
 
 **問題**: 関数が毎回同じキー順のオブジェクトリテラルを返す場合、V8 はその Shape を覚えて最適化する。
 
-**moment2 の注意点**:
+**mmntjs の注意点**:
 
 ```typescript
 // 毎回同じキー順 → Shape 安定（V8 が最適化可能）
@@ -388,7 +388,7 @@ function _dayOfWeek(y: number, m: number, d: number): number {
 
 ## 15. テーブルルックアップ大全
 
-moment2 は計算コストを回避するために多数の**事前計算テーブル**を使用している。
+mmntjs は計算コストを回避するために多数の**事前計算テーブル**を使用している。
 
 ### 15a. `PAD2` — 2桁ゼロ埋めテーブル
 
@@ -616,7 +616,7 @@ private static _epochDaysToYMD(z: number): [number, number, number] {
 | `str.trim()` + 正規表現マッチ | `charCodeAt` 直接検査 | 文字列生成 + 正規表現JIT → O(1) メモリアクセス |
 | `||` によるデフォルト値 | 三項演算子 `? :` | 微妙だが、V8 では三項の方がインライン展開されやすい |
 
-## 20. まとめ: moment2 の高速化スタック
+## 20. まとめ: mmntjs の高速化スタック
 
 ```
 Layer 5: アルゴリズム      Sakamoto, _epochDaysToYMD, ビット演算 leap year
@@ -667,7 +667,7 @@ Moment object (JSReceiver)
 - 現在: Array of Structures (AoS) — 各 Moment が全フィールドを持つ
 - 代替: Structure of Arrays (SoA) — `$y[]`, `$M[]`, `$D[]` を別々の TypedArray で持つ
 - SoA だと日付の一括処理（例: 100万件の dayOfYear 計算）で SIMD ベクトル化が可能
-- ただし moment2 は汎用ライブラリで単一オブジェクト操作が主、かつ moment.js 互換 API を保つ必要があるため SoA は採用していない
+- ただし mmntjs は汎用ライブラリで単一オブジェクト操作が主、かつ moment.js 互換 API を保つ必要があるため SoA は採用していない
 
 ### 21b. プロパティバッキングストアの拡張戦略
 
@@ -679,7 +679,7 @@ V8 のプロパティ格納域（backing store）は容量不足になると再�
 | 5-8 | 一部 in-object + backing store | 両方に分散 |
 | 9+ | backing store に追い出し | FixedArray（1-hop） |
 
-moment2 は class field が4つ（`_isAMomentObject`, `_isUTC` 等のインライン化は V8 の裁量）＋8つの `$` フィールド＋条件付きフィールド。合計 15+ プロパティ → 確実に backing store に格納される。
+mmntjs は class field が4つ（`_isAMomentObject`, `_isUTC` 等のインライン化は V8 の裁量）＋8つの `$` フィールド＋条件付きフィールド。合計 15+ プロパティ → 確実に backing store に格納される。
 
 **意味**: どのプロパティも「オブジェクト→backing store 配列→値」の 2 回のメモリアクセスが必要。ただし backing store は FixedArray（メモリ上で連続）なので、**一度ポインタを解決すれば後続のアクセスは連続メモリへの整数インデックスアクセス**になる。このパターンは V8 が最も得意とする。
 
@@ -727,7 +727,7 @@ _cold = { _overflow: 2, _empty: true, _invalidMonth: "Feb", _nullInput: true, ..
 | ARM64 (Apple M1-M3) | **16KB** | 2MB | 16KB固定 |
 | ARM64 (AWS Graviton) | 4KB/16KB | 2MB/32MB | 選択可 |
 
-moment2 の実行環境は macOS (Apple Silicon) が想定される。**ページサイズは 16KB**。
+mmntjs の実行環境は macOS (Apple Silicon) が想定される。**ページサイズは 16KB**。
 
 ### 22b. Moment オブジェクトのページ占有量
 
@@ -784,7 +784,7 @@ V8 のガベージコレクタは New Space（若年世代）と Old Space（老
   - 長寿命の Moment はここに昇格する
   - コンパクションによりフラグメンテーションを解消 → ページ利用効率が維持される
 
-**moment2 の GC フットプリント**:
+**mmntjs の GC フットプリント**:
 - `_cold` 削減により Moment 1個あたりのアロケーションサイズ減少 → GC のコピー量が減る
 - `_dirty` 遅延初期化により `_refreshFields()` での Date 生成が不要なケースがある → Date アロケーション削減
 - clone で `_d` を共有しない → clone 時に `new Date()` 相当のコストがかからない
@@ -803,7 +803,7 @@ V8 のガベージコレクタは New Space（若年世代）と Old Space（老
 
 ### 22g. ページサイズ最適化の限界と適用外
 
-moment2 のような JavaScript ライブラリでページサイズを直接制御することは不可能。V8 がヒープ管理を完全に抽象化しているため。ただし以下の間接的な配慮は有効:
+mmntjs のような JavaScript ライブラリでページサイズを直接制御することは不可能。V8 がヒープ管理を完全に抽象化しているため。ただし以下の間接的な配慮は有効:
 
 | 配慮 | 効果 |
 |------|------|
@@ -812,14 +812,14 @@ moment2 のような JavaScript ライブラリでページサイズを直接制
 | プロパティ数の最小化 | Shape 安定性向上 → Deopt 防止 |
 | `_d` を clone で共有しない | Old Space でのフラグメンテーション防止 |
 
-**本来ページサイズ最適化が必要な領域**（moment2 では関係ない）:
+**本来ページサイズ最適化が必要な領域**（mmntjs では関係ない）:
 - 巨大な TypedArray の確保と Huge Page のマッピング（画像処理、ゲームエンジン）
 - mmap を使ったファイル I/O のバッファ管理
 - DMA を伴うデバイスドライバ
 
 ## 23. 多層キャッシュ戦略
 
-moment2 は複数層のキャッシュを使っている。engine 非依存のアプリケーションキャッシュ、JS engine の inline cache、さらにその下の CPU キャッシュが重なっている。
+mmntjs は複数層のキャッシュを使っている。engine 非依存のアプリケーションキャッシュ、JS engine の inline cache、さらにその下の CPU キャッシュが重なっている。
 
 ```
 Layer 5: LRU キャッシュ     LruMap (expandLocaleCache, tokenizeCache, expandedFormatCache)
@@ -835,7 +835,7 @@ Layer 1: CPU キャッシュ       L1 (32KB), L2 (256KB-1MB), TLB (64 entry L1, 
 - **L2 Cache (256KB-1MB)**: 約 1600-6400 Moment → benchmark の全 Moment が収まる可能性がある。
 - **TLB (L1 64 entry × 16KB = 1MB カバー)**: 約 6000 Moment 分。benchmark の全ワーキングセットをカバー可能。
 
-**moment2 の特性**: `add()`, `startOf()`, `format()` は同一 Moment 内のフィールドだけ触る（時間的局所性◎）。`diff()` は2つの Moment にアクセスするが、これも同一 GC 領域内に密集している（空間的局所性◎）。
+**mmntjs の特性**: `add()`, `startOf()`, `format()` は同一 Moment 内のフィールドだけ触る（時間的局所性◎）。`diff()` は2つの Moment にアクセスするが、これも同一 GC 領域内に密集している（空間的局所性◎）。
 
 ### 23b. Layer 2 — V8 Inline Cache (IC)
 
@@ -848,9 +848,9 @@ year() { return this._isValid ? this.$y : NaN; }
 //   IC: Shape が Moment_shape なら「オフセット 0xXX を読め」とキャッシュ
 ```
 
-IC の種類と moment2 での状態:
+IC の種類と mmntjs での状態:
 
-| IC 種別 | 条件 | moment2 | 状態 |
+| IC 種別 | 条件 | mmntjs | 状態 |
 |---------|------|---------|------|
 | Monomorphic | 1つの Shape のみ | Shape 固定（`_cold` 削減後） | ✅ |
 | Polymorphic | 2-4 Shape | parse 戻り値オブジェクト（2 Shape） | ⚠️ 許容範囲 |
@@ -992,7 +992,7 @@ class LruMap<K, V> {
 
 ### 23f. engine 内部キャッシュ
 
-engine が暗黙的に行うキャッシュで、moment2 が間接的に恩恵を受けているもの:
+engine が暗黙的に行うキャッシュで、mmntjs が間接的に恩恵を受けているもの:
 
 | キャッシュ | 対象 | 効果 |
 |-----------|------|------|
@@ -1020,9 +1020,9 @@ engine が暗黙的に行うキャッシュで、moment2 が間接的に恩恵�
 
 ### 24a. TurboFan の最適化パイプライン
 
-V8 の TurboFan JIT は関数がホットになると（~1000回呼び出し）最適化コンパイルを開始する。以下の主要パスが moment2 のコードに適用される:
+V8 の TurboFan JIT は関数がホットになると（~1000回呼び出し）最適化コンパイルを開始する。以下の主要パスが mmntjs のコードに適用される:
 
-| 最適化パス | 効果 | moment2 での恩恵 |
+| 最適化パス | 効果 | mmntjs での恩恵 |
 |-----------|------|----------------|
 | **型特化 (Type Specialization)** | 変数の型を固定し、動的ディスパッチを削除 | getter の `$y` が Smi と確定 → アンボックス化 |
 | **インライン展開 (Inlining)** | 呼び出し先のコードを呼び出し元に展開 | `_ensureFields()` が 1-2 命令に縮退 |
@@ -1037,10 +1037,10 @@ V8 の TurboFan JIT は関数がホットになると（~1000回呼び出し）�
 
 ```typescript
 // benchmark 内:
-for (let i = 0; i < 5000; i++) { moment2(); }
+for (let i = 0; i < 5000; i++) { mmntjs(); }
 ```
 
-TurboFan は `moment2()` の戻り値がループ外で使われず、どこにも保存されないことを検出する。もし Moment コンストラクタがインライン展開され、かつ生成された Moment が「エスケープしない」（関数外への参照が渡らない）と証明できれば:
+TurboFan は `mmntjs()` の戻り値がループ外で使われず、どこにも保存されないことを検出する。もし Moment コンストラクタがインライン展開され、かつ生成された Moment が「エスケープしない」（関数外への参照が渡らない）と証明できれば:
 
 1. Moment インスタンスの**ヒープ割り当てを完全に除去**
 2. `_refreshFields()` が呼ばれないため、Date 生成も除去
@@ -1052,7 +1052,7 @@ TurboFan は `moment2()` の戻り値がループ外で使われず、どこに�
 
 以下の事象が発生すると、TurboFan は最適化コードを破棄し、インタープリタ実行にフォールバックする:
 
-| トリガー | リスク | moment2 |
+| トリガー | リスク | mmntjs |
 |---------|--------|---------|
 | **Shape 変化** | オブジェクトに新しいプロパティが追加される | `_cold` 削減でリスク低減。ただし `_cold` 生成時（エラーMoment作成時）に Shape が変わる → その時だけ Deopt |
 | **型の変化** | Smi が HeapNumber に変わる | `$y` に 2^30 以上の年が入ると Deopt（非現実的） |
@@ -1060,7 +1060,7 @@ TurboFan は `moment2()` の戻り値がループ外で使われず、どこに�
 | **try/catch 到達** | 最適化コードが例外ハンドラを必要とする | ロケールフォールバックで稀に発生 |
 | **インラインキャッシュ限界** | IC が 4 種類以上の Shape を観測 | `_cold` 内アクセスで発生するがエラー時のみ |
 
-**moment2 の方針**: 正常系のホットパスでは一切 Deopt しないことを設計目標としている。`_cold` 削減、Shape 固定、型の一貫性（全ての `$` フィールドは Smi 範囲）により、安定した最適化コードを維持する。
+**mmntjs の方針**: 正常系のホットパスでは一切 Deopt しないことを設計目標としている。`_cold` 削減、Shape 固定、型の一貫性（全ての `$` フィールドは Smi 範囲）により、安定した最適化コードを維持する。
 
 ### 24d. フィードバックベクターの蓄積
 
@@ -1079,7 +1079,7 @@ function year() {
 
 TurboFan はこのフィードバックに基づいて型特化コードを生成する。1000回 Monomorphic だった Shape が突然変化すると **Deopt + 再最適化** が発生する。
 
-moment2 の戦略:
+mmntjs の戦略:
 - **正常 Moment は全く同じ Shape** → feedback が 100% Monomorphic
 - エラー Moment は別 Shape → 正常系の feedback を汚染しない
 - エラー Moment で Deopt しても、その後の正常 Moment で再最適化される（ペナルティはエラー1回のみ）
@@ -1090,9 +1090,9 @@ moment2 の戦略:
 
 ```typescript
 // 初回 moment() 呼び出しで発生する処理:
-import moment2 from "moment2";         // Module linking (同期的)
+import mmntjs from "mmntjs";         // Module linking (同期的)
 //   ↓
-moment2();                               // 初回実行
+mmntjs();                               // 初回実行
 //   ├── getCurrentLocale()              // locale.ts: 初回は "en" 確定
 //   ├── new Moment({ _t: Date.now() })  // constructor (lazy init: _refreshFields 呼ばない)
 //   ├── Moment クラスの定義評価          // モジュール評価時に実施済み
@@ -1112,9 +1112,9 @@ moment2();                               // 初回実行
 ### 25b. モジュール評価のタイムライン
 
 ```
-import moment2 from "moment2"
+import mmntjs from "mmntjs"
   ├── src/index.ts の評価 (.mjs→.ts→.js 変換は Bun が事前に実施)
-  │   ├── import "./moment2"         → Moment クラス定義
+  │   ├── import "./mmntjs"         → Moment クラス定義
   │   ├── import "./format"           → formatMoment 関数
   │   ├── import "./parse"            → parseString, parseCommonISO
   │   ├── import "./units"            → DAYS_IN_MONTH, isLeapYear 等
@@ -1124,7 +1124,7 @@ import moment2 from "moment2"
   └── export default moment 関数
 ```
 
-**ツリーシェイク効果**: `src/index.ts` は全モジュールを import するが、実際に評価されるのは moment2 のエントリポイントからの依存のみ。使われないロケール（`src/locale/en.ts` 以外の 138 ファイル）は `import()` で遅延ロードされるため、初回評価には影響しない。
+**ツリーシェイク効果**: `src/index.ts` は全モジュールを import するが、実際に評価されるのは mmntjs のエントリポイントからの依存のみ。使われないロケール（`src/locale/en.ts` 以外の 138 ファイル）は `import()` で遅延ロードされるため、初回評価には影響しない。
 
 ### 25c. 初回パースの正規表現 JIT
 
@@ -1134,7 +1134,7 @@ const EXTENDED_ISO_REGEX = /^\s*((?:[+-]\d{6}|\d{4})-(?:\d\d-\d\d|W\d\d-\d|W\d\d
 
 V8 の irregexp エンジンはこの正規表現を初回 `exec()` 時にバックグラウンド JIT コンパイルする（約 100μs-1ms）。2回目以降はコンパイル済みネイティブコードが実行される。
 
-**moment2 の対策**: `parseCommonISO` は正規表現を使わないため、このコストは発生しない。`parseISOWithTable` でのみ EXTENDED_ISO_REGEX / BASIC_ISO_REGEX が使われるが、ISO 文字列の大部分は `parseCommonISO` で先に処理されるため、ISO テーブルパスの regex JIT はウォームアップに影響しない。
+**mmntjs の対策**: `parseCommonISO` は正規表現を使わないため、このコストは発生しない。`parseISOWithTable` でのみ EXTENDED_ISO_REGEX / BASIC_ISO_REGEX が使われるが、ISO 文字列の大部分は `parseCommonISO` で先に処理されるため、ISO テーブルパスの regex JIT はウォームアップに影響しない。
 
 ### 25d. Warm-up に要する反復回数
 
@@ -1145,7 +1145,7 @@ V8 の irregexp エンジンはこの正規表現を初回 `exec()` 時にバッ
 | **TurboFan 最適化完了** | 1001-2000回 | 最適化コードに切り替わり、以降はネイティブ実行 |
 | **IC 安定化** | 4-10回 | Monomorphic IC が確立。以降 Shape が変わらない限り安定 |
 
-**moment2 の到達時間**:
+**mmntjs の到達時間**:
 - benchmark (5000回): TurboFan 最適化 + Monomorphic IC 確立 → 測定は安定領域で行われる
 - 実アプリ (1-10回): Ignition 実行。`_dirty` 遅延初期化が効く（不要な `_refreshFields` を回避）
 - SSR (1回): 冷えた状態で1回だけ。モジュール評価と JIT コストが支配的
@@ -1158,43 +1158,43 @@ V8 の irregexp エンジンはこの正規表現を初回 `exec()` 時にバッ
 
 → これらはいずれも「1回だけ」のコスト。SSR では許容範囲内。
 
-### 25e. moment2 と date-fns のコールドスタート比較
+### 25e. mmntjs と date-fns のコールドスタート比較
 
-| 指標 | moment2 | date-fns | 備考 |
+| 指標 | mmntjs | date-fns | 備考 |
 |------|---------|----------|------|
-| モジュールサイズ (bundle) | 82KB | 114KB (date-fns v4) | moment2 の方が軽い |
-| 初回 `parseISO` レイテンシ | ~500ns (lazy) | ~1μs | 初回でも moment2 が速い |
+| モジュールサイズ (bundle) | 82KB | 114KB (date-fns v4) | mmntjs の方が軽い |
+| 初回 `parseISO` レイテンシ | ~500ns (lazy) | ~1μs | 初回でも mmntjs が速い |
 | 初回 `format` | ~35ns (fast path) | ~1μs | locale 依存なし |
 | 全機能ロード | 同期的（EIM） | 同期的（EIM） | 両者同じ |
 | デッドコード除去 | ツリーシェイク対応 | 名前付きエクスポート | 両者ツリーシェイクされやすい |
 
-date-fns は関数単位の import のため、使わない関数を import しなければ bundle サイズが小さくなる。moment2 は 1 つのエントリポイントに全機能が含まれるが、実使用に必要な機能（parse, format, add, diff）だけが使われる場合、TurboFan が未使用コードをデッドコード除去する機会は少ない（モジュール評価時に定義されるため）。ただしツリーシェイキングによりモジュール全体が除去されることはない。
+date-fns は関数単位の import のため、使わない関数を import しなければ bundle サイズが小さくなる。mmntjs は 1 つのエントリポイントに全機能が含まれるが、実使用に必要な機能（parse, format, add, diff）だけが使われる場合、TurboFan が未使用コードをデッドコード除去する機会は少ない（モジュール評価時に定義されるため）。ただしツリーシェイキングによりモジュール全体が除去されることはない。
 
-実際の計測では moment2 はコールドスタートでも date-fns と同等以上に速い（parse ISO string: 328ns vs 950ns, format: 38ns vs 1.13μs）。
+実際の計測では mmntjs はコールドスタートでも date-fns と同等以上に速い（parse ISO string: 328ns vs 950ns, format: 38ns vs 1.13μs）。
 
 ## 26. 他ライブラリとの比較（参考）
 
-**dayjs**: moment2 と同じフィールドキャッシュ方式。
+**dayjs**: mmntjs と同じフィールドキャッシュ方式。
 - 内部で `$y, $M, $D, $H, $m, $s, $ms` を持ち getter は直読
 - Locale の遅延ロード（import()）
-- moment2 と設計思想が非常に近い。速度も同等と推定される。
+- mmntjs と設計思想が非常に近い。速度も同等と推定される。
 - ただし moment.js 互換性は限定的。
 
 **luxon**: `DateTime` クラス。Intl.DateTimeFormat に依存。
 - パースに `Intl.DateTimeFormat` を使うためブラウザ依存
 - 初回パースが遅い（Intl オブジェクトの生成コスト）
 - 2回目以降はキャッシュされる
-- moment2 より総じて遅いが、ロケール対応の正確性では優位
+- mmntjs より総じて遅いが、ロケール対応の正確性では優位
 
 **date-fns**: 関数型、ネイティブ Date を直接操作。
 - ラッパーなし（new Date() を返すだけ）
 - 単一操作の毎回 Date API を呼ぶ → キャッシュなし
-- moment2 に比べて getter が遅い（Date API 呼び出し）
+- mmntjs に比べて getter が遅い（Date API 呼び出し）
 - ラッパーなしのため `moment()` 相当の操作（現在時刻取得）は最速
 
 ```
         速度比較（直感）:
-         moment2  ≒  dayjs  >  date-fns  >  luxon  >>  moment.js
+         mmntjs  ≒  dayjs  >  date-fns  >  luxon  >>  moment.js
 getter:  🏆 10ns    10ns      200ns       500ns      250ns
 format:  🏆 35ns    50ns      1.1μs      1.5μs      350ns
 parse:   🏆 330ns   500ns     1.0μs      2.0μs      5.0μs
@@ -1207,7 +1207,7 @@ create:      60ns    80ns     🏆 35ns     80ns      280ns
 
 ### 勝ち: date-fns より速いケース
 
-**Getter / フィールドアクセス**: キャッシュフィールドが決定的。date-fns 都度 Date API を叩くのに対して、moment2 は `$y` プロパティ読み取りだけで完了。**Shape 固定＋Own Property による IC 最適化**の勝利。
+**Getter / フィールドアクセス**: キャッシュフィールドが決定的。date-fns 都度 Date API を叩くのに対して、mmntjs は `$y` プロパティ読み取りだけで完了。**Shape 固定＋Own Property による IC 最適化**の勝利。
 
 **フォーマット**: `formatCommonEn` の switch fast path が激速。テンプレートリテラル＋PAD2 テーブルで `padStart` 不要。**Monomorphic Property Access + 事前計算テーブル**の勝利。
 
@@ -1217,6 +1217,6 @@ create:      60ns    80ns     🏆 35ns     80ns      280ns
 
 **`moment()` / `new Date()`**: ラッパーオブジェクトのプロパティ初期化（12+ プロパティ代入）が避けられない。date-fns の `new Date()` は V8 のネイティブ実装で 30ns。
 
-**`add(1, 'day')`**: date-fns は `addDays(date, 1)` で内部では `new Date(date.getTime() + 86400000)` を返すだけ。moment2 は `_getD()` → `setFullYear()` → 8 フィールド更新 → `_t` 更新 → `_updateOffset` とやることが多い。ラッパー構造の本質的なコスト。
+**`add(1, 'day')`**: date-fns は `addDays(date, 1)` で内部では `new Date(date.getTime() + 86400000)` を返すだけ。mmntjs は `_getD()` → `setFullYear()` → 8 フィールド更新 → `_t` 更新 → `_updateOffset` とやることが多い。ラッパー構造の本質的なコスト。
 
 **課題**: これらの負けは Moment 互換 API を保つ限り原理的に解消できない。「作って捨てる」ユースケース（benchmark）が不利なだけで、実アプリでは Moment を保持して使い回すケースが多いので実害は少ない。

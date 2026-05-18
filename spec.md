@@ -1,4 +1,4 @@
-# moment2 — Specification
+# mmntjs — Specification
 
 ## Package Name
 
@@ -22,7 +22,7 @@ Not a destination — a migration path to Temporal API.
 ```
 moment
   ↓ codemod (one command)
-moment2 (works, warns, guides)
+mmntjs (works, warns, guides)
   ↓ trackUsage + toTemporal()
 Temporal API
 ```
@@ -56,7 +56,7 @@ Temporal API
 |--------|--------|
 | CJS    | `dist/index.cjs` |
 | ESM    | `dist/index.mjs` |
-| UMD    | `dist/moment2.min.js` (CDN, `window.moment2`) |
+| UMD    | `dist/mmntjs.min.js` (CDN, `window.mmntjs`) |
 
 - Zero-dependency  
 - `date-fns` etc. NOT included  
@@ -99,7 +99,7 @@ Temporal API
 ## TypeScript Types
 
 Base: `@types/moment` copied as-is (MIT).  
-Only moment2-specific APIs are added on top:
+Only mmntjs-specific APIs are added on top:
 
 ```ts
 interface Moment {
@@ -166,12 +166,12 @@ These plugins extend `moment.fn` — compatibility depends on Proxy correctly fo
 ## Temporal Bridge
 
 ```ts
-// moment2 -> Temporal
-moment2('2024-01-01').toTemporal()
+// mmntjs -> Temporal
+mmntjs('2024-01-01').toTemporal()
 // => Temporal.PlainDate | Temporal.ZonedDateTime
 
-// Temporal -> moment2
-moment2.fromTemporal(Temporal.Now.zonedDateTimeISO())
+// Temporal -> mmntjs
+mmntjs.fromTemporal(Temporal.Now.zonedDateTimeISO())
 ```
 
 ---
@@ -181,10 +181,10 @@ moment2.fromTemporal(Temporal.Now.zonedDateTimeISO())
 ### Warning mode (on by default)
 
 ```ts
-moment2().add(1, 'day')
+mmntjs().add(1, 'day')
 
 // console.warn:
-// [moment2] mutable operation detected
+// [mmntjs] mutable operation detected
 // Temporal equivalent: Temporal.Now.plainDateISO().add({ days: 1 })
 ```
 
@@ -194,9 +194,9 @@ moment2().add(1, 'day')
 ### Usage tracking
 
 ```ts
-moment2.config({ trackUsage: true })
+mmntjs.config({ trackUsage: true })
 // ... run your app ...
-moment2.report()
+mmntjs.report()
 // => list of APIs used + Temporal migration table
 ```
 
@@ -207,7 +207,7 @@ moment2.report()
 ```sh
 npx mmntjs migrate --check
 
-# Found 47 moment2 usages:
+# Found 47 mmntjs usages:
 #  32 can be auto-migrated to Temporal
 #  12 need manual review
 #   3 no Temporal equivalent
@@ -236,7 +236,7 @@ npx mmntjs migrate --apply
 
 ### Type conflicts with `@types/moment`
 
-- If both `moment2` and `@types/moment` are installed, type collision may occur  
+- If both `mmntjs` and `@types/moment` are installed, type collision may occur  
 - Mitigation: codemod removes `@types/moment` from devDependencies automatically  
 - Document clearly in README  
 
@@ -245,7 +245,7 @@ npx mmntjs migrate --apply
 ### Third-party libraries with `moment` as peerDependency
 
 - Libraries like `react-datepicker`, `ant-design`, etc. declare `peerDependencies: { "moment": "*" }`  
-- Simply replacing moment with moment2 breaks these libraries  
+- Simply replacing moment with mmntjs breaks these libraries  
 - This is the most critical risk  
 
 #### Solution: npm package aliasing
@@ -348,7 +348,7 @@ Property-based tests must set `TZ=UTC` to avoid environment-dependent failures.
 Real-world code occasionally freezes moment instances (e.g. in Redux state).
 
 ```js
-const m = moment2('2024-01-01')
+const m = mmntjs('2024-01-01')
 Object.freeze(m)
 
 m.add(1, 'day')         // silently ignored — m unchanged (matches moment)
@@ -379,7 +379,7 @@ set(target, prop, value) {
 
 ### Tree-shaking / side effects
 
-`moment2(...)` call-style may be flagged as side-effectful by bundlers, preventing tree-shaking.
+`mmntjs(...)` call-style may be flagged as side-effectful by bundlers, preventing tree-shaking.
 
 Mitigation:
 
@@ -390,7 +390,7 @@ Mitigation:
 
 ### Subpath exports compatibility
 
-`moment2/locale/ja` requires explicit `exports` field in `package.json`.  
+`mmntjs/locale/ja` requires explicit `exports` field in `package.json`.  
 Older Node versions and bundlers may ignore `exports`.
 
 Mitigation:
@@ -409,10 +409,10 @@ Common pattern in tests:
 moment.now = () => 1234567890000 // mock current time
 ```
 
-Proxy on the static `moment2` function must intercept property assignment on the function itself.
+Proxy on the static `mmntjs` function must intercept property assignment on the function itself.
 
 ```ts
-// moment2 is a Proxy-wrapped function
+// mmntjs is a Proxy-wrapped function
 // get/set traps on the function object handle moment.now overrides
 ```
 
@@ -423,7 +423,7 @@ Proxy on the static `moment2` function must intercept property assignment on the
 moment’s locale files reference the core. Design locale loading to avoid circular imports:
 
 - Core has no knowledge of locales at build time  
-- Locales call `moment2.defineLocale(...)` on load (same pattern as moment)  
+- Locales call `mmntjs.defineLocale(...)` on load (same pattern as moment)  
 
 ---
 
@@ -441,7 +441,7 @@ Scope: supported as long as user is not on Edge Runtime with moment (unlikely).
 
 ### Security (CVEs)
 
-Known moment CVEs (ReDoS in date parsing etc.) will be fixed in moment2 as a natural consequence of scratch reimplementation.
+Known moment CVEs (ReDoS in date parsing etc.) will be fixed in mmntjs as a natural consequence of scratch reimplementation.
 
 - Not a stated goal, but a side effect  
 - Will not be marketed as a security fix to avoid false confidence  
@@ -465,7 +465,7 @@ This is out of scope for the codemod. Users must configure their registry manual
 
 ## Codemod
 
-Replaces all moment references with moment2. Handles aliases.
+Replaces all moment references with mmntjs. Handles aliases.
 
 ```sh
 npx mmntjs ./
@@ -538,7 +538,7 @@ moduleNameMapper: { '^moment$': 'mmntjs' }
 ```json
 {
   "scripts": [
-    "node_modules/mmntjs/dist/moment2.min.js"
+    "node_modules/mmntjs/dist/mmntjs.min.js"
   ]
 }
 ```
@@ -551,7 +551,7 @@ files: ['node_modules/moment/moment.js']
 ↓
 
 ```js
-files: ['node_modules/mmntjs/dist/moment2.min.js']
+files: ['node_modules/mmntjs/dist/mmntjs.min.js']
 ```
 
 ---
@@ -701,7 +701,7 @@ moment('13:30', 'HH:mm')
 Warn toward Temporal:
 
 ```
-[moment2] Time-only input detected.
+[mmntjs] Time-only input detected.
 For time without date, consider: Temporal.PlainTime.from('13:30')
 ```
 
@@ -762,7 +762,7 @@ All three layers use **moment (2.30.1) as the oracle**.
 
 ```ts
 fc.property(fc.date(), fc.integer(1, 365), (date, n) => {
-  expect(moment2(date).add(n, 'days').format('YYYY-MM-DD'))
+  expect(mmntjs(date).add(n, 'days').format('YYYY-MM-DD'))
     .toBe(moment(date).add(n, 'days').format('YYYY-MM-DD'))
 })
 ```
@@ -814,8 +814,8 @@ All of these must produce identical output (or identical invalidity) as moment 2
 ### Mutation example
 
 ```
-mutant: moment2 source modified (e.g. +1 → +2)
-test:   moment2_mutant(input) != moment(input) → mutant killed
+mutant: mmntjs source modified (e.g. +1 → +2)
+test:   mmntjs_mutant(input) != moment(input) → mutant killed
 ```
 
 ---
@@ -866,11 +866,11 @@ Rationale:
 5. Add property-based tests (moment as oracle)  
 6. Add mutation testing (moment as oracle)  
 7. CJS + ESM + UMD build setup  
-8. Locale files (`moment2/locale/xx`)  
+8. Locale files (`mmntjs/locale/xx`)  
 9. Temporal bridge (`toTemporal`, `fromTemporal`)  
 10. Migration tooling (warning mode, `trackUsage`, `report`)  
-11. Codemod (`moment2-codemod`)  
-12. `moment2-timezone`  
+11. Codemod (`mmntjs-codemod`)  
+12. `mmntjs-timezone`  
 
 Progress metric: `X / ~10000 tests passing`  
 
@@ -1174,7 +1174,7 @@ Answers “is it safe to install?” for the whole team, not just the engineer r
 | Private npm registry auto-config   | Out of scope, manual setup required |
 | Immutable-only variant             | Drop-in compatibility takes priority |
 | Dedicated rollback command         | git revert is sufficient. Users without git cannot use npx anyway |
-| Feature Flag support               | Both libraries loaded simultaneously — contradicts the “full switch” philosophy. Revisit if moment2 is proven to be significantly lighter than moment |
+| Feature Flag support               | Both libraries loaded simultaneously — contradicts the “full switch” philosophy. Revisit if mmntjs is proven to be significantly lighter than moment |
 | ESLint plugin                      | Target users cannot configure ESLint plugins |
 
 ---
@@ -1182,11 +1182,11 @@ Answers “is it safe to install?” for the whole team, not just the engineer r
 ## Compatibility Badge
 
 ```
-moment2 is 100% compatible with moment 2.30.1
+mmntjs is 100% compatible with moment 2.30.1
 ```
 
 Auto-generated in CI, embedded in README.
 
 ```
-var/local/repos/moment2
+var/local/repos/mmntjs
 ```

@@ -1,8 +1,8 @@
-# moment2 アーキテクチャ方針
+# mmntjs アーキテクチャ方針
 
 ## 目的
 
-`moment2` は `moment` 互換を最優先に維持しつつ、内部実装と配布形態をモジュラーに寄せる。
+`mmntjs` は `moment` 互換を最優先に維持しつつ、内部実装と配布形態をモジュラーに寄せる。
 
 ここでいう「モジュラー」は次の 3 つを意味する。
 
@@ -239,8 +239,8 @@ timezone package -> mmntjs public API
 現在の `test/properties/` は次の 3 層で持つ。
 
 1. `moment` オラクル比較
-2. `moment2` 単体のメタモルフィック不変条件
-3. `moment` と `moment2` の cross-metamorphic 検証
+2. `mmntjs` 単体のメタモルフィック不変条件
+3. `moment` と `mmntjs` の cross-metamorphic 検証
 
 特に変換系 API は、単純な出力一致だけではなく「同じ変換関係が両実装で成立するか」を見る。
 
@@ -253,7 +253,7 @@ timezone package -> mmntjs public API
 - comparison APIs
 - duration arithmetic
 
-この層は [test/properties/metamorphic.test.ts](/Users/as/var/localrepos/moment2/test/properties/metamorphic.test.ts:1) に集約する。
+この層は [test/properties/metamorphic.test.ts](/Users/as/var/localrepos/mmntjs/test/properties/metamorphic.test.ts:1) に集約する。
 
 ## plugin レイヤーの責務
 
@@ -303,7 +303,7 @@ timezone 側は `moment.fn` 拡張を使って統合するが、コアは timezo
 
 ## Temporal bridge 方針
 
-`moment2` の価値は単なる互換ではなく、Temporal への移行導線にある。  
+`mmntjs` の価値は単なる互換ではなく、Temporal への移行導線にある。  
 ただしこれもコア常設ではなく、責務上は独立機能として扱う。
 
 ## 進捗整理
@@ -402,7 +402,7 @@ timezone 側は `moment.fn` 拡張を使って統合するが、コアは timezo
 
 ## 要点
 
-`moment2` は「単枚岩を一気に分割する」のではなく、  
+`mmntjs` は「単枚岩を一気に分割する」のではなく、  
 「互換 API を保ったまま、内部を責務境界で解いていく」設計を採る。
 
 優先順位は次の通り。

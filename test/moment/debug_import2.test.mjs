@@ -1,5 +1,5 @@
 import { test } from 'bun:test';
-import moment from '/Users/as/var/localrepos/moment2/moment/moment.js';
+import moment from '/Users/as/var/localrepos/mmntjs/moment/moment.js';
 
 test('check moment source direct', () => {
   console.log('moment version:', moment.version);

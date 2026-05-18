@@ -20,13 +20,13 @@ export function fuzz(buf) {
     const m2Val = m2.valueOf();
     const djVal = dj.valueOf();
     if (m2Val !== djVal) {
-      throw new Error(`valueOf mismatch for ts=${ts}: moment2=${m2Val}, dayjs=${djVal}`);
+      throw new Error(`valueOf mismatch for ts=${ts}: mmntjs=${m2Val}, dayjs=${djVal}`);
     }
 
     const m2Fmt = m2.format("YYYY-MM-DD");
     const djFmt = dj.format("YYYY-MM-DD");
     if (m2Fmt !== djFmt) {
-      throw new Error(`format mismatch for ts=${ts}: moment2="${m2Fmt}", dayjs="${djFmt}"`);
+      throw new Error(`format mismatch for ts=${ts}: mmntjs="${m2Fmt}", dayjs="${djFmt}"`);
     }
 
     if (buf.length >= 8) {
@@ -40,7 +40,7 @@ export function fuzz(buf) {
       }
       if (m2Add.valueOf() !== djAdd.valueOf()) {
         throw new Error(
-          `add(${amount}, ${unit}) mismatch for ts=${ts}: moment2=${m2Add.valueOf()}, dayjs=${djAdd.valueOf()}`,
+          `add(${amount}, ${unit}) mismatch for ts=${ts}: mmntjs=${m2Add.valueOf()}, dayjs=${djAdd.valueOf()}`,
         );
       }
     }

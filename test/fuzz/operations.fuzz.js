@@ -34,7 +34,7 @@ export function fuzz(buf) {
     const fmtOrig = mOrig.format("YYYY-MM-DD HH:mm:ss.SSS");
     if (fmt2 !== fmtOrig) {
       throw new Error(
-        `format() mismatch for offset ${offset}: moment2="${fmt2}", original="${fmtOrig}"`,
+        `format() mismatch for offset ${offset}: mmntjs="${fmt2}", original="${fmtOrig}"`,
       );
     }
     if (m2.isValid() !== mOrig.isValid()) {
@@ -51,7 +51,7 @@ export function fuzz(buf) {
       const oFmt = aOrig.format("YYYY-MM-DD HH:mm:ss");
       if (aFmt !== oFmt) {
         throw new Error(
-          `add(${amount}, "${unit}") mismatch for offset=${offset}: moment2="${aFmt}", original="${oFmt}"`,
+          `add(${amount}, "${unit}") mismatch for offset=${offset}: mmntjs="${aFmt}", original="${oFmt}"`,
         );
       }
     } catch {}
@@ -63,7 +63,7 @@ export function fuzz(buf) {
       const sOFmt = sOrig.format("YYYY-MM-DD HH:mm:ss");
       if (sFmt !== sOFmt) {
         throw new Error(
-          `startOf("${se}") mismatch for offset=${offset}: moment2="${sFmt}", original="${sOFmt}"`,
+          `startOf("${se}") mismatch for offset=${offset}: mmntjs="${sFmt}", original="${sOFmt}"`,
         );
       }
     } catch {}
@@ -72,7 +72,7 @@ export function fuzz(buf) {
       const dOrig = mOrig.clone().diff(mOrig.clone().add(amount, unit), unit.replace(/s$/, ""));
       if (d2 !== dOrig) {
         throw new Error(
-          `diff() mismatch for offset=${offset} ${amount} ${unit}: moment2=${d2}, original=${dOrig}`,
+          `diff() mismatch for offset=${offset} ${amount} ${unit}: mmntjs=${d2}, original=${dOrig}`,
         );
       }
     } catch {}

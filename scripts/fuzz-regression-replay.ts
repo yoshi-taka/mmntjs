@@ -3,7 +3,7 @@
  * fuzz-regression-replay.ts — Replay regression corpus against current build.
  *
  * Reads all regression entries from test/fuzz/regression/<category>/<name>/
- * and tests them against both moment2 and upstream moment.js.
+ * and tests them against both mmntjs and upstream moment.js.
  *
  * Each entry must have:
  *   input       — input string or binary data

@@ -33,7 +33,7 @@ export function fuzz(buf) {
     const isValidOrig = mOrig.isValid();
     if (isValid2 !== isValidOrig) {
       throw new Error(
-        `isValid mismatch for ${JSON.stringify(obj)}: moment2=${isValid2}, original=${isValidOrig}`,
+        `isValid mismatch for ${JSON.stringify(obj)}: mmntjs=${isValid2}, original=${isValidOrig}`,
       );
     }
     if (!isValid2) {
@@ -43,14 +43,14 @@ export function fuzz(buf) {
     const fmtOrig = mOrig.format("YYYY-MM-DD HH:mm:ss.SSS");
     if (fmt2 !== fmtOrig) {
       throw new Error(
-        `format mismatch for ${JSON.stringify(obj)}: moment2="${fmt2}", original="${fmtOrig}"`,
+        `format mismatch for ${JSON.stringify(obj)}: mmntjs="${fmt2}", original="${fmtOrig}"`,
       );
     }
     const ts2 = m2.valueOf();
     const tsOrig = mOrig.valueOf();
     if (ts2 !== tsOrig) {
       throw new Error(
-        `valueOf mismatch for ${JSON.stringify(obj)}: moment2=${ts2}, original=${tsOrig}`,
+        `valueOf mismatch for ${JSON.stringify(obj)}: mmntjs=${ts2}, original=${tsOrig}`,
       );
     }
   } catch (error) {

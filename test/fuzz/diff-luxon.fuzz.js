@@ -20,13 +20,13 @@ export function fuzz(buf) {
     const m2Val = m2.valueOf();
     const dtVal = dt.toMillis();
     if (m2Val !== dtVal) {
-      throw new Error(`valueOf mismatch for ts=${ts}: moment2=${m2Val}, luxon=${dtVal}`);
+      throw new Error(`valueOf mismatch for ts=${ts}: mmntjs=${m2Val}, luxon=${dtVal}`);
     }
 
     const m2Fmt = m2.format("YYYY-MM-DD");
     const dtFmt = dt.toFormat("yyyy-MM-dd");
     if (m2Fmt !== dtFmt) {
-      throw new Error(`format mismatch for ts=${ts}: moment2="${m2Fmt}", luxon="${dtFmt}"`);
+      throw new Error(`format mismatch for ts=${ts}: mmntjs="${m2Fmt}", luxon="${dtFmt}"`);
     }
 
     if (buf.length >= 8) {
@@ -50,7 +50,7 @@ export function fuzz(buf) {
         }
         if (m2Add.valueOf() !== dtAdd.toMillis()) {
           throw new Error(
-            `add(${amount}, ${unit}) mismatch for ts=${ts}: moment2=${m2Add.valueOf()}, luxon=${dtAdd.toMillis()}`,
+            `add(${amount}, ${unit}) mismatch for ts=${ts}: mmntjs=${m2Add.valueOf()}, luxon=${dtAdd.toMillis()}`,
           );
         }
       }

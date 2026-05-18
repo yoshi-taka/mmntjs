@@ -81,7 +81,7 @@ Separate peer package (`mmntjs-timezone`):
 
 These are enforced by `test/bundle-smoke.test.ts` and `test/tree-shaking.test.ts`:
 
-1. **Timezone isolation**: No `Intl.DateTimeFormat`, `installTimezone`, `tz.add`, or `moment2-timezone` strings appear in any `lite`, `default`, or `full` bundle.
+1. **Timezone isolation**: No `Intl.DateTimeFormat`, `installTimezone`, `tz.add`, or `mmntjs-timezone` strings appear in any `lite`, `default`, or `full` bundle.
 2. **Temporal isolation**: No `toTemporal`/`fromTemporal`/`@js-temporal/polyfill` in `lite` or `default`. Only `temporal` entry exports them.
 3. **Locale isolation**: Importing `mmntjs/locale/ja` does not pull `de`, `fr`, or any other locale. Each locale is a standalone module (<2 KB gzip).
 4. **CLI exclusion**: The `mmntjs` CLI binary (`dist/bin/cli.js`) is never bundled into library entry points.

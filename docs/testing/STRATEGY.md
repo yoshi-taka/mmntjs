@@ -2,7 +2,7 @@
 
 ## Overview
 
-moment2 is a drop-in replacement for moment.js. The core testing strategy is **Differential Testing using upstream moment.js as the oracle**.
+mmntjs is a drop-in replacement for moment.js. The core testing strategy is **Differential Testing using upstream moment.js as the oracle**.
 All tests run with `TZ=UTC` fixed.
 
 ```
@@ -27,18 +27,18 @@ Total:                         ~4203/4203 ✅
 **Tools**: `test/qunit.js` + `test/moment/*.js`
 
 Runs moment.js's 52 QUnit test files on `bun:test` through a QUnit adapter (`test/qunit.js`).
-The adapter uses `test/oracle.ts` to toggle between original moment.js and moment2.
+The adapter uses `test/oracle.ts` to toggle between original moment.js and mmntjs.
 
 ```
 test/oracle.ts  -->  import moment from '../moment/moment'    # upstream
-                   // import moment from '../src/index.ts'      # moment2
+                   // import moment from '../src/index.ts'      # mmntjs
 ```
 
 ### 2. Property-Based Testing (fast-check + oracle comparison)
 
 **Tools**: `test/properties/*.test.ts` + `fast-check`
 
-4 files, all comparing moment2 output against upstream moment.js:
+4 files, all comparing mmntjs output against upstream moment.js:
 
 | File | Content | Assertions |
 |----------|------|---------------|
@@ -68,7 +68,7 @@ test('add() matches moment', () => {
 
 **Tools**: `test/fuzz/*.fuzz.js` + `@jazzer.js/core`
 
-9 fuzz harnesses use libFuzzer (coverage-guided) to generate random inputs and compare moment2 against upstream moment.js.
+9 fuzz harnesses use libFuzzer (coverage-guided) to generate random inputs and compare mmntjs against upstream moment.js.
 All harnesses report with `throw new Error(...)` on mismatch.
 
 | Harness | Fuzz Target | Comparison |
@@ -97,7 +97,7 @@ export function fuzz(buf) {
   const mOrig = originalMoment.utc(str)
 
   if (m2.isValid() !== mOrig.isValid()) {
-    throw new Error(`isValid mismatch: moment2=${m2.isValid()}, original=${mOrig.isValid()}`)
+    throw new Error(`isValid mismatch: mmntjs=${m2.isValid()}, original=${mOrig.isValid()}`)
   }
   if (m2.format('YYYY-MM-DD HH:mm:ss.SSS') !== mOrig.format('YYYY-MM-DD HH:mm:ss.SSS')) {
     throw new Error(`format mismatch: ...`)
@@ -138,7 +138,7 @@ bun run fuzz:grammar:quick  # 500 iterations
 
 **Tools**: `test/mutation.test.ts` + `fast-check`
 
-Injects 10 types of bugs into `src/moment2.ts` mechanically, then verifies that upstream moment.js detects them with random inputs from fast-check.
+Injects 10 types of bugs into `src/mmntjs.ts` mechanically, then verifies that upstream moment.js detects them with random inputs from fast-check.
 
 | Mutation | Change |
 |-----------------|---------|
@@ -169,7 +169,7 @@ fc.assert(fc.property(fc.date({ noInvalidDate: true }), (input) => {
 
 **Tools**: `test/properties/metamorphic.test.ts`
 
-Self-consistency verification that does not require an oracle. Ensures moment2's output is mathematically/logically consistent.
+Self-consistency verification that does not require an oracle. Ensures mmntjs's output is mathematically/logically consistent.
 
 Key invariants:
 - add/subtract round-trip: `m.add(n, u).subtract(n, u) === m`
@@ -243,7 +243,7 @@ valueOf + format + utcOffset + locale + self-diff ===
 **Known limitations**:
 
 - Pre-1900 dates in timezones with fractional historical offsets (e.g., Japan +9:18:59 before 1888)
-  can cause <60s discrepancies between moment2 and moment.js for `utc(true)` — test date range
+  can cause <60s discrepancies between mmntjs and moment.js for `utc(true)` — test date range
   is constrained to `>= 1950` to avoid this.
 - `parseZone` not included as a command since it replaces the moment entirely.
 - Duration operations tested separately via `test/duration-extra.test.ts`.
@@ -328,7 +328,7 @@ bun test/fuzz/delta-debug.mjs crash-yyyyyy utc
                    +--------------+--------------+
                    |                             |
            +-------+-------+           +---------+---------+
-           |   moment2     |           |   moment.js      |
+           |   mmntjs     |           |   moment.js      |
            | (src/index.ts)|           | (moment/moment)  |
            +-------+-------+           +---------+---------+
                    |                             |
@@ -349,7 +349,7 @@ bun test/fuzz/delta-debug.mjs crash-yyyyyy utc
 
 | Command | Content |
 |----------|------|
-| `bun test` | core + moment2 + tree-shaking + timezone + mutation |
+| `bun test` | core + mmntjs + tree-shaking + timezone + mutation |
 | `bun run test:hard` | core + properties + locale + fuzz |
 | `bun run fuzz` | parse fuzz (60s, minimize_crash=1) |
 | `bun run fuzz:quick` | all 9 fuzz (500 runs each) |
@@ -410,7 +410,7 @@ export function fuzz(buf) {
 ### Add a Branch-Targeted Test
 
 Use `compare(str)` for oracle comparison and `compareKnownDiff(str)` for cases where
-moment2 is deliberately more permissive:
+mmntjs is deliberately more permissive:
 
 ```typescript
 test("signed compact date formats match oracle", () => {
@@ -421,7 +421,7 @@ test("signed compact date formats match oracle", () => {
 });
 
 test("W53 for years with 52 weeks (known diff)", () => {
-  compareKnownDiff("2023-W53");  // moment2 may accept, moment.js rejects
+  compareKnownDiff("2023-W53");  // mmntjs may accept, moment.js rejects
 });
 ```
 
@@ -432,7 +432,7 @@ Add a Mutation object to `makeMutations([...])` in `test/mutation.test.ts`:
 ```typescript
 {
   name: 'description',
-  file: 'src/moment2.ts',
+  file: 'src/mmntjs.ts',
   patterns: [[/original code/g, 'mutated code']],
   inputs: fc.someArbitrary(),
   testFn: (input) => mutatedMoment(input).method() === originalMoment(input).method(),
@@ -445,7 +445,7 @@ Add a Mutation object to `makeMutations([...])` in `test/mutation.test.ts`:
 
 ### Rationale
 
-moment2's parametric APIs (array constructor `moment([y,M,d,h,m,s,ms])`, ISO format selection table, duration object construction, etc.) can exhibit 2-way parameter interactions. Pairwise testing systematically covers these combinations, but grammar-based fuzzing was preferred:
+mmntjs's parametric APIs (array constructor `moment([y,M,d,h,m,s,ms])`, ISO format selection table, duration object construction, etc.) can exhibit 2-way parameter interactions. Pairwise testing systematically covers these combinations, but grammar-based fuzzing was preferred:
 
 1. **Oracle presence makes random testing extremely effective**
    Property-based testing (fast-check, 14.8k assertions) and coverage-guided fuzzing (52k iterations) already exist, using upstream moment.js as oracle. Key parameter pairs are probabilistically covered; pairwise adds little new detection value.
@@ -485,7 +485,7 @@ These areas are covered by grammar-based fuzzing (section 3.1) and existing rand
 1. **Branch audit**: Manually enumerate all `if/else/switch/ternary` branches in `src/parse.ts` (~495 decision points), `src/parse-format.ts` (~390), and `src/units.ts` (~37)
 2. **Coverage gap analysis**: Compare branch conditions against existing fuzz/property-test inputs to identify under-tested or untested conditions
 3. **Targeted generators**: Create fast-check arbitraries and fixed test cases that specifically exercise these branch conditions
-4. **Oracle comparison**: Compare moment2 output against upstream moment.js, with `compareKnownDiff` for cases where moment2 is deliberately more permissive
+4. **Oracle comparison**: Compare mmntjs output against upstream moment.js, with `compareKnownDiff` for cases where mmntjs is deliberately more permissive
 
 #### Target Branches and Generators
 
@@ -519,19 +519,19 @@ These areas are covered by grammar-based fuzzing (section 3.1) and existing rand
    - This masked regression in signed year parsing
    - Proper oracle comparison confirmed remaining issues with signed week dates (tracked as known diffs)
 
-#### Known Diffs (moment2 more permissive)
+#### Known Diffs (mmntjs more permissive)
 
-Where moment2 accepts inputs that original moment.js rejects in strict/overflow conditions:
+Where mmntjs accepts inputs that original moment.js rejects in strict/overflow conditions:
 
-- **W53 for years with 52 ISO weeks**: moment.js rejects `2023-W53`, moment2 accepts (auto-corrects to W52)
-- **W00, W54**: moment.js rejects, moment2 may auto-correct
-- **DDD 366 for non-leap years**: moment.js rejects, moment2 accepts (auto-corrects to DDD 365)
-- **DDD 000**: moment.js rejects, moment2 may accept
-- **Array constructor overflow**: moment.js sets `_overflow` field and marks invalid; moment2 uses JS Date auto-correction
-- **Strict mode incomplete input**: moment.js requires all tokens consumed; moment2 may accept partial
-- **Mixed basic/extended ISO**: moment.js uses `new Date(str)` fallback; moment2 has explicit parser paths
+- **W53 for years with 52 ISO weeks**: moment.js rejects `2023-W53`, mmntjs accepts (auto-corrects to W52)
+- **W00, W54**: moment.js rejects, mmntjs may auto-correct
+- **DDD 366 for non-leap years**: moment.js rejects, mmntjs accepts (auto-corrects to DDD 365)
+- **DDD 000**: moment.js rejects, mmntjs may accept
+- **Array constructor overflow**: moment.js sets `_overflow` field and marks invalid; mmntjs uses JS Date auto-correction
+- **Strict mode incomplete input**: moment.js requires all tokens consumed; mmntjs may accept partial
+- **Mixed basic/extended ISO**: moment.js uses `new Date(str)` fallback; mmntjs has explicit parser paths
 
-These diffs are tracked but not treated as bugs — they represent deliberately more permissive parsing in moment2.
+These diffs are tracked but not treated as bugs — they represent deliberately more permissive parsing in mmntjs.
 
 #### How This Complements Existing Tests
 
@@ -733,7 +733,7 @@ and `meta.json` (metadata describing the bug, oracle, expected behavior).
 | Fuzzer crash | 9 | libFuzzer crash files |
 | Fixed parse crash | 9 | regression test suite |
 | Fixed UTC crash | 9 | regression test suite |
-| Known diff (parse) | 3 | moment2/moment.js disagreement |
+| Known diff (parse) | 3 | mmntjs/moment.js disagreement |
 | Stateful model bugs | 3 | Stateful model-based testing |
 | Past fixed bugs | 5 | Handover memo history |
 | Array constructor | 1 | Past bug fix |

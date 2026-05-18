@@ -305,7 +305,7 @@ Then validate fractional seconds and timezone with more flexible logic. This wou
 
 ### 6.1 Benchmark Baseline (current)
 
-| Operation | moment2 cold | moment2 warm | moment.js cold | moment.js warm |
+| Operation | mmntjs cold | mmntjs warm | moment.js cold | moment.js warm |
 |-----------|------------|------------|---------------|---------------|
 | moment() | 292ns | 48ns | 4.88μs | 321ns |
 | moment('ISO string') | 2.83μs | 301ns | 27.92μs | 4.70μs |
@@ -318,7 +318,7 @@ Then validate fractional seconds and timezone with more flexible logic. This wou
 | diff('days') | 334ns | 19ns | 2.83μs | 2.36μs |
 | diff('months') | 709ns | 580ns | 4.13μs | 13.61μs |
 
-**Key finding**: `moment('ISO string') with format` is **8× slower** than `moment('ISO string')` in moment2 (22.75μs vs 2.83μs). This is the biggest optimization opportunity.
+**Key finding**: `moment('ISO string') with format` is **8× slower** than `moment('ISO string')` in mmntjs (22.75μs vs 2.83μs). This is the biggest optimization opportunity.
 
 ### 6.2 Expected Impact of Fast Paths
 

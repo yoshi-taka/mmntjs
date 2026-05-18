@@ -26,7 +26,7 @@ export function fuzz(buf) {
     const origGetVal = dOrig.get(unit);
     if (getVal !== origGetVal) {
       throw new Error(
-        `Duration.get("${unit}") mismatch: moment2=${getVal}, original=${origGetVal} (created with ${JSON.stringify(args)})`,
+        `Duration.get("${unit}") mismatch: mmntjs=${getVal}, original=${origGetVal} (created with ${JSON.stringify(args)})`,
       );
     }
 
@@ -34,7 +34,7 @@ export function fuzz(buf) {
     const origAsVal = dOrig.as(unit);
     if (asVal !== origAsVal) {
       throw new Error(
-        `Duration.as("${unit}") mismatch: moment2=${asVal}, original=${origAsVal} (created with ${JSON.stringify(args)})`,
+        `Duration.as("${unit}") mismatch: mmntjs=${asVal}, original=${origAsVal} (created with ${JSON.stringify(args)})`,
       );
     }
 
@@ -50,7 +50,7 @@ export function fuzz(buf) {
       const origAddAs = dOrgb.as(unit);
       if (addAs !== origAddAs) {
         throw new Error(
-          `Duration.add().as("${unit}") mismatch: moment2=${addAs}, original=${origAddAs}`,
+          `Duration.add().as("${unit}") mismatch: mmntjs=${addAs}, original=${origAddAs}`,
         );
       }
     }

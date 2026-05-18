@@ -46,14 +46,14 @@ export function fuzz(buf) {
     }
     if (m2.isValid() !== mOrig.isValid()) {
       throw new Error(
-        `Validity mismatch for "${str}": moment2=${m2.isValid()}, original=${mOrig.isValid()}`,
+        `Validity mismatch for "${str}": mmntjs=${m2.isValid()}, original=${mOrig.isValid()}`,
       );
     }
     const fmt2 = m2.format(fmt);
     const fmtOrig = mOrig.format(fmt);
     if (fmt2 !== fmtOrig) {
       throw new Error(
-        `Format("${fmt}") mismatch for "${str}": moment2="${fmt2}", original="${fmtOrig}"`,
+        `Format("${fmt}") mismatch for "${str}": mmntjs="${fmt2}", original="${fmtOrig}"`,
       );
     }
   } catch (error) {

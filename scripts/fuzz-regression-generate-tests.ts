@@ -4,7 +4,7 @@
  *
  * Reads all entries from test/fuzz/regression/<category>/<name>/
  * and generates test/regression/generated.test.ts containing
- * bun:test cases that replay each entry against both moment2
+ * bun:test cases that replay each entry against both mmntjs
  * and upstream moment.js.
  *
  * Run:  bun run scripts/fuzz-regression-generate-tests.ts
@@ -131,14 +131,14 @@ function generateTestFile(entries: Entry[]): string {
         const hasExpectedValueOf = e.meta.expected != null &&
           Object.prototype.hasOwnProperty.call(e.meta.expected, "valueOf");
 
-        // Known diffs: test moment2 behavior independently (no oracle comparison)
+        // Known diffs: test mmntjs behavior independently (no oracle comparison)
         const isKnownDiff = e.meta.bugClass?.toLowerCase().includes("known-diff");
 
         if (isKnownDiff) {
           lines.push(`test("KNOWN DIFF: ${e.meta.bugClass}: ${e.name}", () => {`);
           lines.push(`  const input = ${input};`);
           lines.push("  const m2 = moment(input);");
-          lines.push("  // Known diff — moment.js may differ. Verify moment2 is deterministic.");
+          lines.push("  // Known diff — moment.js may differ. Verify mmntjs is deterministic.");
           lines.push("  expect(typeof m2.isValid()).toBe('boolean');");
           lines.push("  if (m2.isValid()) {");
           lines.push("    expect(typeof m2.valueOf()).toBe('number');");

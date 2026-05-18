@@ -153,7 +153,7 @@ export function fuzz(buf) {
 
     if (isValid !== origIsValid) {
       throw new Error(
-        `Validity mismatch for ${JSON.stringify(str)}: moment2=${isValid}, original=${origIsValid}`,
+        `Validity mismatch for ${JSON.stringify(str)}: mmntjs=${isValid}, original=${origIsValid}`,
       );
     }
 
@@ -162,7 +162,7 @@ export function fuzz(buf) {
       const origTs = mOrig.valueOf();
       if (ts !== origTs) {
         throw new Error(
-          `Timestamp mismatch for ${JSON.stringify(str)}: moment2=${ts}, original=${origTs}`,
+          `Timestamp mismatch for ${JSON.stringify(str)}: mmntjs=${ts}, original=${origTs}`,
         );
       }
 
@@ -170,7 +170,7 @@ export function fuzz(buf) {
       const origFmt = mOrig.clone().utc().format("YYYY-MM-DD HH:mm:ss");
       if (fmt !== origFmt) {
         throw new Error(
-          `Format mismatch for ${JSON.stringify(str)}: moment2="${fmt}", original="${origFmt}"`,
+          `Format mismatch for ${JSON.stringify(str)}: mmntjs="${fmt}", original="${origFmt}"`,
         );
       }
     }

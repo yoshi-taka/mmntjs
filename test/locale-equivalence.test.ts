@@ -92,7 +92,7 @@ describe("non-registered locales fall back to en", () => {
   const locales = ["fr", "de", "ja", "zh-cn", "ru", "ar", "ko", "it", "es"];
 
   test.each(locales)("%s localeData falls back to en months", (name) => {
-    // Without explicit registration, moment2 uses en data
+    // Without explicit registration, mmntjs uses en data
     const ld = moment.localeData(name);
     expect(ld._months).toBeDefined();
     expect(ld._months.length).toBe(12);

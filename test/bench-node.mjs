@@ -1,4 +1,4 @@
-import moment2 from "../dist/index.js";
+import mmntjs from "../dist/index.js";
 import {
   parseISO,
   addDays,
@@ -39,14 +39,14 @@ const CASES = [
   {
     name: "parse ISO string",
     run: () => [
-      () => moment2("2024-01-15T10:30:45.123Z"),
+      () => mmntjs("2024-01-15T10:30:45.123Z"),
       () => parseISO("2024-01-15T10:30:45.123Z"),
     ],
   },
   {
     name: "add 1 day",
     run: () => {
-      const a = moment2("2024-06-15");
+      const a = mmntjs("2024-06-15");
       const b = new Date(2024, 5, 15);
       return [() => a.add(1, "day"), () => addDays(b, 1)];
     },
@@ -54,16 +54,16 @@ const CASES = [
   {
     name: "format YYYY-MM-DD",
     run: () => {
-      const a = moment2("2024-06-15");
+      const a = mmntjs("2024-06-15");
       const b = new Date(2024, 5, 15);
       return [() => a.format("YYYY-MM-DD"), () => format(b, "yyyy-MM-dd")];
     },
   },
-  { name: "moment() / new Date()", run: () => [() => moment2(), () => new Date()] },
+  { name: "moment() / new Date()", run: () => [() => mmntjs(), () => new Date()] },
   {
     name: "endOf month",
     run: () => {
-      const a = moment2("2024-06-15");
+      const a = mmntjs("2024-06-15");
       const b = new Date(2024, 5, 15);
       return [() => a.endOf("month"), () => endOfMonth(b)];
     },
@@ -71,7 +71,7 @@ const CASES = [
   {
     name: "add 1 month",
     run: () => {
-      const a = moment2("2024-06-15");
+      const a = mmntjs("2024-06-15");
       const b = new Date(2024, 5, 15);
       return [() => a.add(1, "month"), () => addMonths(b, 1)];
     },
@@ -79,8 +79,8 @@ const CASES = [
   {
     name: "diff in months",
     run: () => {
-      const a = moment2("2024-01-15");
-      const b = moment2("2024-12-01");
+      const a = mmntjs("2024-01-15");
+      const b = mmntjs("2024-12-01");
       const c = new Date(2024, 0, 15);
       const d = new Date(2024, 11, 1);
       return [() => a.diff(b, "months"), () => differenceInCalendarMonths(d, c)];
@@ -89,7 +89,7 @@ const CASES = [
   {
     name: "sub 1 day",
     run: () => {
-      const a = moment2("2024-06-15");
+      const a = mmntjs("2024-06-15");
       const b = new Date(2024, 5, 15);
       return [() => a.add(-1, "day"), () => subDays(b, 1)];
     },
@@ -97,8 +97,8 @@ const CASES = [
   {
     name: "diff in days",
     run: () => {
-      const a = moment2("2024-06-15");
-      const b = moment2("2024-07-01");
+      const a = mmntjs("2024-06-15");
+      const b = mmntjs("2024-07-01");
       const c = new Date(2024, 5, 15);
       const d = new Date(2024, 6, 1);
       return [() => a.diff(b, "days"), () => differenceInCalendarDays(d, c)];
@@ -107,7 +107,7 @@ const CASES = [
   {
     name: "isLeapYear",
     run: () => {
-      const a = moment2("2024-06-15");
+      const a = mmntjs("2024-06-15");
       const b = new Date(2024, 5, 15);
       return [() => a.isLeapYear(), () => isLeapYear(b)];
     },
@@ -115,7 +115,7 @@ const CASES = [
   {
     name: "set year",
     run: () => {
-      const a = moment2("2024-06-15");
+      const a = mmntjs("2024-06-15");
       const b = new Date(2024, 5, 15);
       return [() => a.year(2020), () => setYear(b, 2020)];
     },
@@ -123,7 +123,7 @@ const CASES = [
 ];
 
 console.log("Node.js", process.version);
-console.log("Operation                           moment2    date-fns     %");
+console.log("Operation                           mmntjs    date-fns     %");
 for (const c of CASES) {
   const tm = [],
     td = [];

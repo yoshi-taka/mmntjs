@@ -32,7 +32,7 @@ const esc = (p: string) => p.replaceAll("\\", "\\\\");
 describe("bundle smoke: timezone isolation", () => {
   const timezonePatterns = [
     /Intl\.DateTimeFormat/,
-    /moment2-timezone/,
+    /mmntjs-timezone/,
     /installTimezone/,
     /tz\.add/,
   ];

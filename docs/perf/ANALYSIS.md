@@ -30,7 +30,7 @@ Representative techniques: field cache, `_cold` separation, constructor key-orde
 
 **Problem**: V8 assigns the same Hidden Class (Shape) to objects created with the same property order. Property access is optimized to index computation (like C struct access). Shape changes trigger deoptimization.
 
-**moment2's approach**:
+**mmntjs's approach**:
 - Constructor always assigns properties in the same order: `_isAMomentObject -> _l -> _isUTC -> _offset -> (_d) -> _t -> _isValid -> _dirty -> (_i) -> (_f) -> (_strict) -> (_cold)`
 - Conditional `_i/_f/_strict` assignments happen at fixed points in the constructor
 - `$y $M $D $W $H $m $s $ms` are class-field initialized at the top of the constructor — always stable
@@ -136,7 +136,7 @@ Representative techniques: `parseCommonISO`, digit helpers, trim avoidance in fa
 
 `str.trim()` may produce a **SlicedString** or **ConsString**, making subsequent `charCodeAt` slower (ConsString requires tree traversal).
 
-**moment2's approach**:
+**mmntjs's approach**:
 - `parseCommonISO` never calls `str.trim()` — operates directly on the original string with charCodeAt
 - `createFromString` fast path also eliminates `str.trim()`
 - Input strings are likely SeqStrings already; using them directly is fastest
@@ -158,7 +158,7 @@ Representative techniques: fast ISO parser, `_hasDate` short-circuit
 
 **Problem**: V8's irregexp engine JIT-compiles on first execution. Even simple regexes have pattern compilation + execution context overhead. While native code is cached for subsequent runs, `RegExp.exec()` allocates a `RegExpMatchArray` every time.
 
-**moment2's approach**:
+**mmntjs's approach**:
 - Bypasses format-detection regex entirely in `createFromString` fast path
 - `parseCommonISO` uses zero regex — entirely charCodeAt-based
 - `parseISOWithTable` uses `regex.exec()` but pre-filters with whole-string match
@@ -181,7 +181,7 @@ Representative techniques: lazy `_d`, `_cold` omission, clone strategy, UTC arit
 
 **Problem**: Excessive object allocation triggers frequent GC. Promotion from Young Generation (nursery) to Old Generation (tenuring) causes stop-the-world pauses.
 
-**Allocations eliminated in moment2**:
+**Allocations eliminated in mmntjs**:
 
 | Eliminated allocation | Reason |
 |---|---|
@@ -204,7 +204,7 @@ Representative techniques: `PAD2`, `padYear`, `formatCommonEn`, token render cac
 
 **Problem**: Template literals `` `${a}-${b}` `` are optimized by V8 as Tagged Templates. After the first evaluation, the "template object" is cached, making string concatenation fast.
 
-**moment2's usage**:
+**mmntjs's usage**:
 - `formatCommonEn` datePart construction
 - `_epochDaysToYMD` return tuple (effectively a template)
 - Format string generation
@@ -242,7 +242,7 @@ Representative techniques: `$y/$M/$D/$W/$H/$m/$s/$ms` field cache
 
 **Problem**: Property access traversing instance -> prototype -> prototype requires a Shape check at each step.
 
-**moment2's design**:
+**mmntjs's design**:
 - `$y $M $D $W $H $m $s $ms` -> **Own Properties** (class field initializer)
 - Declared but unset fields (`_overflow`, etc.) -> don't exist on instance, return `undefined` (V8 fast path)
 - `_cold` -> own property (only when set)
@@ -262,7 +262,7 @@ Representative techniques: `ymdToEpochDays`, `_epochDaysToYMD`, `_dayOfWeek`, fl
 
 **Problem**: V8 represents integers as Smi (Small Integer, 31-bit signed) with a tag bit. Values outside Smi range are boxed to HeapNumber, slowing arithmetic.
 
-**moment2's considerations**:
+**mmntjs's considerations**:
 - All date fields (year, month, day, hour, minute, second) are within Smi range (`-2^30 ~ 2^30-1`)
 - `$ms` (milliseconds, 0-999) is Smi
 - `_t` (timestamp) from `Date.now()` (~1.7e12) exceeds Smi range (~1e9) -> HeapNumber. But `_t` is used directly in arithmetic, not stringified.
@@ -280,7 +280,7 @@ Representative techniques: stable Moment shape, prototype method reuse
 
 **Problem**: V8 optimizes when the same function is called with the same `this` Shape. Different Shapes trigger deoptimization.
 
-**moment2's design**: All `Moment.prototype` methods are called with Moment instances as `this`. Since normal-moment Shape is completely fixed, every method call is monomorphic.
+**mmntjs's design**: All `Moment.prototype` methods are called with Moment instances as `this`. Since normal-moment Shape is completely fixed, every method call is monomorphic.
 
 ```typescript
 // All Moment instances share the same Shape -> monomorphic method calls
@@ -294,7 +294,7 @@ Representative techniques: `formatCommonEn`, `_cold` separation, fast-path bypas
 
 **Problem**: Functions with `try { } catch { }` blocks have restricted TurboFan optimization (exception handling requires conservative code generation).
 
-**moment2's affected paths**:
+**mmntjs's affected paths**:
 - `locale.ts` `months()` function has try/catch for locale data fallback
 - These are on the hot path (`format()` -> locale access)
 
@@ -306,7 +306,7 @@ Representative techniques: special-casing common formats, direct string factory 
 
 **Problem**: General-purpose parsers and formatters often pay broad dispatch costs even when a few bytes are enough to route the input to a much smaller path.
 
-**Representative patterns in moment2**:
+**Representative patterns in mmntjs**:
 ```typescript
 if (!format && (locale?._abbr ?? "en") === "en") {
   if ((len === 10 || (len >= 19 && len <= 29)) && str.charCodeAt(4) === 45 && str.charCodeAt(7) === 45) {
@@ -333,7 +333,7 @@ Representative techniques: parse result objects, `_hasDate` fast-path tagging
 
 **Problem**: Functions returning object literals with consistent key order let V8 memorize and optimize the Shape.
 
-**moment2's consideration**:
+**mmntjs's consideration**:
 
 ```typescript
 // Consistent key order -> stable Shape (V8 optimizable)
@@ -380,7 +380,7 @@ function _dayOfWeek(y: number, m: number, d: number): number {
 
 ## 15. Table Lookup Encyclopedia
 
-moment2 uses numerous **pre-computed tables** to avoid computation costs.
+mmntjs uses numerous **pre-computed tables** to avoid computation costs.
 
 ### 15a. `PAD2` — Zero-Padded 2-Digit Table
 
@@ -602,7 +602,7 @@ Replacing expensive operations with cheaper ones:
 | `str.trim()` + regex | direct charCodeAt | string alloc + JIT -> O(1) memory access |
 | `||` default value | `? :` ternary | subtle, but ternary inlines better in V8 |
 
-## 20. moment2's Optimization Stack
+## 20. mmntjs's Optimization Stack
 
 ```
 Layer 5: Algorithms         Sakamoto, _epochDaysToYMD, bitwise leap year
@@ -650,7 +650,7 @@ Moment object (JSReceiver)
 - Current: Array of Structures (AoS) — each Moment has all fields
 - Alternative: Structure of Arrays (SoA) — separate TypedArrays for `$y[]`, `$M[]`, `$D[]`
 - SoA would enable SIMD vectorization for bulk processing (e.g., 1M dayOfYear computations)
-- Not adopted — moment2 is a general-purpose library, single-object operations dominate, and moment.js API compatibility must be maintained
+- Not adopted — mmntjs is a general-purpose library, single-object operations dominate, and moment.js API compatibility must be maintained
 
 ### 21b. Property Backing Store Expansion
 
@@ -662,7 +662,7 @@ V8 re-allocates the backing store when capacity is exceeded:
 | 5-8 | Some in-object + backing store | Split |
 | 9+ | Backing store only | FixedArray (1-hop) |
 
-moment2 has 15+ properties -> backing store. Each property access is "object -> backing store array -> value" (2 memory accesses). Since the backing store is a FixedArray (contiguous in memory), once the pointer is resolved, subsequent accesses are contiguous integer-index accesses — V8's forte.
+mmntjs has 15+ properties -> backing store. Each property access is "object -> backing store array -> value" (2 memory accesses). Since the backing store is a FixedArray (contiguous in memory), once the pointer is resolved, subsequent accesses are contiguous integer-index accesses — V8's forte.
 
 ### 21c. `_cold` Data Structure Problem
 
@@ -769,7 +769,7 @@ V8's garbage collector manages New Space (young generation) and Old Space:
   - Long-lived Moments promoted here
   - Compaction defragments -> page utilization maintained
 
-**moment2's GC footprint**:
+**mmntjs's GC footprint**:
 - `_cold` reduction: smaller Moment allocation size -> less GC copying
 - `_dirty` lazy init: `_refreshFields()` Date allocation skipped when unnecessary
 - `clone` avoids `_d` sharing -> no `new Date()` equivalent on clone
@@ -788,7 +788,7 @@ This is not intentional design (it's a byproduct of class field initializers run
 
 ## 23. Multi-Layer Cache Strategy
 
-moment2 uses multiple cache layers. Some are engine-agnostic application caches, some are JS-engine inline caches, and some are hardware caches underneath both:
+mmntjs uses multiple cache layers. Some are engine-agnostic application caches, some are JS-engine inline caches, and some are hardware caches underneath both:
 
 ```
 Layer 5: LRU Cache          LruMap (expandLocaleCache, tokenizeCache, expandedFormatCache)
@@ -804,13 +804,13 @@ Layer 1: CPU Cache           L1 (32KB), L2 (256KB-1MB), TLB (64 entry L1, 2048 L
 - **L2 Cache (256KB-1MB)**: ~1600-6400 Moments. Entire benchmark working set may fit.
 - **TLB (L1 64 entry x 16KB = 1MB coverage)**: ~6000 Moments. Covers entire benchmark.
 
-**moment2's access pattern**: `add()`, `startOf()`, `format()` touch only fields within the same Moment (high temporal locality). `diff()` touches two Moments, but they're likely clustered in the same GC region (high spatial locality).
+**mmntjs's access pattern**: `add()`, `startOf()`, `format()` touch only fields within the same Moment (high temporal locality). `diff()` touches two Moments, but they're likely clustered in the same GC region (high spatial locality).
 
 ### 23b. Layer 2 — V8 Inline Cache (IC)
 
-IC effectiveness in moment2:
+IC effectiveness in mmntjs:
 
-| IC Type | Condition | moment2 | Status |
+| IC Type | Condition | mmntjs | Status |
 |---------|------|---------|------|
 | Monomorphic | 1 Shape | Fixed Shape (post-`_cold` reduction) | Optimal |
 | Polymorphic | 2-4 Shapes | Parse return objects (2 Shapes) | Acceptable |
@@ -909,9 +909,9 @@ The names differ across V8 and JSC, but the high-level effect is similar: stable
 
 ### 24a. TurboFan Optimization Pipeline
 
-V8's TurboFan JIT compiles hot functions (~1000 calls) to optimized code. Key passes and their effect on moment2:
+V8's TurboFan JIT compiles hot functions (~1000 calls) to optimized code. Key passes and their effect on mmntjs:
 
-| Optimization Pass | Effect | moment2 Benefit |
+| Optimization Pass | Effect | mmntjs Benefit |
 |-----------|------|----------------|
 | Type Specialization | Fix variable types, eliminate dynamic dispatch | `$y` confirmed as Smi -> unboxed arithmetic |
 | Inlining | Expand callee code at call site | `_ensureFields()` reduces to 1-2 instructions |
@@ -926,7 +926,7 @@ V8's TurboFan JIT compiles hot functions (~1000 calls) to optimized code. Key pa
 
 ```typescript
 // benchmark:
-for (let i = 0; i < 5000; i++) { moment2(); }
+for (let i = 0; i < 5000; i++) { mmntjs(); }
 ```
 
 If the Moment constructor is inlined and the instance doesn't escape (no external reference), TurboFan could:
@@ -938,7 +938,7 @@ If the Moment constructor is inlined and the instance doesn't escape (no externa
 
 ### 24c. Deoptimization Triggers
 
-| Trigger | Risk | moment2 |
+| Trigger | Risk | mmntjs |
 |---------|--------|---------|
 | Shape change | New property added to object | `_cold` reduction mitigates. Error Moment creation still changes Shape -> deopt only then |
 | Type change | Smi becomes HeapNumber | `$y` with values >= 2^30 would trigger (impractical) |
@@ -965,7 +965,7 @@ function year() {
 
 TurboFan generates type-specialized code based on this feedback. If a 1000-times monomorphic Shape suddenly changes, **deoptimization + re-optimization** occurs.
 
-**moment2's strategy**:
+**mmntjs's strategy**:
 - Normal Moments share identical Shape -> feedback is 100% monomorphic
 - Error Moments have a different Shape -> don't pollute normal-path feedback
 - Deoptimization on error Moments is followed by re-optimization on subsequent normal Moments (penalty is once per error)
@@ -994,9 +994,9 @@ Cold-specific costs:
 ### 25b. Module Evaluation Timeline
 
 ```
-import moment2 from "moment2"
+import mmntjs from "mmntjs"
   +-- src/index.ts evaluation
-  |   +-- import "./moment2"      -> Moment class definition
+  |   +-- import "./mmntjs"      -> Moment class definition
   |   +-- import "./format"        -> formatMoment function
   |   +-- import "./parse"         -> parseString, parseCommonISO
   |   +-- import "./units"         -> DAYS_IN_MONTH, isLeapYear, etc.
@@ -1016,7 +1016,7 @@ const EXTENDED_ISO_REGEX = /^\s*((?:[+-]\d{6}|\d{4})-(?:\d\d-\d\d|W\d\d-\d|W\d\d
 
 V8's irregexp JIT-compiles this on first `exec()` (~100us-1ms). Subsequent runs use compiled native code.
 
-**moment2's mitigation**: `parseCommonISO` uses no regex, so this cost is avoided. `parseISOWithTable` uses EXTENDED_ISO_REGEX/BASIC_ISO_REGEX, but most ISO strings are handled by `parseCommonISO` first, so the regex JIT doesn't block warm-up.
+**mmntjs's mitigation**: `parseCommonISO` uses no regex, so this cost is avoided. `parseISOWithTable` uses EXTENDED_ISO_REGEX/BASIC_ISO_REGEX, but most ISO strings are handled by `parseCommonISO` first, so the regex JIT doesn't block warm-up.
 
 ### 25d. Iterations Required for Warm-up
 
@@ -1027,7 +1027,7 @@ V8's irregexp JIT-compiles this on first `exec()` (~100us-1ms). Subsequent runs 
 | TurboFan completion | 1001-2000 | Optimized code activated, native execution thereafter |
 | IC stabilization | 4-10 | Monomorphic IC established, stable unless Shape changes |
 
-**moment2's time-to-warm**:
+**mmntjs's time-to-warm**:
 - Benchmark (5000 iter): TurboFan optimized + monomorphic IC -> stable measurements
 - Real app (1-10 iter): Ignition execution. `_dirty` lazy init helps (avoids unnecessary `_refreshFields`)
 - SSR (1 iter): Cold, single execution. Module evaluation + JIT cost dominates
@@ -1040,21 +1040,21 @@ V8's irregexp JIT-compiles this on first `exec()` (~100us-1ms). Subsequent runs 
 
 All these are "one-time" costs. Acceptable for SSR.
 
-### 25e. moment2 vs date-fns Cold Start Comparison
+### 25e. mmntjs vs date-fns Cold Start Comparison
 
-| Metric | moment2 | date-fns | Note |
+| Metric | mmntjs | date-fns | Note |
 |------|---------|----------|------|
-| Module size (bundle) | 82KB | 114KB (date-fns v4) | moment2 lighter |
-| First `parseISO` latency | ~500ns (lazy) | ~1us | moment2 faster on first call |
+| Module size (bundle) | 82KB | 114KB (date-fns v4) | mmntjs lighter |
+| First `parseISO` latency | ~500ns (lazy) | ~1us | mmntjs faster on first call |
 | First `format` | ~35ns (fast path) | ~1us | No locale dependency |
 | Full feature load | Synchronous (EIM) | Synchronous (EIM) | Both same |
 | Dead code elimination | Tree-shake ready | Named exports | Both tree-shakeable |
 
-date-fns's per-function imports can produce smaller bundles if few functions are used. moment2 includes everything in one entry point, but TurboFan's dead code elimination doesn't remove module-level definitions. In practice, moment2 matches or beats date-fns cold start (parse ISO: 328ns vs 950ns, format: 38ns vs 1.13us).
+date-fns's per-function imports can produce smaller bundles if few functions are used. mmntjs includes everything in one entry point, but TurboFan's dead code elimination doesn't remove module-level definitions. In practice, mmntjs matches or beats date-fns cold start (parse ISO: 328ns vs 950ns, format: 38ns vs 1.13us).
 
 ## 26. Comparison With Other Libraries
 
-**dayjs**: Same field cache approach as moment2.
+**dayjs**: Same field cache approach as mmntjs.
 - Internal `$y, $M, $D, $H, $m, $s, $ms` with direct getter reads
 - Lazy locale loading (`import()`)
 - Very similar design philosophy. Performance likely comparable.
@@ -1064,17 +1064,17 @@ date-fns's per-function imports can produce smaller bundles if few functions are
 - Parse uses `Intl.DateTimeFormat` -> browser-dependent
 - First parse is slow (Intl object creation cost)
 - Subsequent calls cached
-- Slower than moment2 overall, but locale accuracy advantage
+- Slower than mmntjs overall, but locale accuracy advantage
 
 **date-fns**: Functional, operates on native Date directly.
 - No wrapper (just returns `new Date()`)
 - No cache — calls Date API on every operation
-- moment2's getters are faster (Date API call vs property read)
+- mmntjs's getters are faster (Date API call vs property read)
 - No-wrapper advantage: `moment()` equivalent (current time) is fastest
 
 ```
 Speed comparison (approx):
-         moment2  ~=  dayjs  >  date-fns  >  luxon  >>  moment.js
+         mmntjs  ~=  dayjs  >  date-fns  >  luxon  >>  moment.js
 getter:  10ns       10ns      200ns       500ns      250ns
 format:  35ns       50ns      1.1us       1.5us      350ns
 parse:   330ns      500ns     1.0us       2.0us      5.0us
@@ -1087,7 +1087,7 @@ create:  60ns       80ns      35ns        80ns       280ns
 
 ### Wins Over date-fns
 
-**Getters / Field Access**: Cached fields are decisive. date-fns calls Date API every time; moment2 reads `$y` property. **Fixed Shape + Own Property IC optimization** wins.
+**Getters / Field Access**: Cached fields are decisive. date-fns calls Date API every time; mmntjs reads `$y` property. **Fixed Shape + Own Property IC optimization** wins.
 
 **Formatting**: `formatCommonEn` switch fast path is extremely fast. Template literal + PAD2 table eliminates `padStart`. **Monomorphic Property Access + Pre-computed Tables** wins.
 
@@ -1097,6 +1097,6 @@ create:  60ns       80ns      35ns        80ns       280ns
 
 **`moment() / new Date()`**: Wrapper object property initialization (12+ property assignments) is unavoidable. date-fns's `new Date()` is a V8 native at ~30ns.
 
-**`add(1, 'day')`**: date-fns `addDays(date, 1)` internally returns `new Date(date.getTime() + 86400000)`. moment2 calls `_getD()` -> `setFullYear()` -> updates 8 fields -> `_t` update -> `_updateOffset`. Wrapper structure overhead.
+**`add(1, 'day')`**: date-fns `addDays(date, 1)` internally returns `new Date(date.getTime() + 86400000)`. mmntjs calls `_getD()` -> `setFullYear()` -> updates 8 fields -> `_t` update -> `_updateOffset`. Wrapper structure overhead.
 
 **Non-issue in practice**: These losses only appear in "create and discard" microbenchmarks. Real applications hold and reuse Moment objects.

@@ -1,6 +1,6 @@
 # Performance Techniques
 
-moment2 で現在採用している、実装レベルの高速化手法のまとめ。
+mmntjs で現在採用している、実装レベルの高速化手法のまとめ。
 
 この文書は「コード上で何をしているか」を整理するためのカタログであり、「なぜ効くのか」を理論的に掘るための文書ではない。
 
@@ -372,13 +372,13 @@ function _dayOfWeek(y: number, m: number, d: number): number {
 
 ## 16. `format()` が native `Intl.DateTimeFormat` より 10-22x 速い理由
 
-この節は個別ケースの説明であり、moment2 の全ての最適化を説明する一般理論ではない。
+この節は個別ケースの説明であり、mmntjs の全ての最適化を説明する一般理論ではない。
 
-**問題**: なぜ moment2 の `format('YYYY-MM-DD')` (〜40ns) が Node.js ネイティブの `Intl.DateTimeFormat.format()` (〜600ns) より速いのか？
+**問題**: なぜ mmntjs の `format('YYYY-MM-DD')` (〜40ns) が Node.js ネイティブの `Intl.DateTimeFormat.format()` (〜600ns) より速いのか？
 
-**答え**: Intl.DateTimeFormat は **汎用 ICU パイプライン** を通す。moment2 は **キャッシュされた整数フィールドの直結合**。
+**答え**: Intl.DateTimeFormat は **汎用 ICU パイプライン** を通す。mmntjs は **キャッシュされた整数フィールドの直結合**。
 
-| 処理ステップ | Intl.DateTimeFormat | moment2 |
+| 処理ステップ | Intl.DateTimeFormat | mmntjs |
 |-------------|-------------------|---------|
 | Locale 解決 | CLDR データから locale 解決 (ICU C++) | なし ("en" 固定) |
 | Calendar 解決 | Islamic / Buddhist / Japanese 等の変換テーブル引き | なし (Gregorian 固定) |
@@ -387,7 +387,7 @@ function _dayOfWeek(y: number, m: number, d: number): number {
 | String assembly | ICU パターンに沿った locale-aware 文字列構築 | テンプレートリテラル1発 |
 
 ```typescript
-// moment2 (en, Gregorian, ASCII): 3 field reads + 2 PAD2 lookups + 1 template literal
+// mmntjs (en, Gregorian, ASCII): 3 field reads + 2 PAD2 lookups + 1 template literal
 return `${padYear(this.$y)}-${PAD2[this.$M + 1]}-${PAD2[this.$D]}`;
 // → ~40ns, 0 ICU calls, 0 locale resolution, 0 calendar conversion
 
@@ -396,7 +396,7 @@ const fmt = new Intl.DateTimeFormat("ar-SA", { ... });
 fmt.format(date);  // → ~600ns, ICU C++ calls, locale+calendar+digit resolution
 ```
 
-**結論**: 単純な `YYYY-MM-DD` フォーマットには Intl.DateTimeFormat はオーバースペック。moment2 の format は「キャッシュされた整数の sprintf」であり、ICU パイプラインと比較するのがナンセンスなほど軽い。
+**結論**: 単純な `YYYY-MM-DD` フォーマットには Intl.DateTimeFormat はオーバースペック。mmntjs の format は「キャッシュされた整数の sprintf」であり、ICU パイプラインと比較するのがナンセンスなほど軽い。
 
 ## 17. 計測結果
 
@@ -414,8 +414,8 @@ fmt.format(date);  // → ~600ns, ICU C++ calls, locale+calendar+digit resolutio
 
 | Operation | Tech | effect |
 |-----------|------|--------|
-| parse ISO string | 1, 4, 5 | moment2 **281ns** vs moment.js 4.10μs (**15x**) |
-| format YYYY-MM-DD | 1, 8 | moment2 **35ns** vs moment.js 413ns (**12x**) |
-| getters (7 fields) | 1 | moment2 **27ns** vs moment.js 208ns (**7.6x**) |
-| diff days | 1, 12 | moment2 **18ns** vs moment.js 413ns (**24x**) |
-| moment() | 2 | moment2 **52ns** vs moment.js 280ns (**5.4x**)
+| parse ISO string | 1, 4, 5 | mmntjs **281ns** vs moment.js 4.10μs (**15x**) |
+| format YYYY-MM-DD | 1, 8 | mmntjs **35ns** vs moment.js 413ns (**12x**) |
+| getters (7 fields) | 1 | mmntjs **27ns** vs moment.js 208ns (**7.6x**) |
+| diff days | 1, 12 | mmntjs **18ns** vs moment.js 413ns (**24x**) |
+| moment() | 2 | mmntjs **52ns** vs moment.js 280ns (**5.4x**)

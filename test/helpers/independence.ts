@@ -3,7 +3,7 @@
 //
 // No runtime matroid objects. No graph structures.
 // Greedy set-cover basis selection, coverage classification, redundancy
-// detection, and equivalence partitioning for moment2 test infrastructure.
+// detection, and equivalence partitioning for mmntjs test infrastructure.
 //
 // USAGE (test-only):
 //   import { selectBasis, classifyParseSeed } from "./helpers/independence";

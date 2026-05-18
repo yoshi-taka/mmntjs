@@ -237,8 +237,8 @@ import "mmntjs/locale/ja";
 
 最低条件:
 
-- `moment2 lite` が `base` より明確に小さい
-- `moment2 lite + format-parse + ja` が `base + format-parse + ja` より still smaller
+- `mmntjs lite` が `base` より明確に小さい
+- `mmntjs lite + format-parse + ja` が `base + format-parse + ja` より still smaller
 - ISO parse / basic format / add-subtract-diff の bench が `base` 比で劣化しない
 
 理想:

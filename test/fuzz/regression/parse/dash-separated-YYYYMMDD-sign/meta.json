@@ -3,6 +3,6 @@
   "bugClass": "known-diff: dash-separated YYYYMMDD with sign",
   "oracle": "upstream moment.js",
   "added": "2026-05-17",
-  "failureDescription": "sign not preserved in YYYYMMDD format (moment2 and moment.js disagree on validity)",
+  "failureDescription": "sign not preserved in YYYYMMDD format (mmntjs and moment.js disagree on validity)",
   "expected": {}
 }

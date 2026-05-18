@@ -69,8 +69,8 @@ src/
 |------|-----:|
 | moment.js (locale 無) | 18,803 B |
 | dayjs | 3,041 B |
-| **moment2 lite** | **15,574 B** |
-| moment2 full | 48,910 B |
+| **mmntjs lite** | **15,574 B** |
+| mmntjs full | 48,910 B |
 
 moment.js 比: **lite は 17% 削減**。
 
@@ -104,4 +104,4 @@ full gzip: 63,909 B → 48,910 B (-24%)
 ## テスト
 
 - moment.js 互換: 626/626 pass (TZ=UTC, TZ=Asia/Tokyo)
-- moment2 固有: 670 tests, 0 fail
+- mmntjs 固有: 670 tests, 0 fail

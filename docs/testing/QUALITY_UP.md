@@ -7,11 +7,11 @@
 | カテゴリ | 内訳 |
 |----------|------|
 | moment.js 互換テスト | 52 files |
-| moment2 固有テスト | 167 lines, 1 file |
+| mmntjs 固有テスト | 167 lines, 1 file |
 | ロケールテスト | 138 files |
 | プロパティベーステスト | 4 files |
 | ファズハーネス | 9個 |
-| ミューテーション | 12 operators, `moment2.ts` のみ |
+| ミューテーション | 12 operators, `mmntjs.ts` のみ |
 | クラッシュファイル | 22個 (未トリアージ) |
 | SBST | 2 files (POC) |
 | カバレッジ | 導入済み (baseline 74.8%) |

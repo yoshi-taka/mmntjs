@@ -3,6 +3,6 @@
   "bugClass": "known-diff: ISO week overflow detection",
   "oracle": "upstream moment.js",
   "added": "2026-05-17",
-  "failureDescription": "week 81 not detected as overflow (moment2 and moment.js disagree on validity)",
+  "failureDescription": "week 81 not detected as overflow (mmntjs and moment.js disagree on validity)",
   "expected": {}
 }

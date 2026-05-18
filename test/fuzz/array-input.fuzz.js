@@ -30,7 +30,7 @@ export function fuzz(buf) {
     const isValidOrig = mOrig.isValid();
     if (isValid2 !== isValidOrig) {
       throw new Error(
-        `isValid mismatch for [${String(arr)}]: moment2=${isValid2}, original=${isValidOrig}`,
+        `isValid mismatch for [${String(arr)}]: mmntjs=${isValid2}, original=${isValidOrig}`,
       );
     }
     if (!isValid2) {
@@ -40,13 +40,13 @@ export function fuzz(buf) {
     const fmtOrig = mOrig.format("YYYY-MM-DD HH:mm:ss.SSS");
     if (fmt2 !== fmtOrig) {
       throw new Error(
-        `format mismatch for [${String(arr)}]: moment2="${fmt2}", original="${fmtOrig}"`,
+        `format mismatch for [${String(arr)}]: mmntjs="${fmt2}", original="${fmtOrig}"`,
       );
     }
     const ts2 = m2.valueOf();
     const tsOrig = mOrig.valueOf();
     if (ts2 !== tsOrig) {
-      throw new Error(`valueOf mismatch for [${String(arr)}]: moment2=${ts2}, original=${tsOrig}`);
+      throw new Error(`valueOf mismatch for [${String(arr)}]: mmntjs=${ts2}, original=${tsOrig}`);
     }
   } catch (error) {
     if (

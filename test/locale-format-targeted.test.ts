@@ -106,7 +106,7 @@ describe("localeMonths (locale-format.ts)", () => {
     originalMoment.locale("x-months-fn", null);
   });
 
-  test("array months with out-of-bounds index returns first element (known moment2 extension — more permissive)", () => {
+  test("array months with out-of-bounds index returns first element (known mmntjs extension — more permissive)", () => {
     const m = moment("2099-12-01");
     moment.defineLocale("x-months-arr", {
       months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],

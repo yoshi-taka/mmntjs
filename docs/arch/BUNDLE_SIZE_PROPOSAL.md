@@ -1,4 +1,4 @@
-# moment2 bundle size proposal
+# mmntjs bundle size proposal
 
 2026-05-10 rewrite.
 
@@ -22,10 +22,10 @@ browser bundler 前提で、実運用で意味のある bundle size 改善を行
 | `moment en` | `63,561` | `20,732` |
 | `moment + ja` | `65,721` | `21,752` |
 | `moment + ja + de` | `67,490` | `22,403` |
-| `moment2 base` | `127,354` | `33,244` |
-| `moment2 base + fmt` | `127,758` | `33,435` |
-| `moment2 base + ja` | `130,284` | `34,554` |
-| `moment2 base + ja + de` | `131,617` | `35,094` |
+| `mmntjs base` | `127,354` | `33,244` |
+| `mmntjs base + fmt` | `127,758` | `33,435` |
+| `mmntjs base + ja` | `130,284` | `34,554` |
+| `mmntjs base + ja + de` | `131,617` | `35,094` |
 
 ここまでの改善で、
 
@@ -36,7 +36,7 @@ browser bundler 前提で、実運用で意味のある bundle size 改善を行
 
 は入った。
 
-ただし、それでも `moment2 base` は `moment` より約 `12.5KB gzip` 大きい。
+ただし、それでも `mmntjs base` は `moment` より約 `12.5KB gzip` 大きい。
 
 ## ここまでの学び
 

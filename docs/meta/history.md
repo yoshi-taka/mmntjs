@@ -45,7 +45,7 @@
 
 ## 追加のパフォーマンス最適化（2026-05-05）
 
-### 1. diff(YEAR/MONTH/QUARTER) — Date-free addMonths（`src/moment2.ts`）
+### 1. diff(YEAR/MONTH/QUARTER) — Date-free addMonths（`src/mmntjs.ts`）
 - `addMonths` クロージャ（`Date.clone + setMonth + getDate`）を `addAnchorMs`（算術計算＋`Date.UTC`）に置き換え
 - UTC モード: Date アロケーション 0（従来 4）。ローカル: 3（従来 4）
 - `_ensureFields()` を事前呼び出しして stale field バグ修正
@@ -54,7 +54,7 @@
 - UTC モードの DST バグも修正（従来は `Date.setMonth` をローカルタイムゾーンで実行）
 - `exp/diff-optimize` ブランチで開発、main にマージ済み
 
-### 2. _addSimple — 不要な _getD() 除去（`src/moment2.ts`）
+### 2. _addSimple — 不要な _getD() 除去（`src/mmntjs.ts`）
 - `_getD()` を関数先頭から各ブランチ内に移動
 - YEAR/MONTH ブランチ全モードと UTC DAY/WEEK/DATE で不要な Date 生成を回避
 - 時間単位（HOUR/MINUTE/SECOND/MILLISECOND）とローカル DAY パスでは引き続き `_getD()` を使用
@@ -90,7 +90,7 @@
 
 bench-datefns2（warm median）:
 
-| 操作 | moment2 | date-fns | 比 |
+| 操作 | mmntjs | date-fns | 比 |
 |------|---------|----------|-----|
 | parse ISO string | ~522ns | ~1.21μs | 2.3x |
 | format YYYY-MM-DD | ~43ns | ~1.10μs | 25x |
@@ -110,9 +110,9 @@ bench-datefns2（warm median）:
 | get day of year | ~17ns | ~1.17μs | 69x |
 | format HH:mm:ss | ~35ns | ~925ns | 26x |
 
-moment2 vs 元の moment.js（bench.ts, warm after 100 warmup）:
+mmntjs vs 元の moment.js（bench.ts, warm after 100 warmup）:
 
-| 操作 | moment.js | moment2 | 比 |
+| 操作 | moment.js | mmntjs | 比 |
 |------|-----------|---------|-----|
 | moment() | ~260ns | ~44ns | 5.9x |
 | moment('ISO string') | ~4.6μs | ~305ns | 15x |
@@ -143,7 +143,7 @@ date-fns 比は 25 項目中 23 項目で勝ち。`moment() / new Date()` は負
 
 ## 注意: 作業ツリー破壊の反省
 
-2026-05-05、clone()最適化の実験中、`git checkout -- src/moment2.ts` で部分戻しをした結果、関連ファイル間で不整合が発生し復旧作業で全未コミット変更を失った。
+2026-05-05、clone()最適化の実験中、`git checkout -- src/mmntjs.ts` で部分戻しをした結果、関連ファイル間で不整合が発生し復旧作業で全未コミット変更を失った。
 
 **原因:**
 1. 作業開始前に `git status` / `git diff` を確認しなかった

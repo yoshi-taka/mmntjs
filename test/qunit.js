@@ -131,7 +131,7 @@ function runWithLifecycle(name, fn) {
     try {
         setupDeprecationHandler(test, moment, 'core');
     } catch {
-        // deprecation handler setup may fail if moment2 hasn't implemented
+        // deprecation handler setup may fail if mmntjs hasn't implemented
         // suppressDeprecationWarnings / deprecationHandler yet
     }
 

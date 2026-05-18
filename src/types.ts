@@ -1,5 +1,5 @@
 // =========================================================================
-// TYPED INTERNAL API — Central type definitions for moment2 core
+// TYPED INTERNAL API — Central type definitions for mmntjs core
 // =========================================================================
 // This module defines the strongly-typed internal interface. Public API
 // boundary modules (entry/*, full.ts, lite.ts) cast to weaker types for

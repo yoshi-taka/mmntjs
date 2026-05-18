@@ -17,7 +17,7 @@
 
 Unless noted, tables below use **Bun** as the runtime. Bun's JSC engine contributes to absolute speed; the relative advantage over date-fns and moment.js is cross-validated on Node.js 26 (V8) in the [cross-runtime section](#runtime-comparison-bun-vs-node-26).
 
-## moment vs moment2
+## moment vs mmntjs
 
 ```
 Operation                           warm mom    warm m2       %
@@ -53,11 +53,11 @@ format('HH:mm:ss')                      398ns       43ns   10.8%
 add(1,'year')                           659ns      353ns   53.7%
 ```
 
-(`%` = moment2 / mom x 100. Lower = moment2 faster)
+(`%` = mmntjs / mom x 100. Lower = mmntjs faster)
 
-**moment2 wins all 31 operations.** Typical gains: **5-60x**.
+**mmntjs wins all 31 operations.** Typical gains: **5-60x**.
 
-## moment2 vs date-fns
+## mmntjs vs date-fns
 
 ```
 Operation                           warm m2      warm df       %
@@ -85,15 +85,15 @@ isLeapYear                               6ns       36ns  ~593.1%
 set year                                48ns       99ns  ~206.2%
 ```
 
-(`%` = df / m2 x 100. Higher = moment2 faster. `>100` = moment2 wins.)
+(`%` = df / m2 x 100. Higher = mmntjs faster. `>100` = mmntjs wins.)
 
 `~` marks noisy short runs. `test/bench-datefns2.ts` now reports medians from repeated runs instead of single samples.
 
-**moment2 wins 24/25 operations.** Only loss: `moment() / new Date()` (~86%, wrapper allocation overhead).
+**mmntjs wins 24/25 operations.** Only loss: `moment() / new Date()` (~86%, wrapper allocation overhead).
 
-For `month`/`quarter`/`year` comparisons, note that date-fns uses `differenceInCalendar*` helpers while moment2 matches moment.js's truncated fractional diff semantics. Those rows compare implementation cost, not identical behavior.
+For `month`/`quarter`/`year` comparisons, note that date-fns uses `differenceInCalendar*` helpers while mmntjs matches moment.js's truncated fractional diff semantics. Those rows compare implementation cost, not identical behavior.
 
-## moment2 vs native Intl.DateTimeFormat
+## mmntjs vs native Intl.DateTimeFormat
 
 ```
 Operation                           warm m2   warm Intl       %
@@ -103,7 +103,7 @@ Intl.DateTimeFormat HH:mm:ss (en-US)    59ns       585ns  988.1%
 Intl.DateTimeFormat HH:mm:ss (ar-SA)    40ns       670ns 1681.8%
 ```
 
-(`%` = Intl / m2 x 100. Higher = moment2 faster.)
+(`%` = Intl / m2 x 100. Higher = mmntjs faster.)
 
 `ar-SA` (Arabic-Saudi Arabia) was chosen as non-English Intl comparison point because:
 - **Arabic-Indic digits**: Intl must convert Arabic-Indic digit output, adding ICU digit-transformation cost
@@ -111,7 +111,7 @@ Intl.DateTimeFormat HH:mm:ss (ar-SA)    40ns       670ns 1681.8%
 - **Calendar**: Islamic Umm al-Qura calendar, month/day mapping differs from Gregorian
 - **Script shaping**: Arabic contextual glyph shaping adds ICU processing overhead
 
-These factors make `ar-SA` a worst-case Intl locale. Even then, Intl is **10-22x slower** than moment2 for formatting.
+These factors make `ar-SA` a worst-case Intl locale. Even then, Intl is **10-22x slower** than mmntjs for formatting.
 
 ## Runtime comparison: Bun vs Node 26
 
@@ -130,28 +130,28 @@ All tables above use Bun. To verify results aren't Bun-specific (JavaScriptCore 
 | moment() / new Date() | 38ns | 48ns | **89%** | **114%** |
 | Intl YYYY-MM-DD (ar-SA) | 33ns | 42ns | **20x** | **15x** |
 
-moment2 wins on both runtimes. Absolute speeds differ slightly (V8 vs JSC), but the relative advantage over date-fns and Intl is consistent.
+mmntjs wins on both runtimes. Absolute speeds differ slightly (V8 vs JSC), but the relative advantage over date-fns and Intl is consistent.
 
 ## Benchmark files
 
 | File | Harness | Purpose |
 |------|---------|---------|
-| `test/bench.ts` | custom (hrtime) | moment.js vs moment2, cold+warm |
-| `test/bench-datefns2.ts` | custom (hrtime) | moment2 vs date-fns, cold+warm |
+| `test/bench.ts` | custom (hrtime) | moment.js vs mmntjs, cold+warm |
+| `test/bench-datefns2.ts` | custom (hrtime) | mmntjs vs date-fns, cold+warm |
 | `test/bench-regression.ts` | custom (hrtime) | regression guard for negative-epoch UTC math, invalid-parse growth, large month normalization |
-| `test/bench-suite.ts` | benchmark.js | moment2 vs date-fns, locale format, ops/sec |
+| `test/bench-suite.ts` | benchmark.js | mmntjs vs date-fns, locale format, ops/sec |
 | `test/bench-mem.ts` | custom | memory footprint (heapUsed/rss) |
 | `test/bench-cold-warm.ts` | custom | cold start analysis |
-| `test/bench-temporal.ts` | custom (hrtime) | moment2 vs native Temporal, cold+warm |
+| `test/bench-temporal.ts` | custom (hrtime) | mmntjs vs native Temporal, cold+warm |
 
 Useful commands:
-- `bun run bench` -> main moment.js vs moment2 table (`test/bench.ts`)
+- `bun run bench` -> main moment.js vs mmntjs table (`test/bench.ts`)
 - `bun run bench:guard` -> regression guard thresholds (`test/bench-regression.ts`)
 - `bun run bench:mem` -> module footprint (`test/bench-mem.ts`)
 - `bun test test/bench-cold-warm.ts` -> locale cold/warm behavior
 - `bun test test/bench-temporal.ts` -> Temporal comparison
 
-## moment2 vs native Temporal (Node.js 26)
+## mmntjs vs native Temporal (Node.js 26)
 
 ```
 Operation                           warm m2   warm tmp       %
@@ -167,16 +167,16 @@ startOf month                           14ns       284ns 1992.9%
 daysInMonth                             16ns        14ns   85.9%
 ```
 
-(`%` = tmp / m2 x 100. `<100` = Temporal faster, `>100` = moment2 faster.)
+(`%` = tmp / m2 x 100. `<100` = Temporal faster, `>100` = mmntjs faster.)
 
-**moment2 wins 7/10, Temporal wins 3/10.**
+**mmntjs wins 7/10, Temporal wins 3/10.**
 
-Temporal wins at parsing (C++ `PlainDate.from` and constructor are fast) and `daysInMonth` (C++ property read vs moment2's function call). moment2 wins everywhere else because:
+Temporal wins at parsing (C++ `PlainDate.from` and constructor are fast) and `daysInMonth` (C++ property read vs mmntjs's function call). mmntjs wins everywhere else because:
 
-- **Object allocation**: Every Temporal operation (`add`, `since`, `with`) creates a new PlainDate/Duration object. moment2 mutates cached fields in-place.
-- **Cached fields**: moment2's `$y/$M/$D` are plain JS numbers. Temporal's `.year`/`.month`/`.day` go through C++ getter calls.
-- **Format**: Temporal `toString()` goes through C++ serialization; moment2 is a template literal on cached ints.
+- **Object allocation**: Every Temporal operation (`add`, `since`, `with`) creates a new PlainDate/Duration object. mmntjs mutates cached fields in-place.
+- **Cached fields**: mmntjs's `$y/$M/$D` are plain JS numbers. Temporal's `.year`/`.month`/`.day` go through C++ getter calls.
+- **Format**: Temporal `toString()` goes through C++ serialization; mmntjs is a template literal on cached ints.
 
 The gap widens for mutation-heavy operations: `diff days` (12x), `startOf month` (20x), `now` (7x). Temporal's all-objects-are-immutable design trades allocation cost for safety.
 
-These are microbenchmark observations, not a critique of Temporal's design. Temporal prioritizes correctness, timezone handling, and API ergonomics over raw speed — a different trade-off from moment2's drop-in compatibility focus.
+These are microbenchmark observations, not a critique of Temporal's design. Temporal prioritizes correctness, timezone handling, and API ergonomics over raw speed — a different trade-off from mmntjs's drop-in compatibility focus.

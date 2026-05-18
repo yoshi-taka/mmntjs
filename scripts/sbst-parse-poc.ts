@@ -1,4 +1,4 @@
-import moment2 from "../src/index.ts";
+import mmntjs from "../src/index.ts";
 import originalMoment from "../moment/moment.js";
 
 type Goal = {
@@ -211,9 +211,9 @@ function guidedSearch(goal: Goal, iterations: number, seed: number): SearchResul
 }
 
 function verifyAgainstParsers(input: string): string {
-  const m2 = moment2(input, "ISO_8601", true);
+  const m2 = mmntjs(input, "ISO_8601", true);
   const orig = originalMoment(input, "ISO_8601", true);
-  return `moment2=${m2.isValid()} moment=${orig.isValid()}`;
+  return `mmntjs=${m2.isValid()} moment=${orig.isValid()}`;
 }
 
 const iterations = 1500;

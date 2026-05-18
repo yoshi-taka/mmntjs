@@ -203,7 +203,7 @@ async function main() {
 
   const timezonePatterns = [
     /Intl\.DateTimeFormat/,
-    /moment2-timezone/,
+    /mmntjs-timezone/,
     /installTimezone/,
     /tz\.add/,
   ];

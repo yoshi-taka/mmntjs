@@ -62,6 +62,7 @@
     "build": "mkdir -p packages/timezone/node_modules && ln -sfn ../../.. packages/timezone/node_modules/mmntjs && for dir in test/kibana-compat test/grafana-compat test/vscode-compat; do mkdir -p \"$dir/node_modules\" && ln -sfn ../../../dist/index.js \"$dir/node_modules/moment\" && ln -sfn ../../../dist/index.js \"$dir/node_modules/mmntjs\" && ln -sfn ../../../packages/timezone/dist/index.js \"$dir/node_modules/moment-timezone\"; done && bun scripts/generate-timezone-data.ts && tsup && bun scripts/copy-dts.ts && (cd packages/timezone && bun run build || true)",
     "docs:dev": "astro dev --root site",
     "docs:build": "astro build --root site",
+    "docs:check": "bun run scripts/check-site-doc-drift.ts",
     "docs:preview": "astro preview --root site",
     "test": "bun run test:quick && bun run test:mutation && bun run fuzz:quick",
     "test:quick": "bun run test:core && bun run test:tz:quick && bun run test:locale:quick && bun run test:extra && bun run test:bin",

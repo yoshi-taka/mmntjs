@@ -18,22 +18,20 @@ export function fuzz(buf) {
     const origIsValid = mOrig.isValid();
 
     if (isValid !== origIsValid) {
-      throw new Error(
-        `Validity mismatch for "${str}": moment2=${isValid}, original=${origIsValid}`,
-      );
+      throw new Error(`Validity mismatch for "${str}": mmntjs=${isValid}, original=${origIsValid}`);
     }
 
     if (isValid) {
       const fmt = m2.format("YYYY-MM-DD HH:mm:ss");
       const origFmt = mOrig.format("YYYY-MM-DD HH:mm:ss");
       if (fmt !== origFmt) {
-        throw new Error(`Format mismatch for "${str}": moment2="${fmt}", original="${origFmt}"`);
+        throw new Error(`Format mismatch for "${str}": mmntjs="${fmt}", original="${origFmt}"`);
       }
 
       const ts = m2.valueOf();
       const origTs = mOrig.valueOf();
       if (ts !== origTs) {
-        throw new Error(`Timestamp mismatch for "${str}": moment2=${ts}, original=${origTs}`);
+        throw new Error(`Timestamp mismatch for "${str}": mmntjs=${ts}, original=${origTs}`);
       }
     }
   } catch (error) {

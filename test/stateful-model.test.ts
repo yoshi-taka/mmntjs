@@ -5,7 +5,7 @@ import type { Moment, MomentInput } from "../src/moment-class";
 import type { Duration } from "../src/duration";
 import _originalMoment from "../moment/moment";
 
-// Register test locales explicitly — moment2 locales don't auto-register
+// Register test locales explicitly — mmntjs locales don't auto-register
 import { defineLocale } from "../src/locale";
 import { frLocale } from "../src/locale/fr";
 import { deLocale } from "../src/locale/de";

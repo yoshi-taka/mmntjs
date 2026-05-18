@@ -1,6 +1,6 @@
 # Performance Techniques
 
-Implementation-level performance techniques currently used in moment2.
+Implementation-level performance techniques currently used in mmntjs.
 
 This document answers "what do we do in the code". It is a catalog of concrete hot-path techniques, not a full theory of why they help.
 
@@ -372,13 +372,13 @@ function _dayOfWeek(y: number, m: number, d: number): number {
 
 ## 16. Why `format()` is 10-22x faster than native `Intl.DateTimeFormat`
 
-This section is a focused case study, not a general model for all optimizations in moment2.
+This section is a focused case study, not a general model for all optimizations in mmntjs.
 
-**Question**: Why is moment2's `format('YYYY-MM-DD')` (~40ns) faster than Node.js's native `Intl.DateTimeFormat.format()` (~600ns)?
+**Question**: Why is mmntjs's `format('YYYY-MM-DD')` (~40ns) faster than Node.js's native `Intl.DateTimeFormat.format()` (~600ns)?
 
-**Answer**: Intl.DateTimeFormat goes through a **generalized ICU pipeline**. moment2 does a **template literal on cached integer fields**.
+**Answer**: Intl.DateTimeFormat goes through a **generalized ICU pipeline**. mmntjs does a **template literal on cached integer fields**.
 
-| Step | Intl.DateTimeFormat | moment2 |
+| Step | Intl.DateTimeFormat | mmntjs |
 |-------------|-------------------|---------|
 | Locale resolution | CLDR data lookup (ICU C++) | None ("en" fixed) |
 | Calendar resolution | Islamic/Buddhist/Japanese calendar table lookup | None (Gregorian fixed) |
@@ -387,7 +387,7 @@ This section is a focused case study, not a general model for all optimizations 
 | String assembly | ICU pattern-based locale-aware construction | Single template literal |
 
 ```typescript
-// moment2 (en, Gregorian, ASCII): 3 field reads + 2 PAD2 lookups + 1 template literal
+// mmntjs (en, Gregorian, ASCII): 3 field reads + 2 PAD2 lookups + 1 template literal
 return `${padYear(this.$y)}-${PAD2[this.$M + 1]}-${PAD2[this.$D]}`;
 // -> ~40ns, 0 ICU calls, 0 locale resolution, 0 calendar conversion
 
@@ -396,7 +396,7 @@ const fmt = new Intl.DateTimeFormat("ar-SA", { ... });
 fmt.format(date);  // -> ~600ns, ICU C++ calls, locale+calendar+digit resolution
 ```
 
-**Conclusion**: For simple `YYYY-MM-DD` formatting, Intl.DateTimeFormat is over-engineered. moment2's format is "sprintf on cached integers" — comparing against the ICU pipeline is apples-to-oranges.
+**Conclusion**: For simple `YYYY-MM-DD` formatting, Intl.DateTimeFormat is over-engineered. mmntjs's format is "sprintf on cached integers" — comparing against the ICU pipeline is apples-to-oranges.
 
 ## 17. Benchmark Results
 
@@ -414,8 +414,8 @@ Key figures (excerpt):
 
 | Operation | Tech | effect |
 |-----------|------|--------|
-| parse ISO string | 1, 4, 5 | moment2 **310ns** vs moment.js 4.20us (**14x**) |
-| format YYYY-MM-DD | 1, 8 | moment2 **33ns** vs moment.js 420ns (**13x**) |
-| getters (7 fields) | 1 | moment2 **37ns** vs moment.js 230ns (**6.2x**) |
-| diff days | 1, 12 | moment2 **18ns** vs moment.js 491ns (**27x**) |
-| moment() | 2 | moment2 **54ns** vs moment.js 311ns (**5.8x**) |
+| parse ISO string | 1, 4, 5 | mmntjs **310ns** vs moment.js 4.20us (**14x**) |
+| format YYYY-MM-DD | 1, 8 | mmntjs **33ns** vs moment.js 420ns (**13x**) |
+| getters (7 fields) | 1 | mmntjs **37ns** vs moment.js 230ns (**6.2x**) |
+| diff days | 1, 12 | mmntjs **18ns** vs moment.js 491ns (**27x**) |
+| moment() | 2 | mmntjs **54ns** vs moment.js 311ns (**5.8x**) |

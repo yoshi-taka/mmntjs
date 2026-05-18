@@ -2,7 +2,7 @@
 
 ## 概要
 
-moment2 は moment.js のドロップイン代替品であり、テスト戦略の核は **本家 moment.js を oracle とする Differential Testing** である。
+mmntjs は moment.js のドロップイン代替品であり、テスト戦略の核は **本家 moment.js を oracle とする Differential Testing** である。
 全テストは `TZ=UTC` 固定で実行される。
 
 ```
@@ -24,18 +24,18 @@ Total:                    ~4122/4122 ✅
 **手段**: `test/qunit.js` + `test/moment/*.js`
 
 moment.js 本体の QUnit テスト 52 ファイルを、QUnit→Bun アダプタ (`test/qunit.js`) 経由で `bun:test` 上で実行する。
-アダプタ内部では `test/oracle.ts` を通じて moment.js (本家) か moment2 かを切り替え可能。
+アダプタ内部では `test/oracle.ts` を通じて moment.js (本家) か mmntjs かを切り替え可能。
 
 ```
 test/oracle.ts  ──→  import moment from '../moment/moment'    # 本家
-                   // import moment from '../src/index.ts'      # moment2
+                   // import moment from '../src/index.ts'      # mmntjs
 ```
 
 ### 2. プロパティベーステスト（fast-check + oracle 比較）
 
 **手段**: `test/properties/*.test.ts` + `fast-check`
 
-4 ファイルで構成され、すべて **moment2 の出力を本家 moment.js と比較**する。
+4 ファイルで構成され、すべて **mmntjs の出力を本家 moment.js と比較**する。
 
 | ファイル | 内容 | アサーション数 |
 |----------|------|---------------|
@@ -65,7 +65,7 @@ test('add() matches moment', () => {
 
 **手段**: `test/fuzz/*.fuzz.js` + `@jazzer.js/core`
 
-9 つのファズハーネスが libFuzzer (coverage-guided) でランダム入力を生成し、moment2 と本家 moment.js の出力を比較する。
+9 つのファズハーネスが libFuzzer (coverage-guided) でランダム入力を生成し、mmntjs と本家 moment.js の出力を比較する。
 すべてのハーネスは差分検出時に `throw new Error(...)` で報告する。
 
 | ハーネス | ファズ対象 | 比較項目 |
@@ -94,7 +94,7 @@ export function fuzz(buf) {
   const mOrig = originalMoment.utc(str)
 
   if (m2.isValid() !== mOrig.isValid()) {
-    throw new Error(`isValid mismatch: moment2=${m2.isValid()}, original=${mOrig.isValid()}`)
+    throw new Error(`isValid mismatch: mmntjs=${m2.isValid()}, original=${mOrig.isValid()}`)
   }
   if (m2.format('YYYY-MM-DD HH:mm:ss.SSS') !== mOrig.format('YYYY-MM-DD HH:mm:ss.SSS')) {
     throw new Error(`format mismatch: ...`)
@@ -135,7 +135,7 @@ bun run fuzz:grammar:quick  # 500 iterations
 
 **手段**: `test/mutation.test.ts` + `fast-check`
 
-`src/moment2.ts` に 10 種類のバグを機械的に注入し、fast-check で生成したランダム入力に対して
+`src/mmntjs.ts` に 10 種類のバグを機械的に注入し、fast-check で生成したランダム入力に対して
 本家 moment.js が検出できるかテストする。
 
 | ミューテーション | 変更内容 |
@@ -167,7 +167,7 @@ fc.assert(fc.property(fc.date({ noInvalidDate: true }), (input) => {
 
 **手段**: `test/properties/metamorphic.test.ts`
 
-oracle を必要としない自己整合性検証。moment2 の出力が数学的・論理的に矛盾しないことを確認する。
+oracle を必要としない自己整合性検証。mmntjs の出力が数学的・論理的に矛盾しないことを確認する。
 
 主な不変条件:
 - add/subtract ラウンドトリップ `m.add(n, u).subtract(n, u) === m`
@@ -199,7 +199,7 @@ oracle を必要としない自己整合性検証。moment2 の出力が数学�
 **手段**: `test/locale/*.test.ts` (138 ファイル)
 
 moment.js のロケールテスト (`moment/src/test/locale/*.js`) から `scripts/generate-locale-tests.mjs` で自動生成。
-moment2 の全ロケール (138) の出力を検証する。
+mmntjs の全ロケール (138) の出力を検証する。
 
 ### 8. Delta Debugging（障害入力最小化）
 
@@ -251,7 +251,7 @@ bun test/fuzz/delta-debug.mjs crash-yyyyyy utc
                  ┌──────────────┴──────────────┐
                  │                             │
          ┌───────▼───────┐            ┌───────▼───────┐
-         │   moment2     │            │  moment.js    │
+         │   mmntjs     │            │  moment.js    │
          │ (src/index.ts)│            │ (moment/moment)│
          └───────┬───────┘            └───────┬───────┘
                  │                             │
@@ -272,7 +272,7 @@ bun test/fuzz/delta-debug.mjs crash-yyyyyy utc
 
 | コマンド | 内容 |
 |----------|------|
-| `bun test` | core + moment2 + tree-shaking + timezone + mutation |
+| `bun test` | core + mmntjs + tree-shaking + timezone + mutation |
 | `bun run test:hard` | core + properties + locale + fuzz |
 | `bun run fuzz` | parse fuzz (60秒, minimize_crash=1) |
 | `bun run fuzz:quick` | 全 8 fuzz (各 500 runs) |
@@ -334,7 +334,7 @@ export function fuzz(buf) {
 ```typescript
 {
   name: 'description',
-  file: 'src/moment2.ts',
+  file: 'src/mmntjs.ts',
   patterns: [[/original code/g, 'mutated code']],
   inputs: fc.someArbitrary(),
   testFn: (input) => mutatedMoment(input).method() === originalMoment(input).method(),
@@ -347,7 +347,7 @@ export function fuzz(buf) {
 
 ### 検討内容
 
-moment2 のパラメトリックなAPI群（配列コンストラクタ `moment([y,M,d,h,m,s,ms])`、ISOフォーマット選択テーブル、durationオブジェクト構築など）は、パラメータ間の2-way interaction が発生しうる。Pairwise testing はこれらの組み合わせを系統的に網羅する手法だが、以下の理由で grammar-based fuzzing を優先した:
+mmntjs のパラメトリックなAPI群（配列コンストラクタ `moment([y,M,d,h,m,s,ms])`、ISOフォーマット選択テーブル、durationオブジェクト構築など）は、パラメータ間の2-way interaction が発生しうる。Pairwise testing はこれらの組み合わせを系統的に網羅する手法だが、以下の理由で grammar-based fuzzing を優先した:
 
 1. **Oracleの存在がランダムテストを極めて強力にしている**
    本家 moment.js を oracle とする property-based testing (fast-check, 14.8k assertions) および coverage-guided fuzzing (52k iterations) が既に存在する。確率的に主要なパラメータペアは既に網羅されており、pairwise が新たに発見するバグは期待できない。
