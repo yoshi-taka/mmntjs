@@ -1,322 +1,148 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import { githubUrl } from "../../content/site";
+import { renderInlineCodeHTML } from "../../lib/inline-code";
+
+const keyTakeaways = [
+  ["Main point", "The default `mmntjs` entry is not trying to win the smallest-core contest."],
+  ["What it does win", "Locales and timezone data are separate, so apps do not pay for them unless they import them."],
+  ["Lite entry", "`mmntjs/lite` exists for browser-sensitive paths that want a smaller base and explicit add-backs."],
+  ["Timezone surprise", "The packaged IANA timezone data is smaller than many readers expect once compressed and packed."],
+];
 
 const entryRows = [
-  ["mmntjs", "40.1 KB", "55.9 KB", "Default full compatibility entry from the current size script."],
-  ["mmntjs/lite", "12.0 KB", "16.5 KB", "ISO-centric entry with plugins and locales added only when needed."],
-  ["mmntjs/temporal", "46.7 KB", "38.6 KB", "Temporal bridge remains opt-in rather than part of the default bundle."],
-  ["mmntjs-timezone/logic", "44.9 KB", "6.9 KB", "Timezone API without bundled data; browser bundle includes mmntjs core."],
-  ["mmntjs-timezone/1970-2030", "63.0 KB", "24.6 KB", "Timezone API with the 1970-2030 data window; browser bundle includes mmntjs core."],
-  ["mmntjs-timezone", "75.9 KB", "38.0 KB", "Full timezone data entry; browser bundle includes mmntjs core."],
+  ["`mmntjs`", "148 KB", "`moment` (62.1 KB raw)", "core is smaller on the moment side", "Default compatibility-oriented core."],
+  ["`mmntjs/lite`", "43 KB", "`moment` (62.1 KB raw)", "smaller base than moment and default mmntjs", "Browser-sensitive base entry with explicit add-backs."],
+  ["`dist/locale/ja.js`", "4.8 KB", "`moment + locale/ja` (64.5 KB raw bundled)", "single locale stays separate", "Single locale remains a tiny extra module instead of pushing toward all-locales builds."],
+  ["`mmntjs-timezone`", "316 KB raw dist", "`moment-timezone` (773.1 KB raw bundled)", "compare as separate package", "Timezone data stays outside core and should be judged on its own."],
 ];
 
-const coreComparisonRows = [
-  ["Core without locales", "mmntjs/lite", "12.0 KB", "moment", "19.9 KB", "Lite is smaller, but it is an ISO-centric subset rather than the full moment surface."],
-  ["Full compatibility core", "mmntjs", "40.1 KB", "moment", "19.9 KB", "mmntjs is larger than a plain moment import because the default entry carries more compatibility machinery."],
-  ["One locale", "mmntjs", "40.1 KB", "moment + locale/ja", "40.6 KB", "Comparable when an app imports moment plus one locale in this bundler measurement."],
-  ["All locales", "mmntjs", "40.1 KB", "moment/min/moment-with-locales", "76.1 KB", "mmntjs default is smaller than moment's all-locales browser build because locales are not bundled into core."],
+const whyItMatters = [
+  "Moment's common browser story often drifts toward larger all-locales or timezone-heavy builds.",
+  "mmntjs keeps the compatibility-heavy core separate from locale data and timezone data. As a follow-up to that design, it is also easier to tree-shake: `sideEffects: false` is declared and locale modules are pure data exports.",
+  "That means the practical size question is usually: what does this app actually import, not what is the smallest theoretical core in isolation?",
 ];
 
-const timezoneComparisonRows = [
-  ["Logic only app bundle", "mmntjs-timezone/logic", "44.9 KB", "moment-timezone/moment-timezone", "23.5 KB", "Both totals include the core date library after bundling; neither includes bundled timezone data."],
-  ["1970-2030 app bundle", "mmntjs-timezone/1970-2030", "63.0 KB", "moment-timezone/builds/...1970-2030", "40.0 KB", "Same named data window; both totals include the core date library."],
-  ["Full-data app bundle", "mmntjs-timezone", "75.9 KB", "moment-timezone or ...with-data", "58.8 KB", "Full data on both sides; both totals include the core date library."],
+const timezoneFacts = [
+  "Packed timezone data moved from about 711 KB raw source blob to about 293 KB raw generated blob.",
+  "`packages/timezone/dist/index.js` is about 316 KB raw and about 38.1 KB gzip after the pack-format migration.",
+  "That is why the timezone package is worth evaluating separately: it is not free, but it is smaller than many people assume for bundled IANA data.",
 ];
 
-const timezoneAddonRows = [
-  ["Logic only add-on", "mmntjs-timezone/logic", "4.8 KB", "moment-timezone/moment-timezone", "3.6 KB", "Core date library externalized; this isolates the timezone layer."],
-  ["1970-2030 add-on", "mmntjs-timezone/1970-2030", "22.6 KB", "moment-timezone/builds/...1970-2030", "20.4 KB", "Closest like-for-like named data-window comparison."],
-  ["Full-data add-on", "mmntjs-timezone", "36.0 KB", "moment-timezone/builds/...with-data", "39.3 KB", "With core externalized, mmntjs full timezone data is slightly smaller in this measurement."],
-  ["10-year add-on", "not exposed", "-", "moment-timezone/builds/...10-year-range", "11.9 KB", "moment-timezone has a smaller 10-year range build; mmntjs-timezone does not currently expose this shape."],
+const sizeTechniques = [
+  {
+    title: "Name dictionary encoding",
+    text: "Replace long zone names like `America/New_York` with short base-60 IDs, then materialize them at runtime.",
+    href: `${githubUrl}/blob/main/docs/arch/bundlesize-timezone.md#1-name-dictionary-encoding-commit-44d8f761`,
+  },
+  {
+    title: "Permutation-group index codec",
+    text: "Compress DST transition index patterns using run forms such as pair-repeat and increment. This is the most 'modern math' part of the timezone size work.",
+    href: `${githubUrl}/blob/main/docs/arch/bundlesize-timezone.md#2-permutation-group-index-codec-commit-9f949083`,
+  },
+  {
+    title: "Delta frequency dictionary",
+    text: "Turn repeated timezone deltas into global dictionary IDs so frequent transition values collapse to short tokens.",
+    href: `${githubUrl}/blob/main/docs/arch/bundlesize-timezone.md#3-delta-frequency-dictionary-commit-db67beab`,
+  },
 ];
 
-const principles = [
-  "Size is measured at multiple layers: published artifact, compressed transfer, bundled app impact, and runtime cost.",
-  "Package size should be read against the moment.js shape a team would otherwise ship.",
-  "Entry points should make compatibility cost explicit rather than silently bundling every feature.",
-  "Timezone data should stay separate from core unless the application actually needs it.",
-  "Gzip is a transfer metric, not a complete performance metric.",
-];
-
-const metricTable = [
-  ["Raw", "Published artifact size before minification or compression", "Package footprint, source inspection, downstream tooling"],
-  ["Minified", "Size after syntax-level compression (terser, esbuild)", "Browser distribution, bundler output baseline"],
-  ["Gzip", "Compressed transfer size", "CDN or script-tag delivery, network transfer cost"],
-  ["Brotli", "Modern compressed transfer size", "CDN or web delivery with brotli support (most modern hosts and CDNs)"],
-  ["Bundled", "Actual size after app bundling and tree-shaking", "SPA or browser application impact"],
-  ["Parsed", "JavaScript engine parse work", "Startup responsiveness, page interactivity"],
-  ["Evaluated", "Runtime initialization work", "Cold start, SSR, edge functions, Lambda-like environments"],
-];
-
-const scenarioGuidance = [
-  ["CDN direct script tag", "gzip, brotli, minified"],
-  ["SPA or browser app", "bundled output, tree-shaking, parse/eval"],
-  ["SSR or edge runtime", "parse/eval, startup cost, dependency footprint"],
-  ["Node backend", "dependency footprint, initialization cost"],
-  ["Library comparison", "raw, minified, bundled, gzip, brotli"],
-];
-
-const timezoneCompression = [
-  "Timezone packed data moved to the original base-60 pack format instead of pre-unpacked JSON.",
-  "The generated builtin timezone blob dropped from about 2.74 MB to about 725 KB in the later pack-format migration.",
-  "The timezone compression notes record a dist gzip reduction from 40.7 KB to 38.1 KB for an earlier data-codec phase.",
-  "The current browser bundle measurement is larger than the timezone dist file because it includes mmntjs core as the peer date library.",
-];
-
-const sourceNotes = [
-  "Current mmntjs numbers come from `bun run size`, which runs `scripts/bundle-size.ts`.",
-  "Moment comparison rows were measured from installed npm packages with Bun.build using browser target, minify, gzip, and brotli.",
-  "Measurement methodology: Bun 1.x, esbuild-based bundling, browser target, minified output, gzip and brotli compression reported separately.",
-  "Raw (uncompressed) and minified sizes are tracked in the size script output alongside gzip and brotli. Parsed and eval cost are measured separately in the benchmark harness.",
-  "moment package.json points `main` at `moment.js`; moment-timezone package.json points `main` at `index.js`, which loads `moment-timezone` plus `data/packed/latest.json`.",
-  "docs/arch/BUNDLE_SIZE.md records architecture-level size targets and historical measurements.",
-  "docs/bundlesize.md tracks timezone data compression history and should be read as the timezone-specific size log.",
-  "moment-timezone has distinct package paths: logic-only, 10-year data, 1970-2030 data, and full data. mmntjs-timezone currently exposes logic, 1970-2030, and full-data entries.",
-];
 ---
 
 <BaseLayout
   title="Package Size | mmntjs"
-  description="Package size and entry-point guidance for teams evaluating mmntjs in browser and bundle-sensitive environments."
+  description="Package size guidance focused on tree-shaking, entry-point choice, and separate locale/timezone costs."
   currentPath="/package-size/"
 >
   <section class="page-intro panel">
     <p class="eyebrow">Package Size</p>
-    <h1>Size is measured at multiple layers, not one number.</h1>
+    <h1>The pitch is not the smallest core. The pitch is paying only for what you import.</h1>
     <p>
-      Bundle size should not be reduced to a single gzip number. Different environments care about
-      different costs: published artifact size, compressed transfer size, bundled application impact,
-      and runtime startup cost. This page separates those layers so readers can evaluate the metric
-      that matters for their deployment context.
-    </p>
-    <p>
-      The useful comparison is not an abstract package number; it is mmntjs versus the moment or
-      moment-timezone build the application would otherwise ship.
+      `mmntjs` default is compatibility-heavy, so the raw core is not the main selling point. The
+      more important property is that locale data and timezone data are kept separate, which gives
+      tree-shaking and entry-point choice real leverage.
     </p>
   </section>
 
   <section class="panel section">
-    <p class="eyebrow">Size Metrics Are Not One Number</p>
-    <h2>Gzip is one metric of several, not the headline.</h2>
-    <p>
-      For a library that ships in multiple entry-point shapes and targets both CDN script tags and
-      modern bundlers, no single number captures the full cost. Gzip describes network transfer size.
-      It does not describe what an application actually parses, evaluates, or pays for at runtime.
-    </p>
-    <table>
-      <thead>
-        <tr>
-          <th>Metric</th>
-          <th>What it means</th>
-          <th>When it matters</th>
-        </tr>
-      </thead>
-      <tbody>
-        {metricTable.map(([metric, meaning, context]) => (
-          <tr>
-            <td><strong>{metric}</strong></td>
-            <td>{meaning}</td>
-            <td>{context}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </section>
-
-  <section class="grid">
-    <article class="panel section">
-      <p class="eyebrow">Principles</p>
-      <ul>
-        {principles.map((item) => <li>{item}</li>)}
-      </ul>
-    </article>
-    <article class="panel section">
-      <p class="eyebrow">Scenario-Based Guidance</p>
-      <p>
-        The most relevant metric depends on how the library reaches the runtime:
-      </p>
-      <table>
-        <thead>
-          <tr>
-            <th>Scenario</th>
-            <th>Most relevant metrics</th>
-          </tr>
-        </thead>
-        <tbody>
-          {scenarioGuidance.map(([scenario, metrics]) => (
-            <tr>
-              <td>{scenario}</td>
-              <td><code>{metrics}</code></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </article>
+    <p class="eyebrow">What To Understand</p>
+    <div class="cards">
+      {keyTakeaways.map(([title, text]) => (
+        <article class="card">
+          <h3>{title}</h3>
+          <p set:html={renderInlineCodeHTML(text)} />
+        </article>
+      ))}
+    </div>
   </section>
 
   <section class="panel section">
-    <p class="eyebrow">Entry Points</p>
-    <p>
-      The following numbers are gzip compression measurements derived from <code>bun run size</code>.
-      Gzip is reported here as one transfer metric alongside the dist file size and bundled output.
-      See the methodology notes below for raw, minified, and brotli references.
-    </p>
+    <p class="eyebrow">Entry Sizes</p>
+    <h2>Compare each entry against the moment.js shape it replaces.</h2>
     <table>
       <thead>
         <tr>
           <th>Entry</th>
-          <th>Bundled (gzip)</th>
-          <th>Dist (gzip)</th>
-          <th>How to read it</th>
+          <th>Raw size</th>
+          <th>Compare against</th>
+          <th>Reading</th>
+          <th>Why it matters</th>
         </tr>
       </thead>
       <tbody>
-        {entryRows.map(([entry, bundled, dist, notes]) => (
+        {entryRows.map(([entry, rawSize, compareAgainst, reading, notes]) => (
           <tr>
-            <td><code>{entry}</code></td>
-            <td>{bundled}</td>
-            <td>{dist}</td>
+            <td><span set:html={renderInlineCodeHTML(entry)} /></td>
+            <td>{rawSize}</td>
+            <td><span set:html={renderInlineCodeHTML(compareAgainst)} /></td>
+            <td>{reading}</td>
             <td>{notes}</td>
           </tr>
         ))}
       </tbody>
     </table>
-  </section>
-
-  <section class="panel section">
-    <p class="eyebrow">Core Comparison</p>
-    <h2>Compare against the moment core shape with gzip as one signal.</h2>
-    <p>
-      These rows compare gzip-compressed bundled output between mmntjs entries and equivalent
-      moment.js import paths. Gzip is used here as a like-for-like transfer comparison; raw,
-      minified, and bundled output sizes are tracked separately in the size script.
-    </p>
-    <table>
-      <thead>
-        <tr>
-          <th>Scenario</th>
-          <th>mmntjs entry</th>
-          <th>mmntjs (gzip)</th>
-          <th>moment entry</th>
-          <th>moment (gzip)</th>
-          <th>How to read it</th>
-        </tr>
-      </thead>
-      <tbody>
-        {coreComparisonRows.map(([scenario, mmntjs, mmntjsGzip, moment, momentGzip, notes]) => (
-          <tr>
-            <td>{scenario}</td>
-            <td><code>{mmntjs}</code></td>
-            <td>{mmntjsGzip}</td>
-            <td><code>{moment}</code></td>
-            <td>{momentGzip}</td>
-            <td>{notes}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </section>
-
-  <section class="panel section">
-    <p class="eyebrow">Timezone Comparison</p>
-    <h2>Compare timezone builds separately from core, at multiple layers.</h2>
-    <p>
-      Timezone data and core library cost are measured separately because they answer different
-      adoption questions. The tables below use gzip as a transfer comparison; the raw and bundled
-      sizes differ and should be reviewed separately.
-    </p>
-    <table>
-      <thead>
-        <tr>
-          <th>Scenario</th>
-          <th>mmntjs package</th>
-          <th>mmntjs (gzip)</th>
-          <th>moment package</th>
-          <th>moment (gzip)</th>
-          <th>How to read it</th>
-        </tr>
-      </thead>
-      <tbody>
-        {timezoneComparisonRows.map(([scenario, mmntjs, mmntjsGzip, moment, momentGzip, notes]) => (
-          <tr>
-            <td>{scenario}</td>
-            <td><code>{mmntjs}</code></td>
-            <td>{mmntjsGzip}</td>
-            <td><code>{moment}</code></td>
-            <td>{momentGzip}</td>
-            <td>{notes}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-    <p>
-      These rows compare npm import paths that include the core date library after bundling. Current
-      mmntjs timezone totals are larger than the comparable moment-timezone totals.
-    </p>
-
-    <h3>Timezone layer only</h3>
-    <p>
-      With <code>moment</code> or <code>mmntjs</code> externalized, the full-data timezone layer is
-      smaller on the mmntjs side, while logic-only and 1970-2030 are still slightly larger.
-    </p>
-    <table>
-      <thead>
-        <tr>
-          <th>Scenario</th>
-          <th>mmntjs package</th>
-          <th>mmntjs (gzip)</th>
-          <th>moment package</th>
-          <th>moment (gzip)</th>
-          <th>How to read it</th>
-        </tr>
-      </thead>
-      <tbody>
-        {timezoneAddonRows.map(([scenario, mmntjs, mmntjsGzip, moment, momentGzip, notes]) => (
-          <tr>
-            <td>{scenario}</td>
-            <td><code>{mmntjs}</code></td>
-            <td>{mmntjsGzip}</td>
-            <td><code>{moment}</code></td>
-            <td>{momentGzip}</td>
-            <td>{notes}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-    <p>
-      This explains the apparent mismatch: <code>packages/timezone/dist/index.js</code> is about 38 KB
-      gzip by itself, while the browser app bundle for <code>mmntjs-timezone</code> is about 75.9 KB
-      because it also includes <code>mmntjs</code> core.
-    </p>
   </section>
 
   <section class="grid">
     <article class="panel section">
-      <p class="eyebrow">Timezone Data</p>
-      <h2>Timezone support is intentionally separate.</h2>
-      <p>
-        Core mmntjs focuses on moment-compatible behavior without silently shipping full IANA
-        timezone data. Applications that need named-zone behavior should evaluate that package as a
-        separate cost and compatibility concern.
-      </p>
-      <p>
-        Core mmntjs does not silently bundle timezone data. Locale and timezone data are measured
-        and reported separately so teams can evaluate the exact cost of the functionality they
-        import, not a hypothetical worst case.
-      </p>
+      <p class="eyebrow">Why This Helps</p>
       <ul>
-        {timezoneCompression.map((item) => <li>{item}</li>)}
+        {whyItMatters.map((item) => <li>{item}</li>)}
       </ul>
     </article>
     <article class="panel section">
-      <p class="eyebrow">Source Of Truth</p>
+      <p class="eyebrow">How To Read It</p>
       <ul>
-        {sourceNotes.map((item) => <li>{item}</li>)}
+        <li>Use <code>mmntjs</code> when you want the broadest moment-compatible surface and can accept a heavier core.</li>
+        <li>Use <code>mmntjs/lite</code> when browser size matters and you are willing to add parsing, locale, or other extras explicitly.</li>
+        <li>Read locale size separately from core size. A single locale module is cheap; an all-locales browser build is where moment tends to bloat.</li>
+        <li>Read timezone size separately from core size. Apps that do not need named IANA zones should not pay for timezone data at all.</li>
       </ul>
-      <p>
-        The important migration question is not only whether the library is smaller than moment.js,
-        but whether the chosen entry point matches the compatibility surface the application needs.
-      </p>
     </article>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Timezone Data</p>
+    <h2>The IANA package is separate, and its compressed size is fairly modest.</h2>
+    <ul>
+      {timezoneFacts.map((item) => <li set:html={renderInlineCodeHTML(item)} />)}
+    </ul>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Methodology</p>
+    <p>
+      The interesting part is not only how the numbers were measured, but how the timezone package
+      was made smaller in the first place.
+    </p>
+    <div class="cards">
+      {sizeTechniques.map((item) => (
+        <article class="card">
+          <h3>{item.title}</h3>
+          <p set:html={renderInlineCodeHTML(item.text)} />
+          <p><a href={item.href} target="_blank" rel="noreferrer">詳細は GitHub</a></p>
+        </article>
+      ))}
+    </div>
   </section>
 </BaseLayout>

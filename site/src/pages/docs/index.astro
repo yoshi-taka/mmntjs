@@ -1,14 +1,12 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import { docsPrimarySlugs, getDocsSidebarGroups } from "../../content/docs-nav";
 import { docsPages } from "../../content/site";
 import { withBase } from "../../lib/urls";
 
-const primarySlugs = [
-  "getting-started", "installation", "migration-notes",
-  "known-differences", "parsing", "invalid-dates", "timezone-parsezone",
-];
-const primaryDocs = docsPages.filter((page) => primarySlugs.includes(page.slug));
-const referenceDocs = docsPages.filter((page) => !primarySlugs.includes(page.slug));
+const primaryDocs = docsPages.filter((page) => docsPrimarySlugs.includes(page.slug));
+const referenceDocs = docsPages.filter((page) => !docsPrimarySlugs.includes(page.slug));
+const sidebarGroups = getDocsSidebarGroups(true);
 ---
 
 <BaseLayout
@@ -17,7 +15,21 @@ const referenceDocs = docsPages.filter((page) => !primarySlugs.includes(page.slu
   currentPath="/docs/"
 >
   <div class="docs-layout">
-    <div></div>
+    <nav class="docs-nav">
+      {sidebarGroups.map((group) => (
+        <div class="docs-nav-group">
+          <p class="docs-nav-label">{group.label}</p>
+          {group.pages.map((page) => (
+            <a
+              class={`docs-nav-link${page.slug === "" ? " active" : ""}`}
+              href={page.slug === "" ? withBase("/docs/") : withBase(`/docs/${page.slug}/`)}
+            >
+              {page.title}
+            </a>
+          ))}
+        </div>
+      ))}
+    </nav>
     <article class="docs-article">
       <section class="docs-hero-flat">
         <p class="eyebrow">Docs</p>

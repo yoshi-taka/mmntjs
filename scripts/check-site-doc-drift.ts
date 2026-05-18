@@ -41,7 +41,7 @@ const mappings: Mapping[] = [
     siteFiles: ["site/src/pages/performance/index.astro", "site/src/content/site.ts"],
     sourceDocs: [
       "README.md",
-      "docs/bundlesize.md",
+      "docs/arch/bundlesize-timezone.md",
       "docs/perf/ANALYSIS.md",
       "docs/perf/ANALYSIS.ja.md",
       "docs/perf/BENCHMARKS.md",
@@ -128,7 +128,7 @@ const mappings: Mapping[] = [
   {
     route: "/docs/browser-usage/",
     siteFiles: ["site/src/pages/docs/[slug].astro", "site/src/content/site.ts", "site/src/pages/performance/index.astro"],
-    sourceDocs: ["README.md", "docs/bundlesize.md"],
+    sourceDocs: ["README.md", "docs/arch/bundlesize-timezone.md"],
   },
   {
     route: "/docs/runtime-support/",

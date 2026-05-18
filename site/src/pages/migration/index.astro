@@ -129,7 +129,7 @@ mmntjs migrate --apply`} lang="sh" />
     <p>
       mmntjs supports three migration patterns. Which one works best depends on your package manager and test runner.
     </p>
-    <table class="table">
+    <table class="table migration-approaches-table">
       <thead>
         <tr><th>Approach</th><th>npm / yarn</th><th>pnpm</th><th>Jest / webpack</th><th>vitest</th><th>bun</th></tr>
       </thead>
@@ -138,17 +138,17 @@ mmntjs migrate --apply`} lang="sh" />
           <td><strong>A: npm alias</strong><br/><code>"moment": "npm:mmntjs"</code></td>
           <td>Works with one dependency alias.</td>
           <td>Use root overrides when workspace resolution needs to be forced.<br/><code>"moment": "link:../mmntjs/dist"</code></td>
-          <td>Works.</td>
+          <td>✅</td>
           <td>Works; <code>pool: threads</code> is recommended.</td>
-          <td>Works.</td>
+          <td>✅</td>
         </tr>
         <tr>
           <td><strong>B: Migration tool rewrite</strong><br/><code>mmntjs migrate --apply</code></td>
-          <td>Works.</td>
-          <td>Works.</td>
-          <td>Works.</td>
-          <td>Works.</td>
-          <td>Works.</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
+          <td>✅</td>
         </tr>
         <tr>
           <td><strong>C: Preload alias</strong><br/><code>Module._resolveFilename</code> hook</td>

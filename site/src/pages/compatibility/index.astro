@@ -1,5 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import CodeBlock from "../../components/CodeBlock.astro";
+import { renderInlineCodeHTML } from "../../lib/inline-code";
 import {
   compatibilityEvidence,
   compatibilitySnapshot,
@@ -27,10 +29,16 @@ const evaluationPrinciples = [
 ];
 
 const criticalAreas = [
-  ["Parsing", "This is where long-lived production systems usually hide the most surprising dependencies. Loose inputs, fallback behavior, and malformed-but-accepted strings should be reviewed directly."],
-  ["Invalid dates", "Invalid behavior affects both user-visible formatting and control-flow logic. Treat it as compatibility-critical, not as an edge-only concern."],
+  ["Parsing", "Check the exact inputs your app already relies on: ISO strings, RFC 2822 mail dates, custom format strings, and array inputs like `[2024, 0, 1]`. One current known difference is mixed input like `\"93280531 09-3911\"`."],
+  ["Invalid dates", "Examples: `moment(\"2024-02-31\")`, `moment(\"not-a-date\")`, `moment([2024, 1, 31])`, and `moment.invalid()`. Check how they behave in `isValid()`, `format()`, `diff()`, and comparisons."],
   ["Timezone and offsets", "UTC and fixed-offset flows need explicit review around keepLocalTime, parseZone, and DST-adjacent transitions."],
 ];
+
+const parsingWeirdInputs = `"93280531 09-3911"`;
+
+const invalidDateExamples = `moment("2024-02-31").isValid() // false
+moment.invalid().format() // "Invalid date"
+moment("not-a-date").diff(moment("2024-01-01")) // invalid-path behavior should match moment.js`;
 
 const policyPoints = [
   "Prefer documented scope over blanket claims.",
@@ -104,7 +112,7 @@ function statusClass(status: string): string {
           <tr>
             <td>{area}</td>
             <td><span class={statusClass(status)}>{status}</span></td>
-            <td>{notes}</td>
+            <td><span set:html={renderInlineCodeHTML(notes)} /></td>
           </tr>
         ))}
       </tbody>
@@ -122,6 +130,7 @@ function statusClass(status: string): string {
       <p class="eyebrow">Known Differences</p>
       <ul>
         <li>Current known gaps are concentrated in specific parsing edge cases rather than broad API areas.</li>
+        <li>One concrete example is mixed input <code>"93280531 09-3911"</code>.</li>
         <li>Invalid-date and offset-sensitive behavior are documented explicitly because they drive migration risk.</li>
         <li>Compatibility claims should always be read with the documented scope in mind.</li>
       </ul>
@@ -134,7 +143,7 @@ function statusClass(status: string): string {
   <section class="panel section">
     <p class="eyebrow">Known Difference Highlights</p>
     <ul>
-      {knownDifferenceHighlights.map((item) => <li>{item}</li>)}
+      {knownDifferenceHighlights.map((item) => <li set:html={renderInlineCodeHTML(item)} />)}
     </ul>
     <p>
       This is intentionally plain language. The audience for this page is trying to assess adoption
@@ -148,10 +157,22 @@ function statusClass(status: string): string {
       {criticalAreas.map(([title, text]) => (
         <article class="card">
           <h3>{title}</h3>
-          <p>{text}</p>
+          <p set:html={renderInlineCodeHTML(text)} />
         </article>
       ))}
     </div>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Parsing Edge Cases</p>
+    <p>One current known parsing-difference input is:</p>
+    <CodeBlock code={parsingWeirdInputs} lang="text" />
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Invalid Date Examples</p>
+    <p>Examples of invalid inputs and invalid values:</p>
+    <CodeBlock code={invalidDateExamples} lang="js" />
   </section>
 
   <section class="panel section">

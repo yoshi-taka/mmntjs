@@ -33,7 +33,6 @@ export const topNav: NavLink[] = [
   { href: "/package-size/", label: "Package Size" },
   { href: "/migration/", label: "Migration" },
   { href: "/faq/", label: "FAQ" },
-  { href: "/changelog/", label: "Changelog" },
   { href: githubUrl, label: "GitHub", external: true },
 ];
 
@@ -64,6 +63,21 @@ export const docsPages: DocPage[] = [
       "What package entry points exist and when to use them",
     ],
     related: [{ label: "Runtime Support", href: "/docs/runtime-support/" }],
+  },
+  {
+    slug: "lite-usage",
+    title: "Lite Usage",
+    summary: "Use `mmntjs/lite` when bundle size matters and you want to add back only the pieces you need.",
+    purpose: "Explain when the lite entry is a good fit and what teams must add explicitly.",
+    focus: [
+      "What the lite entry includes by default",
+      "Which plugins or locale modules must be imported explicitly",
+      "How to evaluate lite safely before switching browser code to it",
+    ],
+    related: [
+      { label: "Installation", href: "/docs/installation/" },
+      { label: "Browser Usage", href: "/docs/browser-usage/" },
+    ],
   },
   {
     slug: "basic-usage",
@@ -194,14 +208,14 @@ export const docsPages: DocPage[] = [
 ];
 
 export const compatibilitySnapshot = [
-  ["Parsing", "Mostly compatible", "Differentially tested against moment.js."],
+  ["Parsing", "Mostly compatible", "Standard ISO, RFC 2822, custom format, array, object, sign-prefixed, and control-character inputs match moment.js. One known difference is mixed input like `\"93280531 09-3911\"`."],
   ["Formatting", "Compatible", "Token and locale output are covered by upstream and locale-derived tests."],
   ["Manipulation", "Compatible", "add/subtract/startOf/endOf semantics are treated as compatibility-critical."],
   ["Query and comparison", "Compatible", "diff and comparison methods are covered by oracle and property tests."],
   ["Duration", "Compatible", "Construction, normalization, and relative-time behavior are part of the test matrix."],
   ["Locale", "Compatible", "Locale behavior is validated against the upstream locale suite."],
   ["UTC and parseZone", "Compatible", "UTC and fixed-offset behavior are tested; timezone package provides compatible IANA timezone data support."],
-  ["Invalid dates", "Mostly compatible", "Invalid behavior is explicitly tested and documented because it affects migration safety."],
+  ["Invalid dates", "Compatible", "Examples: `moment(\"2024-02-31\")`, `moment(\"not-a-date\")`, `moment([2024, 1, 31])`, and `moment.invalid()`."],
 ];
 
 export const compatibilityEvidence = [
@@ -213,7 +227,7 @@ export const compatibilityEvidence = [
 ];
 
 export const knownDifferenceHighlights = [
-  "Pre-release: known differences exist and are tracked in regression tests.",
+  "Known parsing difference example: `\"93280531 09-3911\"` renders a different local date/time from moment.js.",
   "Core mmntjs covers UTC and fixed-offset behavior; full IANA timezone data is a separate package.",
   "Locale files export pure data with no auto-register side effects (better tree-shaking, explicit registration required).",
 ];
@@ -223,9 +237,9 @@ export const knownDifferences: KnownDifference[] = [
     category: "Parsing",
     title: "Pre-release parsing edge cases",
     momentBehavior: "Behavior for malformed inputs is defined by moment.js.",
-    mmntjsBehavior: "mmntjs matches moment.js for all standard inputs. Some fuzzer-discovered malformed edge cases are still being tracked in regression tests before the first release.",
-    impact: "Low for standard ISO, RFC 2822, and format-string parsing.",
-    workaround: "Review the regression test suite for currently tracked edge cases.",
+    mmntjsBehavior: "mmntjs matches moment.js for standard inputs, but one current known difference is `\"93280531 09-3911\"`: mmntjs renders `9328-05-31 09:00` while moment.js renders `9328-06-02 09:11` even though `valueOf()` matches.",
+    impact: "Low for normal ISO, RFC 2822, array, object, and format-string parsing. Relevant only if your app depends on unusual mixed-format strings.",
+    workaround: "Review mixed-format parsing inputs and compare them directly against moment.js before rollout.",
   },
   {
     category: "Timezone scope",
@@ -355,27 +369,6 @@ export const faqGroups = [
       "How are breaking changes handled?",
       "How are compatibility bugs prioritized?",
       "How can users report differences from moment.js?",
-    ],
-  },
-];
-
-export const changelogEntries = [
-  {
-    date: "2026-05-16",
-    title: "Timezone compatibility hardening",
-    notes: [
-      "Added broader timezone and DST compatibility coverage across six timezones.",
-      "Fixed keepLocalTime and UTC array-input compatibility gaps.",
-      "Documented current timezone scope more explicitly.",
-    ],
-  },
-  {
-    date: "2026-05-13",
-    title: "Quality uplift milestone",
-    notes: [
-      "Expanded targeted tests and raised coverage into the mid-70% range.",
-      "Audited additional behavior against upstream moment.js rather than local assumptions.",
-      "Added more regression fixtures for parsing, locale, and diff edge cases.",
     ],
   },
 ];

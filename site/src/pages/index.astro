@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import CodeBlock from "../components/CodeBlock.astro";
+import { renderInlineCodeHTML } from "../lib/inline-code";
 import {
   compatibilitySnapshot,
   docsPages,
@@ -132,7 +133,7 @@ moment("2024-01-01").utc().format("YYYY-MM-DD");`} lang="js" />
           <tr>
             <td>{area}</td>
             <td><span class={statusClass(status)}>{status}</span></td>
-            <td>{notes}</td>
+            <td><span set:html={renderInlineCodeHTML(notes)} /></td>
           </tr>
         ))}
       </tbody>

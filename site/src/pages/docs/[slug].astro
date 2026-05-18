@@ -1,7 +1,9 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import CodeBlock from "../../components/CodeBlock.astro";
+import { getDocsSidebarGroups } from "../../content/docs-nav";
 import { docsPages, knownDifferences } from "../../content/site";
+import { renderInlineCodeHTML } from "../../lib/inline-code";
 import { withBase } from "../../lib/urls";
 
 type DocSection = {
@@ -48,6 +50,42 @@ const docSections: Record<string, DocSection[]> = {
         "Alias-based install for low-friction trials.",
         "Direct package import for module-by-module migration.",
         "Keep runtime and bundling expectations visible from the start.",
+      ],
+    },
+  ],
+  "lite-usage": [
+    {
+      title: "Use Lite When You Want A Smaller Default Surface",
+      body: [
+        "`mmntjs/lite` is the size-first entry. It is useful when browser bundle cost matters and your application does not need the full default surface on every page by default.",
+        "The tradeoff is explicitness: features that feel implicit in the default entry should be treated as opt-in here, so the right question is not only whether lite works, but whether your current code assumes APIs that lite does not load automatically.",
+      ],
+      bullets: [
+        "Start with lite in new browser-facing entry points or tightly scoped modules.",
+        "Do not switch large legacy surfaces blindly without checking which parsing, locale, and display helpers they use.",
+        "Treat lite as a bundle-shaping choice, not as a drop-in synonym for the default entry.",
+      ],
+    },
+    {
+      title: "Add Back Only What The Module Needs",
+      body: [
+        "The value of lite comes from keeping the base small and making extra capabilities visible in imports. That makes reviews easier because the code shows which features were added intentionally.",
+      ],
+      bullets: [
+        "Add `mmntjs/plugin/format-parse` when you need custom format parsing or formatting helpers outside the base surface.",
+        "Add `mmntjs/locale/*` modules only for the locales your browser bundle actually needs.",
+        "Keep timezone support separate instead of assuming named-zone data is part of lite or core by default.",
+      ],
+    },
+    {
+      title: "Evaluate Lite With Real Bundle And Runtime Checks",
+      body: [
+        "A successful lite rollout usually proves two things at once: the application still behaves correctly, and the smaller entry actually improves the shipped bundle shape. One without the other is not a complete evaluation.",
+      ],
+      bullets: [
+        "Compare the actual bundler output, not just package file size.",
+        "Run a few representative date flows in the browser, especially locale-sensitive and parsing-sensitive ones.",
+        "If a module keeps growing extra add-ons, reconsider whether the default entry is the simpler choice there.",
       ],
     },
   ],
@@ -109,6 +147,34 @@ const docSections: Record<string, DocSection[]> = {
       title: "Comparison Drift Changes Business Logic",
       body: [
         "A small difference in diff semantics or range checking can change billing windows, expiration logic, or feature gating. Comparison APIs should be treated as logic-affecting rather than display-only.",
+      ],
+      bullets: [
+        "Check both boolean queries and numeric diff output.",
+        "Use fixtures near midnight, month boundaries, and DST transitions.",
+        "Confirm whether downstream code expects truncation, rounding, or exact floating output.",
+      ],
+    },
+    {
+      title: "Review The Semantics Your Product Actually Depends On",
+      body: [
+        "Many teams think of comparison as simple ordering, but production code often depends on more than that: unit-scoped comparisons, inclusive range checks, and moment.js's truncated fractional diff semantics.",
+        "If a replacement changes any of those details, the failure mode is usually a branch that still runs but now picks a different path in edge cases.",
+      ],
+      bullets: [
+        "Verify `isBefore`, `isSame`, and `isAfter` both with and without units.",
+        "Test `isBetween` assumptions about inclusivity instead of inferring them from naming.",
+        "Compare `diff` for month, quarter, and year units separately from day or hour math.",
+      ],
+    },
+    {
+      title: "Prefer Fixtures Over Intuition",
+      body: [
+        "The safest comparison review uses dates your application already cares about: billing cutoffs, report windows, grace periods, or retention boundaries. Those are more revealing than generic examples because they encode the real business meaning of a date comparison.",
+      ],
+      bullets: [
+        "Keep at least one fixture where both timestamps are valid but close to a unit boundary.",
+        "Keep one fixture that crosses a timezone or DST-sensitive wall-clock transition if your app uses local time.",
+        "Add explicit regression tests for any comparison that guards a write, charge, or notification.",
       ],
     },
   ],
@@ -177,6 +243,34 @@ const docSections: Record<string, DocSection[]> = {
       body: [
         "Teams usually want to know runtime boundaries before they spend migration time. Node, Bun, browser, and module-format expectations should be easy to scan here.",
       ],
+      bullets: [
+        "Node.js 16+ is the baseline runtime target.",
+        "CJS and ESM entry points are both published.",
+        "Browsers, Bun, and Deno should be evaluated as supported consumption environments, but your own bundling and timezone assumptions still need verification.",
+      ],
+    },
+    {
+      title: "Separate API Availability From Deployment Confidence",
+      body: [
+        "A package can load in a runtime and still need environment-specific verification before production rollout. Date libraries are especially sensitive to local timezone behavior, locale data expectations, and bundler entry-point resolution.",
+        "That means the right question is not only 'does it import?' but also 'does it behave the same way here as it did in the runtime we are replacing?'.",
+      ],
+      bullets: [
+        "Run at least one non-UTC test pass when your application depends on local time.",
+        "Check how your runtime resolves CJS vs ESM entry points before large-scale import rewrites.",
+        "Treat timezone-data usage as a separate capability review from core UTC and fixed-offset behavior.",
+      ],
+    },
+    {
+      title: "What To Verify Per Environment",
+      body: [
+        "The highest-value runtime checks are usually small and concrete. In Node, verify the same module system shape you ship today. In browser builds, verify bundle size and locale loading. In Bun or Deno, verify the import path and a few representative compatibility-sensitive tests rather than relying on a smoke import alone.",
+      ],
+      bullets: [
+        "Node: import style, test runner behavior, timezone-sensitive assertions.",
+        "Browser: bundle output, tree-shaking, script-tag or ESM consumption path.",
+        "Bun and Deno: package resolution, test parity, and any runtime-specific Intl or timezone assumptions.",
+      ],
     },
   ],
   "migration-notes": [
@@ -201,9 +295,26 @@ const docSections: Record<string, DocSection[]> = {
   ],
   "api-reference": [
     {
-      title: "Reference Should Stay Separate From Migration Guidance",
+      title: "Reference Map",
       body: [
-        "A full API reference is useful, but it should not crowd out the evaluation guidance that skeptical adopters need first. This page can remain a structured endpoint while higher-priority trust pages carry more of the early decision load.",
+        "The practical reference shape for mmntjs is smaller than a full generated API site, but it is still clear enough to navigate by concern. Start with the default `mmntjs` entry when you need moment-compatible behavior, use `mmntjs/lite` when size matters more than feature breadth, and treat plugins or locale modules as explicit add-ons rather than invisible side effects.",
+      ],
+      bullets: [
+        "Factory and static APIs: `moment()`, `moment.utc()`, `moment.duration()`, `moment.parseZone()`, `moment.min()`, `moment.max()`.",
+        "Instance APIs: parsing results, formatting, manipulation, comparison, locale, UTC/offset, and duration-related flows.",
+        "Add-on surfaces: `mmntjs/lite`, `mmntjs/full`, `mmntjs/temporal`, `mmntjs/plugin/*`, and `mmntjs/locale/*`.",
+      ],
+    },
+    {
+      title: "Use Entry Points Deliberately",
+      body: [
+        "Entry-point choice is part of the API contract because it changes what code is available by default and what your bundle can shake away. That is why the reference should name those boundaries directly instead of assuming one universal import shape.",
+        "Teams migrating from moment.js often benefit from starting with the default entry for compatibility, then narrowing to lighter or more specialized entries only after the first rollout is stable.",
+      ],
+      bullets: [
+        "Default entry: broadest compatibility-oriented surface.",
+        "Lite entry: smaller browser-oriented base with explicit add-backs.",
+        "Temporal entry: opt-in bridge, not part of the default runtime path.",
       ],
     },
   ],
@@ -277,6 +388,33 @@ import "mmntjs/locale/ja";`,
       note: "Useful when browser bundle cost matters and the narrower feature surface is acceptable.",
     },
   ],
+  "lite-usage": [
+    {
+      title: "Small browser-oriented entry",
+      language: "js",
+      code: `import moment from "mmntjs/lite";
+
+moment("2024-01-01").format("YYYY-MM-DD");`,
+      note: "Start here when you want the smaller entry without immediately adding extra capabilities.",
+    },
+    {
+      title: "Lite with explicit parsing and locale add-ons",
+      language: "js",
+      code: `import moment from "mmntjs/lite";
+import "mmntjs/plugin/format-parse";
+import "mmntjs/locale/ja";`,
+      note: "This keeps extra capabilities visible in imports instead of bundling them by default.",
+    },
+    {
+      title: "Module-by-module evaluation",
+      language: "js",
+      code: `// browser-heavy module under evaluation
+import moment from "mmntjs/lite";
+
+// elsewhere in the app you can still keep the default entry during rollout`,
+      note: "Lite does not need to be an all-or-nothing app-wide migration decision.",
+    },
+  ],
   "basic-usage": [
     {
       title: "Formatting and arithmetic",
@@ -306,6 +444,32 @@ moment.duration(2, "hours").humanize();`,
       note: "Keep examples short and recognizable before diving into compatibility-sensitive details.",
     },
   ],
+  "query-comparison": [
+    {
+      title: "Unit-scoped comparison",
+      language: "js",
+      code: `import moment from "mmntjs";
+
+const start = moment("2024-01-31T23:30:00");
+const cutoff = moment("2024-02-01T00:15:00");
+
+start.isBefore(cutoff); // true
+start.isBefore(cutoff, "day"); // also true, but unit-scoped checks should still be tested explicitly`,
+      note: "Comparisons with units often hide assumptions about report dates, grace periods, and calendar rollovers.",
+    },
+    {
+      title: "Month diff semantics",
+      language: "js",
+      code: `import moment from "mmntjs";
+
+const signedAt = moment("2024-01-31");
+const renewedAt = moment("2024-02-29");
+
+renewedAt.diff(signedAt, "months");
+renewedAt.diff(signedAt, "months", true);`,
+      note: "Check integer and floating diff results separately when product logic truncates or displays month-based intervals.",
+    },
+  ],
   "browser-usage": [
     {
       title: "Lite entry with explicit add-ons",
@@ -325,6 +489,60 @@ import "mmntjs/locale/ja";`,
       note: "The browser docs should make it clear that CDN script-tag consumption remains available alongside ESM imports.",
     },
   ],
+  "runtime-support": [
+    {
+      title: "Node.js ESM",
+      language: "js",
+      code: `import moment from "mmntjs";
+
+moment.utc("2024-06-15T12:30:00Z").format();`,
+      note: "Use this shape when your application already runs on ESM entry points in Node, Bun, or bundler-managed server code.",
+    },
+    {
+      title: "Node.js CommonJS",
+      language: "js",
+      code: `const moment = require("mmntjs");
+
+moment("2024-01-01").add(1, "day").format("YYYY-MM-DD");`,
+      note: "Useful for confirming compatibility in older service code that still loads moment-style dependencies via CommonJS.",
+    },
+    {
+      title: "Browser script tag",
+      language: "html",
+      code: `<script src="https://cdn.jsdelivr.net/npm/mmntjs/dist/mmntjs.min.js"></script>
+<script>
+  mmntjs.utc("2024-06-15T12:30:00Z").format();
+</script>`,
+      note: "This checks the no-bundler path separately from your ESM build pipeline.",
+    },
+  ],
+  "api-reference": [
+    {
+      title: "Default compatibility entry",
+      language: "js",
+      code: `import moment from "mmntjs";
+
+moment("2024-01-01").startOf("month").format("YYYY-MM-DD");
+moment.parseZone("2024-01-01T09:00:00+09:00").utcOffset();`,
+      note: "Start here when you need the broadest moment-compatible surface during migration.",
+    },
+    {
+      title: "Lite plus explicit add-ons",
+      language: "js",
+      code: `import moment from "mmntjs/lite";
+import "mmntjs/plugin/format-parse";
+import "mmntjs/locale/ja";`,
+      note: "Use this when bundle size matters and you want each extra capability to be visible in imports.",
+    },
+    {
+      title: "Temporal bridge entry",
+      language: "js",
+      code: `import { fromTemporal, toTemporal } from "mmntjs/temporal";
+
+const plainDateTime = toTemporal(fromTemporal(Temporal.Now.zonedDateTimeISO()));`,
+      note: "Temporal helpers are opt-in and stay outside the default entry point.",
+    },
+  ],
 };
 
 export function getStaticPaths() {
@@ -339,14 +557,7 @@ const sections = docSections[page.slug] ?? [];
 const pageKnownDifferences = page.slug === "known-differences" ? knownDifferences : [];
 const pageExamples = docExamples[page.slug] ?? [];
 
-const primarySlugs = [
-  "getting-started", "installation", "migration-notes",
-  "known-differences", "parsing", "invalid-dates", "timezone-parsezone",
-];
-const sidebarGroups = [
-  { label: "Start Here", pages: docsPages.filter((p) => primarySlugs.includes(p.slug)) },
-  { label: "Reference Paths", pages: docsPages.filter((p) => !primarySlugs.includes(p.slug)) },
-];
+const sidebarGroups = getDocsSidebarGroups();
 ---
 
 <BaseLayout
@@ -374,7 +585,7 @@ const sidebarGroups = [
       <section class="docs-intro">
         <p class="eyebrow">Docs</p>
         <h1>{page.title}</h1>
-        <p>{page.summary}</p>
+        <p set:html={renderInlineCodeHTML(page.summary)} />
       </section>
 
       {sections.length > 0 && (
@@ -383,10 +594,10 @@ const sidebarGroups = [
           {sections.map((section) => (
             <section class="docs-prose-block">
               <h2>{section.title}</h2>
-              {section.body.map((paragraph) => <p>{paragraph}</p>)}
+              {section.body.map((paragraph) => <p set:html={renderInlineCodeHTML(paragraph)} />)}
               {section.bullets && (
                 <ul>
-                  {section.bullets.map((item) => <li>{item}</li>)}
+                  {section.bullets.map((item) => <li set:html={renderInlineCodeHTML(item)} />)}
                 </ul>
               )}
             </section>
@@ -402,7 +613,7 @@ const sidebarGroups = [
               <article class="example-card">
                 <h3>{example.title}</h3>
                 <CodeBlock code={example.code} lang={example.language} />
-                {example.note && <p>{example.note}</p>}
+                {example.note && <p set:html={renderInlineCodeHTML(example.note)} />}
               </article>
             ))}
           </div>
@@ -414,7 +625,7 @@ const sidebarGroups = [
           <p class="eyebrow">Tracked Differences</p>
           <div class="difference-list">
             {pageKnownDifferences.map((item) => (
-              <article class="difference-card">
+              <article class="difference-entry">
                 <p class="eyebrow">{item.category}</p>
                 <h3>{item.title}</h3>
                 <div class="meta-list">
@@ -461,12 +672,12 @@ const sidebarGroups = [
     <aside class="docs-sidebar">
         <div class="docs-sidebar-card">
           <h2>Purpose</h2>
-          <p>{page.purpose}</p>
+          <p set:html={renderInlineCodeHTML(page.purpose)} />
         </div>
         <div class="docs-sidebar-card">
           <h2>Document first</h2>
           <ul>
-            {(page.focus ?? []).map((item) => <li>{item}</li>)}
+            {(page.focus ?? []).map((item) => <li set:html={renderInlineCodeHTML(item)} />)}
           </ul>
         </div>
         <div class="docs-sidebar-card">
