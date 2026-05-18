@@ -109,3 +109,30 @@ bun test test/properties-intensive.test.ts
 ## License
 
 MIT
+
+## Bundle Size
+
+Comparison with original `moment-timezone` (all minified, `bunx tsup --minify`).
+
+### Full data (all historical zones)
+
+| | raw | gzip |
+|---|---|---|
+| `moment-timezone-with-data.min.js` | 710KB | 38KB |
+| `mmntjs-timezone/index.js` (ESM) | **296KB** (−58%) | **35KB** (−8%) |
+
+### 1970–2030 subset
+
+| | raw | gzip |
+|---|---|---|
+| `moment-timezone-with-data-1970-2030.min.js` | 131KB | 20KB |
+| `mmntjs-timezone/1970-2030.js` (ESM) | **78KB** (−40%) | **22KB** (+10%) |
+
+### Logic only (no tzdata, load-your-own)
+
+| | raw | gzip |
+|---|---|---|
+| `moment-timezone.min.js` | 7KB | 3KB |
+| `mmntjs-timezone/logic.js` (ESM) | **12KB** | **4.7KB** |
+
+Both full and 1970–2030 use the same `!D|` delta-encoded binary blob format generated from the upstream `moment-timezone` npm package at build time. The 1970–2030 gzip is 2KB larger because the filter is mechanical (timestamp window) rather than hand-picked like the original.
