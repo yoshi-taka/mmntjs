@@ -31,7 +31,7 @@ const sidebarGroups = getDocsSidebarGroups(true);
       ))}
     </nav>
     <article class="docs-article">
-      <section class="docs-hero-flat">
+      <section class="docs-header docs-header--index">
         <p class="eyebrow">Docs</p>
         <h1>Documentation organized for migration risk.</h1>
         <p>
@@ -40,7 +40,7 @@ const sidebarGroups = getDocsSidebarGroups(true);
         </p>
       </section>
 
-      <section class="panel section">
+      <section class="docs-index-section">
         <p class="eyebrow">Start Here</p>
         <div class="docs-card-grid">
           {primaryDocs.map((page) => (
@@ -52,7 +52,7 @@ const sidebarGroups = getDocsSidebarGroups(true);
         </div>
       </section>
 
-      <section class="panel section">
+      <section class="docs-index-section">
         <p class="eyebrow">Reference Paths</p>
         <div class="docs-card-grid">
           {referenceDocs.map((page) => (

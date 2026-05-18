@@ -1,0 +1,84 @@
+@media (max-width: 1200px) {
+  .home-hero h1,
+  .page-header h1 {
+    letter-spacing: -0.025em;
+    line-height: 1;
+  }
+}
+
+@media (max-width: 960px) {
+  header,
+  .grid,
+  .cards,
+  .docs-card-grid,
+  .meta-row {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .docs-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .docs-nav {
+    display: none;
+  }
+
+  .docs-sidebar {
+    position: static;
+  }
+
+  header {
+    justify-content: stretch;
+    position: static;
+    margin: 0 0 28px;
+    border-radius: var(--radius-lg);
+  }
+
+  nav {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 720px) {
+  .difference-entry .meta-row {
+    gap: 0.35rem;
+  }
+}
+
+@media (max-width: 640px) {
+  main {
+    width: min(100% - 24px, 1180px);
+    padding-top: 12px;
+  }
+
+  .brand-note {
+    display: none;
+  }
+
+  .home-hero {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    padding: 1.5rem;
+  }
+
+  .home-hero h1 {
+    font-size: clamp(2.45rem, 11.5vw, 3.6rem);
+    letter-spacing: -0.025em;
+  }
+
+  .page-header {
+    margin: 0.75rem 0 1.5rem;
+    padding: 1.25rem;
+  }
+
+  .page-header h1 {
+    font-size: clamp(2rem, 9vw, 3rem);
+    letter-spacing: -0.02em;
+  }
+
+  .actions,
+  .button {
+    width: 100%;
+  }
+}

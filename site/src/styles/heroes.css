@@ -1,0 +1,164 @@
+/* ===== Homepage Hero ===== */
+.home-hero {
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 48px;
+  padding: clamp(2rem, 5vw, 4.8rem);
+  border-radius: calc(var(--radius-xl) + 0.5rem);
+  background:
+    radial-gradient(circle at 18% 8%, hsl(var(--primary) / 0.2), transparent 24rem),
+    radial-gradient(circle at 92% 20%, hsl(var(--accent) / 0.1), transparent 22rem),
+    linear-gradient(180deg, hsl(var(--card) / 0.94), hsl(var(--card) / 0.68));
+  box-shadow: var(--shadow-soft), var(--glow-primary);
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(370px, 0.7fr);
+  align-items: center;
+  gap: clamp(2.5rem, 6vw, 5rem);
+  min-height: min(680px, calc(100vh - 120px));
+  padding-bottom: clamp(2.5rem, 5vw, 5rem);
+}
+
+.home-hero::after {
+  position: absolute;
+  inset: 1px;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.07);
+  content: "";
+}
+
+.home-hero h1 {
+  margin: 0;
+  max-width: 14em;
+  text-wrap: balance;
+  color: hsl(var(--foreground));
+  font-size: clamp(3.1rem, 6.1vw, 5.35rem);
+  font-weight: 750;
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+}
+
+.home-hero p {
+  margin: 28px 0 0;
+  max-width: 700px;
+  color: hsl(var(--muted-foreground));
+  font-size: clamp(1.05rem, 2vw, 1.2rem);
+  line-height: 1.72;
+}
+
+.home-hero .section {
+  margin-top: 0;
+  padding: 1.4rem;
+  border-radius: var(--radius-lg);
+}
+
+.hero-copy {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-code-card {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  border: 1px solid hsl(var(--border) / 0.8);
+  border-radius: calc(var(--radius-xl) + 0.15rem);
+  background:
+    radial-gradient(circle at 20% 0%, hsl(var(--primary) / 0.14), transparent 17rem),
+    linear-gradient(180deg, hsl(222 40% 9% / 0.96), hsl(222 42% 5% / 0.96));
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 0.07),
+    0 26px 80px rgba(0, 0, 0, 0.36),
+    0 0 70px hsl(var(--primary) / 0.1);
+}
+
+.hero-code-card::before {
+  display: flex;
+  align-items: center;
+  min-height: 3.1rem;
+  padding: 0 1.25rem;
+  border-bottom: 1px solid hsl(var(--border) / 0.62);
+  color: hsl(var(--muted-foreground));
+  content: "o  o  o    mmntjs";
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+}
+
+.code-step {
+  padding: 1.2rem;
+}
+
+.code-step + .code-step {
+  border-top: 1px solid hsl(var(--border) / 0.58);
+}
+
+.code-step .eyebrow {
+  margin-bottom: 0.8rem;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.72rem;
+}
+
+.hero-code-card pre {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: 0.92rem;
+}
+
+.hero-code-card pre::before {
+  display: none;
+}
+
+.hero-code-card pre.shiki {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* ===== Page Header (secondary pages) ===== */
+.page-header {
+  position: relative;
+  margin: 1.5rem 0 2.5rem;
+  padding: clamp(1.5rem, 3vw, 2.75rem);
+  border: 1px solid hsl(var(--border) / 0.55);
+  border-radius: calc(var(--radius-xl) + 0.35rem);
+  background:
+    radial-gradient(circle at 12% 0%, hsl(var(--primary) / 0.1), transparent 18rem),
+    linear-gradient(180deg, hsl(var(--card) / 0.72), hsl(var(--card) / 0.48));
+  box-shadow: 0 14px 48px rgba(0, 0, 0, 0.22), var(--glow-primary);
+  overflow: visible;
+}
+
+.page-header::after {
+  position: absolute;
+  inset: 1px;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.07);
+  content: "";
+}
+
+.page-header h1 {
+  max-width: 18ch;
+  margin: 0;
+  font-size: clamp(2.4rem, 5vw, 4.6rem);
+  font-weight: 750;
+  line-height: 1;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+  color: hsl(var(--foreground));
+}
+
+.page-header p {
+  max-width: 68ch;
+  margin-top: 0.85rem;
+  color: hsl(var(--muted-foreground));
+  font-size: clamp(1rem, 1.4vw, 1.12rem);
+  line-height: 1.7;
+}
+
+.page-header .eyebrow {
+  margin-bottom: 10px;
+}
