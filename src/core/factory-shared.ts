@@ -98,9 +98,10 @@ export function createMomentFactory(deps: FactoryDeps) {
       const jan4 = makeDate(isoWeekYear, 0, 4);
       const dayOfJan4 = useUtc ? jan4.getUTCDay() || 7 : jan4.getDay() || 7;
       // ISO week overflow check (moment.js compat)
-      const dec31 = makeDate(isoWeekYear, 11, 31);
-      const dayOfDec31 = useUtc ? dec31.getUTCDay() || 7 : dec31.getDay() || 7;
-      const maxWeeks = dayOfJan4 === 4 || dayOfDec31 === 4 ? 53 : 52;
+      const jan1 = makeDate(isoWeekYear, 0, 1);
+      const dayOfJan1 = useUtc ? jan1.getUTCDay() || 7 : jan1.getDay() || 7;
+      const isLeap = (isoWeekYear % 4 === 0 && isoWeekYear % 100 !== 0) || isoWeekYear % 400 === 0;
+      const maxWeeks = dayOfJan1 === 4 || (dayOfJan1 === 3 && isLeap) ? 53 : 52;
       if (isoWeek < 1 || isoWeek > maxWeeks) {
         return new Moment({
           _d: new Date(NaN),

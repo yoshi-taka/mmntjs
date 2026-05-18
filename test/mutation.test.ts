@@ -331,12 +331,17 @@ makeMutations([
     },
   },
 
-  // === Phase 2: parse.ts ===
+  // === Phase 2: parse.ts / factory-shared.ts ===
   {
-    name: "parse: dayOfYear lower bound off-by-one",
-    file: "src/parse.ts",
-    patterns: [[/dayOfYear >= 0 && dayOfYear <= 366/g, "dayOfYear >= -1 && dayOfYear <= 366"]],
-    inputs: fc.constantFrom("2024000", "2024-000", "2025000", "2025-000"),
+    name: "factory: dayOfYear upper bound off-by-one (> vs >=)",
+    file: "src/core/factory-shared.ts",
+    patterns: [[/parsed\.dayOfYear > daysMax/g, "parsed.dayOfYear >= daysMax"]],
+    inputs: fc.constantFrom(
+      "2024-366", // leap year, day 366 valid → mutated rejects it
+      "2024-365", // valid in both
+      "2025-366", // invalid in both (2025 non-leap, max 365)
+      "2025-365", // valid in both
+    ),
     testFn: (input: unknown) => {
       return mutatedMoment(input as string).isValid() === originalMoment(input as string).isValid();
     },
@@ -636,6 +641,80 @@ makeMutations([
         mutatedMoment(new Date(input as number, 0, 1)).isLeapYear() ===
         originalMoment(new Date(input as number, 0, 1)).isLeapYear()
       );
+    },
+  },
+
+  // === Phase 3: new public API surface ===
+  {
+    name: "defaultFormat: wrong default value",
+    file: "src/moment-class.ts",
+    patterns: [[/return 'YYYY-MM-DDTHH:mm:ssZ'/g, "return 'YYYY/MM/DD'"]],
+    inputs: fc.constantFrom("2024-06-15T12:00:00", "2025-01-01T00:00:00"),
+    testFn: (input: unknown) => {
+      const m2 = mutatedMoment(input as string);
+      const mOrig = originalMoment(input as string);
+      const origFmt = (originalMoment as any).defaultFormat;
+      (originalMoment as any).defaultFormat = "YYYY/MM/DD";
+      const ok = m2.format() === mOrig.format();
+      (originalMoment as any).defaultFormat = origFmt;
+      return ok;
+    },
+  },
+  {
+    name: "localeData: monthsParse off-by-one (month index)",
+    file: "src/locale-runtime.ts",
+    patterns: [[/months\[monthIndex\] !== undefined/g, "months[monthIndex + 1] !== undefined"]],
+    inputs: fc.constantFrom("January", "February", "December", "Jan", "Dec"),
+    testFn: (input: unknown) => {
+      const mod = require("../src/index.ts").default;
+      const loc = mod.localeData("en") as any;
+      const oloc = originalMoment.localeData("en") as any;
+      return loc.monthsParse(input as string, "MMMM") === oloc.monthsParse(input as string, "MMMM");
+    },
+  },
+  {
+    name: "localeData: firstDayOfWeek wrong value",
+    file: "src/locale-runtime.ts",
+    patterns: [[/return this\._config\.week\.dow;/g, "return 99;"]],
+    inputs: fc.constantFrom("en", "en-gb", "de", "fr", "ja"),
+    testFn: (input: unknown) => {
+      const mod = require("../src/index.ts").default;
+      const loc = mod.localeData(input as string) as any;
+      const oloc = originalMoment.localeData(input as string) as any;
+      return loc.firstDayOfWeek() === oloc.firstDayOfWeek();
+    },
+  },
+  {
+    name: "localeData: weekdaysParse always returns Saturday",
+    file: "src/locale-runtime.ts",
+    patterns: [
+      [
+        /weekdays\[weekdayIndex\] !== undefined/g,
+        "(weekdayIndex === 6 ? true : false) ? true : false",
+      ],
+    ],
+    inputs: fc.constantFrom("Monday", "Tuesday", "Sunday", "Funday"),
+    testFn: (input: unknown) => {
+      const mod = require("../src/index.ts").default;
+      const loc = mod.localeData("en") as any;
+      const oloc = originalMoment.localeData("en") as any;
+      return loc.weekdaysParse(input as string) === oloc.weekdaysParse(input as string);
+    },
+  },
+  {
+    name: "localeData: pastFuture sign flipped",
+    file: "src/locale-runtime.ts",
+    patterns: [[/diff > 0/g, "diff < 0"]],
+    inputs: fc.tuple(
+      fc.integer({ min: -100, max: 100 }).filter((n) => n !== 0),
+      fc.constantFrom("5 minutes", "1 hour", "2 days"),
+    ),
+    testFn: (input: unknown) => {
+      const [diff, rel] = input as [number, string];
+      const mod = require("../src/index.ts").default;
+      const loc = mod.localeData("en") as any;
+      const oloc = originalMoment.localeData("en") as any;
+      return loc.pastFuture(diff, rel) === oloc.pastFuture(diff, rel);
     },
   },
 ]);

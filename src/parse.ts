@@ -268,7 +268,7 @@ function parseCommonISOExtended(str: string): InternalParsedData | null {
         doy1 = str.charCodeAt(6) - 48;
       if (doy3 >= 0 && doy3 <= 9 && doy2 >= 0 && doy2 <= 9 && doy1 >= 0 && doy1 <= 9) {
         const dayOfYear = doy3 * 100 + doy2 * 10 + doy1;
-        if (dayOfYear >= 0 && dayOfYear <= 366) {
+        if (dayOfYear >= 1 && dayOfYear <= 366) {
           return { year, dayOfYear };
         }
       }
@@ -378,7 +378,7 @@ function parseCommonISOExtended(str: string): InternalParsedData | null {
       d3 = str.charCodeAt(7) - 48;
     if (d1 >= 0 && d1 <= 9 && d2 >= 0 && d2 <= 9 && d3 >= 0 && d3 <= 9) {
       const dayOfYear = d1 * 100 + d2 * 10 + d3;
-      if (dayOfYear >= 0 && dayOfYear <= 366) {
+      if (dayOfYear >= 1 && dayOfYear <= 366) {
         return { year, dayOfYear };
       }
     }

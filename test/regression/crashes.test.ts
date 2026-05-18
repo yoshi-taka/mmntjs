@@ -107,3 +107,44 @@ test.each(BINARY_INPUTS)("NO_THROW (utc): %j", (input) => {
   expect(() => moment.utc(input)).not.toThrow();
   expect(() => originalMoment.utc(input)).not.toThrow();
 });
+
+// ── Group 4: ISO week W53 regression (factory-shared.ts maxWeeks fix) ──
+
+// Years with 53 ISO weeks via "Jan 1 is Thursday" rule
+// (previously broken: old dayOfJan4||dayOfDec31 check missed these)
+const W53_THURSDAY = ["1976-W53", "2004-W53", "2032-W53", "2060-W53", "2088-W53"];
+
+// Years with 53 ISO weeks via "leap year + Jan 1 is Wednesday" rule
+const W53_WEDNESDAY_LEAP = ["2020-W53", "2048-W53", "2076-W53"];
+
+test.each(W53_THURSDAY)("W53 regression (Thursday-start): %s", (input) => {
+  const m2 = moment(input);
+  const mo = originalMoment(input);
+  expect(m2.isValid()).toBe(true);
+  expect(mo.isValid()).toBe(true);
+  expect(m2.valueOf()).toBe(mo.valueOf());
+});
+
+test.each(W53_WEDNESDAY_LEAP)("W53 regression (Wed-leap): %s", (input) => {
+  const m2 = moment(input);
+  const mo = originalMoment(input);
+  expect(m2.isValid()).toBe(true);
+  expect(mo.isValid()).toBe(true);
+  expect(m2.valueOf()).toBe(mo.valueOf());
+});
+
+// W52 should always be valid; W54 always invalid
+test.each(["1976-W52", "2004-W52", "2032-W52", "2020-W52"])("W52 always valid: %s", (input) => {
+  const m2 = moment(input);
+  const mo = originalMoment(input);
+  expect(m2.isValid()).toBe(true);
+  expect(mo.isValid()).toBe(true);
+  expect(m2.valueOf()).toBe(mo.valueOf());
+});
+
+test.each(["1976-W54", "2004-W54", "2020-W54", "2030-W54"])("W54 always invalid: %s", (input) => {
+  const m2 = moment(input);
+  const mo = originalMoment(input);
+  expect(m2.isValid()).toBe(false);
+  expect(mo.isValid()).toBe(false);
+});

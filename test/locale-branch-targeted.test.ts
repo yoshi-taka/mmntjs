@@ -942,3 +942,148 @@ describe("locale-runtime Locale instance methods", () => {
     expect(typeof ld.week(m)).toBe("number");
   });
 });
+
+describe("locale-runtime monthsParse/Regex branches", () => {
+  test("monthsParse strict: full name matches MMMM", () => {
+    const ld = moment.localeData("en") as any;
+    const old = originalMoment.localeData("en") as any;
+    expect(ld.monthsParse("January", "MMMM", true)).toBe(old.monthsParse("January", "MMMM", true));
+  });
+
+  test("monthsParse strict: short name matches MMM", () => {
+    const ld = moment.localeData("en") as any;
+    const old = originalMoment.localeData("en") as any;
+    expect(ld.monthsParse("Jan", "MMM", true)).toBe(old.monthsParse("Jan", "MMM", true));
+  });
+
+  test("monthsRegex strict vs non-strict", () => {
+    const ld = moment.localeData("en") as any;
+    const old = originalMoment.localeData("en") as any;
+    // strict matches full month names
+    expect(ld.monthsRegex(true).test("January")).toBe(old.monthsRegex(true).test("January"));
+    // strict may or may not match short names (locale-dependent)
+    expect(typeof ld.monthsRegex(true).test("Jan")).toBe("boolean");
+    // non-strict always matches short names
+    expect(ld.monthsRegex(false).test("Jan")).toBe(true);
+  });
+
+  test("monthsShortRegex strict rejects full names", () => {
+    const ld = moment.localeData("en") as any;
+    expect(ld.monthsShortRegex(true).test("Jan")).toBe(true);
+    expect(ld.monthsShortRegex(true).test("January")).toBe(false);
+  });
+
+  test("monthsShortRegex non-strict also accepts full names (known diff)", () => {
+    // moment.js non-strict monthsShortRegex also matches full names
+    const ld = moment.localeData("en") as any;
+    const old = originalMoment.localeData("en") as any;
+    expect(ld.monthsShortRegex(false).test("January")).toBe(
+      old.monthsShortRegex(false).test("January"),
+    );
+  });
+
+  test("monthsParse strict non-month returns sentinel", () => {
+    const ld = moment.localeData("en") as any;
+    const r = ld.monthsParse("Xyz", "MMMM", true);
+    expect(r < 0 || r === undefined).toBe(true);
+  });
+
+  test("weekdaysParse accepts known weekday names (non-strict)", () => {
+    const ld = moment.localeData("en") as any;
+    const valid = ["Monday", "Tuesday", "Wednesday", "Sunday"];
+    for (const name of valid) {
+      const result = ld.weekdaysParse(name);
+      expect(result).toBeGreaterThanOrEqual(0);
+      expect(result).toBeLessThanOrEqual(6);
+    }
+  });
+
+  test("weekdaysParse unknown name returns negative", () => {
+    const ld = moment.localeData("en") as any;
+    const r = ld.weekdaysParse("Funday");
+    expect(r < 0 || r === undefined).toBe(true);
+  });
+
+  test("weekdaysRegex strict rejects short names", () => {
+    const ld = moment.localeData("en") as any;
+    const strict = ld.weekdaysRegex(true);
+    expect(strict.test("Monday")).toBe(true);
+    expect(strict.test("Mon")).toBe(false);
+  });
+
+  test("weekdaysShortRegex strict rejects min names", () => {
+    const ld = moment.localeData("en") as any;
+    expect(ld.weekdaysShortRegex(true).test("Mon")).toBe(true);
+    expect(ld.weekdaysShortRegex(true).test("M")).toBe(false);
+  });
+
+  test("weekdaysMinRegex matches abbreviations", () => {
+    const ld = moment.localeData("en") as any;
+    expect(ld.weekdaysMinRegex(true).test("Mo")).toBe(true);
+    expect(ld.weekdaysMinRegex(true).test("Su")).toBe(true);
+  });
+
+  test("eras returns expected values for en locale", () => {
+    const ld = moment.localeData("en") as any;
+    const eras = ld.eras();
+    expect(Array.isArray(eras)).toBe(true);
+    expect(eras.length).toBeGreaterThanOrEqual(1);
+    if (eras.length > 0) {
+      expect(typeof eras[0].name).toBe("string");
+      expect(typeof eras[0].since).toBe("string");
+    }
+  });
+
+  test("calendar with function callbacks via localeData.calendar()", () => {
+    const ld = moment.localeData("en") as any;
+    const m = moment("2024-06-15T10:00:00");
+    const now = moment("2024-06-15T12:00:00");
+    const result = ld.calendar("sameDay", m, now);
+    expect(typeof result).toBe("string");
+    expect(result.length).toBeGreaterThan(0);
+  });
+
+  test("localeData().week with locale returns consistent type", () => {
+    const locales = ["en"];
+    for (const locName of locales) {
+      const ld = moment.localeData(locName) as any;
+      const m = moment("2024-06-15");
+      expect(typeof ld.week(m)).toBe("number");
+    }
+  });
+});
+
+describe("firstDayOfWeek / firstDayOfYear", () => {
+  test("custom locale with defineLocale reflects dow/doy", () => {
+    moment.defineLocale("x-fdow-custom", { week: { dow: 3, doy: 7 } });
+    const ld = moment.localeData("x-fdow-custom") as any;
+    expect(ld.firstDayOfWeek()).toBe(3);
+    expect(ld.firstDayOfYear()).toBe(7);
+    moment.locale("x-fdow-custom", null);
+  });
+
+  test("exists and returns number for en locale", () => {
+    const ld = moment.localeData("en") as any;
+    expect(typeof ld.firstDayOfWeek()).toBe("number");
+    expect(typeof ld.firstDayOfYear()).toBe("number");
+  });
+
+  test("matches oracle for en locale", () => {
+    const ld = moment.localeData("en") as any;
+    const old = originalMoment.localeData("en") as any;
+    expect(ld.firstDayOfWeek()).toBe(old.firstDayOfWeek());
+    expect(ld.firstDayOfYear()).toBe(old.firstDayOfYear());
+  });
+});
+
+describe("moment.createFromInputFallback branches", () => {
+  test("exists and is callable", () => {
+    expect(typeof (moment as any).createFromInputFallback).toBe("function");
+  });
+
+  test("does not throw for any input", () => {
+    expect(() => {
+      (moment as any).createFromInputFallback("test", (moment as any).localeData("en"));
+    }).not.toThrow();
+  });
+});
