@@ -21,8 +21,7 @@
       "types": "./dist/1970-2030.d.ts",
       "import": "./dist/1970-2030.js",
       "require": "./dist/1970-2030.cjs"
-    },
-    "./dist/*": "./dist/*"
+    }
   },
   "sideEffects": false,
   "files": ["dist"],
