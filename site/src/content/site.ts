@@ -75,10 +75,6 @@ export const docsPages: DocPage[] = [
       "Common add and diff flows",
       "Where behavior-sensitive topics branch into deeper docs",
     ],
-    related: [
-      { label: "Parsing", href: "/docs/parsing/" },
-      { label: "Formatting", href: "/docs/formatting/" },
-    ],
   },
   {
     slug: "parsing",
@@ -96,30 +92,6 @@ export const docsPages: DocPage[] = [
     ],
   },
   {
-    slug: "formatting",
-    title: "Formatting",
-    summary: "Cover formatting tokens, locale-sensitive output, and compatibility expectations.",
-    purpose: "Formatting is visible to users and often tied to regression-sensitive snapshots.",
-    focus: [
-      "Common token behavior",
-      "Locale interactions",
-      "Cases where output should be compared directly against moment.js",
-    ],
-    related: [{ label: "Locale", href: "/docs/locale/" }],
-  },
-  {
-    slug: "manipulation",
-    title: "Manipulation",
-    summary: "Document add, subtract, startOf, endOf, and mutating behavior expectations.",
-    purpose: "Mutation semantics are part of compatibility, not an implementation detail.",
-    focus: [
-      "Mutable behavior preservation",
-      "Boundary-sensitive operations like month and year math",
-      "How to test rollout-sensitive flows",
-    ],
-    related: [{ label: "Compatibility", href: "/compatibility/" }],
-  },
-  {
     slug: "query-comparison",
     title: "Query and Comparison",
     summary: "Document comparison semantics such as diff, isBefore, isAfter, and range checks.",
@@ -130,30 +102,6 @@ export const docsPages: DocPage[] = [
       "Calendar vs exact-time assumptions",
     ],
     related: [{ label: "Migration", href: "/migration/" }],
-  },
-  {
-    slug: "duration",
-    title: "Duration",
-    summary: "Explain duration construction, math, and relative-time concerns.",
-    purpose: "Duration behavior affects scheduling, reporting, and user-facing labels.",
-    focus: [
-      "Construction from numbers and objects",
-      "Math and normalization behavior",
-      "Relative time and humanize coverage",
-    ],
-    related: [{ label: "Quality", href: "/quality/" }],
-  },
-  {
-    slug: "locale",
-    title: "Locale",
-    summary: "Set expectations for locale loading, output, and compatibility-sensitive formatting behavior.",
-    purpose: "Locale support needs to be explicit because many teams load only a subset of languages.",
-    focus: [
-      "Locale loading model",
-      "Formatting and parsing interactions",
-      "What to verify in localized regression tests",
-    ],
-    related: [{ label: "Formatting", href: "/docs/formatting/" }],
   },
   {
     slug: "timezone-parsezone",
@@ -181,18 +129,6 @@ export const docsPages: DocPage[] = [
       "What should be regression-tested before rollout",
     ],
     related: [{ label: "Known Differences", href: "/docs/known-differences/" }],
-  },
-  {
-    slug: "typescript",
-    title: "TypeScript",
-    summary: "Explain bundled types, compatibility expectations, and how existing moment typings map over.",
-    purpose: "Typing friction often decides whether an evaluation reaches production testing.",
-    focus: [
-      "Bundled types",
-      "Compatibility with existing moment-style imports",
-      "Where mmntjs-specific APIs extend the type surface",
-    ],
-    related: [{ label: "Installation", href: "/docs/installation/" }],
   },
   {
     slug: "browser-usage",
