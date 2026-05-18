@@ -653,10 +653,10 @@ makeMutations([
     testFn: (input: unknown) => {
       const m2 = mutatedMoment(input as string);
       const mOrig = originalMoment(input as string);
-      const origFmt = (originalMoment as any).defaultFormat;
-      (originalMoment as any).defaultFormat = "YYYY/MM/DD";
+      const origFmt = originalMoment.defaultFormat;
+      originalMoment.defaultFormat = "YYYY/MM/DD";
       const ok = m2.format() === mOrig.format();
-      (originalMoment as any).defaultFormat = origFmt;
+      originalMoment.defaultFormat = origFmt;
       return ok;
     },
   },
@@ -667,8 +667,8 @@ makeMutations([
     inputs: fc.constantFrom("January", "February", "December", "Jan", "Dec"),
     testFn: (input: unknown) => {
       const mod = require("../src/index.ts").default;
-      const loc = mod.localeData("en") as any;
-      const oloc = originalMoment.localeData("en") as any;
+      const loc = mod.localeData("en");
+      const oloc = originalMoment.localeData("en");
       return loc.monthsParse(input as string, "MMMM") === oloc.monthsParse(input as string, "MMMM");
     },
   },
@@ -679,8 +679,8 @@ makeMutations([
     inputs: fc.constantFrom("en", "en-gb", "de", "fr", "ja"),
     testFn: (input: unknown) => {
       const mod = require("../src/index.ts").default;
-      const loc = mod.localeData(input as string) as any;
-      const oloc = originalMoment.localeData(input as string) as any;
+      const loc = mod.localeData(input as string);
+      const oloc = originalMoment.localeData(input as string);
       return loc.firstDayOfWeek() === oloc.firstDayOfWeek();
     },
   },
@@ -696,8 +696,8 @@ makeMutations([
     inputs: fc.constantFrom("Monday", "Tuesday", "Sunday", "Funday"),
     testFn: (input: unknown) => {
       const mod = require("../src/index.ts").default;
-      const loc = mod.localeData("en") as any;
-      const oloc = originalMoment.localeData("en") as any;
+      const loc = mod.localeData("en");
+      const oloc = originalMoment.localeData("en");
       return loc.weekdaysParse(input as string) === oloc.weekdaysParse(input as string);
     },
   },
@@ -712,8 +712,8 @@ makeMutations([
     testFn: (input: unknown) => {
       const [diff, rel] = input as [number, string];
       const mod = require("../src/index.ts").default;
-      const loc = mod.localeData("en") as any;
-      const oloc = originalMoment.localeData("en") as any;
+      const loc = mod.localeData("en");
+      const oloc = originalMoment.localeData("en");
       return loc.pastFuture(diff, rel) === oloc.pastFuture(diff, rel);
     },
   },
