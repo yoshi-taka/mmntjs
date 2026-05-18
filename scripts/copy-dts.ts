@@ -15,7 +15,6 @@ const projectRoot = join(import.meta.dir, "..");
 const distDir = join(projectRoot, "dist");
 
 const MOMENT_DTS = join(projectRoot, "moment", "moment.d.ts");
-const TS31_DTS = join(projectRoot, "moment", "ts3.1-typings", "moment.d.ts");
 
 const MOMENT_TZ_DTS = join(projectRoot, "node_modules", "moment-timezone", "index.d.ts");
 const TZ_DIST_DIR = join(projectRoot, "packages", "timezone", "dist");
@@ -299,13 +298,7 @@ function main(): void {
   console.log("[copy-dts] Creating dist/temporal-entry.d.ts");
   createTemporalEntryDts(join(distDir, "temporal-entry.d.ts"));
 
-  // 5. Handle ts3.1-typings (for TypeScript >= 3.1)
-  const ts31Dist = join(distDir, "ts3.1-typings");
-  mkdirSync(ts31Dist, { recursive: true });
-  console.log("[copy-dts] Copying moment.d.ts → dist/ts3.1-typings/index.d.ts");
-  copyMomentDts(TS31_DTS, join(ts31Dist, "index.d.ts"));
-
-  // 6. Create mmntjs-timezone dist/index.d.ts
+  // 5. Create mmntjs-timezone dist/index.d.ts
   console.log("[copy-dts] Creating packages/timezone/dist/index.d.ts");
   createTimezoneDts(join(TZ_DIST_DIR, "index.d.ts"));
 
