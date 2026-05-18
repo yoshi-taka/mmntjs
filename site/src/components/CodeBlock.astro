@@ -1,0 +1,23 @@
+---
+import { codeToHtml } from "shiki";
+
+interface Props {
+  code: string;
+  lang?: string;
+}
+
+const { code, lang = "text" } = Astro.props;
+
+let html: string;
+if (lang === "text" || lang === "plaintext") {
+  html = `<pre class="shiki fallback"><code>${code}</code></pre>`;
+} else {
+  try {
+    html = await codeToHtml(code, { lang, theme: "dark-plus" });
+  } catch {
+    html = `<pre class="shiki fallback"><code>${code}</code></pre>`;
+  }
+}
+---
+
+<div set:html={html} />

@@ -8,7 +8,7 @@ const primarySlugs = [
   "known-differences", "parsing", "invalid-dates", "timezone-parsezone",
 ];
 const primaryDocs = docsPages.filter((page) => primarySlugs.includes(page.slug));
-const referenceDocs = docsPages.filter((page) => !primarySlugs.includes(page));
+const referenceDocs = docsPages.filter((page) => !primarySlugs.includes(page.slug));
 ---
 
 <BaseLayout
@@ -17,8 +17,9 @@ const referenceDocs = docsPages.filter((page) => !primarySlugs.includes(page));
   currentPath="/docs/"
 >
   <div class="docs-layout">
+    <div></div>
     <article class="docs-article">
-      <section class="page-intro panel">
+      <section class="docs-hero-flat">
         <p class="eyebrow">Docs</p>
         <h1>Documentation organized for migration risk.</h1>
         <p>
@@ -29,9 +30,9 @@ const referenceDocs = docsPages.filter((page) => !primarySlugs.includes(page));
 
       <section class="panel section">
         <p class="eyebrow">Start Here</p>
-        <div class="cards">
+        <div class="docs-card-grid">
           {primaryDocs.map((page) => (
-            <a class="card" href={withBase(`/docs/${page.slug}/`)}>
+            <a class="docs-card" href={withBase(`/docs/${page.slug}/`)}>
               <h3>{page.title}</h3>
               <p>{page.summary}</p>
             </a>
@@ -41,9 +42,9 @@ const referenceDocs = docsPages.filter((page) => !primarySlugs.includes(page));
 
       <section class="panel section">
         <p class="eyebrow">Reference Paths</p>
-        <div class="cards">
+        <div class="docs-card-grid">
           {referenceDocs.map((page) => (
-            <a class="card" href={withBase(`/docs/${page.slug}/`)}>
+            <a class="docs-card" href={withBase(`/docs/${page.slug}/`)}>
               <h3>{page.title}</h3>
               <p>{page.summary}</p>
             </a>

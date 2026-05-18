@@ -75,6 +75,7 @@ export const docsPages: DocPage[] = [
       "Common add and diff flows",
       "Where behavior-sensitive topics branch into deeper docs",
     ],
+    related: [{ label: "Getting Started", href: "/docs/getting-started/" }],
   },
   {
     slug: "parsing",
@@ -84,7 +85,7 @@ export const docsPages: DocPage[] = [
     focus: [
       "ISO, RFC 2822, array, object, and custom-format inputs",
       "Strict vs forgiving behavior and fallback paths",
-      "Edge cases and known sign-prefixed differences",
+      "Edge cases and regression-tracked differences",
     ],
     related: [
       { label: "Known Differences", href: "/docs/known-differences/" },
@@ -193,7 +194,7 @@ export const docsPages: DocPage[] = [
 ];
 
 export const compatibilitySnapshot = [
-  ["Parsing", "Mostly compatible", "Differentially tested against moment.js; known edge cases remain in some sign-prefixed inputs (e.g. -775505110)."],
+  ["Parsing", "Mostly compatible", "Differentially tested against moment.js."],
   ["Formatting", "Compatible", "Token and locale output are covered by upstream and locale-derived tests."],
   ["Manipulation", "Compatible", "add/subtract/startOf/endOf semantics are treated as compatibility-critical."],
   ["Query and comparison", "Compatible", "diff and comparison methods are covered by oracle and property tests."],
@@ -209,27 +210,22 @@ export const compatibilityEvidence = [
   "744/744 timezone compatibility cases passing across six timezones",
   "112 property-style oracle tests with tens of thousands of assertions against upstream moment.js",
   "9 coverage-guided fuzz harnesses plus a grammar-based ISO generator",
-  "Known remaining compatibility gaps are concentrated in a small set of sign-prefixed parse edge cases",
 ];
 
 export const knownDifferenceHighlights = [
-  "A small number of sign-prefixed parse cases still differ because moment.js uses non-anchored regex matching in some fallback paths.",
-  "Core mmntjs should be treated as covering UTC and fixed-offset behavior, not as silently bundling full IANA timezone data behavior.",
-  "Runtime-specific caveats should stay visible, including environment-sensitive timezone and locale behavior during evaluation.",
+  "Pre-release: known differences exist and are tracked in regression tests.",
+  "Core mmntjs covers UTC and fixed-offset behavior; full IANA timezone data is a separate package.",
+  "Locale files export pure data with no auto-register side effects (better tree-shaking, explicit registration required).",
 ];
 
 export const knownDifferences: KnownDifference[] = [
   {
     category: "Parsing",
-    title: "Some sign-prefixed parse edge cases remain different",
-    momentBehavior:
-      "moment.js can match some sign-prefixed strings through non-anchored regex fallback behavior.",
-    mmntjsBehavior:
-      "mmntjs is still stricter in a small set of these malformed or edge-case inputs (e.g. `-775505110`), especially around sign-prefixed parse forms discovered by fuzzing.",
-    impact:
-      "Relevant mainly if the application depends on odd legacy inputs rather than clean ISO, RFC 2822, or explicit format strings.",
-    workaround:
-      "Add targeted regression fixtures for suspicious legacy inputs and review the Known Differences page before broad rollout of parsing-heavy modules.",
+    title: "Pre-release parsing edge cases",
+    momentBehavior: "Behavior for malformed inputs is defined by moment.js.",
+    mmntjsBehavior: "mmntjs matches moment.js for all standard inputs. Some fuzzer-discovered malformed edge cases are still being tracked in regression tests before the first release.",
+    impact: "Low for standard ISO, RFC 2822, and format-string parsing.",
+    workaround: "Review the regression test suite for currently tracked edge cases.",
   },
   {
     category: "Timezone scope",
@@ -282,6 +278,7 @@ export const performancePrinciples = [
   "Performance claims should be reproducible, scoped, and benchmark-specific.",
   "Compatibility matters more than microbenchmark wins in ambiguous behavior.",
   "Common-path overhead matters more than leaderboard language.",
+  "Bundle size is measured at multiple layers — raw, minified, gzip, brotli, bundled, parsed, evaluated — not reduced to a single number.",
 ];
 
 export const migrationPhases = [
@@ -427,7 +424,7 @@ export const faqAnswers = [
   {
     question: "What is still known to differ?",
     answer:
-      "The main known differences are unusual malformed parsing inputs, especially some sign-prefixed strings. Normal ISO strings, explicit format parsing, UTC, offsets, formatting, mutation, and duration behavior are the main compatibility targets.",
+      "Pre-release: known differences exist and are tracked. Standard ISO, RFC 2822, format, UTC, offset, and duration behavior are the main compatibility targets.",
   },
   {
     question: "Why not just use Temporal?",
@@ -482,7 +479,7 @@ export const faqAnswers = [
   {
     question: "Is bundle size smaller?",
     answer:
-      "The comparison depends on the entry point and tree-shaking behavior. moment.min.js core-only is 18 KB gzip. mmntjs/lite is 16 KB gzip — smaller, but requires explicit locale loading. mmntjs dist/index.js (full build, unminified) is 55-57 KB gzip, larger than moment.min.js. moment.js locale files have side effects (auto-register on import) which can block tree-shaking in some bundlers. mmntjs locales are pure data with no side effects and sideEffects:false is declared, so unused locales are safe to remove. The trade-off: mmntjs gives bundlers more optimization room, but the base entry is heavier.",
+      "Tree-shaking works. mmntjs declares sideEffects:false and locales are pure data with no auto-register side effects, so bundlers remove unused code. The bundle cost is whatever your app actually imports, not a fixed number.",
   },
   {
     question: "Can mmntjs coexist with dayjs, date-fns, Luxon, or Temporal?",

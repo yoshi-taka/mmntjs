@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import CodeBlock from "../../components/CodeBlock.astro";
 import { docsPages, knownDifferences } from "../../content/site";
 import { withBase } from "../../lib/urls";
 
@@ -337,6 +338,15 @@ const { page } = Astro.props;
 const sections = docSections[page.slug] ?? [];
 const pageKnownDifferences = page.slug === "known-differences" ? knownDifferences : [];
 const pageExamples = docExamples[page.slug] ?? [];
+
+const primarySlugs = [
+  "getting-started", "installation", "migration-notes",
+  "known-differences", "parsing", "invalid-dates", "timezone-parsezone",
+];
+const sidebarGroups = [
+  { label: "Start Here", pages: docsPages.filter((p) => primarySlugs.includes(p.slug)) },
+  { label: "Reference Paths", pages: docsPages.filter((p) => !primarySlugs.includes(p.slug)) },
+];
 ---
 
 <BaseLayout
@@ -345,6 +355,21 @@ const pageExamples = docExamples[page.slug] ?? [];
   currentPath={`/docs/${page.slug}/`}
 >
   <div class="docs-layout">
+    <nav class="docs-nav">
+      {sidebarGroups.map((group) => (
+        <div class="docs-nav-group">
+          <p class="docs-nav-label">{group.label}</p>
+          {group.pages.map((docPage) => (
+            <a
+              class={`docs-nav-link${docPage.slug === page.slug ? " active" : ""}`}
+              href={withBase(`/docs/${docPage.slug}/`)}
+            >
+              {docPage.title}
+            </a>
+          ))}
+        </div>
+      ))}
+    </nav>
     <article class="docs-article">
       <section class="docs-intro">
         <p class="eyebrow">Docs</p>
@@ -376,7 +401,7 @@ const pageExamples = docExamples[page.slug] ?? [];
             {pageExamples.map((example) => (
               <article class="example-card">
                 <h3>{example.title}</h3>
-                <pre><code>{example.code}</code></pre>
+                <CodeBlock code={example.code} lang={example.language} />
                 {example.note && <p>{example.note}</p>}
               </article>
             ))}
@@ -434,25 +459,25 @@ const pageExamples = docExamples[page.slug] ?? [];
     </article>
 
     <aside class="docs-sidebar">
-      <div class="docs-sidebar-card">
-        <h2>Purpose</h2>
-        <p>{page.purpose}</p>
-      </div>
-      <div class="docs-sidebar-card">
-        <h2>Document first</h2>
-        <ul>
-          {page.focus.map((item) => <li>{item}</li>)}
-        </ul>
-      </div>
-      <div class="docs-sidebar-card">
-        <h2>Related</h2>
-        {page.related.map((link, index) => (
-          <span>
-            {index > 0 && <br />}
-            <a href={withBase(link.href)}>{link.label}</a>
-          </span>
-        ))}
-      </div>
+        <div class="docs-sidebar-card">
+          <h2>Purpose</h2>
+          <p>{page.purpose}</p>
+        </div>
+        <div class="docs-sidebar-card">
+          <h2>Document first</h2>
+          <ul>
+            {(page.focus ?? []).map((item) => <li>{item}</li>)}
+          </ul>
+        </div>
+        <div class="docs-sidebar-card">
+          <h2>Related</h2>
+          {(page.related ?? []).map((link, index) => (
+            <span>
+              {index > 0 && <br />}
+              <a href={withBase(link.href)}>{link.label}</a>
+            </span>
+          ))}
+        </div>
     </aside>
   </div>
 </BaseLayout>

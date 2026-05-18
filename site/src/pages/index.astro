@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import CodeBlock from "../components/CodeBlock.astro";
 import {
   compatibilitySnapshot,
   docsPages,
@@ -46,17 +47,17 @@ function statusClass(status: string): string {
     <div class="hero-code-card" aria-label="Installation and usage examples">
       <div class="code-step">
         <p class="eyebrow">Install</p>
-        <pre><code>npm install moment@npm:mmntjs</code></pre>
+        <CodeBlock code="npm install moment@npm:mmntjs" lang="sh" />
       </div>
       <div class="code-step">
         <p class="eyebrow">Drop-in import</p>
-        <pre><code>import moment from "moment";
+        <CodeBlock code={`import moment from "moment";
 
-moment("2024-01-01").add(1, "day");</code></pre>
+moment("2024-01-01").add(1, "day");`} lang="js" />
       </div>
       <div class="code-step">
         <p class="eyebrow">Migration tool</p>
-        <pre><code>mmntjs migrate --apply path/to/module</code></pre>
+        <CodeBlock code="mmntjs migrate --apply path/to/module" lang="sh" />
       </div>
     </div>
   </section>
@@ -78,14 +79,14 @@ moment("2024-01-01").add(1, "day");</code></pre>
         Evaluate mmntjs in one module, run the tests you already trust, and expand only after
         checking compatibility-sensitive behavior.
       </p>
-      <pre><code>npm install moment@npm:mmntjs
+      <CodeBlock code={`npm install moment@npm:mmntjs
 
 # or migrate one module first
 npm install mmntjs
-mmntjs migrate --apply path/to/module</code></pre>
-      <pre><code>import moment from "moment";
+mmntjs migrate --apply path/to/module`} lang="sh" />
+      <CodeBlock code={`import moment from "moment";
 
-moment("2024-01-01").utc().format("YYYY-MM-DD");</code></pre>
+moment("2024-01-01").utc().format("YYYY-MM-DD");`} lang="js" />
       <p>
         If your codebase is large, the safest first move is usually one owned module with clear
         tests, not a global replacement across every service at once.

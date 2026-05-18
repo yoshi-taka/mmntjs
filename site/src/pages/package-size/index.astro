@@ -31,16 +31,29 @@ const timezoneAddonRows = [
 ];
 
 const principles = [
+  "Size is measured at multiple layers: published artifact, compressed transfer, bundled app impact, and runtime cost.",
   "Package size should be read against the moment.js shape a team would otherwise ship.",
   "Entry points should make compatibility cost explicit rather than silently bundling every feature.",
   "Timezone data should stay separate from core unless the application actually needs it.",
+  "Gzip is a transfer metric, not a complete performance metric.",
 ];
 
-const interpretation = [
-  ["Bundled gzip", "What a browser-oriented build is expected to pay after bundling and compression."],
-  ["Dist gzip", "What the shipped dist artifact costs before an application bundler removes unused paths."],
-  ["App bundle total", "Core date library plus timezone layer, measured from npm-style import paths with Bun.build."],
-  ["Timezone add-on", "Core date library externalized, useful when comparing only the timezone layer."],
+const metricTable = [
+  ["Raw", "Published artifact size before minification or compression", "Package footprint, source inspection, downstream tooling"],
+  ["Minified", "Size after syntax-level compression (terser, esbuild)", "Browser distribution, bundler output baseline"],
+  ["Gzip", "Compressed transfer size", "CDN or script-tag delivery, network transfer cost"],
+  ["Brotli", "Modern compressed transfer size", "CDN or web delivery with brotli support (most modern hosts and CDNs)"],
+  ["Bundled", "Actual size after app bundling and tree-shaking", "SPA or browser application impact"],
+  ["Parsed", "JavaScript engine parse work", "Startup responsiveness, page interactivity"],
+  ["Evaluated", "Runtime initialization work", "Cold start, SSR, edge functions, Lambda-like environments"],
+];
+
+const scenarioGuidance = [
+  ["CDN direct script tag", "gzip, brotli, minified"],
+  ["SPA or browser app", "bundled output, tree-shaking, parse/eval"],
+  ["SSR or edge runtime", "parse/eval, startup cost, dependency footprint"],
+  ["Node backend", "dependency footprint, initialization cost"],
+  ["Library comparison", "raw, minified, bundled, gzip, brotli"],
 ];
 
 const timezoneCompression = [
@@ -53,6 +66,8 @@ const timezoneCompression = [
 const sourceNotes = [
   "Current mmntjs numbers come from `bun run size`, which runs `scripts/bundle-size.ts`.",
   "Moment comparison rows were measured from installed npm packages with Bun.build using browser target, minify, gzip, and brotli.",
+  "Measurement methodology: Bun 1.x, esbuild-based bundling, browser target, minified output, gzip and brotli compression reported separately.",
+  "Raw (uncompressed) and minified sizes are tracked in the size script output alongside gzip and brotli. Parsed and eval cost are measured separately in the benchmark harness.",
   "moment package.json points `main` at `moment.js`; moment-timezone package.json points `main` at `index.js`, which loads `moment-timezone` plus `data/packed/latest.json`.",
   "docs/arch/BUNDLE_SIZE.md records architecture-level size targets and historical measurements.",
   "docs/bundlesize.md tracks timezone data compression history and should be read as the timezone-specific size log.",
@@ -67,12 +82,45 @@ const sourceNotes = [
 >
   <section class="page-intro panel">
     <p class="eyebrow">Package Size</p>
-    <h1>Size should be compared to the moment.js build you replace.</h1>
+    <h1>Size is measured at multiple layers, not one number.</h1>
     <p>
-      Package size affects browser adoption, CI policy, and migration scope. The useful comparison
-      is not an abstract package number; it is mmntjs versus the moment or moment-timezone build the
-      application would otherwise ship.
+      Bundle size should not be reduced to a single gzip number. Different environments care about
+      different costs: published artifact size, compressed transfer size, bundled application impact,
+      and runtime startup cost. This page separates those layers so readers can evaluate the metric
+      that matters for their deployment context.
     </p>
+    <p>
+      The useful comparison is not an abstract package number; it is mmntjs versus the moment or
+      moment-timezone build the application would otherwise ship.
+    </p>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Size Metrics Are Not One Number</p>
+    <h2>Gzip is one metric of several, not the headline.</h2>
+    <p>
+      For a library that ships in multiple entry-point shapes and targets both CDN script tags and
+      modern bundlers, no single number captures the full cost. Gzip describes network transfer size.
+      It does not describe what an application actually parses, evaluates, or pays for at runtime.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>What it means</th>
+          <th>When it matters</th>
+        </tr>
+      </thead>
+      <tbody>
+        {metricTable.map(([metric, meaning, context]) => (
+          <tr>
+            <td><strong>{metric}</strong></td>
+            <td>{meaning}</td>
+            <td>{context}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   </section>
 
   <section class="grid">
@@ -83,26 +131,42 @@ const sourceNotes = [
       </ul>
     </article>
     <article class="panel section">
-      <p class="eyebrow">How To Read The Numbers</p>
-      <div class="meta-list">
-        {interpretation.map(([label, value]) => (
-          <div class="meta-row">
-            <div class="label">{label}</div>
-            <div>{value}</div>
-          </div>
-        ))}
-      </div>
+      <p class="eyebrow">Scenario-Based Guidance</p>
+      <p>
+        The most relevant metric depends on how the library reaches the runtime:
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Scenario</th>
+            <th>Most relevant metrics</th>
+          </tr>
+        </thead>
+        <tbody>
+          {scenarioGuidance.map(([scenario, metrics]) => (
+            <tr>
+              <td>{scenario}</td>
+              <td><code>{metrics}</code></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </article>
   </section>
 
   <section class="panel section">
     <p class="eyebrow">Entry Points</p>
+    <p>
+      The following numbers are gzip compression measurements derived from <code>bun run size</code>.
+      Gzip is reported here as one transfer metric alongside the dist file size and bundled output.
+      See the methodology notes below for raw, minified, and brotli references.
+    </p>
     <table>
       <thead>
         <tr>
           <th>Entry</th>
-          <th>Bundled gzip</th>
-          <th>Dist gzip</th>
+          <th>Bundled (gzip)</th>
+          <th>Dist (gzip)</th>
           <th>How to read it</th>
         </tr>
       </thead>
@@ -121,15 +185,20 @@ const sourceNotes = [
 
   <section class="panel section">
     <p class="eyebrow">Core Comparison</p>
-    <h2>Compare against the moment core shape.</h2>
+    <h2>Compare against the moment core shape with gzip as one signal.</h2>
+    <p>
+      These rows compare gzip-compressed bundled output between mmntjs entries and equivalent
+      moment.js import paths. Gzip is used here as a like-for-like transfer comparison; raw,
+      minified, and bundled output sizes are tracked separately in the size script.
+    </p>
     <table>
       <thead>
         <tr>
           <th>Scenario</th>
-          <th>mmntjs</th>
-          <th>mmntjs gzip</th>
-          <th>moment baseline</th>
-          <th>moment gzip</th>
+          <th>mmntjs entry</th>
+          <th>mmntjs (gzip)</th>
+          <th>moment entry</th>
+          <th>moment (gzip)</th>
           <th>How to read it</th>
         </tr>
       </thead>
@@ -150,15 +219,20 @@ const sourceNotes = [
 
   <section class="panel section">
     <p class="eyebrow">Timezone Comparison</p>
-    <h2>Compare timezone builds separately from core.</h2>
+    <h2>Compare timezone builds separately from core, at multiple layers.</h2>
+    <p>
+      Timezone data and core library cost are measured separately because they answer different
+      adoption questions. The tables below use gzip as a transfer comparison; the raw and bundled
+      sizes differ and should be reviewed separately.
+    </p>
     <table>
       <thead>
         <tr>
           <th>Scenario</th>
           <th>mmntjs package</th>
-          <th>mmntjs gzip</th>
-          <th>moment baseline</th>
-          <th>moment gzip</th>
+          <th>mmntjs (gzip)</th>
+          <th>moment package</th>
+          <th>moment (gzip)</th>
           <th>How to read it</th>
         </tr>
       </thead>
@@ -190,9 +264,9 @@ const sourceNotes = [
         <tr>
           <th>Scenario</th>
           <th>mmntjs package</th>
-          <th>mmntjs gzip</th>
-          <th>moment baseline</th>
-          <th>moment gzip</th>
+          <th>mmntjs (gzip)</th>
+          <th>moment package</th>
+          <th>moment (gzip)</th>
           <th>How to read it</th>
         </tr>
       </thead>
@@ -224,6 +298,11 @@ const sourceNotes = [
         Core mmntjs focuses on moment-compatible behavior without silently shipping full IANA
         timezone data. Applications that need named-zone behavior should evaluate that package as a
         separate cost and compatibility concern.
+      </p>
+      <p>
+        Core mmntjs does not silently bundle timezone data. Locale and timezone data are measured
+        and reported separately so teams can evaluate the exact cost of the functionality they
+        import, not a hypothetical worst case.
       </p>
       <ul>
         {timezoneCompression.map((item) => <li>{item}</li>)}

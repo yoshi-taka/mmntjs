@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import CodeBlock from "../../components/CodeBlock.astro";
 import { githubUrl, performancePrinciples } from "../../content/site";
 import { withBase } from "../../lib/urls";
 
@@ -11,6 +12,8 @@ const methodology = [
   ["Warm measurement", "Median of 5 runs x 5000 iterations after 1000-iteration warmup"],
   ["Cold measurement", "First call from module load to capture startup-tier behavior"],
   ["Dead-code protection", "Benchmark outputs are consumed so optimized-away work is not counted"],
+  ["Size measurement", "Raw, minified, gzip, brotli, and bundled outputs are measured in a separate size script (bun run size)"],
+  ["Parse and eval cost", "Not included in these microbenchmarks; measured separately in the bundle and startup instrumentation"],
 ];
 
 const headlineResults = [
@@ -18,7 +21,7 @@ const headlineResults = [
   ["Against date-fns", "mmntjs wins 24 of 25 benchmarked operations; the main loss is raw constructor-style creation."],
   ["Against native APIs", "Some hot paths beat native Intl and Temporal in the current focused benchmarks, especially simple formatting and mutation-heavy operations."],
   ["Cross-runtime check", "Relative gains were cross-validated on Node.js 26 so the story is not Bun-only."],
-  ["Separate size story", "Package size is tracked separately from runtime speed so browser cost does not get mixed into benchmark claims."],
+  ["Size and speed are separate concerns", "Package size is measured across raw, compressed, bundled, and runtime layers. Runtime benchmarks address execution speed, not transfer or parse cost. The two are tracked on separate pages with separate methodology."],
 ];
 
 const operationRows = [
@@ -79,6 +82,8 @@ const interpretationNotes = [
   "Some comparisons are implementation-cost comparisons rather than perfect semantic equivalents, especially around date-fns calendar-difference helpers.",
   "Cold-start and warm-path behavior should be read separately when startup latency matters.",
   "Compatibility remains the higher priority when a faster path would change legacy behavior.",
+  "Parse and eval cost are not captured by these microbenchmarks. They are tracked separately in the size and startup-cost measurements.",
+  "For SSR, edge, or serverless environments, startup cost and dependency footprint should be evaluated alongside hot-path throughput.",
 ];
 
 const benchmarkFiles = [
@@ -114,6 +119,22 @@ const temporalNotes = [
     <p>
       The goal of this page is to show what is measured, how it is measured, and how to interpret
       the numbers without treating microbenchmarks as universal truth.
+    </p>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Performance Philosophy</p>
+    <h2>Performance is not one number either.</h2>
+    <p>
+      Just as bundle size should not be reduced to a single gzip number, runtime performance should
+      not be reduced to a single microbenchmark result. Different environments optimise for different
+      costs: hot-path throughput in the browser, startup latency in edge functions, parse time in
+      SSR contexts, and dependency depth in server environments.
+    </p>
+    <p>
+      mmntjs treats performance as a set of trade-offs that are measured, documented, and reproducible
+      rather than advertised. The benchmark harness, methodology, and results are all in the repository
+      so that reviewers can verify the claims against their own workloads.
     </p>
   </section>
 
@@ -221,6 +242,26 @@ const temporalNotes = [
       <ul>
         {interpretationNotes.map((item) => <li>{item}</li>)}
       </ul>
+      <h3>Scenario-based reading</h3>
+      <p>The metric that matters depends on your deployment environment:</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Scenario</th>
+            <th>Most relevant factors</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>CDN script tag</td><td>Compressed transfer size (gzip/brotli), minified output</td></tr>
+          <tr><td>SPA or browser app</td><td>Bundled output after tree-shaking, parse/eval cost</td></tr>
+          <tr><td>SSR or edge runtime</td><td>Startup cost, cold start, dependency footprint</td></tr>
+          <tr><td>Node backend</td><td>Initialization time, total dependency depth</td></tr>
+        </tbody>
+      </table>
+      <p>
+        These microbenchmarks measure hot-path throughput, which is one dimension of performance.
+        Compressed transfer, parse time, and cold-start behavior are reported separately.
+      </p>
     </article>
     <article class="panel section">
       <p class="eyebrow">Reproducibility</p>
@@ -245,11 +286,18 @@ const temporalNotes = [
 
   <section class="panel section">
     <p class="eyebrow">Package Size</p>
-    <h2>Size is a separate adoption constraint.</h2>
+    <h2>Size is measured at multiple layers, not a single gzip number.</h2>
     <p>
-      Runtime speed and package size answer different questions. The package-size page tracks entry
-      points, gzip measurements, and timezone data compression without mixing those claims into the
-      benchmark story.
+      Runtime speed and package size answer different questions. The package-size page reports
+      raw, minified, gzip, brotli, and bundled output sizes, along with scenario-based guidance
+      for which metric matters in each deployment context. Compressed transfer size (gzip/brotli)
+      is treated as one layer of the measurement, not the headline.
+    </p>
+    <p>
+      Key points for mmntjs specifically: core does not silently bundle timezone data, locale and
+      timezone data are measured and reported separately, and the lite/full/temporal/timezone entry
+      points have distinct size profiles. Tree-shaking and side-effect behavior are preserved so
+      bundlers can remove unused paths.
     </p>
     <div class="actions">
       <a class="button" href={withBase("/package-size/")}>Open Package Size</a>

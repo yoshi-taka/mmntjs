@@ -153,12 +153,13 @@ function isActive(href: string): boolean {
         letter-spacing: 0.28em;
       }
 
-      pre code {
-        color: hsl(var(--foreground) / 0.92);
+      pre.shiki code {
+        color: inherit;
       }
 
       table {
         width: 100%;
+        max-width: 100%;
         display: block;
         overflow-x: auto;
         border: 1px solid hsl(var(--border) / 0.68);
@@ -346,6 +347,52 @@ function isActive(href: string): boolean {
         line-height: 0.96;
       }
 
+      .docs-hero,
+      .docs-hero-flat {
+        overflow: visible;
+      }
+
+      .docs-hero h1 {
+        max-width: 12ch;
+        font-size: clamp(2.8rem, 6vw, 5.2rem);
+        letter-spacing: -0.045em;
+        line-height: 1.02;
+      }
+
+      .docs-hero-flat {
+        margin: clamp(3rem, 8vw, 6rem) 0 clamp(3rem, 7vw, 5rem);
+        padding: 0;
+        background: none;
+        border: 0;
+        box-shadow: none;
+      }
+
+      .docs-hero-flat::after {
+        display: none;
+      }
+
+      .docs-hero-flat .eyebrow {
+        margin-bottom: 1.5rem;
+      }
+
+      .docs-hero-flat h1 {
+        max-width: 12ch;
+        margin: 0;
+        color: hsl(var(--foreground));
+        font-size: clamp(3rem, 8vw, 6.5rem);
+        line-height: 0.95;
+        letter-spacing: -0.065em;
+        text-wrap: balance;
+      }
+
+      .docs-hero-flat p {
+        max-width: 62ch;
+        margin-top: 1.5rem;
+        color: hsl(var(--muted-foreground));
+        font-size: clamp(1.05rem, 1.6vw, 1.2rem);
+        line-height: 1.75;
+      }
+
       .hero-copy {
         position: relative;
         z-index: 1;
@@ -414,6 +461,11 @@ function isActive(href: string): boolean {
         display: none;
       }
 
+      .hero-code-card pre.shiki {
+        background: transparent !important;
+        background-color: transparent !important;
+      }
+
       .page-intro .section {
         margin-top: 0;
         padding: 1.4rem;
@@ -423,6 +475,7 @@ function isActive(href: string): boolean {
       .section {
         margin-top: 28px;
         padding: clamp(1.35rem, 2.8vw, 2rem);
+        overflow-x: auto;
       }
 
       .section h2,
@@ -455,6 +508,40 @@ function isActive(href: string): boolean {
         gap: 16px;
       }
 
+      .docs-card-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1.25rem;
+      }
+
+      .docs-card {
+        display: block;
+        padding: 1rem;
+        border: 1px solid hsl(var(--border) / 0.5);
+        border-radius: var(--radius-lg);
+        background: hsl(var(--secondary) / 0.35);
+      }
+
+      .docs-card h3 {
+        margin: 0 0 0.5rem;
+        color: hsl(var(--foreground));
+        font-size: 0.95rem;
+        font-weight: 650;
+      }
+
+      .docs-card p {
+        margin: 0;
+        color: hsl(var(--muted-foreground));
+        font-size: 0.88rem;
+        line-height: 1.6;
+        max-width: 40ch;
+      }
+
+      .docs-card:hover {
+        border-color: hsl(var(--primary) / 0.4);
+        background: hsl(var(--secondary) / 0.55);
+      }
+
       .diff-cards {
         display: grid;
         gap: 16px;
@@ -462,9 +549,52 @@ function isActive(href: string): boolean {
 
       .docs-layout {
         display: grid;
-        grid-template-columns: minmax(0, 760px) minmax(220px, 300px);
-        gap: clamp(2rem, 5vw, 4rem);
+        grid-template-columns: 200px minmax(0, 680px) minmax(200px, 260px);
+        gap: 32px;
         align-items: start;
+      }
+
+      .docs-nav {
+        position: sticky;
+        top: 5.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+      }
+
+      .docs-nav-group {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .docs-nav-label {
+        margin: 0 0 2px;
+        padding: 4px 10px;
+        color: hsl(var(--muted-foreground));
+        font-size: 0.7rem;
+        font-weight: 650;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .docs-nav-link {
+        padding: 4px 10px;
+        border-radius: 6px;
+        color: hsl(var(--muted-foreground));
+        font-size: 0.85rem;
+        line-height: 1.4;
+        transition: background 100ms ease, color 100ms ease;
+      }
+
+      .docs-nav-link:hover {
+        background: hsl(var(--secondary) / 0.5);
+        color: hsl(var(--foreground));
+      }
+
+      .docs-nav-link.active {
+        background: hsl(var(--primary) / 0.1);
+        color: hsl(var(--primary));
+        font-weight: 550;
       }
 
       .docs-article {
@@ -791,6 +921,7 @@ function isActive(href: string): boolean {
         header,
         .grid,
         .cards,
+        .docs-card-grid,
         .meta-row {
           grid-template-columns: 1fr;
           display: grid;
@@ -798,6 +929,10 @@ function isActive(href: string): boolean {
 
         .docs-layout {
           grid-template-columns: 1fr;
+        }
+
+        .docs-nav {
+          display: none;
         }
 
         .docs-sidebar {

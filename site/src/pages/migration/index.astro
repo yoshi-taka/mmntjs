@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import CodeBlock from "../../components/CodeBlock.astro";
 import { migrationPhases } from "../../content/site";
 import { withBase } from "../../lib/urls";
 
@@ -85,9 +86,9 @@ const comparisonChecklist = [
       The <code>mmntjs</code> CLI automates the mechanical part of migration: scanning source
       files, rewriting import paths, and generating a report to make rollout decisions visible.
     </p>
-    <pre><code># Scan first, then apply
+    <CodeBlock code={`# Scan first, then apply
 mmntjs migrate --check
-mmntjs migrate --apply</code></pre>
+mmntjs migrate --apply`} lang="sh" />
     <div class="meta-list">
       {cliCommands.map(([cmd, desc]) => (
         <div class="meta-row">
