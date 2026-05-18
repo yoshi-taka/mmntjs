@@ -54,10 +54,11 @@ const sizeTechniques = [
   description="Package size guidance focused on tree-shaking, entry-point choice, and separate locale/timezone costs."
   currentPath="/package-size/"
 >
-  <section class="page-intro panel">
+  <section class="page-intro-compact">
     <p class="eyebrow">Package Size</p>
-    <h1>The pitch is not the smallest core. The pitch is paying only for what you import.</h1>
+    <h1>Package size is not one number.</h1>
     <p>
+      Measure raw, minified, compressed, bundled, and runtime costs separately.
       `mmntjs` default is compatibility-heavy, so the raw core is not the main selling point. The
       more important property is that locale data and timezone data are kept separate, which gives
       tree-shaking and entry-point choice real leverage.
@@ -140,7 +141,7 @@ const sizeTechniques = [
         <article class="card">
           <h3>{item.title}</h3>
           <p set:html={renderInlineCodeHTML(item.text)} />
-          <p><a href={item.href} target="_blank" rel="noreferrer">詳細は GitHub</a></p>
+          <p><a href={item.href} target="_blank" rel="noreferrer">More details</a></p>
         </article>
       ))}
     </div>

@@ -370,6 +370,51 @@ function isActive(href: string): boolean {
         content: "";
       }
 
+      .page-intro-compact {
+        position: relative;
+        margin: 1.5rem 0 2.5rem;
+        padding: clamp(1.5rem, 3vw, 2.75rem);
+        border: 1px solid hsl(var(--border) / 0.55);
+        border-radius: calc(var(--radius-xl) + 0.35rem);
+        background:
+          radial-gradient(circle at 12% 0%, hsl(var(--primary) / 0.1), transparent 18rem),
+          linear-gradient(180deg, hsl(var(--card) / 0.72), hsl(var(--card) / 0.48));
+        box-shadow: 0 14px 48px rgba(0, 0, 0, 0.22), var(--glow-primary);
+        overflow: visible;
+      }
+
+      .page-intro-compact::after {
+        position: absolute;
+        inset: 1px;
+        pointer-events: none;
+        border-radius: inherit;
+        box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.07);
+        content: "";
+      }
+
+      .page-intro-compact h1 {
+        max-width: 18ch;
+        margin: 0;
+        font-size: clamp(2.4rem, 5vw, 4.6rem);
+        font-weight: 780;
+        line-height: 0.98;
+        letter-spacing: -0.055em;
+        text-wrap: balance;
+        color: hsl(var(--foreground));
+      }
+
+      .page-intro-compact p {
+        max-width: 68ch;
+        margin-top: 0.85rem;
+        color: hsl(var(--muted-foreground));
+        font-size: clamp(1rem, 1.4vw, 1.12rem);
+        line-height: 1.7;
+      }
+
+      .page-intro-compact .eyebrow {
+        margin-bottom: 10px;
+      }
+
       .page-intro h1 {
         margin: 0;
         max-width: 14em;
@@ -1009,6 +1054,16 @@ function isActive(href: string): boolean {
         .page-intro h1 {
           font-size: clamp(2.45rem, 11.5vw, 3.6rem);
           letter-spacing: -0.045em;
+        }
+
+        .page-intro-compact {
+          margin: 0.75rem 0 1.5rem;
+          padding: 1.25rem;
+        }
+
+        .page-intro-compact h1 {
+          font-size: clamp(2rem, 9vw, 3rem);
+          letter-spacing: -0.04em;
         }
 
         .actions,
