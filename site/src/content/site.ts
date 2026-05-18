@@ -308,16 +308,16 @@ export const knownDifferences: KnownDifference[] = [
       "Review timezone-sensitive code separately and use dedicated timezone support instead of assuming core behavior covers named-zone data cases.",
   },
   {
-    category: "Runtime caveat",
-    title: "Bun named locale imports may not trigger side effects as expected",
+    category: "Locale registration",
+    title: "Locale files do not auto-register on import",
     momentBehavior:
-      "Consumers often assume locale module side effects run when importing locale-related exports.",
+      "Importing 'moment/locale/ja' automatically registers the locale via side effects during module evaluation.",
     mmntjsBehavior:
-      "In Bun, named imports like locale symbols may not trigger module-level locale registration side effects in the same way a bare import does.",
+      "mmntjs locale files export pure locale data with no side effects. Unused locale imports are safe for bundlers to tree-shake, but auto-registration does not happen. Users must call moment.locale('ja', jaLocale) explicitly.",
     impact:
-      "This mainly affects teams depending on locale registration through import style rather than explicit loading behavior.",
+      "Teams migrating from moment.js may find that locale imports compile but locale output does not change until explicit registration is added.",
     workaround:
-      "Prefer bare imports such as importing the locale module directly, or call locale registration explicitly when validating Bun-specific runtime behavior.",
+      "Import the locale data and register it explicitly: import { jaLocale } from 'mmntjs/locale/ja'; moment.locale('ja', jaLocale). This is intentional: pure exports enable better tree-shaking.",
   },
   {
     category: "Performance comparison semantics",

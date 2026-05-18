@@ -1,6 +1,22 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { migrationPhases } from "../../content/site";
+import { withBase } from "../../lib/urls";
+
+const cliCommands = [
+  ["mmntjs migrate --check [dir]", "Scans source files and reports how many moment imports can be automatically rewritten."],
+  ["mmntjs migrate --apply [dir]", "Rewrites all detected moment import paths to mmntjs in place."],
+  ["mmntjs report [dir]", "Generates a MIGRATION.md with usage statistics, API breakdown, and Temporal-readiness estimate."],
+  ["mmntjs audit [dir]", "Analyzes moment usage patterns and flags risky APIs for manual review."],
+  ["mmntjs stats [dir]", "Prints a quick summary of moment usage count and Temporal-ready percentage to the terminal."],
+];
+
+const temporalMigrateSteps = [
+  ["mmntjs report .", "Generate a migration report that shows which moment usages are Temporal-ready."],
+  ["Review the Temporal-ready count and API breakdown.", "Focus on simple parse, format, add, diff calls that can be expressed directly in Temporal."],
+  ["Use mmntjs as the bridge.", "Keep existing moment-shaped code on mmntjs while writing new modules directly against Temporal APIs."],
+  ["Expand incrementally.", "The report makes it visible whether a module's moment usage is simple enough for a future Temporal rewrite."],
+];
 
 const checklist = [
   "Inventory custom parsing and custom format usage.",
@@ -61,6 +77,25 @@ const comparisonChecklist = [
       This page is for teams that need a realistic adoption path: evaluate first, replace in a
       small surface, compare behavior, then expand with confidence.
     </p>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">CLI Migration Tool</p>
+    <p>
+      The <code>mmntjs</code> CLI automates the mechanical part of migration: scanning source
+      files, rewriting import paths, and generating a report to make rollout decisions visible.
+    </p>
+    <pre><code># Scan first, then apply
+mmntjs migrate --check
+mmntjs migrate --apply</code></pre>
+    <div class="meta-list">
+      {cliCommands.map(([cmd, desc]) => (
+        <div class="meta-row">
+          <div class="label"><code>{cmd}</code></div>
+          <div>{desc}</div>
+        </div>
+      ))}
+    </div>
   </section>
 
   <section class="panel section">
@@ -151,6 +186,29 @@ const comparisonChecklist = [
         with the timezone entry point your app actually uses.
       </li>
     </ul>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Migration to Temporal</p>
+    <h2>The report shows you where Temporal is already an option.</h2>
+    <p>
+      <code>mmntjs report</code> analyzes each file and estimates how many moment usages can be
+      expressed directly with Temporal APIs. That number is not a migration promise; it is a signal
+      for which modules are worth evaluating for a Temporal path first.
+    </p>
+    <div class="meta-list">
+      {temporalMigrateSteps.map(([step, desc]) => (
+        <div class="meta-row">
+          <div class="label">{step}</div>
+          <div>{desc}</div>
+        </div>
+      ))}
+    </div>
+    <p>
+      mmntjs itself is the bridge: keep legacy moment-shaped code stable on mmntjs, write new code
+      against Temporal where the report shows a clean mapping, and retire the old surface on your
+      schedule rather than on a migration deadline.
+    </p>
   </section>
 
   <section class="panel section">
