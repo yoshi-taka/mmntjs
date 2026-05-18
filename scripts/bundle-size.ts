@@ -123,11 +123,17 @@ async function main() {
 
   // Timezone scenario (bundled separately since it's a peer package)
   {
-    const tzDistPath = join(projectRoot, "packages/timezone/dist/index.js");
-    if (existsSync(tzDistPath)) {
+    const timezoneEntries = [
+      ["mmntjs-timezone/logic", "packages/timezone/dist/logic.js"],
+      ["mmntjs-timezone/1970-2030", "packages/timezone/dist/1970-2030.js"],
+      ["mmntjs-timezone", "packages/timezone/dist/index.js"],
+    ];
+    for (const [name, relPath] of timezoneEntries) {
+      const tzDistPath = join(projectRoot, relPath);
+      if (!existsSync(tzDistPath)) continue;
       const tzPath = escapePath(tzDistPath);
       scenarios.push({
-        name: "mmntjs-timezone",
+        name,
         entryCode: `import m from "${tzPath}"; console.log(m.tz.guess());`,
       });
     }

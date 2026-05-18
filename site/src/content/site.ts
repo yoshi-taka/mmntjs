@@ -30,6 +30,7 @@ export const topNav: NavLink[] = [
   { href: "/compatibility/", label: "Compatibility" },
   { href: "/quality/", label: "Quality" },
   { href: "/performance/", label: "Performance" },
+  { href: "/package-size/", label: "Package Size" },
   { href: "/migration/", label: "Migration" },
   { href: "/faq/", label: "FAQ" },
   { href: "/changelog/", label: "Changelog" },
@@ -203,7 +204,7 @@ export const docsPages: DocPage[] = [
       "Locale loading implications",
       "Bundle-size expectations",
     ],
-    related: [{ label: "Performance", href: "/performance/" }],
+    related: [{ label: "Package Size", href: "/package-size/" }],
   },
   {
     slug: "runtime-support",
@@ -344,7 +345,7 @@ export const qualityProof = [
 export const performancePrinciples = [
   "Performance claims should be reproducible, scoped, and benchmark-specific.",
   "Compatibility matters more than microbenchmark wins in ambiguous behavior.",
-  "Bundle shape and common-path overhead matter more than leaderboard language.",
+  "Common-path overhead matters more than leaderboard language.",
 ];
 
 export const migrationPhases = [
@@ -393,8 +394,15 @@ export const faqGroups = [
     items: [
       "Is mmntjs faster than moment.js?",
       "How are benchmarks run?",
-      "Is bundle size smaller?",
       "Are results reproducible?",
+    ],
+  },
+  {
+    title: "Package Size",
+    items: [
+      "Is bundle size smaller?",
+      "Which entry point should browser apps use?",
+      "Does timezone data ship with core?",
     ],
   },
   {

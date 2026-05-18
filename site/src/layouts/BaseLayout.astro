@@ -29,7 +29,7 @@ function isActive(href: string): boolean {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
-    <style>
+    <style is:global>
       :root {
         color-scheme: dark;
         --background: 222 47% 5%;
@@ -280,6 +280,14 @@ function isActive(href: string): boolean {
         background: hsl(var(--secondary) / 0.52);
       }
 
+      nav a:visited {
+        color: hsl(var(--muted-foreground));
+      }
+
+      nav a.active:visited {
+        color: hsl(var(--foreground));
+      }
+
       .panel {
         border: 1px solid hsl(var(--border) / 0.72);
         border-radius: var(--radius-xl);
@@ -309,6 +317,14 @@ function isActive(href: string): boolean {
         box-shadow: var(--shadow-soft), var(--glow-primary);
       }
 
+      .page-intro.hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.02fr) minmax(380px, 0.78fr);
+        align-items: center;
+        gap: clamp(2rem, 5vw, 4.5rem);
+        min-height: min(720px, calc(100vh - 150px));
+      }
+
       .page-intro::after {
         position: absolute;
         inset: 1px;
@@ -328,12 +344,72 @@ function isActive(href: string): boolean {
         line-height: 0.92;
       }
 
+      .hero-copy {
+        position: relative;
+        z-index: 1;
+      }
+
       .page-intro p {
         margin: 22px 0 0;
         max-width: 800px;
         color: hsl(var(--muted-foreground));
         font-size: clamp(1.05rem, 2vw, 1.2rem);
         line-height: 1.72;
+      }
+
+      .hero-code-card {
+        position: relative;
+        z-index: 1;
+        overflow: hidden;
+        border: 1px solid hsl(var(--border) / 0.8);
+        border-radius: calc(var(--radius-xl) + 0.15rem);
+        background:
+          radial-gradient(circle at 20% 0%, hsl(var(--primary) / 0.14), transparent 17rem),
+          linear-gradient(180deg, hsl(222 40% 9% / 0.96), hsl(222 42% 5% / 0.96));
+        box-shadow:
+          inset 0 1px 0 hsl(var(--foreground) / 0.07),
+          0 26px 80px rgba(0, 0, 0, 0.36),
+          0 0 70px hsl(var(--primary) / 0.1);
+      }
+
+      .hero-code-card::before {
+        display: flex;
+        align-items: center;
+        min-height: 3.1rem;
+        padding: 0 1.25rem;
+        border-bottom: 1px solid hsl(var(--border) / 0.62);
+        color: hsl(var(--muted-foreground));
+        content: "o  o  o    migration.sh";
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.75rem;
+        letter-spacing: 0.12em;
+      }
+
+      .code-step {
+        padding: 1.2rem;
+      }
+
+      .code-step + .code-step {
+        border-top: 1px solid hsl(var(--border) / 0.58);
+      }
+
+      .code-step .eyebrow {
+        margin-bottom: 0.8rem;
+        color: hsl(var(--muted-foreground));
+        font-size: 0.72rem;
+      }
+
+      .hero-code-card pre {
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        font-size: 0.92rem;
+      }
+
+      .hero-code-card pre::before {
+        display: none;
       }
 
       .page-intro .section {
@@ -477,6 +553,10 @@ function isActive(href: string): boolean {
         box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.04);
       }
 
+      .button:visited {
+        color: hsl(var(--secondary-foreground));
+      }
+
       .button:hover {
         border-color: hsl(var(--primary) / 0.42);
         background: hsl(var(--secondary) / 0.9);
@@ -489,6 +569,10 @@ function isActive(href: string): boolean {
         border-color: transparent;
         color: hsl(var(--primary-foreground));
         box-shadow: 0 0 36px hsl(var(--primary) / 0.18);
+      }
+
+      .button.primary:visited {
+        color: hsl(var(--primary-foreground));
       }
 
       .button.primary:hover {
@@ -533,6 +617,11 @@ function isActive(href: string): boolean {
 
         .brand-note {
           display: none;
+        }
+
+        .page-intro.hero {
+          grid-template-columns: 1fr;
+          min-height: auto;
         }
 
         .page-intro {

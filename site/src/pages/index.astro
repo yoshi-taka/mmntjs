@@ -28,24 +28,27 @@ function statusClass(status: string): string {
   description="A safer path away from moment.js for teams that need compatibility, measurable quality, and incremental migration."
   currentPath="/"
 >
-  <section class="page-intro panel">
-    <p class="eyebrow">Moment-compatible migration bridge</p>
-    <h1>A safer path away from moment.js.</h1>
-    <p>
-      mmntjs is a compatibility-first replacement for teams that cannot justify a risky date/time
-      rewrite today, but still want a smaller, better-tested path forward.
-    </p>
-    <div class="actions">
-      <a class="button primary" href={withBase("/compatibility/")}>See Compatibility</a>
-      <a class="button" href={githubUrl} target="_blank" rel="noreferrer">View GitHub</a>
-      <a class="button" href={withBase("/migration/")}>Read Migration Guide</a>
+  <section class="page-intro hero panel">
+    <div class="hero-copy">
+      <p class="eyebrow">Moment-compatible migration bridge</p>
+      <h1>A safer path away from moment.js.</h1>
+      <p>
+        mmntjs is a compatibility-first replacement for teams that cannot justify a risky date/time
+        rewrite today, but still want a smaller, better-tested path forward.
+      </p>
+      <div class="actions">
+        <a class="button primary" href={withBase("/compatibility/")}>See Compatibility</a>
+        <a class="button" href={githubUrl} target="_blank" rel="noreferrer">View GitHub</a>
+        <a class="button" href={withBase("/migration/")}>Read Migration Guide</a>
+      </div>
     </div>
-    <div class="grid" style="margin-top: 20px;">
-      <div class="panel section">
+
+    <div class="hero-code-card" aria-label="Installation and usage examples">
+      <div class="code-step">
         <p class="eyebrow">Install</p>
         <pre><code>npm install moment@npm:mmntjs</code></pre>
       </div>
-      <div class="panel section">
+      <div class="code-step">
         <p class="eyebrow">Drop-in import</p>
         <pre><code>import moment from "moment";
 
@@ -152,6 +155,7 @@ moment("2024-01-01").utc().format("YYYY-MM-DD");</code></pre>
       </ul>
       <div class="actions">
         <a class="button" href={withBase("/performance/")}>Benchmark Methodology</a>
+        <a class="button" href={withBase("/package-size/")}>Package Size</a>
       </div>
     </article>
   </section>

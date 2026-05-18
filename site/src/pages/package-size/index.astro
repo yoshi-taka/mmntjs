@@ -1,0 +1,243 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const entryRows = [
+  ["mmntjs", "40.1 KB", "55.9 KB", "Default full compatibility entry from the current size script."],
+  ["mmntjs/lite", "12.0 KB", "16.5 KB", "ISO-centric entry with plugins and locales added only when needed."],
+  ["mmntjs/temporal", "46.7 KB", "38.6 KB", "Temporal bridge remains opt-in rather than part of the default bundle."],
+  ["mmntjs-timezone/logic", "44.9 KB", "6.9 KB", "Timezone API without bundled data; browser bundle includes mmntjs core."],
+  ["mmntjs-timezone/1970-2030", "63.0 KB", "24.6 KB", "Timezone API with the 1970-2030 data window; browser bundle includes mmntjs core."],
+  ["mmntjs-timezone", "75.9 KB", "38.0 KB", "Full timezone data entry; browser bundle includes mmntjs core."],
+];
+
+const coreComparisonRows = [
+  ["Core without locales", "mmntjs/lite", "12.0 KB", "moment", "19.9 KB", "Lite is smaller, but it is an ISO-centric subset rather than the full moment surface."],
+  ["Full compatibility core", "mmntjs", "40.1 KB", "moment", "19.9 KB", "mmntjs is larger than a plain moment import because the default entry carries more compatibility machinery."],
+  ["One locale", "mmntjs", "40.1 KB", "moment + locale/ja", "40.6 KB", "Comparable when an app imports moment plus one locale in this bundler measurement."],
+  ["All locales", "mmntjs", "40.1 KB", "moment/min/moment-with-locales", "76.1 KB", "mmntjs default is smaller than moment's all-locales browser build because locales are not bundled into core."],
+];
+
+const timezoneComparisonRows = [
+  ["Logic only app bundle", "mmntjs-timezone/logic", "44.9 KB", "moment-timezone/moment-timezone", "23.5 KB", "Both totals include the core date library after bundling; neither includes bundled timezone data."],
+  ["1970-2030 app bundle", "mmntjs-timezone/1970-2030", "63.0 KB", "moment-timezone/builds/...1970-2030", "40.0 KB", "Same named data window; both totals include the core date library."],
+  ["Full-data app bundle", "mmntjs-timezone", "75.9 KB", "moment-timezone or ...with-data", "58.8 KB", "Full data on both sides; both totals include the core date library."],
+];
+
+const timezoneAddonRows = [
+  ["Logic only add-on", "mmntjs-timezone/logic", "4.8 KB", "moment-timezone/moment-timezone", "3.6 KB", "Core date library externalized; this isolates the timezone layer."],
+  ["1970-2030 add-on", "mmntjs-timezone/1970-2030", "22.6 KB", "moment-timezone/builds/...1970-2030", "20.4 KB", "Closest like-for-like named data-window comparison."],
+  ["Full-data add-on", "mmntjs-timezone", "36.0 KB", "moment-timezone/builds/...with-data", "39.3 KB", "With core externalized, mmntjs full timezone data is slightly smaller in this measurement."],
+  ["10-year add-on", "not exposed", "-", "moment-timezone/builds/...10-year-range", "11.9 KB", "moment-timezone has a smaller 10-year range build; mmntjs-timezone does not currently expose this shape."],
+];
+
+const principles = [
+  "Package size should be read against the moment.js shape a team would otherwise ship.",
+  "Entry points should make compatibility cost explicit rather than silently bundling every feature.",
+  "Timezone data should stay separate from core unless the application actually needs it.",
+];
+
+const interpretation = [
+  ["Bundled gzip", "What a browser-oriented build is expected to pay after bundling and compression."],
+  ["Dist gzip", "What the shipped dist artifact costs before an application bundler removes unused paths."],
+  ["App bundle total", "Core date library plus timezone layer, measured from npm-style import paths with Bun.build."],
+  ["Timezone add-on", "Core date library externalized, useful when comparing only the timezone layer."],
+];
+
+const timezoneCompression = [
+  "Timezone packed data moved to the original base-60 pack format instead of pre-unpacked JSON.",
+  "The generated builtin timezone blob dropped from about 2.74 MB to about 725 KB in the later pack-format migration.",
+  "The timezone compression notes record a dist gzip reduction from 40.7 KB to 38.1 KB for an earlier data-codec phase.",
+  "The current browser bundle measurement is larger than the timezone dist file because it includes mmntjs core as the peer date library.",
+];
+
+const sourceNotes = [
+  "Current mmntjs numbers come from `bun run size`, which runs `scripts/bundle-size.ts`.",
+  "Moment comparison rows were measured from installed npm packages with Bun.build using browser target, minify, gzip, and brotli.",
+  "moment package.json points `main` at `moment.js`; moment-timezone package.json points `main` at `index.js`, which loads `moment-timezone` plus `data/packed/latest.json`.",
+  "docs/arch/BUNDLE_SIZE.md records architecture-level size targets and historical measurements.",
+  "docs/bundlesize.md tracks timezone data compression history and should be read as the timezone-specific size log.",
+  "moment-timezone has distinct package paths: logic-only, 10-year data, 1970-2030 data, and full data. mmntjs-timezone currently exposes logic, 1970-2030, and full-data entries.",
+];
+---
+
+<BaseLayout
+  title="Package Size | mmntjs"
+  description="Package size and entry-point guidance for teams evaluating mmntjs in browser and bundle-sensitive environments."
+  currentPath="/package-size/"
+>
+  <section class="page-intro panel">
+    <p class="eyebrow">Package Size</p>
+    <h1>Size should be compared to the moment.js build you replace.</h1>
+    <p>
+      Package size affects browser adoption, CI policy, and migration scope. The useful comparison
+      is not an abstract package number; it is mmntjs versus the moment or moment-timezone build the
+      application would otherwise ship.
+    </p>
+  </section>
+
+  <section class="grid">
+    <article class="panel section">
+      <p class="eyebrow">Principles</p>
+      <ul>
+        {principles.map((item) => <li>{item}</li>)}
+      </ul>
+    </article>
+    <article class="panel section">
+      <p class="eyebrow">How To Read The Numbers</p>
+      <div class="meta-list">
+        {interpretation.map(([label, value]) => (
+          <div class="meta-row">
+            <div class="label">{label}</div>
+            <div>{value}</div>
+          </div>
+        ))}
+      </div>
+    </article>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Entry Points</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Entry</th>
+          <th>Bundled gzip</th>
+          <th>Dist gzip</th>
+          <th>How to read it</th>
+        </tr>
+      </thead>
+      <tbody>
+        {entryRows.map(([entry, bundled, dist, notes]) => (
+          <tr>
+            <td><code>{entry}</code></td>
+            <td>{bundled}</td>
+            <td>{dist}</td>
+            <td>{notes}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Core Comparison</p>
+    <h2>Compare against the moment core shape.</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Scenario</th>
+          <th>mmntjs</th>
+          <th>mmntjs gzip</th>
+          <th>moment baseline</th>
+          <th>moment gzip</th>
+          <th>How to read it</th>
+        </tr>
+      </thead>
+      <tbody>
+        {coreComparisonRows.map(([scenario, mmntjs, mmntjsGzip, moment, momentGzip, notes]) => (
+          <tr>
+            <td>{scenario}</td>
+            <td><code>{mmntjs}</code></td>
+            <td>{mmntjsGzip}</td>
+            <td><code>{moment}</code></td>
+            <td>{momentGzip}</td>
+            <td>{notes}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Timezone Comparison</p>
+    <h2>Compare timezone builds separately from core.</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Scenario</th>
+          <th>mmntjs package</th>
+          <th>mmntjs gzip</th>
+          <th>moment baseline</th>
+          <th>moment gzip</th>
+          <th>How to read it</th>
+        </tr>
+      </thead>
+      <tbody>
+        {timezoneComparisonRows.map(([scenario, mmntjs, mmntjsGzip, moment, momentGzip, notes]) => (
+          <tr>
+            <td>{scenario}</td>
+            <td><code>{mmntjs}</code></td>
+            <td>{mmntjsGzip}</td>
+            <td><code>{moment}</code></td>
+            <td>{momentGzip}</td>
+            <td>{notes}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+    <p>
+      These rows compare npm import paths that include the core date library after bundling. Current
+      mmntjs timezone totals are larger than the comparable moment-timezone totals.
+    </p>
+
+    <h3>Timezone layer only</h3>
+    <p>
+      With <code>moment</code> or <code>mmntjs</code> externalized, the full-data timezone layer is
+      smaller on the mmntjs side, while logic-only and 1970-2030 are still slightly larger.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Scenario</th>
+          <th>mmntjs package</th>
+          <th>mmntjs gzip</th>
+          <th>moment baseline</th>
+          <th>moment gzip</th>
+          <th>How to read it</th>
+        </tr>
+      </thead>
+      <tbody>
+        {timezoneAddonRows.map(([scenario, mmntjs, mmntjsGzip, moment, momentGzip, notes]) => (
+          <tr>
+            <td>{scenario}</td>
+            <td><code>{mmntjs}</code></td>
+            <td>{mmntjsGzip}</td>
+            <td><code>{moment}</code></td>
+            <td>{momentGzip}</td>
+            <td>{notes}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+    <p>
+      This explains the apparent mismatch: <code>packages/timezone/dist/index.js</code> is about 38 KB
+      gzip by itself, while the browser app bundle for <code>mmntjs-timezone</code> is about 75.9 KB
+      because it also includes <code>mmntjs</code> core.
+    </p>
+  </section>
+
+  <section class="grid">
+    <article class="panel section">
+      <p class="eyebrow">Timezone Data</p>
+      <h2>Timezone support is intentionally separate.</h2>
+      <p>
+        Core mmntjs focuses on moment-compatible behavior without silently shipping full IANA
+        timezone data. Applications that need named-zone behavior should evaluate that package as a
+        separate cost and compatibility concern.
+      </p>
+      <ul>
+        {timezoneCompression.map((item) => <li>{item}</li>)}
+      </ul>
+    </article>
+    <article class="panel section">
+      <p class="eyebrow">Source Of Truth</p>
+      <ul>
+        {sourceNotes.map((item) => <li>{item}</li>)}
+      </ul>
+      <p>
+        The important migration question is not only whether the library is smaller than moment.js,
+        but whether the chosen entry point matches the compatibility surface the application needs.
+      </p>
+    </article>
+  </section>
+</BaseLayout>

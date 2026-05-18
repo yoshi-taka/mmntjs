@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { performancePrinciples } from "../../content/site";
+import { withBase } from "../../lib/urls";
 
 const methodology = [
   ["CPU", "Apple M4 performance core"],
@@ -15,8 +16,8 @@ const methodology = [
 const headlineResults = [
   ["Against moment.js", "mmntjs wins all 31 benchmarked operations in the current benchmark set."],
   ["Against date-fns", "mmntjs wins 24 of 25 benchmarked operations; the main loss is raw constructor-style creation."],
-  ["Bundle size", "The default full entry is about 55 KB gzip, and the lite entry is about 15.6 KB gzip."],
   ["Cross-runtime check", "Relative gains were cross-validated on Node.js 26 so the story is not Bun-only."],
+  ["Separate size story", "Package size is tracked separately from runtime speed so browser cost does not get mixed into benchmark claims."],
 ];
 
 const operationRows = [
@@ -177,22 +178,28 @@ const temporalNotes = [
       <ul>
         {commands.map((command) => <li><code>{command}</code></li>)}
       </ul>
+      <p>
+        The benchmark source of truth is split between <code>README.md</code> and
+        <code>docs/perf/BENCHMARKS.md</code>. This page should track those numbers rather than invent
+        a separate performance story.
+      </p>
     </article>
   </section>
 
+  <section class="panel section">
+    <p class="eyebrow">Package Size</p>
+    <h2>Size is a separate adoption constraint.</h2>
+    <p>
+      Runtime speed and package size answer different questions. The package-size page tracks entry
+      points, gzip measurements, and timezone data compression without mixing those claims into the
+      benchmark story.
+    </p>
+    <div class="actions">
+      <a class="button" href={withBase("/package-size/")}>Open Package Size</a>
+    </div>
+  </section>
+
   <section class="grid">
-    <article class="panel section">
-      <p class="eyebrow">Bundle Size</p>
-      <ul>
-        <li><code>mmntjs</code> full entry: about <strong>55 KB gzip</strong></li>
-        <li><code>mmntjs/lite</code>: about <strong>15.6 KB gzip</strong></li>
-        <li>Reference point: moment's minified entry is larger, and moment-with-locales is much larger still.</li>
-      </ul>
-      <p>
-        This matters because some teams need a compatibility bridge in the browser, where bundle
-        cost and locale loading shape adoption decisions as much as runtime speed.
-      </p>
-    </article>
     <article class="panel section">
       <p class="eyebrow">Temporal Comparison</p>
       <ul>
@@ -201,6 +208,14 @@ const temporalNotes = [
       <p>
         That comparison is useful mainly as context. Temporal optimizes for a different design
         point, and this site should not frame the result as a universal ranking of libraries.
+      </p>
+    </article>
+    <article class="panel section">
+      <p class="eyebrow">Cross-Runtime Note</p>
+      <p>
+        The performance docs explicitly validate key rows on Node.js 26 as well as Bun. That is
+        important because absolute numbers move with the engine, but the useful migration claim is
+        whether the relative advantage stays intact across runtimes teams actually deploy.
       </p>
     </article>
   </section>
