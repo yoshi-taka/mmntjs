@@ -17,6 +17,10 @@ const faqPreview = [
   "Why not dayjs, date-fns, or Luxon?",
   "How should we migrate safely?",
 ];
+
+function statusClass(status: string): string {
+  return `tag ${status.toLowerCase().replaceAll(" ", "-")}`;
+}
 ---
 
 <BaseLayout
@@ -118,7 +122,7 @@ moment("2024-01-01").utc().format("YYYY-MM-DD");</code></pre>
         {compatibilitySnapshot.map(([area, status, notes]) => (
           <tr>
             <td>{area}</td>
-            <td><span class="tag">{status}</span></td>
+            <td><span class={statusClass(status)}>{status}</span></td>
             <td>{notes}</td>
           </tr>
         ))}

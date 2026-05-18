@@ -37,6 +37,10 @@ const policyPoints = [
   "Treat compatibility bugs as release-relevant changes, not as incidental cleanup.",
   "Keep known differences visible enough that migration reviewers can use them directly.",
 ];
+
+function statusClass(status: string): string {
+  return `tag ${status.toLowerCase().replaceAll(" ", "-")}`;
+}
 ---
 
 <BaseLayout
@@ -99,7 +103,7 @@ const policyPoints = [
         {compatibilitySnapshot.map(([area, status, notes]) => (
           <tr>
             <td>{area}</td>
-            <td><span class="tag">{status}</span></td>
+            <td><span class={statusClass(status)}>{status}</span></td>
             <td>{notes}</td>
           </tr>
         ))}
