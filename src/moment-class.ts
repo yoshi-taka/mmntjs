@@ -141,6 +141,7 @@ const TIME_UNIT_MS: Record<number, number> = {
   [MILLISECOND]: 1,
 };
 
+/** @public */
 export {
   getRelTimeRounding,
   setRelTimeRounding,
@@ -2990,6 +2991,7 @@ for (const key of coldFieldKeys) {
   });
 }
 
+/** @public */
 export let nowFn: (() => number) | undefined = Date.now;
 
 // eslint-disable-next-line max-params

@@ -2280,6 +2280,7 @@ function anchorMs(
   return new Date(y, m, d, hour, min, sec, ms).getTime();
 }
 
+/** @public */
 export function checkOverflow(parsed: Record<string, unknown> | ParsedData): number {
   if (parsed.month != null && ((parsed.month as number) < 0 || (parsed.month as number) > 11)) {
     return 1;

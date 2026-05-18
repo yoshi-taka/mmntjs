@@ -36,14 +36,6 @@ export function isString(input: unknown): input is string {
   return typeof input === "string";
 }
 
-export function isUndefined(input: unknown): input is undefined {
-  return input === void 0;
-}
-
-export function isBoolean(input: unknown): input is boolean {
-  return typeof input === "boolean";
-}
-
 export function isFunction(input: unknown): input is Function {
   return typeof input === "function";
 }
@@ -61,38 +53,11 @@ export function hasOwnProp(obj: object, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(obj, key);
 }
 
-export function extend(
-  a: Record<string, unknown>,
-  b: Record<string, unknown>,
-  ...others: Record<string, unknown>[]
-): Record<string, unknown> {
-  for (const source of others) {
-    for (const key in source) {
-      if (hasOwnProp(source, key)) {
-        a[key] = source[key];
-      }
-    }
-  }
-  for (const key in b) {
-    if (hasOwnProp(b, key)) {
-      a[key] = b[key];
-    }
-  }
-  return a;
-}
-
 export function absFloor(number: number): number {
   if (number < 0) {
     return Math.ceil(number) || 0;
   }
   return Math.floor(number);
-}
-
-export function absRound(number: number): number {
-  if (number < 0) {
-    return Math.round(number * -1) * -1;
-  }
-  return Math.round(number);
 }
 
 export function createDate(

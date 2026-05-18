@@ -33,6 +33,7 @@ export function disableFormattedInput(): void {
   formattedStringInputHandler = undefined;
 }
 
+/** @public */
 export function isFormattedInputEnabled(): boolean {
   return formattedInputEnabled;
 }
@@ -43,6 +44,7 @@ export function setFormattedStringInputHandler(
   formattedStringInputHandler = handler;
 }
 
+/** @public */
 export function getFormattedStringInputHandler():
   | FactoryDeps["createFromFormattedStringInput"]
   | undefined {

@@ -26,6 +26,7 @@ let currentLocaleName = "en";
 export const localeConfigs: Record<string, LocaleSpec | undefined> = {
   en: enLocale,
 };
+/** @public */
 export const _localeCache = new Map<string, Locale>();
 
 function hasOwn(obj: object, key: string): boolean {

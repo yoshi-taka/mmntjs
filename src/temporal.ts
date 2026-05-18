@@ -3,6 +3,7 @@ import type { Moment } from "./moment-class";
 let _T: unknown = null;
 let _momentFn: ((...args: unknown[]) => Moment) | null = null;
 
+/** @public */
 export function setTemporalMomentFactory(fn: (...args: unknown[]) => Moment): void {
   _momentFn = fn;
 }

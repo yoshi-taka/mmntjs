@@ -5,6 +5,7 @@ import { liteLocalePreparse } from "./locale-lite";
 import type { ParsedData } from "./parse";
 export type { ParsedData };
 
+/** @public */
 export let parseTwoDigitYearFn: ((input: string) => number) | undefined;
 let customFormatParsingEnabled = false;
 type FormatParser = (

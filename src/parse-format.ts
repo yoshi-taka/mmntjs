@@ -9,6 +9,7 @@ import {
   localePreparse,
 } from "./locale-runtime";
 
+/** @public */
 export let parseTwoDigitYearFn: ((input: string) => number) | undefined;
 let customFormatParsingEnabled = false;
 
@@ -20,6 +21,7 @@ export function enableCustomFormatParsing(): void {
   customFormatParsingEnabled = true;
 }
 
+/** @public */
 export function isCustomFormatParsingEnabled(): boolean {
   return customFormatParsingEnabled;
 }
@@ -3351,6 +3353,7 @@ function parseWithFormats(
   return best;
 }
 
+/** @public */
 export function parseArray(arr: unknown[]): ParsedData | null {
   if (arr.length === 0) {
     return null;
@@ -3399,6 +3402,7 @@ export function parseArray(arr: unknown[]): ParsedData | null {
   return result;
 }
 
+/** @public */
 export function parseObject(obj: Record<string, unknown>): InternalParsedData {
   const result: InternalParsedData = {};
 
@@ -3465,5 +3469,6 @@ export function parseTwoDigitYear(str: string): number {
   return num > 68 ? 1900 + num : 2000 + num;
 }
 
+/** @public */
 export { ISO_8601_REGEX };
 export { parseWithFormat as parseWithFormatImpl, parseWithFormats as parseWithFormatsImpl };

@@ -4,6 +4,7 @@ import type { InternalParsedData } from "./types";
 import { localePreparse } from "./locale-runtime";
 import type { ParsedData } from "./parse";
 
+/** @public */
 export let parseTwoDigitYearFn: ((input: string) => number) | undefined;
 let customFormatParsingEnabled = false;
 type FormatParser = (

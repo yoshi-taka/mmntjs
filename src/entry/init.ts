@@ -49,6 +49,7 @@ import { Moment } from "../moment-class";
 type CoreInitMoment = typeof moment;
 type CoreInitDeps = Parameters<typeof registerCoreApi>[1];
 
+/** @public */
 export function initializeCoreEntry(target: CoreInitMoment = moment, deps?: CoreInitDeps): void {
   setFormatMomentCallback(formatMoment);
   setLocaleRuntimeCallbacks({ getCurrentLocale, getLocale, hasLocale });

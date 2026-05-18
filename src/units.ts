@@ -11,12 +11,17 @@ export const MINUTE: UnitCode = 4 as const;
 export const SECOND: UnitCode = 5 as const;
 export const MILLISECOND: UnitCode = 6 as const;
 export const WEEK: UnitCode = 7 as const;
+/** @public */
 export const WEEKDAY: UnitCode = 8 as const;
+/** @public */
 export const DAY_OF_YEAR: UnitCode = 9 as const;
 export const QUARTER: UnitCode = 10 as const;
 export const ISO_WEEK: UnitCode = 11 as const;
+/** @public */
 export const ISO_WEEKDAY: UnitCode = 12 as const;
+/** @public */
 export const WEEK_YEAR: UnitCode = 13 as const;
+/** @public */
 export const ISO_WEEK_YEAR: UnitCode = 14 as const;
 export const DAY: UnitCode = 15 as const;
 export const INVALID_UNIT: UnitCode = -1 as const;
@@ -83,6 +88,7 @@ for (const key of Object.keys(_aliases)) {
   _nmap[key.toLowerCase()] = _aliases[key as UnitAlias];
 }
 
+/** @public */
 export const units: Record<string, string> = _aliases as unknown as Record<string, string>;
 
 // Idempotence: normalizeUnits(normalizeUnits(x)) ≡ normalizeUnits(x)
@@ -172,10 +178,6 @@ export function normalizeMonth(m: number): number {
 
 export function floorUnitEpoch(value: number, unitMs: number): number {
   return value - euclideanModulo(value, unitMs);
-}
-
-export function floorUnitIndex(value: number, unitMs: number): number {
-  return floorUnitEpoch(value, unitMs) / unitMs;
 }
 
 export function endOfUnitEpoch(value: number, unitMs: number): number {

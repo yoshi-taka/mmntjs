@@ -16,10 +16,7 @@ function _pc(name: string): void {
     _PCOUNT[name] = (_PCOUNT[name] ?? 0) + 1;
   }
 }
-export function getPGOCounters(): Record<string, number> {
-  return { ..._PCOUNT };
-}
-
+/** @public */
 export let parseTwoDigitYearFn: ((input: string) => number) | undefined;
 let customFormatParsingEnabled = false;
 type FormatParser = (
@@ -3752,4 +3749,5 @@ export function parseTwoDigitYear(str: string): number {
   return num > 68 ? 1900 + num : 2000 + num;
 }
 
+/** @public */
 export { ISO_8601_REGEX };
