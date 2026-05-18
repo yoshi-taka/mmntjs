@@ -22,7 +22,7 @@ export type KnownDifference = {
   workaround: string;
 };
 
-export const githubUrl = "https://github.com/yoshi-taka/moment2";
+export const githubUrl = "https://github.com/yoshi-taka/mmntjs";
 
 export const topNav: NavLink[] = [
   { href: "/", label: "Home" },
@@ -456,17 +456,42 @@ export const faqAnswers = [
   {
     question: "Is it a drop-in replacement for moment.js?",
     answer:
-      "That is the direction, but the site should avoid absolute language. The more accurate answer is that mmntjs is designed for moment-compatible adoption, and the right way to evaluate that claim is area by area through compatibility notes, known differences, and your own tests.",
+      "For common moment.js usage, yes: the goal is unchanged imports and moment-compatible behavior. Do not assume perfect coverage for every edge case. Check the Compatibility and Known Differences pages before replacing moment across a large codebase.",
+  },
+  {
+    question: "Is this production-ready?",
+    answer:
+      "It is ready for serious evaluation in production-like test environments, not for blind replacement in every codebase. Start with a low-risk module, compare behavior against your fixtures, and expand only after compatibility-sensitive paths are boring.",
   },
   {
     question: "How compatible is it with moment.js today?",
     answer:
-      "The current evidence is strong enough for serious evaluation: upstream compatibility tests pass, timezone compatibility tests pass across multiple timezones, and property-based plus fuzz-driven comparisons are part of the workflow. The project should still document remaining parse edge cases plainly instead of implying universal equivalence.",
+      "Strong enough to evaluate seriously. Upstream moment.js compatibility tests pass, timezone compatibility tests pass across multiple timezones, and fuzz/property tests compare against moment.js. The remaining known gaps are mostly unusual parsing edge cases, not broad API categories.",
+  },
+  {
+    question: "What APIs are not supported yet?",
+    answer:
+      "Core mmntjs does not include full named IANA timezone behavior. Use mmntjs-timezone for moment-timezone-style APIs. If your app depends on obscure plugin behavior or odd forgiving parse inputs, check it explicitly instead of assuming it is covered.",
+  },
+  {
+    question: "Are invalid dates handled the same way?",
+    answer:
+      "The intended behavior is to match moment.js. Invalid dates are tested because they affect formatting, comparisons, and control flow. If your application intentionally relies on invalid inputs, add those exact inputs to your migration test set.",
+  },
+  {
+    question: "Does it preserve mutability semantics?",
+    answer:
+      "Yes, preserving moment.js-style mutability is part of the compatibility goal. That matters because many existing codebases rely on mutation through add, subtract, startOf, endOf, setters, and shared object references even when the code does not make that dependency obvious.",
+  },
+  {
+    question: "How does parseZone behave?",
+    answer:
+      "It preserves fixed offsets like moment.js. Offset parsing, offset display, utcOffset, and keepLocalTime behavior are tested against moment.js. If parseZone is important in your app, test real examples from production logs or fixtures.",
   },
   {
     question: "What is still known to differ?",
     answer:
-      "The main tracked differences are concentrated in some malformed or edge-case sign-prefixed parsing inputs discovered through fuzzing. Those cases should stay visible in Known Differences and Compatibility rather than being buried in issue trackers alone.",
+      "The main known differences are unusual malformed parsing inputs, especially some sign-prefixed strings. Normal ISO strings, explicit format parsing, UTC, offsets, formatting, mutation, and duration behavior are the main compatibility targets.",
   },
   {
     question: "Why not just use Temporal?",
@@ -481,7 +506,7 @@ export const faqAnswers = [
   {
     question: "Does it include timezone data?",
     answer:
-      "Core mmntjs should be described carefully here: UTC and fixed-offset behavior are in scope, but IANA timezone-data behavior should be treated as a separate concern rather than silently assumed.",
+      "Core mmntjs does not bundle named IANA timezone data. It supports UTC and fixed-offset behavior. Use mmntjs-timezone when you need moment-timezone-style named zones.",
   },
   {
     question: "How should we migrate safely?",
@@ -494,6 +519,16 @@ export const faqAnswers = [
       "Sometimes, but it should not be the default recommendation. A global replacement can hide where the risk really is. Module-by-module or service-by-service rollout usually produces clearer ownership, easier rollback, and more trustworthy migration evidence.",
   },
   {
+    question: "Should we migrate service-by-service?",
+    answer:
+      "Usually yes for large systems. Service-by-service or package-by-package migration keeps ownership clear, makes rollback smaller, and lets high-risk parsing, locale, and timezone paths stay on moment.js until they have enough evidence.",
+  },
+  {
+    question: "How do we detect risky usage?",
+    answer:
+      "Look first for custom parsing, forgiving string inputs, invalid-date checks, timezone or parseZone usage, locale-sensitive output, mutation-heavy chains, and reporting or billing boundaries. Those are the places where date-library migrations usually fail quietly.",
+  },
+  {
     question: "What tests should we run before adoption?",
     answer:
       "Run the tests you already trust first. Then add targeted checks for custom parsing, invalid-date behavior, timezone and DST transitions, parseZone or keepLocalTime flows, and any locale-sensitive formatting that reaches users or reports.",
@@ -501,21 +536,41 @@ export const faqAnswers = [
   {
     question: "Is mmntjs faster than moment.js?",
     answer:
-      "Performance should be treated as a measured property, not a slogan. The useful answer is which workloads are faster, how the benchmarks were run, and where compatibility remains the higher priority if tradeoffs appear.",
+      "In the current benchmark set, yes. mmntjs wins the tracked moment.js operations, with especially large wins in ISO parsing, common formatting, diff, getters, and simple arithmetic. Treat this as benchmark evidence, not a promise about every workload.",
   },
   {
     question: "How are benchmarks run?",
     answer:
-      "Benchmark methodology should stay reproducible and boring: record runtime and hardware, distinguish cold and warm paths where relevant, and note when compared libraries are not exposing identical semantics for a given operation.",
+      "Benchmarks use process.hrtime.bigint(), warmup runs, repeated medians, consumed outputs to avoid dead-code elimination, and separate cold/warm measurements. Results are checked on Bun and key rows are cross-validated on Node.",
+  },
+  {
+    question: "Is bundle size smaller?",
+    answer:
+      "The comparison depends on the entry point and tree-shaking behavior. moment.min.js core-only is 18 KB gzip. mmntjs/lite is 16 KB gzip — smaller, but requires explicit locale loading. mmntjs dist/index.js (full build, unminified) is 55-57 KB gzip, larger than moment.min.js. moment.js locale files have side effects (auto-register on import) which can block tree-shaking in some bundlers. mmntjs locales are pure data with no side effects and sideEffects:false is declared, so unused locales are safe to remove. The trade-off: mmntjs gives bundlers more optimization room, but the base entry is heavier.",
+  },
+  {
+    question: "Can mmntjs coexist with dayjs, date-fns, Luxon, or Temporal?",
+    answer:
+      "Yes. mmntjs is a migration bridge for legacy moment.js usage, not a rule that every date call in a system must use one library. Teams can keep mmntjs around old moment-shaped code while using other libraries or Temporal for new code where they fit better.",
+  },
+  {
+    question: "How are breaking changes handled?",
+    answer:
+      "Any behavior change that affects moment.js compatibility should be documented. Even small parsing, formatting, invalid-date, timezone, or mutability changes can matter during migration, so they belong in release notes or known-difference docs.",
   },
   {
     question: "How are compatibility bugs prioritized?",
     answer:
-      "For this kind of library, compatibility bugs are product bugs. Regressions that change legacy behavior in parsing, formatting, invalid handling, timezone behavior, or mutability-sensitive flows should be visible quickly and prioritized ahead of more cosmetic work.",
+      "Compatibility bugs are high priority. Bugs in parsing, formatting, invalid-date handling, timezone behavior, offsets, locale output, or mutation semantics matter more than cosmetic API work because they can break existing moment.js code silently.",
+  },
+  {
+    question: "How can users report differences from moment.js?",
+    answer:
+      "The most useful report includes the exact input, the moment.js output, the mmntjs output, runtime and timezone settings, and whether locale or timezone packages are involved. Small reproducible fixtures are much more valuable than broad descriptions of date drift.",
   },
   {
     question: "What is the long-term goal?",
     answer:
-      "The long-term goal is not to trap teams on one compatibility layer forever. It is to reduce immediate rewrite risk, make behavior visible, and create a more controlled path toward modern JavaScript date/time APIs, including Temporal where it fits.",
+      "The long-term goal is to get teams off unmaintained moment.js usage without forcing a risky rewrite. mmntjs is a bridge: keep old behavior stable first, then move new code toward better APIs such as Temporal where that makes sense.",
   },
 ];

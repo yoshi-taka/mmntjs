@@ -1,6 +1,6 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import { performancePrinciples } from "../../content/site";
+import { githubUrl, performancePrinciples } from "../../content/site";
 import { withBase } from "../../lib/urls";
 
 const methodology = [
@@ -16,6 +16,7 @@ const methodology = [
 const headlineResults = [
   ["Against moment.js", "mmntjs wins all 31 benchmarked operations in the current benchmark set."],
   ["Against date-fns", "mmntjs wins 24 of 25 benchmarked operations; the main loss is raw constructor-style creation."],
+  ["Against native APIs", "Some hot paths beat native Intl and Temporal in the current focused benchmarks, especially simple formatting and mutation-heavy operations."],
   ["Cross-runtime check", "Relative gains were cross-validated on Node.js 26 so the story is not Bun-only."],
   ["Separate size story", "Package size is tracked separately from runtime speed so browser cost does not get mixed into benchmark claims."],
 ];
@@ -27,6 +28,39 @@ const operationRows = [
   ["add 1 second", "15 ns", "108 ns", "-", "Simple mutation-heavy arithmetic is a strong case for the current implementation."],
   ["startOf month", "17 ns", "75 ns", "-", "Boundary normalization is cheap in the common path benchmark."],
   ["moment() / new Date()", "40 ns", "35 ns", "221 ns", "This is the main place where raw construction can still lose to a bare Date-style path because compatibility wrapping has a cost."],
+];
+
+const techniqueRows = [
+  [
+    "Cached date fields",
+    "Moment instances keep decomposed fields like year, month, day, hour, minute, and millisecond directly on the object so common getters and formatters avoid repeated Date API calls.",
+  ],
+  [
+    "Lazy field materialization",
+    "Construction defers field refresh work behind a dirty flag, so short-lived moments do not pay for decomposed fields until a getter, formatter, or calendar operation actually needs them.",
+  ],
+  [
+    "Digit parsers before regex",
+    "Common ISO inputs are classified with charCodeAt and tiny digit helpers before falling back to broader regex-based parsing paths.",
+  ],
+  [
+    "Direct UTC arithmetic",
+    "UTC month, year, startOf, and endOf paths use integer calendar helpers instead of bouncing through Date allocations where compatibility allows it.",
+  ],
+  [
+    "Common format fast paths",
+    "Hot English formats such as YYYY-MM-DD and HH:mm:ss bypass the general token interpreter and format from cached fields directly.",
+  ],
+  [
+    "Cold-path separation",
+    "Invalid-state and parse-debug metadata are kept away from the normal valid-moment path, preserving simpler object layout and cheaper validity checks.",
+  ],
+];
+
+const perfDocs = [
+  ["Technique catalog", `${githubUrl}/blob/main/docs/perf/TECHNIQUES.md`],
+  ["Low-level analysis", `${githubUrl}/blob/main/docs/perf/ANALYSIS.md`],
+  ["Benchmark methodology", `${githubUrl}/blob/main/docs/perf/BENCHMARKS.md`],
 ];
 
 const workloads = [
@@ -144,6 +178,29 @@ const temporalNotes = [
       shape of the current results while keeping the page honest about what microbenchmarks can and
       cannot prove.
     </p>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Why It Is Fast</p>
+    <h2>The implementation specializes the common compatibility paths.</h2>
+    <p>
+      The speedups are not from one trick. They mostly come from doing less work on hot paths while
+      preserving moment.js semantics: fewer allocations, less repeated Date work, less regex work,
+      and narrower paths for common parsing, formatting, and arithmetic cases.
+    </p>
+    <div class="cards">
+      {techniqueRows.map(([title, text]) => (
+        <article class="card">
+          <h3>{title}</h3>
+          <p>{text}</p>
+        </article>
+      ))}
+    </div>
+    <div class="actions">
+      {perfDocs.map(([label, href]) => (
+        <a class="button" href={href} target="_blank" rel="noreferrer">{label}</a>
+      ))}
+    </div>
   </section>
 
   <section class="panel section">

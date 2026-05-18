@@ -161,6 +161,12 @@ const docSections: Record<string, DocSection[]> = {
       title: "Browser Evaluation Needs Bundle Awareness",
       body: [
         "Client-side adoption is affected by entry points, locale loading, and bundle shape as much as API compatibility. Teams should check what actually ships, not just what works in isolated examples.",
+        "The current source docs distinguish bundled measurements from raw dist output. That matters because browser teams usually care about bundler output first, while release engineering may care about shipped dist artifacts.",
+      ],
+      bullets: [
+        "Default mmntjs entry is about 39 KB gzip bundled and about 54 KB gzip as dist output.",
+        "Lite is about 12 KB gzip bundled and can add plugins or locales incrementally.",
+        "Timezone support is a separate package rather than silently bundled into core.",
       ],
     },
   ],
@@ -220,10 +226,16 @@ import mmnt from "mmntjs";`,
       note: "This lets one codebase move module by module instead of forcing a single cutoff day.",
     },
     {
+      title: "Migration tool rewrite",
+      language: "sh",
+      code: `npm install mmntjs
+mmntjs migrate --apply path/to/module`,
+      note: "Use this when you want the tool to rewrite one owned surface while keeping the change reviewable.",
+    },
+    {
       title: "First evaluation flow",
       language: "sh",
-      code: `bun test
-bun run docs:build
+      code: `npm test
 # then compare one or two representative date fixtures in the chosen module`,
       note: "The important part is reusing the tests you already trust before inventing new migration scaffolding.",
     },
@@ -234,6 +246,13 @@ bun run docs:build
       language: "sh",
       code: `npm install mmntjs`,
       note: "Best when you want code review to show each migration step explicitly.",
+    },
+    {
+      title: "Migration tool rewrite",
+      language: "sh",
+      code: `npm install mmntjs
+mmntjs migrate --apply path/to/module`,
+      note: "Best when you want the tool to rewrite one owned surface while keeping the rollout reviewable.",
     },
     {
       title: "Import replacement",
@@ -284,6 +303,25 @@ moment.utc("2024-06-15T12:30:00Z").format("YYYY-MM-DD HH:mm:ss");`,
 
 moment.duration(2, "hours").humanize();`,
       note: "Keep examples short and recognizable before diving into compatibility-sensitive details.",
+    },
+  ],
+  "browser-usage": [
+    {
+      title: "Lite entry with explicit add-ons",
+      language: "js",
+      code: `import moment from "mmntjs/lite";
+import "mmntjs/plugin/format-parse";
+import "mmntjs/locale/ja";`,
+      note: "This matches the README guidance for smaller browser bundles that only add back the features you actually need.",
+    },
+    {
+      title: "Script-tag usage",
+      language: "html",
+      code: `<script src="https://cdn.jsdelivr.net/npm/mmntjs/dist/mmntjs.min.js"></script>
+<script>
+  mmntjs().format("LLLL");
+</script>`,
+      note: "The browser docs should make it clear that CDN script-tag consumption remains available alongside ESM imports.",
     },
   ],
 };

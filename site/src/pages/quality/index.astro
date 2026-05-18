@@ -1,6 +1,6 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import { qualityProof } from "../../content/site";
+import { githubUrl, qualityProof } from "../../content/site";
 
 const sections = [
   ["Differential testing", "Use upstream moment.js behavior as the oracle instead of relying on local assumptions."],
@@ -10,11 +10,33 @@ const sections = [
   ["Release discipline", "Treat compatibility changes and known behavior shifts as first-class release notes."],
 ];
 
+const currentMetrics = [
+  ["Upstream compatibility", "678/678", "moment.js official compatibility tests passing"],
+  ["Hard suite", "4642/4642", "current tracked baseline passing"],
+  ["Timezone coverage", "744/744", "124 cases across six timezones"],
+  ["Coverage baseline", "73.27%", "line coverage after the Phase 4 uplift"],
+  ["Mutation", "20/20", "applicable operators killed"],
+  ["Fuzz harnesses", "11", "coverage-guided targets in the quick workflow"],
+];
+
+const recentFixes = [
+  "keepLocalTime compatibility gaps in UTC/local offset transitions",
+  "UTC array-input construction and UTC flag propagation",
+  "invalid-date acceptance caused by missing overflow checks",
+  "locale parsing over-acceptance in strict month and weekday paths",
+  "negative zero offset and diff edge-case mismatches",
+];
+
 const releaseQuestions = [
   "Did this change preserve documented moment.js-compatible behavior?",
   "If behavior changed, is the difference explicit in compatibility or changelog docs?",
   "Were timezone, invalid-date, and parsing-sensitive paths exercised in at least one realistic test shape?",
   "Would a migration reviewer understand the risk of upgrading from the release notes alone?",
+];
+
+const qualityDocs = [
+  ["Quality uplift notes", `${githubUrl}/blob/main/docs/testing/QUALITY_UP.md`],
+  ["Testing strategy", `${githubUrl}/blob/main/docs/testing/STRATEGY.md`],
 ];
 ---
 
@@ -50,6 +72,28 @@ const releaseQuestions = [
   </section>
 
   <section class="panel section">
+    <p class="eyebrow">Current Baseline</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Area</th>
+          <th>Value</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {currentMetrics.map(([area, value, notes]) => (
+          <tr>
+            <td>{area}</td>
+            <td><strong>{value}</strong></td>
+            <td>{notes}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="panel section">
     <p class="eyebrow">What Quality Means Here</p>
     <p>
       In a compatibility-oriented library, a passing unit test on a happy path is not enough.
@@ -58,10 +102,15 @@ const releaseQuestions = [
       rare. Rare date/time bugs are often the expensive ones.
     </p>
     <p>
-      That is why the site should frame differential testing, regression fixtures, timezone
-      boundary tests, and invalid-input behavior as first-class quality signals rather than advanced
-      extras.
+      The short version: differential testing, regression fixtures, timezone boundary tests, and
+      invalid-input behavior are first-class quality signals. The detailed methodology lives in the
+      repository so reviewers can inspect the actual strategy and historical quality work.
     </p>
+    <div class="actions">
+      {qualityDocs.map(([label, href]) => (
+        <a class="button" href={href} target="_blank" rel="noreferrer">{label}</a>
+      ))}
+    </div>
   </section>
 
   <section class="panel section">
@@ -86,10 +135,31 @@ const releaseQuestions = [
       </ul>
     </article>
     <article class="panel section">
+      <p class="eyebrow">Recent Bug Classes Closed</p>
+      <ul>
+        {recentFixes.map((item) => <li>{item}</li>)}
+      </ul>
+    </article>
+  </section>
+
+  <section class="grid">
+    <article class="panel section">
       <p class="eyebrow">Release Checklist</p>
       <ul>
         {releaseQuestions.map((item) => <li>{item}</li>)}
       </ul>
+    </article>
+    <article class="panel section">
+      <p class="eyebrow">Detailed Methodology</p>
+      <p>
+        The command matrix, fuzzing setup, property tests, mutation checks, and coverage notes are
+        maintained in GitHub rather than duplicated here.
+      </p>
+      <div class="actions">
+        {qualityDocs.map(([label, href]) => (
+          <a class="button" href={href} target="_blank" rel="noreferrer">{label}</a>
+        ))}
+      </div>
     </article>
   </section>
 </BaseLayout>
