@@ -1,20 +1,6 @@
-import { Moment, setUtcMethodCallbacks } from "../moment-class";
+import { Moment } from "../moment-class";
 import type { MomentInput } from "../moment-class";
 import { isString, isArray, createUTCDate } from "../utils";
-import {
-  hasAlignedHourOffsetMoment,
-  isDSTMoment,
-  isLocalMoment,
-  isUtcMoment,
-  isUtcOffsetMoment,
-  localMoment,
-  parseZoneMoment,
-  utcMoment,
-  utcOffsetMoment,
-  zoneAbbrMoment,
-  zoneMoment,
-  zoneNameMoment,
-} from "../utc-extra";
 
 type UtcMomentTarget = ((
   input?: unknown,
@@ -29,20 +15,6 @@ export type UtcApiDeps = {
 };
 
 export function registerUtcApi(target: UtcMomentTarget, deps: UtcApiDeps): void {
-  setUtcMethodCallbacks({
-    local: localMoment,
-    utc: utcMoment,
-    utcOffset: utcOffsetMoment,
-    parseZone: (m, input, format) => parseZoneMoment(m, input, format, target),
-    zone: zoneMoment,
-    zoneAbbr: zoneAbbrMoment,
-    zoneName: zoneNameMoment,
-    isLocal: isLocalMoment,
-    isUtc: isUtcMoment,
-    isUtcOffset: isUtcOffsetMoment,
-    isDST: isDSTMoment,
-    hasAlignedHourOffset: hasAlignedHourOffsetMoment as (m: Moment, other?: MomentInput) => boolean,
-  });
   const momentRecord = target as unknown as Record<string, unknown>;
   momentRecord.utc = function (
     input?: unknown,

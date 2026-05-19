@@ -4,14 +4,14 @@ import { parseString } from "./parse";
 import type { ParseLocale } from "./parse-locale";
 import type { Moment } from "./moment-class";
 
-type MomentFactory = (
+export type MomentFactory = (
   input?: unknown,
   format?: unknown,
   localeOrStrict?: unknown,
   fourthArg?: unknown,
 ) => Moment;
 
-type UtcMoment = Moment & {
+export type UtcMoment = Moment & {
   _d?: Date;
   _t: number;
   _isUTC: boolean;

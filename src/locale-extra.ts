@@ -1,7 +1,7 @@
 import type { Locale } from "./locale-runtime";
 import type { Moment } from "./moment-class";
 
-type LocaleAwareMoment = Moment & {
+export type LocaleAwareMoment = Moment & {
   _getLocale: () => Locale;
   _trySetLocale: (locale: string) => boolean;
   _l?: string;

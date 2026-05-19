@@ -234,7 +234,7 @@ describe("runCheck", () => {
       const out = capture(() => runCheck(d));
       const joined = out.join("\n");
       expect(joined).toMatch(/Found 2 moment import/);
-      expect(joined).toMatch(/apply changes/);
+      expect(joined).toMatch(/auto-migrate/);
     } finally {
       rmSync(d, { recursive: true, force: true });
     }
@@ -264,9 +264,9 @@ describe("runApply", () => {
       capture(() => runApply(d));
       const a = readFileSync(join(d, "a.ts"), "utf-8");
       const b = readFileSync(join(d, "b.ts"), "utf-8");
-      expect(a).toContain("import moment from 'mmntjs'");
+      expect(a).toContain("import moment from 'mmntjs/lite'");
       expect(a).not.toContain("from 'moment'");
-      expect(b).toContain("require('mmntjs')");
+      expect(b).toContain("require('mmntjs/lite')");
       expect(b).not.toContain("require('moment')");
     } finally {
       rmSync(d, { recursive: true, force: true });

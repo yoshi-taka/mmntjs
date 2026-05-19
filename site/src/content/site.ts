@@ -55,24 +55,26 @@ export const docsPages: DocPage[] = [
   {
     slug: "installation",
     title: "Installation",
-    summary: "Install mmntjs as a standalone package or as a moment-compatible replacement.",
-    purpose: "Show the install shapes teams are most likely to try during evaluation.",
+    summary: "Install mmntjs and choose the right entry point: `mmntjs` (full compat, 141KB), `mmntjs/lite` (recommended, 42KB), or `mmntjs/lite/fns` (ultra-light, ~1KB).",
+    purpose: "Show the available entry points and when each is appropriate.",
     focus: [
-      "Direct install and import replacement",
+      "Direct install and import replacement for moment.js",
       "Alias-based evaluation for low-friction trials",
-      "What package entry points exist and when to use them",
+      "Entry points: full (141KB), lite (42KB), lite/fns (~1KB)",
+      "When to use each entry point",
     ],
     related: [{ label: "Runtime Support", href: "/docs/runtime-support/" }],
   },
   {
     slug: "lite-usage",
-    title: "Lite Usage",
-    summary: "Use `mmntjs/lite` when bundle size matters and you want to add back only the pieces you need.",
-    purpose: "Explain when the lite entry is a good fit and what teams must add explicitly.",
+    title: "Lite and fns Usage",
+    summary: "Use `mmntjs/lite` (42KB) for moment-compatible method chaining, or `mmntjs/lite/fns` (~1KB) for standalone pure functions that tree-shake completely.",
+    purpose: "Explain when the lite and fns entries are a good fit and what teams must choose based on their API needs.",
     focus: [
-      "What the lite entry includes by default",
+      "What the lite entry includes by default (42KB, method chaining)",
+      "What the fns entry offers (~1KB, standalone functions, full tree-shaking)",
       "Which plugins or locale modules must be imported explicitly",
-      "How to evaluate lite safely before switching browser code to it",
+      "How to evaluate lite vs fns before switching browser code",
     ],
     related: [
       { label: "Installation", href: "/docs/installation/" },
@@ -308,11 +310,11 @@ export const performancePrinciples = [
 ];
 
 export const migrationPhases = [
-  ["Phase 0", "Inventory current moment usage and identify timezone, locale, and parsing hotspots."],
-  ["Phase 1", "Run compatibility checks and review known differences for the APIs your codebase uses."],
-  ["Phase 2", "Replace imports in a low-risk module or service and run the existing test suite."],
-  ["Phase 3", "Compare production-like behavior, especially invalid dates, offsets, and custom parsing."],
-  ["Phase 4", "Expand rollout module by module with ownership and rollback clarity."],
+  ["Phase 0", "Inventory current moment usage with `mmntjs migrate --check`. Identify timezone, locale, and parsing hotspots."],
+  ["Phase 1", "Run `mmntjs migrate --apply` to auto-rewrite imports. For full-only codebases, start with `mmntjs` (full compat). For lite-compatible code, switch directly to `mmntjs/lite`."],
+  ["Phase 2", "If your code only uses basic formatting/manipulation, consider `mmntjs/lite/fns` — standalone pure functions at ~1KB, fully tree-shakeable. Run `mmntjs migrate --apply --fns --dry` to preview."],
+  ["Phase 3", "Run compatibility checks and review known differences for the APIs your codebase uses. Compare production-like behavior, especially invalid dates, offsets, and custom parsing."],
+  ["Phase 4", "Replace imports in a low-risk module or service and run the existing test suite. Expand rollout module by module with ownership and rollback clarity."],
   ["Phase 5", "Use the bridge period to guide new code toward modern date/time APIs, including Temporal where it fits."],
 ];
 
@@ -481,10 +483,15 @@ export const faqAnswers = [
     answer:
       "Benchmarks use process.hrtime.bigint(), warmup runs, repeated medians, consumed outputs to avoid dead-code elimination, and separate cold/warm measurements. Results are checked on Bun and key rows are cross-validated on Node.",
   },
-  {
+    {
     question: "Is bundle size smaller?",
     answer:
-      "Tree-shaking works. mmntjs keeps `locale/*` as pure data and marks only `plugin/*` plus `locale-auto/*` as side-effectful, so bundlers can still remove unused core and locale modules.",
+      "Yes. The main `mmntjs` entry (141KB) is comparable to moment.js. The recommended `mmntjs/lite` (42KB) is smaller than moment.js (60KB). For minimal bundles, use `mmntjs/lite/fns` — standalone functions like `format()` that tree-shake down to ~1KB. Import only what you need.",
+  },
+  {
+    question: "Which entry point should browser apps use?",
+    answer:
+      "For most apps, start with `mmntjs/lite` at 42KB. If you only use basic formatting and manipulation, `mmntjs/lite/fns` at ~1KB is the best choice. The main `mmntjs` entry (141KB) is for full moment.js compatibility during migration.",
   },
   {
     question: "Can mmntjs coexist with dayjs, date-fns, Luxon, or Temporal?",

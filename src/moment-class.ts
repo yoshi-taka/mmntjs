@@ -12,7 +12,54 @@
 
 import type { Locale } from "./locale-runtime";
 import type { UnitCode } from "./types";
-import { getLiteCurrentLocale, getLiteLocale, hasLiteLocale } from "./locale-lite";
+import { hasLiteLocale } from "./locale-lite";
+import {
+  localeWeekday,
+  localeWeek,
+  localeWeekYear,
+  localeWeeksInYear,
+  localeWeeksInWeekYear,
+  localeData,
+  lang as localeMethodLang,
+  localeMethod,
+} from "./locale-extra";
+import type { LocaleAwareMoment } from "./locale-extra";
+import {
+  isoWeekdayMoment,
+  dayOfYearMoment,
+  isoWeekMoment,
+  isoWeekYearMoment,
+  isoWeeksInYearMoment,
+  isoWeeksInISOWeekYearMoment,
+  calendarCompareMoment,
+} from "./calendar-extra";
+import type { CalendarAwareMoment } from "./calendar-extra";
+import { startOfExtraMoment, endOfExtraMoment } from "./boundary-extra";
+import {
+  toArrayMoment,
+  inspectMoment,
+  creationDataMoment,
+  parsingFlagsMoment,
+  invalidAtMoment,
+  toObjectMoment,
+  toStringMoment,
+} from "./debug-extra";
+import {
+  localMoment,
+  utcMoment,
+  utcOffsetMoment,
+  parseZoneMoment,
+  zoneMoment,
+  zoneAbbrMoment,
+  zoneNameMoment,
+  isLocalMoment,
+  isUtcMoment,
+  isUtcOffsetMoment,
+  isDSTMoment,
+  hasAlignedHourOffsetMoment,
+} from "./utc-extra";
+import type { UtcMoment, MomentFactory } from "./utc-extra";
+import { getCurrentLocale, getLocale, hasLocale } from "./locale-runtime";
 import { isArray, isObject, isDate, isMoment, hasOwnProp, zeroFill, createDateSafe } from "./utils";
 import {
   DATE,
@@ -78,61 +125,6 @@ let addCallback:
       unit?: string,
     ) => { ms: number; days: number; months: number } | null)
   | undefined;
-let getCurrentLocaleCallback: (() => string) | undefined;
-let getLocaleCallback: ((name?: string) => Locale) | undefined;
-let hasLocaleCallback: ((name: string) => boolean) | undefined;
-let weekdayCallback: ((m: Moment, d?: number) => number | Moment) | undefined;
-let weekCallback: ((m: Moment, w?: number) => number | Moment) | undefined;
-let weekYearCallback: ((m: Moment, y?: number) => number | Moment) | undefined;
-let weeksInYearCallback: ((m: Moment) => number) | undefined;
-let weeksInWeekYearCallback: ((m: Moment) => number) | undefined;
-let isoWeekdayCallback: ((m: Moment, d?: unknown) => number | Moment) | undefined;
-let dayOfYearCallback: ((m: Moment, d?: number) => number | Moment) | undefined;
-let isoWeekCallback: ((m: Moment, w?: number) => number | Moment) | undefined;
-let isoWeekYearCallback: ((m: Moment, y?: number) => number | Moment) | undefined;
-let isoWeeksInYearCallback: ((m: Moment) => number) | undefined;
-let isoWeeksInISOWeekYearCallback: ((m: Moment) => number) | undefined;
-let calendarCompareCallback: ((left: Moment, right: Moment, unit: string) => number) | undefined;
-let startOfExtraCallback: ((m: Moment, code: UnitCode) => void) | undefined;
-let endOfExtraCallback: ((m: Moment, code: UnitCode) => void) | undefined;
-let toArrayCallback: ((m: Moment) => number[]) | undefined;
-let inspectCallback: ((m: Moment) => string) | undefined;
-let creationDataCallback: ((m: Moment) => Record<string, unknown>) | undefined;
-let parsingFlagsCallback: ((m: Moment) => Record<string, unknown>) | undefined;
-let invalidAtCallback: ((m: Moment) => number) | undefined;
-let toObjectCallback: ((m: Moment) => Record<string, number>) | undefined;
-let toStringCallback: ((m: Moment) => string) | undefined;
-let localeDataCallback: ((m: Moment) => Locale) | undefined;
-let langCallback:
-  | ((
-      m: Moment,
-      locale: string | string[] | false | undefined,
-      getCurrentLocale: () => string,
-    ) => string | Moment)
-  | undefined;
-let localeCallback:
-  | ((
-      m: Moment,
-      locale: string | string[] | false | undefined,
-      getCurrentLocale: () => string,
-    ) => string | Moment)
-  | undefined;
-let localCallback: ((m: Moment, keepLocalTime?: boolean) => Moment) | undefined;
-let utcCallback: ((m: Moment, keepLocalTime?: boolean) => Moment) | undefined;
-let utcOffsetMethodCallback:
-  | ((m: Moment, offset?: number | string, keepLocalTime?: boolean) => number | Moment)
-  | undefined;
-let parseZoneCallback: ((m: Moment, input?: unknown, format?: unknown) => Moment) | undefined;
-let zoneCallback:
-  | ((m: Moment, offset?: number | string, keepLocalTime?: boolean) => number | Moment)
-  | undefined;
-let zoneAbbrCallback: ((m: Moment) => string) | undefined;
-let zoneNameCallback: ((m: Moment) => string) | undefined;
-let isLocalCallback: ((m: Moment) => boolean) | undefined;
-let isUtcCallback: ((m: Moment) => boolean) | undefined;
-let isUtcOffsetCallback: ((m: Moment) => boolean) | undefined;
-let isDSTCallback: ((m: Moment) => boolean) | undefined;
-let hasAlignedHourOffsetCallback: ((m: Moment, other?: MomentInput) => boolean) | undefined;
 
 const TIME_UNIT_MS: Record<number, number> = {
   [HOUR]: HOUR_MS,
@@ -193,120 +185,6 @@ export function setAddCallback(
     | undefined,
 ): void {
   addCallback = cb;
-}
-
-export function setLocaleRuntimeCallbacks(callbacks: {
-  getCurrentLocale?: (() => string) | undefined;
-  getLocale?: ((name?: string) => Locale) | undefined;
-  hasLocale?: ((name: string) => boolean) | undefined;
-}): void {
-  getCurrentLocaleCallback = callbacks.getCurrentLocale;
-  getLocaleCallback = callbacks.getLocale;
-  hasLocaleCallback = callbacks.hasLocale;
-}
-
-export function setLocaleMethodCallbacks(callbacks: {
-  weekday?: ((m: Moment, d?: number) => number | Moment) | undefined;
-  week?: ((m: Moment, w?: number) => number | Moment) | undefined;
-  weekYear?: ((m: Moment, y?: number) => number | Moment) | undefined;
-  weeksInYear?: ((m: Moment) => number) | undefined;
-  weeksInWeekYear?: ((m: Moment) => number) | undefined;
-  localeData?: ((m: Moment) => Locale) | undefined;
-  lang?:
-    | ((
-        m: Moment,
-        locale: string | string[] | false | undefined,
-        getCurrentLocale: () => string,
-      ) => string | Moment)
-    | undefined;
-  locale?:
-    | ((
-        m: Moment,
-        locale: string | string[] | false | undefined,
-        getCurrentLocale: () => string,
-      ) => string | Moment)
-    | undefined;
-}): void {
-  weekdayCallback = callbacks.weekday;
-  weekCallback = callbacks.week;
-  weekYearCallback = callbacks.weekYear;
-  weeksInYearCallback = callbacks.weeksInYear;
-  weeksInWeekYearCallback = callbacks.weeksInWeekYear;
-  localeDataCallback = callbacks.localeData;
-  langCallback = callbacks.lang;
-  localeCallback = callbacks.locale;
-}
-
-export function setCalendarMethodCallbacks(callbacks: {
-  isoWeekday?: ((m: Moment, d?: unknown) => number | Moment) | undefined;
-  dayOfYear?: ((m: Moment, d?: number) => number | Moment) | undefined;
-  isoWeek?: ((m: Moment, w?: number) => number | Moment) | undefined;
-  isoWeekYear?: ((m: Moment, y?: number) => number | Moment) | undefined;
-  isoWeeksInYear?: ((m: Moment) => number) | undefined;
-  isoWeeksInISOWeekYear?: ((m: Moment) => number) | undefined;
-  compare?: ((left: Moment, right: Moment, unit: string) => number) | undefined;
-  startOfExtra?: ((m: Moment, code: UnitCode) => void) | undefined;
-  endOfExtra?: ((m: Moment, code: UnitCode) => void) | undefined;
-}): void {
-  isoWeekdayCallback = callbacks.isoWeekday;
-  dayOfYearCallback = callbacks.dayOfYear;
-  isoWeekCallback = callbacks.isoWeek;
-  isoWeekYearCallback = callbacks.isoWeekYear;
-  isoWeeksInYearCallback = callbacks.isoWeeksInYear;
-  isoWeeksInISOWeekYearCallback = callbacks.isoWeeksInISOWeekYear;
-  calendarCompareCallback = callbacks.compare;
-  startOfExtraCallback = callbacks.startOfExtra;
-  endOfExtraCallback = callbacks.endOfExtra;
-}
-
-export function setDebugMethodCallbacks(callbacks: {
-  toArray?: ((m: Moment) => number[]) | undefined;
-  inspect?: ((m: Moment) => string) | undefined;
-  creationData?: ((m: Moment) => Record<string, unknown>) | undefined;
-  parsingFlags?: ((m: Moment) => Record<string, unknown>) | undefined;
-  invalidAt?: ((m: Moment) => number) | undefined;
-  toObject?: ((m: Moment) => Record<string, number>) | undefined;
-  toString?: ((m: Moment) => string) | undefined;
-}): void {
-  toArrayCallback = callbacks.toArray;
-  inspectCallback = callbacks.inspect;
-  creationDataCallback = callbacks.creationData;
-  parsingFlagsCallback = callbacks.parsingFlags;
-  invalidAtCallback = callbacks.invalidAt;
-  toObjectCallback = callbacks.toObject;
-  toStringCallback = callbacks.toString;
-}
-
-export function setUtcMethodCallbacks(callbacks: {
-  local?: ((m: Moment, keepLocalTime?: boolean) => Moment) | undefined;
-  utc?: ((m: Moment, keepLocalTime?: boolean) => Moment) | undefined;
-  utcOffset?:
-    | ((m: Moment, offset?: number | string, keepLocalTime?: boolean) => number | Moment)
-    | undefined;
-  parseZone?: ((m: Moment, input?: unknown, format?: unknown) => Moment) | undefined;
-  zone?:
-    | ((m: Moment, offset?: number | string, keepLocalTime?: boolean) => number | Moment)
-    | undefined;
-  zoneAbbr?: ((m: Moment) => string) | undefined;
-  zoneName?: ((m: Moment) => string) | undefined;
-  isLocal?: ((m: Moment) => boolean) | undefined;
-  isUtc?: ((m: Moment) => boolean) | undefined;
-  isUtcOffset?: ((m: Moment) => boolean) | undefined;
-  isDST?: ((m: Moment) => boolean) | undefined;
-  hasAlignedHourOffset?: ((m: Moment, other?: MomentInput) => boolean) | undefined;
-}): void {
-  localCallback = callbacks.local;
-  utcCallback = callbacks.utc;
-  utcOffsetMethodCallback = callbacks.utcOffset;
-  parseZoneCallback = callbacks.parseZone;
-  zoneCallback = callbacks.zone;
-  zoneAbbrCallback = callbacks.zoneAbbr;
-  zoneNameCallback = callbacks.zoneName;
-  isLocalCallback = callbacks.isLocal;
-  isUtcCallback = callbacks.isUtc;
-  isUtcOffsetCallback = callbacks.isUtcOffset;
-  isDSTCallback = callbacks.isDST;
-  hasAlignedHourOffsetCallback = callbacks.hasAlignedHourOffset;
 }
 
 export type MomentInput =
@@ -466,6 +344,12 @@ export interface MomentCold {
 // Moment is the moment-compatible runtime object exported as moment.fn / moment.prototype.
 // It is NOT merely an implementation detail — its shape IS the public API boundary.
 // new Moment(config) is an internal construction primitive; prefer factory functions.
+
+function _cast<T>(m: Moment): T {
+  // oxlint-disable-next-line typescript/no-explicit-any
+  return m as any;
+}
+
 export class Moment {
   static calendarFormat: ((m: Moment, now: Moment) => string) | undefined;
 
@@ -596,8 +480,7 @@ export class Moment {
   constructor(config: MomentConstructionConfig = {}) {
     const c = config;
     this._isAMomentObject = true;
-    this._l =
-      c._l ?? (getCurrentLocaleCallback ? getCurrentLocaleCallback() : getLiteCurrentLocale());
+    this._l = c._l ?? getCurrentLocale();
     this._isUTC = c._isUTC ?? false;
     this._offset = c._offset ?? 0;
     if (c._d) {
@@ -733,9 +616,7 @@ export class Moment {
   }
 
   _getLocale(): Locale {
-    this._locale ??= getLocaleCallback
-      ? getLocaleCallback(this._l)
-      : (getLiteLocale(this._l) as unknown as Locale);
+    this._locale ??= getLocale(this._l);
     return this._locale;
   }
 
@@ -1115,28 +996,26 @@ export class Moment {
   weekday(): number;
   weekday(d: number): this;
   weekday(d?: number): number | this {
-    if (!weekdayCallback) {
-      throw new Error("mmntjs weekday() is not initialized");
+    if (!this._isValid) {
+      return NaN;
     }
-    return weekdayCallback(this, d) as number | this;
+    this._ensureFields();
+    return localeWeekday(this, d as never) as number | this;
   }
 
   isoWeekday(): number;
   isoWeekday(d: unknown): this;
   isoWeekday(d?: unknown): number | this {
-    if (!isoWeekdayCallback) {
-      throw new Error("mmntjs isoWeekday() is not initialized");
-    }
-    return isoWeekdayCallback(this, d) as number | this;
+    this._ensureFields();
+    // oxlint-disable-next-line typescript/no-explicit-any
+    return isoWeekdayMoment(_cast<CalendarAwareMoment>(this), d) as number | this;
   }
 
   dayOfYear(): number;
   dayOfYear(d: number): this;
   dayOfYear(d?: number): number | this {
-    if (!dayOfYearCallback) {
-      throw new Error("mmntjs dayOfYear() is not initialized");
-    }
-    return dayOfYearCallback(this, d) as number | this;
+    this._ensureFields();
+    return dayOfYearMoment(_cast<CalendarAwareMoment>(this), d) as number | this;
   }
 
   hour(): number;
@@ -1863,10 +1742,7 @@ export class Moment {
       case QUARTER:
       case WEEK:
       case ISO_WEEK:
-        if (!startOfExtraCallback) {
-          throw new Error("mmntjs startOf extra units are not initialized");
-        }
-        startOfExtraCallback(this, code);
+        startOfExtraMoment(this, code);
         break;
       case DATE:
       case DAY:
@@ -1928,10 +1804,7 @@ export class Moment {
       case QUARTER:
       case WEEK:
       case ISO_WEEK:
-        if (!startOfExtraCallback) {
-          throw new Error("mmntjs startOf extra units are not initialized");
-        }
-        startOfExtraCallback(this, code);
+        startOfExtraMoment(this, code);
         break;
       case DATE:
       case DAY:
@@ -2010,10 +1883,7 @@ export class Moment {
       case QUARTER:
       case WEEK:
       case ISO_WEEK:
-        if (!endOfExtraCallback) {
-          throw new Error("mmntjs endOf extra units are not initialized");
-        }
-        endOfExtraCallback(this, code);
+        endOfExtraMoment(this, code);
         break;
       case DATE:
       case DAY:
@@ -2071,10 +1941,7 @@ export class Moment {
       case QUARTER:
       case WEEK:
       case ISO_WEEK:
-        if (!endOfExtraCallback) {
-          throw new Error("mmntjs endOf extra units are not initialized");
-        }
-        endOfExtraCallback(this, code);
+        endOfExtraMoment(this, code);
         break;
       case DATE:
       case DAY:
@@ -2125,10 +1992,8 @@ export class Moment {
     if (!this._isUTC && !keepLocalTime) {
       return this;
     }
-    if (!localCallback) {
-      throw new Error("mmntjs local() is not initialized");
-    }
-    return localCallback(this, keepLocalTime) as this;
+    this._ensureFields();
+    return localMoment(_cast<UtcMoment>(this), keepLocalTime) as this;
   }
 
   utc(keepLocalTime?: boolean): this {
@@ -2139,19 +2004,15 @@ export class Moment {
     if (this._isUTC && this._offset === 0 && !keepLocalTime) {
       return this;
     }
-    if (!utcCallback) {
-      throw new Error("mmntjs utc() is not initialized");
-    }
-    return utcCallback(this, keepLocalTime) as this;
+    this._ensureFields();
+    return utcMoment(_cast<UtcMoment>(this), keepLocalTime) as this;
   }
 
   utcOffset(): number;
   utcOffset(offset: number | string, keepLocalTime?: boolean): this;
   utcOffset(offset?: number | string, keepLocalTime?: boolean): number | this {
-    if (!utcOffsetMethodCallback) {
-      throw new Error("mmntjs utcOffset() is not initialized");
-    }
-    return utcOffsetMethodCallback(this, offset, keepLocalTime) as number | this;
+    this._ensureFields();
+    return utcOffsetMoment(_cast<UtcMoment>(this), offset, keepLocalTime) as number | this;
   }
 
   format(format?: string): string {
@@ -2401,10 +2262,7 @@ export class Moment {
   }
 
   toArray(): number[] {
-    if (!toArrayCallback) {
-      throw new Error("mmntjs toArray() is not initialized");
-    }
-    return toArrayCallback(this);
+    return toArrayMoment(this);
   }
 
   toISOString(keepOffset?: boolean): string {
@@ -2467,17 +2325,11 @@ export class Moment {
   }
 
   toString(): string {
-    if (!toStringCallback) {
-      throw new Error("mmntjs toString() is not initialized");
-    }
-    return toStringCallback(this);
+    return toStringMoment(this);
   }
 
   inspect(): string {
-    if (!inspectCallback) {
-      throw new Error("mmntjs inspect() is not initialized");
-    }
-    return inspectCallback(this);
+    return inspectMoment(this);
   }
 
   _compareCalendarValues(other: Moment, unit: string): number {
@@ -2517,18 +2369,10 @@ export class Moment {
         }
         return this.month() - other.month();
       }
-      case "quarter": {
-        if (!calendarCompareCallback) {
-          throw new Error("mmntjs quarter comparison is not initialized");
-        }
-        return calendarCompareCallback(this, other, u);
-      }
+      case "quarter":
       case "week":
       case "isoWeek": {
-        if (!calendarCompareCallback) {
-          throw new Error(`mmntjs ${u} comparison is not initialized`);
-        }
-        return calendarCompareCallback(this, other, u);
+        return calendarCompareMoment(this, other, u);
       }
       case "day":
       case "date":
@@ -2628,38 +2472,23 @@ export class Moment {
   }
 
   isDST(): boolean {
-    if (!isDSTCallback) {
-      throw new Error("mmntjs isDST() is not initialized");
-    }
-    return isDSTCallback(this);
+    return isDSTMoment(_cast<UtcMoment>(this));
   }
 
   isLocal(): boolean {
-    if (!isLocalCallback) {
-      throw new Error("mmntjs isLocal() is not initialized");
-    }
-    return isLocalCallback(this);
+    return isLocalMoment(_cast<UtcMoment>(this));
   }
 
   isUtc(): boolean {
-    if (!isUtcCallback) {
-      throw new Error("mmntjs isUtc() is not initialized");
-    }
-    return isUtcCallback(this);
+    return isUtcMoment(_cast<UtcMoment>(this));
   }
 
   isUtcOffset(): boolean {
-    if (!isUtcOffsetCallback) {
-      throw new Error("mmntjs isUtcOffset() is not initialized");
-    }
-    return isUtcOffsetCallback(this);
+    return isUtcOffsetMoment(_cast<UtcMoment>(this));
   }
 
   isUTC(): boolean {
-    if (!isUtcCallback) {
-      throw new Error("mmntjs isUTC() is not initialized");
-    }
-    return isUtcCallback(this);
+    return isUtcMoment(_cast<UtcMoment>(this));
   }
 
   years(): number;
@@ -2722,10 +2551,8 @@ export class Moment {
   week(): number;
   week(w: number): this;
   week(w?: number): number | this {
-    if (!weekCallback) {
-      throw new Error("mmntjs week() is not initialized");
-    }
-    return weekCallback(this, w) as number | this;
+    this._ensureFields();
+    return localeWeek(_cast<LocaleAwareMoment>(this), w) as number | this;
   }
 
   weeks(): number;
@@ -2771,19 +2598,15 @@ export class Moment {
   weekYear(): number;
   weekYear(y: number): this;
   weekYear(y?: number): number | this {
-    if (!weekYearCallback) {
-      throw new Error("mmntjs weekYear() is not initialized");
-    }
-    return weekYearCallback(this, y) as number | this;
+    this._ensureFields();
+    return localeWeekYear(_cast<LocaleAwareMoment>(this), y) as number | this;
   }
 
   isoWeek(): number;
   isoWeek(w: number): this;
   isoWeek(w?: number): number | this {
-    if (!isoWeekCallback) {
-      throw new Error("mmntjs isoWeek() is not initialized");
-    }
-    return isoWeekCallback(this, w) as number | this;
+    this._ensureFields();
+    return isoWeekMoment(_cast<CalendarAwareMoment>(this), w) as number | this;
   }
 
   isoWeeks(): number;
@@ -2795,93 +2618,69 @@ export class Moment {
   isoWeekYear(): number;
   isoWeekYear(y: number): this;
   isoWeekYear(y?: number): number | this {
-    if (!isoWeekYearCallback) {
-      throw new Error("mmntjs isoWeekYear() is not initialized");
-    }
-    return isoWeekYearCallback(this, y) as number | this;
+    this._ensureFields();
+    return isoWeekYearMoment(_cast<CalendarAwareMoment>(this), y) as number | this;
   }
 
   isoWeeksInYear(): number {
-    if (!isoWeeksInYearCallback) {
-      throw new Error("mmntjs isoWeeksInYear() is not initialized");
-    }
-    return isoWeeksInYearCallback(this);
+    return isoWeeksInYearMoment(_cast<CalendarAwareMoment>(this));
   }
 
   weeksInYear(): number {
-    if (!weeksInYearCallback) {
-      throw new Error("mmntjs weeksInYear() is not initialized");
-    }
-    return weeksInYearCallback(this);
+    return localeWeeksInYear(_cast<LocaleAwareMoment>(this));
   }
 
   weeksInWeekYear(): number {
-    if (!weeksInWeekYearCallback) {
-      throw new Error("mmntjs weeksInWeekYear() is not initialized");
-    }
-    return weeksInWeekYearCallback(this);
+    return localeWeeksInWeekYear(_cast<LocaleAwareMoment>(this));
   }
 
   isoWeeksInISOWeekYear(): number {
-    if (!isoWeeksInISOWeekYearCallback) {
-      throw new Error("mmntjs isoWeeksInISOWeekYear() is not initialized");
-    }
-    return isoWeeksInISOWeekYearCallback(this);
+    return isoWeeksInISOWeekYearMoment(_cast<CalendarAwareMoment>(this));
   }
 
-  parseZone(input?: unknown, format?: unknown): Moment {
-    if (!parseZoneCallback) {
-      throw new Error("mmntjs parseZone() is not initialized");
+  parseZone(input?: unknown, format?: unknown): this {
+    if (input === undefined) {
+      return parseZoneMoment(_cast<UtcMoment>(this), undefined, format) as this;
     }
-    return parseZoneCallback(this, input, format);
+    return parseZoneMoment(
+      _cast<UtcMoment>(this),
+      input,
+      format,
+      momentFromAnything as unknown as MomentFactory,
+    ) as this;
   }
 
   zone(): number;
   zone(offset: number | string, keepLocalTime?: boolean): this;
   zone(offset?: number | string, keepLocalTime?: boolean): number | this {
-    if (!zoneCallback) {
-      throw new Error("mmntjs zone() is not initialized");
-    }
-    return zoneCallback(this, offset, keepLocalTime) as number | this;
+    this._ensureFields();
+    return zoneMoment(_cast<UtcMoment>(this), offset, keepLocalTime) as number | this;
   }
 
   zoneAbbr(): string {
-    if (!zoneAbbrCallback) {
-      throw new Error("mmntjs zoneAbbr() is not initialized");
-    }
-    return zoneAbbrCallback(this);
+    return zoneAbbrMoment(_cast<UtcMoment>(this));
   }
 
   zoneName(): string {
-    if (!zoneNameCallback) {
-      throw new Error("mmntjs zoneName() is not initialized");
-    }
-    return zoneNameCallback(this);
+    return zoneNameMoment(_cast<UtcMoment>(this));
   }
 
   localeData(): Locale {
-    if (!localeDataCallback) {
-      throw new Error("mmntjs localeData() is not initialized");
-    }
-    return localeDataCallback(this);
+    return localeData(_cast<LocaleAwareMoment>(this));
   }
 
-  lang(): string;
-  lang(locale: string | string[] | false): this;
   lang(locale?: string | string[] | false): string | this {
-    if (!langCallback) {
-      throw new Error("mmntjs lang() is not initialized");
-    }
-    return langCallback(this, locale, () =>
-      getCurrentLocaleCallback ? getCurrentLocaleCallback() : getLiteCurrentLocale(),
-    ) as string | this;
+    this._ensureFields();
+    return localeMethodLang(_cast<LocaleAwareMoment>(this), locale, getCurrentLocale) as
+      | string
+      | this;
   }
 
   _trySetLocale(locale: string): boolean {
     const parts = locale.toLowerCase().replaceAll("_", "-").split("-");
     for (let j = parts.length; j > 0; j--) {
       const candidate = parts.slice(0, j).join("-");
-      if (hasLocaleCallback ? hasLocaleCallback(candidate) : hasLiteLocale(candidate)) {
+      if (hasLocale(candidate) || hasLiteLocale(candidate)) {
         this._l = candidate;
         this._locale = undefined;
         return true;
@@ -2890,29 +2689,17 @@ export class Moment {
     return false;
   }
 
-  locale(): string;
-  locale(locale: string | string[] | false): this;
   locale(locale?: string | string[] | false): string | this {
-    if (!localeCallback) {
-      throw new Error("mmntjs locale() is not initialized");
-    }
-    return localeCallback(this, locale, () =>
-      getCurrentLocaleCallback ? getCurrentLocaleCallback() : getLiteCurrentLocale(),
-    ) as string | this;
+    this._ensureFields();
+    return localeMethod(_cast<LocaleAwareMoment>(this), locale, getCurrentLocale) as string | this;
   }
 
   creationData(): Record<string, unknown> {
-    if (!creationDataCallback) {
-      throw new Error("mmntjs creationData() is not initialized");
-    }
-    return creationDataCallback(this);
+    return creationDataMoment(this);
   }
 
   parsingFlags(): Record<string, unknown> {
-    if (!parsingFlagsCallback) {
-      throw new Error("mmntjs parsingFlags() is not initialized");
-    }
-    return parsingFlagsCallback(this);
+    return parsingFlagsMoment(this);
   }
 
   isDSTShifted(): boolean {
@@ -2920,24 +2707,15 @@ export class Moment {
   }
 
   hasAlignedHourOffset(other?: MomentInput): boolean {
-    if (!hasAlignedHourOffsetCallback) {
-      throw new Error("mmntjs hasAlignedHourOffset() is not initialized");
-    }
-    return hasAlignedHourOffsetCallback(this, other);
+    return hasAlignedHourOffsetMoment(_cast<UtcMoment>(this), other as unknown as Moment);
   }
 
   invalidAt(): number {
-    if (!invalidAtCallback) {
-      throw new Error("mmntjs invalidAt() is not initialized");
-    }
-    return invalidAtCallback(this);
+    return invalidAtMoment(this);
   }
 
   toObject(): Record<string, number> {
-    if (!toObjectCallback) {
-      throw new Error("mmntjs toObject() is not initialized");
-    }
-    return toObjectCallback(this);
+    return toObjectMoment(this);
   }
 
   toIsoString(): string {
@@ -2956,8 +2734,7 @@ export function createSimpleMoment(config: {
 }): Moment {
   const m = Object.create(Moment.prototype) as Moment;
   m._isAMomentObject = true;
-  m._l =
-    config._l ?? (getCurrentLocaleCallback ? getCurrentLocaleCallback() : getLiteCurrentLocale());
+  m._l = config._l ?? getCurrentLocale();
   m._isUTC = config._isUTC ?? false;
   m._offset = config._offset ?? 0;
   m._t = config._t;
@@ -3114,15 +2891,11 @@ export function momentFromAnything(input: unknown, isUTC?: boolean): Moment {
     return m;
   }
   if (typeof input === "string") {
-    const currentLocale = getCurrentLocaleCallback
-      ? getCurrentLocaleCallback()
-      : getLiteCurrentLocale();
+    const currentLocale = getCurrentLocale();
     const parsed = parseString(
       input,
       undefined,
-      (getLocaleCallback
-        ? getLocaleCallback(currentLocale)
-        : getLiteLocale(currentLocale)) as unknown as ParseLocale,
+      getLocale(currentLocale) as unknown as ParseLocale,
     );
     if (parsed && hasAnyValue(parsed)) {
       const m = new Moment({

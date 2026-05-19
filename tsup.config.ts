@@ -29,7 +29,7 @@ export default defineConfig([
     ...cjsFooter(),
   },
   {
-    entry: ['src/locale/*.ts', 'src/plugin/*.ts', 'src/bin/cli.ts'],
+    entry: ['src/lite-fns.ts', 'src/locale/*.ts', 'src/plugin/*.ts', 'src/bin/cli.ts'],
     format: ['cjs', 'esm'],
     dts: true,
     splitting: false,

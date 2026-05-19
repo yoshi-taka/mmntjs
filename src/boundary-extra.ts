@@ -10,7 +10,7 @@ import type { UnitCode } from "./types";
 import type { Locale } from "./locale-runtime";
 import type { Moment } from "./moment-class";
 
-type BoundaryAwareMoment = Moment & {
+export type BoundaryAwareMoment = Moment & {
   _isUTC: boolean;
   _t: number;
   _ensureFields: () => void;

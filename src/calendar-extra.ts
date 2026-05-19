@@ -1,7 +1,7 @@
 import type { Moment } from "./moment-class";
 import { isLeapYear } from "./units";
 
-type CalendarAwareMoment = Moment & {
+export type CalendarAwareMoment = Moment & {
   _isUTC: boolean;
   _t: number;
   _ensureFields: () => void;

@@ -463,6 +463,7 @@ export class Locale {
     if (typeof val === "function") {
       return val(m, now);
     }
+    // oxlint-disable-next-line typescript/no-base-to-string
     return String(val ?? "");
   }
 
@@ -475,12 +476,14 @@ export class Locale {
       if (typeof f === "function") {
         return f(relTime);
       }
+      // oxlint-disable-next-line typescript/no-base-to-string
       return String(f).replace("%s", relTime);
     }
     const p = rt?.past ?? "%s ago";
     if (typeof p === "function") {
       return p(relTime);
     }
+    // oxlint-disable-next-line typescript/no-base-to-string
     return String(p).replace("%s", relTime);
   }
 

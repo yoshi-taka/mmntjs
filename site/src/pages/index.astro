@@ -39,26 +39,36 @@ function statusClass(status: string): string {
         rewrite today, but still want a smaller, better-tested path forward.
       </p>
       <div class="actions">
-        <a class="button primary" href={withBase("/compatibility/")}>See Compatibility</a>
+        <a class="button primary" href={withBase("/migration/")}>Migration Guide</a>
+        <a class="button" href={withBase("/compatibility/")}>Compatibility</a>
         <a class="button" href={githubUrl} target="_blank" rel="noreferrer">View GitHub</a>
-        <a class="button" href={withBase("/migration/")}>Read Migration Guide</a>
       </div>
     </div>
 
     <div class="hero-code-card" aria-label="Installation and usage examples">
       <div class="code-step">
-        <p class="eyebrow">Install</p>
-        <CodeBlock code="npm install moment@npm:mmntjs" lang="sh" />
+        <p class="eyebrow">Recommended — lite/fns (~1KB, tree-shakeable)</p>
+        <CodeBlock code={`import { format, startOf } from "mmntjs/lite/fns";
+
+format(new Date(), "YYYY-MM-DD");`} lang="js" />
       </div>
       <div class="code-step">
-        <p class="eyebrow">Drop-in import</p>
-        <CodeBlock code={`import moment from "moment";
+        <p class="eyebrow">Lite — method chaining (42KB)</p>
+        <CodeBlock code={`import moment from "mmntjs/lite";
 
-moment("2024-01-01").add(1, "day");`} lang="js" />
+moment().add(1, "day").format("YYYY-MM-DD");`} lang="js" />
+      </div>
+      <div class="code-step">
+        <p class="eyebrow">Full — moment.js compat (141KB)</p>
+        <CodeBlock code={`import moment from "mmntjs";
+
+moment.utc("2024-01-01").format("YYYY-MM-DD");`} lang="js" />
       </div>
       <div class="code-step">
         <p class="eyebrow">Migration tool</p>
-        <CodeBlock code="mmntjs migrate --apply path/to/module" lang="sh" />
+        <CodeBlock code={`mmntjs migrate --check   # analyze usage
+mmntjs migrate --apply   # auto-choose best target
+mmntjs migrate --apply --fns  # force lite/fns`} lang="sh" />
       </div>
     </div>
   </section>
@@ -80,21 +90,20 @@ moment("2024-01-01").add(1, "day");`} lang="js" />
         Evaluate mmntjs in one module, run the tests you already trust, and expand only after
         checking compatibility-sensitive behavior.
       </p>
-      <CodeBlock code={`npm install moment@npm:mmntjs
-
-# or migrate one module first
+      <CodeBlock code={`# recommended: standalone functions (~1KB)
 npm install mmntjs
-mmntjs migrate --apply path/to/module`} lang="sh" />
-      <CodeBlock code={`import moment from "moment";
+import { format, add } from "mmntjs/lite/fns";
 
-moment("2024-01-01").utc().format("YYYY-MM-DD");`} lang="js" />
-      <p>
-        If your codebase is large, the safest first move is usually one owned module with clear
-        tests, not a global replacement across every service at once.
-      </p>
+# or method chaining (42KB)
+import moment from "mmntjs/lite";
+moment().add(1, "day").format("YYYY-MM-DD");
+
+# or full compat (141KB) for migration
+import moment from "mmntjs";
+moment.utc("2024-01-01").format();`} lang="js" />
       <div class="actions">
-        <a class="button" href={withBase("/docs/getting-started/")}>Getting Started</a>
         <a class="button" href={withBase("/docs/installation/")}>Installation Options</a>
+        <a class="button" href={withBase("/docs/lite-usage/")}>Lite &amp; fns Guide</a>
       </div>
     </article>
   </section>
