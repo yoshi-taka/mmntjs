@@ -24,7 +24,7 @@
     }
   },
   "sideEffects": false,
-  "files": ["dist"],
+  "files": ["dist", "!dist/**/*.map"],
   "scripts": {
     "prepublishOnly": "bun run build && TZ=UTC bun test ./test/runtime-smoke.test.ts",
     "build": "bun ../../scripts/generate-timezone-data.ts && tsup && bun ../../scripts/copy-dts.ts",

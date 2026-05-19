@@ -49,7 +49,7 @@
     }
   },
   "bin": {
-    "mmntjs": "./dist/bin/cli.js"
+    "mmntjs": "./dist/bin/cli.cjs"
   },
   "sideEffects": false,
   "files": [
