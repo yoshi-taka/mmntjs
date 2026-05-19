@@ -5,6 +5,7 @@
 - `mmntjs` and `mmntjs-timezone` are published by **one unified workflow**.
 - Default release mode is **both packages at once**.
 - Root-only and timezone-only releases are also supported.
+- Authentication: **OIDC‑based trusted publisher on npm** (no token stored). Set up once on npmjs.com per package.
 
 ## Workflow
 
