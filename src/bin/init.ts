@@ -17,6 +17,11 @@ export function runInit(dir = ".") {
   pkg.dependencies ??= {};
   pkg.dependencies.moment = "npm:mmntjs@^1.0.0";
 
+  if (pkg.dependencies["moment-timezone"]) {
+    console.log("Adding npm alias: moment-timezone → mmntjs-timezone");
+    pkg.dependencies["moment-timezone"] = "npm:mmntjs-timezone@^0.0.3";
+  }
+
   if (pkg.devDependencies?.["@types/moment"]) {
     console.log("Removing @types/moment");
     delete pkg.devDependencies["@types/moment"];

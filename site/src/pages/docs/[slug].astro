@@ -232,6 +232,19 @@ const docSections: Record<string, DocSection[]> = {
         "Document any dependence on external timezone data explicitly.",
       ],
     },
+    {
+      title: "Timezone Package (mmntjs-timezone)",
+      body: [
+        "`mmntjs/timezone` provides IANA timezone data and APIs as a separate package. It is compatible with moment-timezone: `moment.tz()`, `moment.tz.guess()`, `zone()`/`zoneName()`, and `.tz()` instance methods all work once the package is loaded.",
+        "Core mmntjs covers only UTC and fixed-offset behavior; install the timezone package when your application depends on named zones like `America/New_York` or `Asia/Tokyo`.",
+        "The raw timezone data is packed from about 711 KB to about 293 KB using base-60 encoding, delta frequency dictionaries, and permutation-group index codecs. The distributed bundle is about 311 KB raw and 37.5 KB gzip.",
+      ],
+      bullets: [
+        "Install: `npm install mmntjs-timezone` (about 37.5 KB gzip, 311 KB raw).",
+        "Import `import \"mmntjs/timezone\"` to attach timezone APIs to the `moment` factory.",
+        "The timezone data is pre-packed; first access triggers a one-time lazy unpack.",
+      ],
+    },
   ],
   "invalid-dates": [
     {
@@ -553,6 +566,32 @@ moment("2024-01-01").add(1, "day").format("YYYY-MM-DD");`,
   mmntjs.utc("2024-06-15T12:30:00Z").format();
 </script>`,
       note: "This checks the no-bundler path separately from your ESM build pipeline.",
+    },
+  ],
+  "timezone-parsezone": [
+    {
+      title: "Timezone package install",
+      language: "sh",
+      code: `npm install mmntjs-timezone`,
+      note: "About 37.5 KB gzip — much smaller than moment-timezone. Installs alongside mmntjs core.",
+    },
+    {
+      title: "Timezone package import",
+      language: "js",
+      code: `import moment from "mmntjs";
+import "mmntjs/timezone";
+
+moment.tz("2024-01-01", "America/New_York").format();`,
+      note: "Compatible with moment-timezone: `tz()`, `zone()`, `tz.guess()`, and instance `.tz()` all work. Raw data packed from 711 KB to 293 KB; dist is 37.5 KB gzip.",
+    },
+    {
+      title: "Core UTC and fixed-offset (no timezone package needed)",
+      language: "js",
+      code: `import moment from "mmntjs";
+
+moment.utc("2024-01-01T00:00:00Z").format();
+moment.parseZone("2024-01-01T09:00:00+09:00").utcOffset();`,
+      note: "For UTC and fixed-offset behavior, the timezone package is not required. Install it only when you need named IANA zone data.",
     },
   ],
   "api-reference": [

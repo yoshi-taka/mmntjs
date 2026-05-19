@@ -7,6 +7,10 @@ const IMPORT_PATTERNS = [
   { from: /from\s+['"]moment\/locale\//g, to: "from 'mmntjs/locale/" },
   { from: /require\(['"]moment\/locale\//g, to: "require('mmntjs/locale/" },
   { from: /import\s+(\w+)\s+from\s+['"]moment['"]/g, to: "import $1 from 'mmntjs'" },
+  { from: /from\s+['"]moment-timezone['"]/g, to: "from 'mmntjs'" },
+  { from: /require\(['"]moment-timezone['"]\)/g, to: "require('mmntjs')" },
+  { from: /import\s+['"]moment-timezone['"]/g, to: "import 'mmntjs/timezone'" },
+  { from: /import\s+(\w+)\s+from\s+['"]moment-timezone['"]/g, to: "import $1 from 'mmntjs'" },
 ];
 
 const LOCALE_IMPORT_RE =
@@ -128,6 +132,7 @@ type ApiUsage = {
   fullOnly: Record<string, Record<string, number>>; // file → { api → count }
   fnsOk: Record<string, Record<string, number>>;
   liteOk: Record<string, Record<string, number>>;
+  tzFiles: string[];
 };
 
 function detectApis(
@@ -212,6 +217,14 @@ export function runCheck(dir = ".", showFns = false) {
     }
     console.log("  Side-effect locale imports will be transformed to mmntjs/locale-auto/*.\n");
   }
+
+  if (results.tzFiles.length > 0) {
+    console.log(`\n⚠  ${results.tzFiles.length} file(s) import moment-timezone:`);
+    for (const file of results.tzFiles) {
+      console.log(`  ${file}`);
+    }
+    console.log("  moment-timezone imports will be rewritten to mmntjs + mmntjs/timezone.\n");
+  }
   const dynKeys = Object.keys(results.dynamicLocaleFiles);
   if (dynKeys.length > 0) {
     console.log(`\n⚠  ${dynKeys.length} file(s) use moment.locale() with string literals:`);
@@ -228,6 +241,9 @@ export function runCheck(dir = ".", showFns = false) {
   console.log(`    → fns-compatible files: 'mmntjs/lite/fns' (1KB)`);
   console.log(`    → lite-compatible files: 'mmntjs/lite' (42KB)`);
   console.log(`    → full-only files:       'mmntjs' (141KB)`);
+  if (results.tzFiles.length > 0) {
+    console.log(`    → timezone files:        plus 'mmntjs/timezone' side-effect import`);
+  }
 }
 
 const IMPORT_TARGETS: Record<string, string> = {
@@ -253,12 +269,30 @@ export function runApply(dir = ".", target = "auto", dry = false) {
       { from: /from\s+['"]moment\/locale\//g, to: "from 'mmntjs/locale/" },
       { from: /require\(['"]moment\/locale\//g, to: "require('mmntjs/locale/" },
       { from: /import\s+(\w+)\s+from\s+['"]moment['"]/g, to: `import $1 from '${pkg}'` },
+      { from: /import\s+['"]moment-timezone['"]/g, to: "import 'mmntjs/timezone'" },
+      { from: /from\s+['"]moment-timezone['"]/g, to: `from '${pkg}'` },
+      { from: /require\(['"]moment-timezone['"]\)/g, to: `require('${pkg}')` },
+      { from: /import\s+(\w+)\s+from\s+['"]moment-timezone['"]/g, to: `import $1 from '${pkg}'` },
     ];
     let content = fs.readFileSync(file, "utf-8");
     const original = content;
+    const isTimezoneFile = results.tzFiles.includes(file);
     // 1. Apply simple path replacements (non-locale imports)
     for (const pattern of IMPORT_PATTERNS_LITE) {
       content = content.replace(pattern.from, pattern.to);
+    }
+    // 2. Insert timezone side-effect import after the main moment import
+    if (isTimezoneFile && !/['"]mmntjs\/timezone['"]/.test(content)) {
+      const lines = content.split("\n");
+      const isEsm = /^import\s/m.test(content);
+      const tzImport = isEsm ? `import 'mmntjs/timezone';` : `require('mmntjs/timezone');`;
+      const insertAt = lines.findIndex(
+        (l) => /import\s+moment\s+from\s+['"]mmntjs/.test(l) || /const\s+moment\s*=/.test(l),
+      );
+      if (insertAt >= 0) {
+        lines.splice(insertAt + 1, 0, tzImport);
+        content = lines.join("\n");
+      }
     }
     // 2. Transform locale imports into locale-auto or explicit defineLocale
     const lines = content.split("\n");
@@ -315,12 +349,16 @@ function scanFiles(dir: string): ApiUsage {
     fullOnly: {},
     fnsOk: {},
     liteOk: {},
+    tzFiles: [],
   };
 
   walkSourceFiles(dir, (p) => {
     const content = fs.readFileSync(p, "utf-8");
     if (LOCALE_IMPORT_RE.test(content)) {
       results.localeFiles.push(p);
+    }
+    if (content.includes("moment-timezone")) {
+      results.tzFiles.push(p);
     }
     // Detect dynamic locale calls
     const dynamicLocales = new Set<string>();
