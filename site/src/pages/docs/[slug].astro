@@ -631,19 +631,19 @@ const sidebarGroups = getDocsSidebarGroups();
                 <div class="meta-list">
                   <div class="meta-row">
                     <div class="label">moment.js</div>
-                    <div>{item.momentBehavior}</div>
+                    <div set:html={renderInlineCodeHTML(item.momentBehavior)} />
                   </div>
                   <div class="meta-row">
                     <div class="label">mmntjs</div>
-                    <div>{item.mmntjsBehavior}</div>
+                    <div set:html={renderInlineCodeHTML(item.mmntjsBehavior)} />
                   </div>
                   <div class="meta-row">
                     <div class="label">Impact</div>
-                    <div>{item.impact}</div>
+                    <div set:html={renderInlineCodeHTML(item.impact)} />
                   </div>
                   <div class="meta-row">
                     <div class="label">Workaround</div>
-                    <div>{item.workaround}</div>
+                    <div set:html={renderInlineCodeHTML(item.workaround)} />
                   </div>
                 </div>
               </article>

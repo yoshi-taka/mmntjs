@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import CodeBlock from "../../components/CodeBlock.astro";
+import { renderInlineCodeHTML } from "../../lib/inline-code";
 import { githubUrl, performancePrinciples } from "../../content/site";
 import { withBase } from "../../lib/urls";
 
@@ -17,8 +18,8 @@ const methodology = [
 ];
 
 const headlineResults = [
-  ["Against moment.js", "mmntjs wins all 31 benchmarked operations in the current benchmark set."],
-  ["Against date-fns", "mmntjs wins 24 of 25 benchmarked operations; the main loss is raw constructor-style creation."],
+  ["Against moment.js", "`mmntjs` wins all 31 benchmarked operations in the current benchmark set."],
+  ["Against date-fns", "`mmntjs` wins 24 of 25 benchmarked operations; the main loss is raw constructor-style creation."],
   ["Against native APIs", "Some hot paths beat native Intl and Temporal in the current focused benchmarks, especially simple formatting and mutation-heavy operations."],
   ["Cross-runtime check", "Relative gains were cross-validated on Node.js 26 so the story is not Bun-only."],
   ["Size and speed are separate concerns", "Package size is measured across raw, compressed, bundled, and runtime layers. Runtime benchmarks address execution speed, not transfer or parse cost. The two are tracked on separate pages with separate methodology."],
@@ -68,7 +69,7 @@ const perfDocs = [
 
 const workloads = [
   ["Parse", "High-impact for migration because parsing differences break behavior silently. Performance wins matter only after semantic equivalence is checked."],
-  ["Format", "Formatting is both user-visible and frequent. The common token fast paths are where mmntjs currently shows some of its strongest results."],
+  ["Format", "Formatting is both user-visible and frequent. The common token fast paths are where `mmntjs` currently shows some of its strongest results."],
   ["Add and subtract", "Mutation-heavy date arithmetic is one of the areas where a moment-compatible mutable design can stay efficient."],
   ["startOf and endOf", "Reporting and aggregation code often leans on these operations. They should be measured because they appear in hot loops and ETL-style transforms."],
   ["diff", "This matters for comparisons, reporting windows, and business logic. Benchmarks should note when compared APIs do not expose identical semantics."],
@@ -87,8 +88,8 @@ const interpretationNotes = [
 ];
 
 const benchmarkFiles = [
-  ["test/bench.ts", "moment.js vs mmntjs main table"],
-  ["test/bench-datefns2.ts", "mmntjs vs date-fns comparisons"],
+  ["test/bench.ts", "moment.js vs `mmntjs` main table"],
+  ["test/bench-datefns2.ts", "`mmntjs` vs date-fns comparisons"],
   ["test/bench-regression.ts", "Regression guard thresholds"],
   ["test/bench-mem.ts", "Memory footprint checks"],
   ["test/bench-temporal.ts", "Native Temporal comparison"],
@@ -102,8 +103,8 @@ const commands = [
 ];
 
 const temporalNotes = [
-  "In the current Node.js 26 microbenchmarks, mmntjs wins 7 of 10 listed operations against native Temporal.",
-  "Temporal is faster in some parsing-oriented cases, while mmntjs tends to win in mutation-heavy and formatting-heavy paths.",
+  "In the current Node.js 26 microbenchmarks, `mmntjs` wins 7 of 10 listed operations against native Temporal.",
+  "Temporal is faster in some parsing-oriented cases, while `mmntjs` tends to win in mutation-heavy and formatting-heavy paths.",
   "This should be read as a trade-off note, not as an argument against Temporal's design goals.",
 ];
 ---
@@ -164,7 +165,7 @@ const temporalNotes = [
       {headlineResults.map(([title, text]) => (
         <article class="card">
           <h3>{title}</h3>
-          <p>{text}</p>
+          <p set:html={renderInlineCodeHTML(text)} />
         </article>
       ))}
     </div>
@@ -230,7 +231,7 @@ const temporalNotes = [
       {workloads.map(([item, text]) => (
         <article class="card">
           <h3>{item}</h3>
-          <p>{text}</p>
+          <p set:html={renderInlineCodeHTML(text)} />
         </article>
       ))}
     </div>
@@ -240,7 +241,7 @@ const temporalNotes = [
     <article class="panel section">
       <p class="eyebrow">How To Interpret Results</p>
       <ul>
-        {interpretationNotes.map((item) => <li>{item}</li>)}
+        {interpretationNotes.map((item) => <li set:html={renderInlineCodeHTML(item)} />)}
       </ul>
       <h3>Scenario-based reading</h3>
       <p>The metric that matters depends on your deployment environment:</p>
@@ -271,7 +272,7 @@ const temporalNotes = [
         are intended to be rerun locally with documented commands.
       </p>
       <ul>
-        {benchmarkFiles.map(([file, purpose]) => <li><code>{file}</code>: {purpose}</li>)}
+        {benchmarkFiles.map(([file, purpose]) => <li><code>{file}</code>: <span set:html={renderInlineCodeHTML(purpose)} /></li>)}
       </ul>
       <ul>
         {commands.map((command) => <li><code>{command}</code></li>)}
@@ -308,7 +309,7 @@ const temporalNotes = [
     <article class="panel section">
       <p class="eyebrow">Temporal Comparison</p>
       <ul>
-        {temporalNotes.map((item) => <li>{item}</li>)}
+        {temporalNotes.map((item) => <li set:html={renderInlineCodeHTML(item)} />)}
       </ul>
       <p>
         That comparison is useful mainly as context. Temporal optimizes for a different design

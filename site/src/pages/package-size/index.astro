@@ -1,7 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import { githubUrl } from "../../content/site";
 import { renderInlineCodeHTML } from "../../lib/inline-code";
+import { githubUrl } from "../../content/site";
 
 const keyTakeaways = [
   ["Main point", "The default `mmntjs` entry is not trying to win the smallest-core contest."],
@@ -21,7 +21,7 @@ const entryRows = [
 
 const whyItMatters = [
   "Moment's common browser story often drifts toward larger all-locales or timezone-heavy builds.",
-  "mmntjs keeps the compatibility-heavy core separate from locale data and timezone data. Locale modules stay pure data by default, while `locale-auto/*` exists for one-line side-effect migration when needed.",
+  "`mmntjs` keeps the compatibility-heavy core separate from locale data and timezone data. Locale modules stay pure data by default, while `locale-auto/*` exists for one-line side-effect migration when needed.",
   "That means the practical size question is usually: what does this app actually import, not what is the smallest theoretical core in isolation?",
 ];
 
@@ -61,7 +61,7 @@ const sizeTechniques = [
     <h1>Package size is not one number.</h1>
     <p>
       Measure raw, minified, compressed, bundled, and runtime costs separately.
-      `mmntjs` default is compatibility-heavy, so the raw core is not the main selling point. The
+      <code>mmntjs</code> default is compatibility-heavy, so the raw core is not the main selling point. The
       more important property is that locale data and timezone data are kept separate, which gives
       tree-shaking and entry-point choice real leverage.
     </p>
@@ -110,7 +110,7 @@ const sizeTechniques = [
     <article class="panel section">
       <p class="eyebrow">Why This Helps</p>
       <ul>
-        {whyItMatters.map((item) => <li>{item}</li>)}
+        {whyItMatters.map((item) => <li set:html={renderInlineCodeHTML(item)} />)}
       </ul>
     </article>
     <article class="panel section">

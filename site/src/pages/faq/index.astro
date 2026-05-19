@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import { renderInlineCodeHTML } from "../../lib/inline-code";
 import { faqAnswers, faqGroups } from "../../content/site";
 import { withBase } from "../../lib/urls";
 
@@ -37,7 +38,7 @@ const reviewAdvice = [
         <article class="card">
           <h3>{group.title}</h3>
           <ul>
-            {group.items.map((item) => <li>{item}</li>)}
+            {group.items.map((item) => <li set:html={renderInlineCodeHTML(item)} />)}
           </ul>
         </article>
       ))}
@@ -49,8 +50,8 @@ const reviewAdvice = [
     <div class="cards">
       {faqAnswers.map((item) => (
         <article class="card">
-          <h3>{item.question}</h3>
-          <p>{item.answer}</p>
+          <h3 set:html={renderInlineCodeHTML(item.question)} />
+          <p set:html={renderInlineCodeHTML(item.answer)} />
         </article>
       ))}
     </div>

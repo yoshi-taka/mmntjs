@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import CodeBlock from "../../components/CodeBlock.astro";
+import { renderInlineCodeHTML } from "../../lib/inline-code";
 import { migrationPhases } from "../../content/site";
 import { withBase } from "../../lib/urls";
 
@@ -163,7 +164,7 @@ mmntjs migrate --apply --fns   # switch to lite/fns`} lang="sh" />
       {migrationPhases.map(([phase, text]) => (
         <article class="card">
           <h3>{phase}</h3>
-          <p>{text}</p>
+          <p set:html={renderInlineCodeHTML(text)} />
         </article>
       ))}
     </div>
@@ -245,7 +246,7 @@ mmntjs migrate --apply --fns   # switch to lite/fns`} lang="sh" />
     <div class="meta-list">
       {temporalMigrateSteps.map(([step, desc]) => (
         <div class="meta-row">
-          <div class="label">{step}</div>
+          <div class="label"><code>{step}</code></div>
           <div>{desc}</div>
         </div>
       ))}

@@ -203,7 +203,7 @@ moment
       {migrationPhases.map(([phase, text]) => (
         <article class="card">
           <h3>{phase}</h3>
-          <p>{text}</p>
+          <p set:html={renderInlineCodeHTML(text)} />
         </article>
       ))}
     </div>

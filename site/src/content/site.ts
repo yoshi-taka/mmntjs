@@ -261,11 +261,11 @@ export const knownDifferences: KnownDifference[] = [
     momentBehavior:
       "Importing 'moment/locale/ja' automatically registers the locale via side effects during module evaluation.",
     mmntjsBehavior:
-      "mmntjs locale files export pure locale data with no side effects. Unused locale imports are safe for bundlers to tree-shake. For migration convenience, mmntjs also provides side-effect entries like 'mmntjs/locale-auto/ja'.",
+      "`mmntjs` locale files export pure locale data with no side effects. Unused locale imports are safe for bundlers to tree-shake. For migration convenience, `mmntjs` also provides side-effect entries like `mmntjs/locale-auto/ja`.",
     impact:
       "Teams migrating from moment.js can choose between pure data imports and one-line side-effect locale registration.",
     workaround:
-      "Use either import 'mmntjs/locale-auto/ja' for drop-in migration or import { jaLocale } from 'mmntjs/locale/ja'; moment.locale('ja', jaLocale) for explicit registration and the smallest bundle.",
+      "Use either import `mmntjs/locale-auto/ja` for drop-in migration or `import { jaLocale } from 'mmntjs/locale/ja'; moment.locale('ja', jaLocale)` for explicit registration and the smallest bundle.",
   },
   {
     category: "CJS require interop",
