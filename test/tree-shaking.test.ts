@@ -55,8 +55,13 @@ describe("tree-shaking", () => {
   const jaLocaleSourcePath = join(projectRoot, "src/locale/ja.ts").replaceAll("\\", "\\\\");
   const deLocaleSourcePath = join(projectRoot, "src/locale/de.ts").replaceAll("\\", "\\\\");
 
-  test("sideEffects is declared false in package.json", () => {
-    expect(pkg.sideEffects).toBe(false);
+  test("sideEffects only lists side-effect subpaths in package.json", () => {
+    expect(pkg.sideEffects).toEqual([
+      "./dist/locale-auto/*.js",
+      "./dist/locale-auto/*.cjs",
+      "./dist/plugin/*.js",
+      "./dist/plugin/*.cjs",
+    ]);
   });
 
   test("locale entry point is declared in exports", () => {
@@ -66,6 +71,7 @@ describe("tree-shaking", () => {
   test("entry points are declared in exports", () => {
     expect(pkg.exports["./lite"]).toBeDefined();
     expect(pkg.exports["./full"]).toBeDefined();
+    expect(pkg.exports["./locale-auto/*"]).toBeDefined();
     expect(pkg.exports["./plugin/format-parse"]).toBeDefined();
     expect(pkg.exports["./plugin/utc"]).toBeDefined();
   });

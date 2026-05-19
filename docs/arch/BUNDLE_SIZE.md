@@ -83,9 +83,9 @@ These are enforced by `test/bundle-smoke.test.ts` and `test/tree-shaking.test.ts
 
 1. **Timezone isolation**: No `Intl.DateTimeFormat`, `installTimezone`, `tz.add`, or `mmntjs-timezone` strings appear in any `lite`, `default`, or `full` bundle.
 2. **Temporal isolation**: No `toTemporal`/`fromTemporal`/`@js-temporal/polyfill` in `lite` or `default`. Only `temporal` entry exports them.
-3. **Locale isolation**: Importing `mmntjs/locale/ja` does not pull `de`, `fr`, or any other locale. Each locale is a standalone module (<2 KB gzip).
+3. **Locale isolation**: Importing `mmntjs/locale/ja` does not pull `de`, `fr`, or any other locale. Each locale is a standalone pure-data module (<2 KB gzip). For moment-style side effects, use `mmntjs/locale-auto/ja`.
 4. **CLI exclusion**: The `mmntjs` CLI binary (`dist/bin/cli.js`) is never bundled into library entry points.
-5. **Tree-shaking**: All entry points are `sideEffects:false`. Consumer bundlers can tree-shake unused imports.
+5. **Tree-shaking**: Only `plugin/*` and `locale-auto/*` are marked as side-effectful. Core entries and `locale/*` remain tree-shakeable.
 
 ## `splitting:false` Evaluation
 
@@ -96,7 +96,7 @@ tsup currently builds with `splitting:false` — each entry point bundles all it
 | Simplicity | ✅ Self-contained, no missing chunk errors |
 | CJS/ESM | ✅ Works for both |
 | Code duplication | ⚠️ Some across entries (e.g., shared utils duplicated in lite + plugin), but consumers typically use one entry at a time |
-| Consumer tree-shaking | ✅ `sideEffects:false` + source maps enable good tree-shaking from source |
+| Consumer tree-shaking | ✅ explicit side-effect subpaths + source maps enable good tree-shaking from source |
 
 **Recommendation**: Keep `splitting:false` for library distribution. The duplication is a known trade-off that keeps each entry independently usable. The gap between dist file size (tsup bundled) and consumer bundle size (tree-shaken by bundler) is wide — lite goes from 16 KB (dist) → 12 KB (consumer), default from 54 KB → 39 KB.
 

@@ -39,8 +39,10 @@ import "mmntjs/plugin/duration";
 import "mmntjs/plugin/display-extra";
 import "mmntjs/plugin/utc";
 import "mmntjs/plugin/struct-input";
-import "mmntjs/locale/ja";
+import "mmntjs/locale-auto/ja";
 ```
+
+`mmntjs/locale/ja` は pure data export のまま残し、`moment.locale("ja", jaLocale)` の明示登録にも使える。
 
 ## constructor 入力
 

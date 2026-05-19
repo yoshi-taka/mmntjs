@@ -273,7 +273,7 @@ describe("runApply", () => {
     }
   });
 
-  test("transforms locale imports into data import + defineLocale", () => {
+  test("transforms side-effect locale imports into locale-auto", () => {
     const d = tmpDir();
     try {
       addFiles(d, {
@@ -283,10 +283,8 @@ describe("runApply", () => {
       capture(() => runApply(d));
       const a = readFileSync(join(d, "a.ts"), "utf-8");
       const b = readFileSync(join(d, "b.ts"), "utf-8");
-      expect(a).toContain("import { jaLocale } from 'mmntjs/locale/ja'");
-      expect(a).toContain("moment.defineLocale('ja', jaLocale)");
-      expect(b).toContain("const { deLocale } = require('mmntjs/locale/de')");
-      expect(b).toContain("moment.defineLocale('de', deLocale)");
+      expect(a.trim()).toBe("import 'mmntjs/locale-auto/ja';");
+      expect(b.trim()).toBe("require('mmntjs/locale-auto/de');");
     } finally {
       rmSync(d, { recursive: true, force: true });
     }

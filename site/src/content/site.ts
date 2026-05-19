@@ -229,7 +229,7 @@ export const compatibilityEvidence = [
 export const knownDifferenceHighlights = [
   "Known parsing difference example: `\"93280531 09-3911\"` renders a different local date/time from moment.js.",
   "Core mmntjs covers UTC and fixed-offset behavior; full IANA timezone data is a separate package.",
-  "Locale files export pure data with no auto-register side effects (better tree-shaking, explicit registration required).",
+  "Locale files stay pure data by default, with optional `locale-auto/*` side-effect entries for one-line migration.",
 ];
 
 export const knownDifferences: KnownDifference[] = [
@@ -259,11 +259,11 @@ export const knownDifferences: KnownDifference[] = [
     momentBehavior:
       "Importing 'moment/locale/ja' automatically registers the locale via side effects during module evaluation.",
     mmntjsBehavior:
-      "mmntjs locale files export pure locale data with no side effects. Unused locale imports are safe for bundlers to tree-shake, but auto-registration does not happen. Users must call moment.locale('ja', jaLocale) explicitly.",
+      "mmntjs locale files export pure locale data with no side effects. Unused locale imports are safe for bundlers to tree-shake. For migration convenience, mmntjs also provides side-effect entries like 'mmntjs/locale-auto/ja'.",
     impact:
-      "Teams migrating from moment.js may find that locale imports compile but locale output does not change until explicit registration is added.",
+      "Teams migrating from moment.js can choose between pure data imports and one-line side-effect locale registration.",
     workaround:
-      "Import the locale data and register it explicitly: import { jaLocale } from 'mmntjs/locale/ja'; moment.locale('ja', jaLocale). This is intentional: pure exports enable better tree-shaking.",
+      "Use either import 'mmntjs/locale-auto/ja' for drop-in migration or import { jaLocale } from 'mmntjs/locale/ja'; moment.locale('ja', jaLocale) for explicit registration and the smallest bundle.",
   },
   {
     category: "CJS require interop",
@@ -484,7 +484,7 @@ export const faqAnswers = [
   {
     question: "Is bundle size smaller?",
     answer:
-      "Tree-shaking works. mmntjs declares sideEffects:false and locales are pure data with no auto-register side effects, so bundlers remove unused code. The bundle cost is whatever your app actually imports, not a fixed number.",
+      "Tree-shaking works. mmntjs keeps `locale/*` as pure data and marks only `plugin/*` plus `locale-auto/*` as side-effectful, so bundlers can still remove unused core and locale modules.",
   },
   {
     question: "Can mmntjs coexist with dayjs, date-fns, Luxon, or Temporal?",

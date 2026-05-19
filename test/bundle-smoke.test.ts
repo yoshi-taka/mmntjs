@@ -192,9 +192,14 @@ describe("bundle smoke: CLI code exclusion", () => {
 });
 
 describe("bundle smoke: package.json contract", () => {
-  test("sideEffects is declared false", async () => {
+  test("sideEffects only lists side-effect entries", async () => {
     const pkg = await import("../package.json");
-    expect(pkg.default.sideEffects).toBe(false);
+    expect(pkg.default.sideEffects).toEqual([
+      "./dist/locale-auto/*.js",
+      "./dist/locale-auto/*.cjs",
+      "./dist/plugin/*.js",
+      "./dist/plugin/*.cjs",
+    ]);
   });
 
   test("all entry points are declared in exports", async () => {
@@ -205,6 +210,7 @@ describe("bundle smoke: package.json contract", () => {
     expect(ex["./full"]).toBeDefined();
     expect(ex["./temporal"]).toBeDefined();
     expect(ex["./locale/*"]).toBeDefined();
+    expect(ex["./locale-auto/*"]).toBeDefined();
     expect(ex["./plugin/format-parse"]).toBeDefined();
     expect(ex["./plugin/utc"]).toBeDefined();
   });
@@ -274,6 +280,20 @@ describe("bundle smoke: package.json contract", () => {
       mod.moment.defineLocale("ja", jaLocale);
       expect(mod.moment.locale("ja")).toBe("ja");
       mod.moment.locale("en");
+    });
+    test("esm import locale-auto/ja auto-registers locale", async () => {
+      const mod = await import(dist("index.js"));
+      mod.moment.locale("en");
+      await import(dist("locale-auto/ja.js"));
+      expect(mod.moment.locale()).toBe("ja");
+      mod.moment.locale("en");
+    });
+    test("cjs require locale-auto/de auto-registers locale", () => {
+      const mod = require(dist("index.cjs"));
+      mod.locale("en");
+      require(dist("locale-auto/de.cjs"));
+      expect(mod.locale()).toBe("de");
+      mod.locale("en");
     });
   });
 

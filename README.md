@@ -86,8 +86,17 @@ moment.duration(2, "hours").humanize();
 // Use lite + plugins for smaller bundles
 import moment from "mmntjs/lite";
 import "mmntjs/plugin/format-parse";
-import "mmntjs/locale/ja";
+import "mmntjs/locale-auto/ja";
 import "mmntjs-timezone";
+```
+
+If you want the smallest locale import with explicit registration instead of side effects:
+
+```js
+import moment from "mmntjs";
+import { jaLocale } from "mmntjs/locale/ja";
+
+moment.locale("ja", jaLocale);
 ```
 
 #### What each entry includes
@@ -113,9 +122,9 @@ import "mmntjs-timezone";
 
 - **Timezone is fully opt-in**: `mmntjs-timezone` is a separate package. Core bundles (`lite`, `default`, `full`) contain zero timezone resolution code — no `Intl.DateTimeFormat` references.
 - **Temporal is opt-in**: `mmntjs/temporal` is the only entry that exports `toTemporal`/`fromTemporal`. Neither `lite` nor `default` pulls `@js-temporal/polyfill`.
-- **Locales are tree-shakeable**: Each locale is a standalone module. Importing `mmntjs/locale/ja` does not pull `de`, `fr`, or any other locale.
+- **Locales are tree-shakeable**: Each locale is a standalone module. Importing `mmntjs/locale/ja` gives you pure locale data; importing `mmntjs/locale-auto/ja` auto-registers that locale for migration convenience.
 - **CLI is separate**: The `mmntjs` CLI binary uses `dist/bin/cli.js`; none of the library entry points contain CLI code.
-- **Side effects**: `"sideEffects": false` in package.json — all entry points are safe for consumer tree-shaking.
+- **Side effects**: `package.json` marks only `plugin/*` and `locale-auto/*` as side-effectful. Core entries and `locale/*` remain tree-shakeable.
 
 ### Platform Support
 

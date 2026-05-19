@@ -21,6 +21,12 @@ function transformLocaleImport(line: string): string {
     return line;
   }
   const name = m[1];
+  if (/^\s*import\s+['"]/.test(line)) {
+    return `import 'mmntjs/locale-auto/${name}';`;
+  }
+  if (/require\s*\(/.test(line)) {
+    return `require('mmntjs/locale-auto/${name}');`;
+  }
   if (/import\s/.test(line)) {
     return `import { ${name}Locale } from 'mmntjs/locale/${name}';\nmoment.defineLocale('${name}', ${name}Locale);`;
   }
@@ -31,7 +37,9 @@ function transformLocaleImport(line: string): string {
 function localePreamble(names: Set<string>, isEsm: boolean): string {
   const lines: string[] = [];
   for (const name of names) {
-    if (name === "en") continue;
+    if (name === "en") {
+      continue;
+    }
     if (isEsm) {
       lines.push(`import { ${name}Locale } from 'mmntjs/locale/${name}';`);
     } else {
@@ -44,9 +52,6 @@ function localePreamble(names: Set<string>, isEsm: boolean): string {
 
 export function runCheck(dir = ".") {
   const results = scanFiles(dir);
-  if (!results.dynamicLocaleFiles) {
-    (results as any).dynamicLocaleFiles = {};
-  }
   console.log(`\nFound ${results.total} moment import(s) in ${results.files} file(s):`);
   for (const [file, count] of Object.entries(results.fileCounts)) {
     console.log(`  ${file}: ${count} import(s)`);
@@ -56,13 +61,17 @@ export function runCheck(dir = ".") {
     for (const file of results.localeFiles) {
       console.log(`  ${file}`);
     }
-    console.log("  Will be transformed to explicit data import + defineLocale.\n");
+    console.log("  Side-effect locale imports will be transformed to mmntjs/locale-auto/*.\n");
   }
   const dynKeys = Object.keys(results.dynamicLocaleFiles);
   if (dynKeys.length > 0) {
     console.log(`\n⚠  ${dynKeys.length} file(s) use moment.locale() with string literals:`);
     for (const file of dynKeys) {
-      console.log(`  ${file}: ${[...results.dynamicLocaleFiles[file]!].join(", ")}`);
+      const dynamicLocales = results.dynamicLocaleFiles[file];
+      if (!dynamicLocales) {
+        continue;
+      }
+      console.log(`  ${file}: ${[...dynamicLocales].join(", ")}`);
     }
     console.log("  Will have import + defineLocale injected at file top.\n");
   }
@@ -71,9 +80,6 @@ export function runCheck(dir = ".") {
 
 export function runApply(dir = ".") {
   const results = scanFiles(dir);
-  if (!results.dynamicLocaleFiles) {
-    (results as any).dynamicLocaleFiles = {};
-  }
   let modified = 0;
   for (const file of results.modifiedFiles) {
     let content = fs.readFileSync(file, "utf-8");
@@ -82,7 +88,7 @@ export function runApply(dir = ".") {
     for (const pattern of IMPORT_PATTERNS) {
       content = content.replace(pattern.from, pattern.to);
     }
-    // 2. Transform locale imports into data import + defineLocale
+    // 2. Transform locale imports into locale-auto or explicit defineLocale
     const lines = content.split("\n");
     let hasLocaleTransform = false;
     for (let i = 0; i < lines.length; i++) {
@@ -101,9 +107,9 @@ export function runApply(dir = ".") {
       const preamble = localePreamble(dynamicLocales, isEsm);
       const existing = content.match(/^(import\s|const\s|require)/m);
       if (existing) {
-        content = content.replace(/^/, preamble + "\n");
+        content = content.replace(/^/, `${preamble}\n`);
       } else {
-        content = preamble + "\n" + content;
+        content = `${preamble}\n${content}`;
       }
     }
     if (content !== original) {
@@ -125,7 +131,7 @@ function scanFiles(dir: string) {
     fileCounts: {} as Record<string, number>,
     modifiedFiles: [] as string[],
     localeFiles: [] as string[],
-    dynamicLocaleFiles: {} as Record<string, Set<string>>,
+    dynamicLocaleFiles: {} as Record<string, Set<string> | undefined>,
   };
 
   walkSourceFiles(dir, (p) => {
@@ -139,7 +145,9 @@ function scanFiles(dir: string) {
     LOCALE_CALL_RE.lastIndex = 0;
     while ((m = LOCALE_CALL_RE.exec(content)) !== null) {
       const name = m[1].toLowerCase();
-      if (name !== "en") dynamicLocales.add(name);
+      if (name !== "en") {
+        dynamicLocales.add(name);
+      }
     }
     if (dynamicLocales.size > 0) {
       results.dynamicLocaleFiles[p] = dynamicLocales;

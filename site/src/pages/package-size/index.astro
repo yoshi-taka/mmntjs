@@ -13,13 +13,13 @@ const keyTakeaways = [
 const entryRows = [
   ["`mmntjs`", "148 KB", "`moment` (62.1 KB raw)", "core is smaller on the moment side", "Default compatibility-oriented core."],
   ["`mmntjs/lite`", "43 KB", "`moment` (62.1 KB raw)", "smaller base than moment and default mmntjs", "Browser-sensitive base entry with explicit add-backs."],
-  ["`dist/locale/ja.js`", "4.8 KB", "`moment + locale/ja` (64.5 KB raw bundled)", "single locale stays separate", "Single locale remains a tiny extra module instead of pushing toward all-locales builds."],
+  ["`dist/locale/ja.js`", "4.8 KB", "`moment + locale/ja` (64.5 KB raw bundled)", "single locale stays separate", "Single locale remains a tiny pure-data module instead of pushing toward all-locales builds."],
   ["`mmntjs-timezone`", "316 KB raw dist", "`moment-timezone` (773.1 KB raw bundled)", "compare as separate package", "Timezone data stays outside core and should be judged on its own."],
 ];
 
 const whyItMatters = [
   "Moment's common browser story often drifts toward larger all-locales or timezone-heavy builds.",
-  "mmntjs keeps the compatibility-heavy core separate from locale data and timezone data. As a follow-up to that design, it is also easier to tree-shake: `sideEffects: false` is declared and locale modules are pure data exports.",
+  "mmntjs keeps the compatibility-heavy core separate from locale data and timezone data. Locale modules stay pure data by default, while `locale-auto/*` exists for one-line side-effect migration when needed.",
   "That means the practical size question is usually: what does this app actually import, not what is the smallest theoretical core in isolation?",
 ];
 

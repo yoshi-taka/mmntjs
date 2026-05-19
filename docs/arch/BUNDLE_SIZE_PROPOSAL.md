@@ -232,7 +232,16 @@ import "mmntjs/plugin/format-parse";
 
 ```ts
 import moment from "mmntjs/lite";
-import "mmntjs/locale/ja";
+import "mmntjs/locale-auto/ja";
+```
+
+純データで持ちたい場合は次でもよい:
+
+```ts
+import moment from "mmntjs/lite";
+import { jaLocale } from "mmntjs/locale/ja";
+
+moment.locale("ja", jaLocale);
 ```
 
 ## 重要な設計変更

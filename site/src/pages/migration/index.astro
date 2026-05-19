@@ -64,6 +64,20 @@ const comparisonChecklist = [
   "A DST-adjacent example if the system operates in local time",
   "A locale-sensitive format used in customer-visible output or exported reports",
 ];
+
+const localeMigrationExamples = [
+  {
+    title: "Side-effect locale import",
+    before: `import "moment/locale/ja";`,
+    after: `import "mmntjs/locale-auto/ja";`,
+    note: "Use this when you want the old one-line import behavior to keep working during migration.",
+  },
+];
+
+const explicitLocaleRegistrationExample = `import moment from "mmntjs";
+import { jaLocale } from "mmntjs/locale/ja";
+
+moment.locale("ja", jaLocale);`;
 ---
 
 <BaseLayout
@@ -110,6 +124,33 @@ mmntjs migrate --apply`} lang="sh" />
       A good migration plan also makes room for the possibility that a few modules should stay on
       moment.js longer than others. That is not failure. It is a controlled rollout doing its job.
     </p>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Locale Import Migration</p>
+    <p>
+      Locale imports deserve an explicit check during migration because moment.js commonly relies on
+      side effects here. The <code>mmntjs</code> migration tool rewrites bare locale imports to
+      <code>mmntjs/locale-auto/*</code> so that <code>import "moment/locale/ja"</code> keeps the
+      same one-line behavior after migration.
+    </p>
+    <div class="cards">
+      {localeMigrationExamples.map((example) => (
+        <article class="card">
+          <h3>{example.title}</h3>
+          <p><strong>Before</strong></p>
+          <CodeBlock code={example.before} lang="js" />
+          <p><strong>After</strong></p>
+          <CodeBlock code={example.after} lang="js" />
+          <p>{example.note}</p>
+        </article>
+      ))}
+    </div>
+    <p>
+      If you do not want side effects, keep using <code>mmntjs/locale/*</code> as pure data and
+      register only the locales you need with <code>moment.locale(name, localeSpec)</code>.
+    </p>
+    <CodeBlock code={explicitLocaleRegistrationExample} lang="js" />
   </section>
 
   <section class="panel section">
