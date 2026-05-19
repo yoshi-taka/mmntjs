@@ -75,7 +75,7 @@ export function buildDeltaDict(lines: string[]): number[] {
       freq.set(val, (freq.get(val) ?? 0) + 1);
     }
   }
-  return [...freq.entries()].sort((a, b) => b[1] - a[1]).map(([v]) => v);
+  return [...freq.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0]).map(([v]) => v);
 }
 
 /**
