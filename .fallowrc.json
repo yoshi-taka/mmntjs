@@ -59,6 +59,7 @@
     "unused-class-members": "off",
     "unused-exports": "off",
     "unused-types": "off",
+    "unresolved-imports": "off",
     "unused-files": "error",
     "unused-dev-dependencies": "error",
     "duplicate-exports": "warn",
