@@ -234,7 +234,7 @@ describe("runCheck", () => {
       const out = capture(() => runCheck(d));
       const joined = out.join("\n");
       expect(joined).toMatch(/Found 2 moment import/);
-      expect(joined).toMatch(/auto-migrated/);
+      expect(joined).toMatch(/apply changes/);
     } finally {
       rmSync(d, { recursive: true, force: true });
     }
@@ -273,18 +273,20 @@ describe("runApply", () => {
     }
   });
 
-  test("replaces locale import paths", () => {
+  test("transforms locale imports into data import + defineLocale", () => {
     const d = tmpDir();
     try {
       addFiles(d, {
-        "a.ts": "import ja from 'moment/locale/ja';",
+        "a.ts": "import 'moment/locale/ja';",
         "b.ts": "require('moment/locale/de');",
       });
       capture(() => runApply(d));
       const a = readFileSync(join(d, "a.ts"), "utf-8");
       const b = readFileSync(join(d, "b.ts"), "utf-8");
-      expect(a).toContain("from 'mmntjs/locale/ja'");
-      expect(b).toContain("require('mmntjs/locale/de')");
+      expect(a).toContain("import { jaLocale } from 'mmntjs/locale/ja'");
+      expect(a).toContain("moment.defineLocale('ja', jaLocale)");
+      expect(b).toContain("const { deLocale } = require('mmntjs/locale/de')");
+      expect(b).toContain("moment.defineLocale('de', deLocale)");
     } finally {
       rmSync(d, { recursive: true, force: true });
     }
