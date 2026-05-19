@@ -20,7 +20,6 @@ export default defineConfig([
     dts: true,
     splitting: false,
     clean: false,
-    // Bundle temporal polyfill to preserve zero-dependency contract
     noExternal: ['@js-temporal/polyfill'],
     ...shared,
   },

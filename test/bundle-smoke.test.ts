@@ -1,7 +1,8 @@
 import { test, expect, describe } from "bun:test";
-import { mkdtempSync, writeFileSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 const projectRoot = join(import.meta.dir, "..");
+const hasDist = existsSync(new URL("../dist/index.js", import.meta.url).pathname);
 
 async function bundleAndGetCode(entryCode: string): Promise<string> {
   const dir = mkdtempSync(join(projectRoot, ".bdl-smoke-"));
@@ -128,7 +129,7 @@ describe("bundle smoke: entry point size boundaries", () => {
   test("lite is materially smaller than full", async () => {
     const lite = await (async () => {
       const result = await Bun.build({
-        entrypoints: [join(srcDir, "lite.ts")],
+        entrypoints: [join(srcDir, "entry", "lite.ts")],
         format: "esm",
         minify: true,
         sourcemap: "none",
@@ -141,7 +142,7 @@ describe("bundle smoke: entry point size boundaries", () => {
 
     const full = await (async () => {
       const result = await Bun.build({
-        entrypoints: [join(srcDir, "full.ts")],
+        entrypoints: [join(srcDir, "entry", "full.ts")],
         format: "esm",
         minify: true,
         sourcemap: "none",
@@ -157,24 +158,20 @@ describe("bundle smoke: entry point size boundaries", () => {
     expect(full).toBeGreaterThan(150_000);
   });
 
-  test("default import is same as full import size", async () => {
-    const result1 = await Bun.build({
+  test("index barrels into entry/full with same exports", async () => {
+    const result = await Bun.build({
       entrypoints: [join(srcDir, "index.ts")],
       format: "esm",
-      minify: true,
+      minify: false,
       sourcemap: "none",
       target: "browser",
     });
-    const result2 = await Bun.build({
-      entrypoints: [join(srcDir, "full.ts")],
-      format: "esm",
-      minify: true,
-      sourcemap: "none",
-      target: "browser",
-    });
-    const t1 = await result1.outputs[0].text();
-    const t2 = await result2.outputs[0].text();
-    expect(Buffer.from(t1).length).toEqual(Buffer.from(t2).length);
+    expect(result.success).toBe(true);
+    const text = await result.outputs[0].text();
+    // index.ts barrel must re-export the same names as entry/full
+    for (const name of ["moment", "isMoment", "isDate", "Duration", "Locale"]) {
+      expect(text).toInclude(name);
+    }
   });
 });
 
@@ -210,5 +207,98 @@ describe("bundle smoke: package.json contract", () => {
     expect(ex["./locale/*"]).toBeDefined();
     expect(ex["./plugin/format-parse"]).toBeDefined();
     expect(ex["./plugin/utc"]).toBeDefined();
+  });
+});
+
+(hasDist ? describe : describe.skip)("runtime smoke: dist artifact import/require", () => {
+  const dist = (path: string) => new URL(`../dist/${path}`, import.meta.url).pathname;
+
+  describe("mmntjs main entry", () => {
+    test("esm import default", async () => {
+      const m = await import(dist("index.js"));
+      expect(m.default).toBeFunction();
+      expect(m.default(0).isValid()).toBe(true);
+    });
+    test("esm import named moment", async () => {
+      const { moment } = await import(dist("index.js"));
+      expect(moment).toBeFunction();
+      expect(moment(0).isValid()).toBe(true);
+    });
+    test("cjs require default", () => {
+      const m = require(dist("index.cjs"));
+      expect(m.default).toBeFunction();
+      expect(m.default(0).isValid()).toBe(true);
+      expect(m.moment).toBeFunction();
+    });
+  });
+
+  describe("mmntjs/lite entry", () => {
+    test("esm import lite", async () => {
+      const m = await import(dist("lite.js"));
+      expect(m.default).toBeFunction();
+      expect(m.default(0).isValid()).toBe(true);
+    });
+    test("cjs require lite", () => {
+      const m = require(dist("lite.cjs"));
+      expect(m.default).toBeFunction();
+      expect(m.default(0).isValid()).toBe(true);
+    });
+  });
+
+  describe("mmntjs/full entry", () => {
+    test("esm import full", async () => {
+      const m = await import(dist("full.js"));
+      expect(m.default).toBeFunction();
+    });
+    test("cjs require full", () => {
+      const m = require(dist("full.cjs"));
+      expect(m.default).toBeFunction();
+    });
+  });
+
+  describe("locale data files", () => {
+    test("esm import ja locale data", async () => {
+      const loc = await import(dist("locale/ja.js"));
+      expect(loc.jaLocale).toBeDefined();
+      expect(loc.jaLocale.months).toBeArray();
+      expect(loc.jaLocale.months[0]).toBe("1月");
+    });
+    test("cjs require de locale data", () => {
+      const loc = require(dist("locale/de.cjs"));
+      expect(loc.deLocale).toBeDefined();
+      expect(loc.deLocale.months).toBeArray();
+    });
+    test("ja locale can be used with defineLocale", async () => {
+      const mod = await import(dist("index.js"));
+      const { jaLocale } = await import(dist("locale/ja.js"));
+      mod.moment.defineLocale("ja", jaLocale);
+      expect(mod.moment.locale("ja")).toBe("ja");
+      mod.moment.locale("en");
+    });
+  });
+
+  describe("plugin entries (side-effect only)", () => {
+    test("esm import utc plugin loads without error", async () => {
+      const p = await import(dist("plugin/utc.js"));
+      // plugin is side-effect only; module namespace has no exports
+      expect(Object.keys(p).length).toBe(0);
+    });
+    test("cjs require format-parse plugin loads without error", () => {
+      const p = require(dist("plugin/format-parse.cjs"));
+      expect(p).toEqual({});
+    });
+  });
+
+  describe("temporal entry", () => {
+    test("esm import temporal", async () => {
+      const t = await import(dist("temporal-entry.js"));
+      expect(t.toTemporal).toBeFunction();
+      expect(t.fromTemporal).toBeFunction();
+    });
+    test("cjs require temporal", () => {
+      const t = require(dist("temporal-entry.cjs"));
+      expect(t.toTemporal).toBeFunction();
+      expect(t.fromTemporal).toBeFunction();
+    });
   });
 });

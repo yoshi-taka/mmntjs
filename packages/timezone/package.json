@@ -30,7 +30,7 @@
     "test": "bun test"
   },
   "peerDependencies": {
-    "mmntjs": "^1.0.0"
+    "mmntjs": ">=0.0.1"
   },
   "devDependencies": {
     "fast-check": "^4.0.0",
