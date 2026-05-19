@@ -75,6 +75,14 @@ function statusClass(status: string): string {
     <ul>
       {evaluationPrinciples.map((item) => <li>{item}</li>)}
     </ul>
+    <p>
+      <strong>Recommended entry point:</strong> Use <code>mmntjs/lite</code> (42KB) for most
+      evaluations. It covers the same compatibility-verified parsing, formatting, add/subtract,
+      diff, and comparison paths as the default entry, without the full-compat surface. The
+      full <code>mmntjs</code> entry (141KB) is available when your codebase needs
+      <code>moment.utc()</code>, <code>moment.parseZone()</code>, duration helpers, or
+      locale-rich tokens like <code>MMMM</code> and <code>dddd</code> without plugin imports.
+    </p>
   </section>
 
   <section class="grid">

@@ -77,7 +77,7 @@ moment.duration(2, "hours").humanize();
 | `mmntjs/temporal` | **47 KB** | 37 KB | Temporal bridge — `toTemporal(m)` / `fromTemporal(t)` |
 | `mmntjs/plugin/*` | — | +separate | Optional plugins (utc, format-parse) — self-contained, add features to lite |
 | `mmntjs/locale/*` | — | +1-8 KB | Individual locales (136 total) — tree-shakeable, each <2 KB gzip |
-| `mmntjs-timezone` | **41 KB** | — | Separate package — `installTimezone(moment)` |
+| `mmntjs-timezone` | **75 KB** | — | Separate package — full IANA timezone data + `installTimezone(moment)` |
 
 > **bundled**: measured from source with `Bun.build({minify:true, target:"browser"})` — represents what consumer bundlers produce.
 > **dist**: raw tsup output with `splitting:false` — self-contained files, some code duplication across entries is expected.

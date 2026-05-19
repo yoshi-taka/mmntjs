@@ -40,14 +40,16 @@ export const docsPages: DocPage[] = [
   {
     slug: "getting-started",
     title: "Getting Started",
-    summary: "Choose the lowest-risk way to evaluate mmntjs in an existing moment.js codebase.",
+    summary: "Choose the lowest-risk way to evaluate mmntjs in an existing moment.js codebase. `mmntjs/lite` is recommended as the starting entry point for most teams.",
     purpose: "Start with the safest adoption path for your codebase and team constraints.",
     focus: [
       "Zero-code alias vs direct import replacement",
+      "Which entry point fits your API needs: lite (recommended), full, or fns",
       "What to verify in your existing test suite first",
       "Where to read compatibility notes before expanding rollout",
     ],
     related: [
+      { label: "Lite and fns Usage", href: "/docs/lite-usage/" },
       { label: "Migration", href: "/migration/" },
       { label: "Compatibility", href: "/compatibility/" },
     ],
@@ -84,11 +86,12 @@ export const docsPages: DocPage[] = [
   {
     slug: "basic-usage",
     title: "Basic Usage",
-    summary: "Formatting, parsing, manipulation, and duration examples without diving into API reference detail.",
-    purpose: "Help evaluators confirm that common moment patterns still read naturally.",
+    summary: "Formatting, parsing, manipulation, and duration examples using `mmntjs/lite` — the recommended entry point for most teams.",
+    purpose: "Help evaluators confirm that common moment patterns still read naturally with `mmntjs/lite`.",
     focus: [
-      "Creation and formatting",
+      "Creation and formatting with `mmntjs/lite`",
       "Common add and diff flows",
+      "When to add plugins for extended format or locale support",
       "Where behavior-sensitive topics branch into deeper docs",
     ],
     related: [{ label: "Getting Started", href: "/docs/getting-started/" }],
@@ -221,11 +224,11 @@ export const compatibilitySnapshot = [
 ];
 
 export const compatibilityEvidence = [
-  "678/678 upstream moment.js compatibility tests passing",
-  "4642/4642 hard-test suite passing in the current tracked baseline",
-  "744/744 timezone compatibility cases passing across six timezones",
+  "630/630 moment.js 2.30.1 official test suite passing",
+  "5,989/5,989 full hard-test suite passing",
+  "582 timezone compatibility tests passing across six timezones",
   "112 property-style oracle tests with tens of thousands of assertions against upstream moment.js",
-  "9 coverage-guided fuzz harnesses plus a grammar-based ISO generator",
+  "11 coverage-guided fuzz harnesses plus a grammar-based ISO generator",
 ];
 
 export const knownDifferenceHighlights = [
@@ -294,7 +297,7 @@ export const knownDifferences: KnownDifference[] = [
 ];
 
 export const qualityProof = [
-  "678/678 moment.js compatibility tests passing",
+  "630/630 moment.js 2.30.1 compatibility tests passing",
   "Differential oracle tests and property-based comparisons",
   "Coverage-guided fuzzing plus grammar-based ISO generation",
   "DST and timezone boundary tests across multiple timezones",

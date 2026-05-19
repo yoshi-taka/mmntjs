@@ -77,7 +77,14 @@ export function registerUtcApi(target: UtcMomentTarget, deps: UtcApiDeps): void 
           m._d = new Date(absTime - m._d!.getTimezoneOffset() * 60000);
         }
       } else if (m._cold !== undefined) {
-        m._d = new Date(absTime - m._d!.getTimezoneOffset() * 60000);
+        const origHour = m._cold._parsedDateParts?.[3];
+        if (origHour !== undefined) {
+          const d = m._d!;
+          const gap = d.getHours() - origHour;
+          m._d = new Date(absTime - d.getTimezoneOffset() * 60000 - gap * 3600000);
+        } else {
+          m._d = new Date(absTime - m._d!.getTimezoneOffset() * 60000);
+        }
       } else {
         const utcDate = new Date(`${input} UTC`);
         if (!isNaN(utcDate.getTime())) {

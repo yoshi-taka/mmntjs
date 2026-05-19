@@ -12,8 +12,8 @@ const keyTakeaways = [
 ];
 
 const entryRows = [
-  ["`mmntjs`", "141 KB", "`moment` (62.1 KB raw)", "larger than moment", "Full compat entry for migration. Not tree-shakeable."],
-  ["`mmntjs/lite`", "42 KB", "`moment` (62.1 KB raw)", "smaller than moment", "Recommended default. Method chaining, 30% smaller than moment.js."],
+  ["`mmntjs`", "150 KB", "`moment` (62.1 KB raw)", "larger than moment", "Full compat entry for migration. Not tree-shakeable."],
+  ["`mmntjs/lite`", "43 KB", "`moment` (62.1 KB raw)", "smaller than moment", "Recommended default. Method chaining, 30% smaller than moment.js."],
   ["`mmntjs/lite/fns`", "1 KB base", "`moment` (62.1 KB raw)", "dramatically smaller for basic usage", "Standalone functions (`format`, `add`, `diff`). Scales with imports."],
   ["`dist/locale/ja.js`", "4.8 KB", "`moment + locale/ja` (64.5 KB raw bundled)", "single locale stays separate", "Single locale remains a tiny pure-data module instead of pushing toward all-locales builds."],
   ["`mmntjs-timezone`", "316 KB raw dist", "`moment-timezone` (773.1 KB raw bundled)", "compare as separate package", "Timezone data stays outside core and should be judged on its own."],
@@ -27,7 +27,7 @@ const whyItMatters = [
 
 const timezoneFacts = [
   "Packed timezone data moved from about 711 KB raw source blob to about 293 KB raw generated blob.",
-  "`packages/timezone/dist/index.js` is about 316 KB raw and about 38.1 KB gzip after the pack-format migration.",
+  "`packages/timezone/dist/index.js` is about 311 KB raw and about 37.5 KB gzip after the pack-format migration.",
   "That is why the timezone package is worth evaluating separately: it is not free, but it is smaller than many people assume for bundled IANA data.",
 ];
 

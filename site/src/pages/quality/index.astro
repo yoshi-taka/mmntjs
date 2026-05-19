@@ -11,12 +11,12 @@ const sections = [
 ];
 
 const currentMetrics = [
-  ["Upstream compatibility", "678/678", "moment.js official compatibility tests passing"],
-  ["Hard suite", "4642/4642", "current tracked baseline passing"],
-  ["Timezone coverage", "744/744", "124 cases across six timezones"],
-  ["Coverage baseline", "73.27%", "line coverage after the Phase 4 uplift"],
-  ["Mutation", "20/20", "applicable operators killed"],
-  ["Fuzz harnesses", "11", "coverage-guided targets in the quick workflow"],
+  ["Upstream compatibility", "630/630", "moment.js 2.30.1 official test suite"],
+  ["Hard suite", "5,989/5,989", "full test suite (oracle + property + fuzz + locale + timezone)"],
+  ["Timezone coverage", "582", "test cases across six timezones"],
+  ["Coverage baseline", "86.03%", "line coverage after Phase 5 fixes"],
+  ["Mutation", "27/33", "81.8% of applicable operators killed"],
+  ["Fuzz harnesses", "12", "coverage-guided targets (1 grammar-based)"],
 ];
 
 const recentFixes = [
@@ -60,6 +60,11 @@ const qualityDocs = [
       <ul>
         {qualityProof.map((item) => <li>{item}</li>)}
       </ul>
+      <p class="footnote">
+        The same quality process covers all entry points — <code>mmntjs/lite</code> (recommended),
+        <code>mmntjs/lite/fns</code>, and the default <code>mmntjs</code> entry — with the same
+        oracle tests, regression fixtures, fuzz, and timezone checks.
+      </p>
     </article>
     <article class="panel section">
       <p class="eyebrow">Philosophy</p>

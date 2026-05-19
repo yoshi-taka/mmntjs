@@ -39,17 +39,31 @@ const docSections: Record<string, DocSection[]> = {
         "A successful first evaluation is boring: imports are replaced, tests still pass, a few targeted date fixtures compare cleanly, and the team gains confidence about where to expand next.",
       ],
     },
+    {
+      title: "Start With the Lite Entry Point",
+      body: [
+        "`mmntjs/lite` is the recommended entry for most teams. It provides moment-compatible method chaining at 42KB — smaller than moment.js — and covers the common creation, formatting, add/subtract, diff, and comparison patterns that most codebases rely on.",
+        "Only reach for the default `mmntjs` entry (141KB) when your codebase explicitly depends on full-compat features such as `moment.utc()`, `moment.parseZone()`, duration helpers, or locale-aware display tokens like `MMMM` and `dddd` without loading them as plugins.",
+      ],
+    },
   ],
   installation: [
     {
-      title: "Prefer Installation Shapes That Match Your Evaluation Strategy",
+      title: "Getting Started vs Installation",
       body: [
-        "Some teams want the lowest-friction alias path first. Others prefer explicit imports so the changed surface is obvious in code review. Both are valid, but the right choice depends on how you plan to control rollout risk.",
+        "`Getting Started` helps you choose a strategy and entry point for your specific migration scenario. `Installation` is the mechanical reference: the exact commands and import paths to use once you have decided.",
+        "If you are unsure where to start, read `Getting Started` first to decide whether `mmntjs/lite` (recommended) or the default `mmntjs` entry fits your codebase.",
+      ],
+    },
+    {
+      title: "Prefer Lite By Default",
+      body: [
+        "`mmntjs/lite` (42KB) is the recommended entry for most teams. Install it first, then only switch to the default `mmntjs` (141KB) if your codebase needs full-compat features like `moment.utc()`, `moment.parseZone()`, duration helpers, or locale-rich format tokens without plugin imports.",
       ],
       bullets: [
-        "Alias-based install for low-friction trials.",
-        "Direct package import for module-by-module migration.",
-        "Keep runtime and bundling expectations visible from the start.",
+        "Start every new module or browser entry point with `mmntjs/lite`.",
+        "Use the alias-based install for the lowest-friction trial.",
+        "Switch to the default `mmntjs` entry only when lite's surface is insufficient.",
       ],
     },
   ],
@@ -90,6 +104,18 @@ const docSections: Record<string, DocSection[]> = {
     },
   ],
   "basic-usage": [
+    {
+      title: "Use mmntjs/lite As The Default Entry Point",
+      body: [
+        "`mmntjs/lite` is the recommended starting point for most teams. It provides method chaining, basic formatting (`YYYY-MM-DD`, `HH:mm:ss`), ISO parsing, add/subtract, startOf/endOf, diff, and comparison — enough to cover the majority of moment.js usage patterns at 42KB.",
+        "Import additional capabilities explicitly when you need them: add `plugin/format-parse` for custom format strings, `plugin/utc` for UTC and parseZone support, or `locale/*` for localized output. This keeps your bundle lean and makes dependencies visible in review.",
+      ],
+      bullets: [
+        "Start every new module or browser entry point with `mmntjs/lite`.",
+        "Only switch to the default `mmntjs` entry when full-compat features and locale-rich formatting are required without explicit plugin imports.",
+        "Use `mmntjs/lite/fns` for standalone function style when tree-shaking matters most.",
+      ],
+    },
     {
       title: "Stay Close To Existing Moment Call Patterns At First",
       body: [
@@ -325,8 +351,12 @@ const docExamples: Record<string, DocExample[]> = {
     {
       title: "Zero-code alias trial",
       language: "sh",
-      code: `npm install moment@npm:mmntjs`,
-      note: "Useful when you want the smallest possible trial surface before changing imports.",
+      code: `# recommended: start with lite (42KB)
+npm install moment@npm:mmntjs/lite
+
+# switch to full compat (141KB) if needed
+npm install moment@npm:mmntjs`,
+      note: "Start with the lite alias for the smallest evaluation surface, then switch to the default entry if your codebase needs full-compat features.",
     },
     {
       title: "Coexistence mode",
@@ -334,7 +364,7 @@ const docExamples: Record<string, DocExample[]> = {
       code: `import moment from "moment";
 
 // already migrated file
-import mmnt from "mmntjs";`,
+import moment from "mmntjs";`,
       note: "This lets one codebase move module by module instead of forcing a single cutoff day.",
     },
     {
@@ -354,38 +384,47 @@ mmntjs migrate --apply path/to/module`,
   ],
   installation: [
     {
-      title: "Direct package install",
+      title: "Lite — direct install (recommended)",
       language: "sh",
-      code: `npm install mmntjs`,
-      note: "Best when you want code review to show each migration step explicitly.",
+      code: `npm install mmntjs
+# then import as:
+import moment from "mmntjs/lite";`,
+      note: "Start here. `mmntjs/lite` is 42KB, moment-compatible, covers common formatting, manipulation, and comparison needs.",
+    },
+    {
+      title: "Lite — alias trial",
+      language: "sh",
+      code: `npm install moment@npm:mmntjs/lite`,
+      note: "Zero-code trial: keep existing `import moment from \"moment\"` intact while evaluating lite.",
+    },
+    {
+      title: "Lite with add-ons",
+      language: "js",
+      code: `import moment from "mmntjs/lite";
+import "mmntjs/plugin/format-parse";
+import "mmntjs/locale-auto/ja";`,
+      note: "Add parsing, locale, or UTC features explicitly when your module needs them.",
+    },
+    {
+      title: "Default entry — full compat (when lite is not enough)",
+      language: "sh",
+      code: `npm install mmntjs
+# then import as:
+import moment from "mmntjs";`,
+      note: "Use the default entry (141KB) when your codebase depends on full-compat features like `moment.utc()`, `moment.parseZone()`, or duration helpers without plugin imports.",
+    },
+    {
+      title: "Default entry — alias trial",
+      language: "sh",
+      code: `npm install moment@npm:mmntjs`,
+      note: "Alias-based trial for full-compat evaluation without changing import sites.",
     },
     {
       title: "Migration tool rewrite",
       language: "sh",
       code: `npm install mmntjs
 mmntjs migrate --apply path/to/module`,
-      note: "Best when you want the tool to rewrite one owned surface while keeping the rollout reviewable.",
-    },
-    {
-      title: "Import replacement",
-      language: "js",
-      code: `import moment from "mmntjs";
-
-moment("2024-01-01").format("YYYY-MM-DD");`,
-    },
-    {
-      title: "Alias-based replacement",
-      language: "sh",
-      code: `npm install moment@npm:mmntjs`,
-      note: "Best for low-friction evaluation when you need unchanged import sites first.",
-    },
-    {
-      title: "Lite entry with add-ons",
-      language: "js",
-      code: `import moment from "mmntjs/lite";
-import "mmntjs/plugin/format-parse";
-import "mmntjs/locale-auto/ja";`,
-      note: "Useful when browser bundle cost matters and the narrower feature surface is acceptable.",
+      note: "Auto-rewrite imports. The tool detects which APIs your code uses and suggests the best entry point (lite or full).",
     },
   ],
   "lite-usage": [
@@ -626,7 +665,7 @@ const sidebarGroups = getDocsSidebarGroups();
           <div class="difference-list">
             {pageKnownDifferences.map((item) => (
               <article class="difference-entry">
-                <p class="eyebrow">{item.category}</p>
+                  <p class="eyebrow">{item.category}</p>
                 <h3>{item.title}</h3>
                 <div class="meta-list">
                   <div class="meta-row">

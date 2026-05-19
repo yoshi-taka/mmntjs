@@ -118,9 +118,15 @@ export function createMomentFactory(deps: FactoryDeps) {
           _nullInput: false,
         });
       }
-      const week1StartEpoch = makeDate(isoWeekYear, 0, 4 - (dayOfJan4 - 1)).getTime();
+      const week1Start = makeDate(isoWeekYear, 0, 4 - (dayOfJan4 - 1));
       const weekday = parsed._weekdayNum ?? 1;
-      const d = new Date(week1StartEpoch + ((isoWeek - 1) * 7 + (weekday - 1)) * 86400000);
+      const d = new Date(week1Start.getTime() + ((isoWeek - 1) * 7 + (weekday - 1)) * 86400000);
+      if (!useUtc) {
+        const offsetShift = d.getTimezoneOffset() - week1Start.getTimezoneOffset();
+        if (offsetShift !== 0) {
+          d.setTime(d.getTime() + offsetShift * 60000);
+        }
+      }
       if (parsed.hour !== undefined) {
         if (useUtc) {
           d.setUTCHours(
