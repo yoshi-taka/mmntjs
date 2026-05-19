@@ -1,3 +1,4 @@
+// fallow-ignore-next-line unresolved-imports
 import * as mmntjs from "mmntjs";
 import { installTimezone, type MomentLike, type MomentTz } from "./install-core";
 import { Z, L, C, N, V, T } from "./builtin-data-1970-2030.generated";
