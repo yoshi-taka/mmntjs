@@ -6,6 +6,13 @@ import baseMoment from "../../src/index.ts";
 import { installTimezone } from "../../packages/timezone/src/install.ts";
 import { BUILTIN_TZDATA } from "../../packages/timezone/src/builtin-data.generated.ts";
 
+// Guard against test pollution from prior suites
+(baseMoment as any).defaultZone = null;
+(baseMoment as any).defaultFormat = "YYYY-MM-DDTHH:mm:ssZ";
+(baseMoment as any).defaultFormatUtc = "YYYY-MM-DDTHH:mm:ss[Z]";
+_momentTimezone.defaultFormat = "YYYY-MM-DDTHH:mm:ssZ";
+_momentTimezone.defaultFormatUtc = "YYYY-MM-DDTHH:mm:ss[Z]";
+
 installTimezone(baseMoment as any, BUILTIN_TZDATA);
 // oxlint-disable-next-line no-explicit-any
 const moment = baseMoment as any;

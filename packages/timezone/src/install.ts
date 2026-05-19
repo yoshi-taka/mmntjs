@@ -1033,6 +1033,77 @@ export function installTimezone(
     return result;
   }
 
+  function createFromArrayInZone(arr: unknown[], zone: string): MomentInstance {
+    const y = Number(arr[0] ?? 0);
+    const M = Number(arr[1] ?? 0);
+    const d = Number(arr[2] ?? 1);
+    const h = Number(arr[3] ?? 0);
+    const min = Number(arr[4] ?? 0);
+    const s = Number(arr[5] ?? 0);
+    const ms = Number(arr[6] ?? 0);
+    const zoneInfo = getZone(zone);
+    if (zoneInfo instanceof InternalZone) {
+      const base = Date.UTC(y, M, d, h, min, s, ms);
+      const offset = zoneInfo.parse(base);
+      const result = moment(base + offset * 60000);
+      const ro = zoneInfo.utcOffset(result.valueOf());
+      result.utcOffset(ro ? -ro : 0, false);
+      result._z = zoneInfo;
+      return result;
+    }
+    // Fallback for non-InternalZone (e.g. UTC/GMT without zone data)
+    const guess = Date.UTC(y, M, d, h, min, s, ms);
+    const offsets = new Set<number>(
+      [guess, Date.UTC(y, M, d), Date.UTC(y, M, d, 12), Date.UTC(y, M, d - 1, 12)].map((r) =>
+        getOffset(zone, r),
+      ),
+    );
+    for (const o of [...offsets]) {
+      offsets.add(o + 30);
+      offsets.add(o - 30);
+    }
+    const sorted = [...offsets].sort((a, b) => b - a);
+    let bestTs = guess,
+      bestOff = sorted[0] ?? 0,
+      found = false;
+    for (const off of sorted) {
+      const ct = guess - off * 60000;
+      if (getOffset(zone, ct) !== off) continue;
+      try {
+        const wp = new Date(ct).toLocaleString("en-US", {
+          timeZone: zone,
+          hour12: false,
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        });
+        const p = wp.match(/^(\d{2}):(\d{2}):(\d{2})$/);
+        if (p && +p[1] === h && +p[2] === min && +p[3] === s) {
+          bestTs = ct;
+          bestOff = off;
+          found = true;
+          break;
+        }
+      } catch {}
+    }
+    if (!found) {
+      const offA = getOffset(zone, guess);
+      const offB = getOffset(zone, guess - offA * 60000);
+      bestOff = Math.max(offA, offB);
+      bestTs = guess + Math.abs(offB - offA) * 60000 - bestOff * 60000;
+    }
+    const result = moment(bestTs);
+    result.utcOffset(bestOff, false);
+    result._z = zoneInfo ?? {
+      name: zone,
+      abbr: (t: number) => getAbbr(zone, t),
+      offset: () => -bestOff,
+      utcOffset: () => -bestOff,
+      parse: () => -bestOff,
+    };
+    return result;
+  }
+
   function momentTz(
     input?: unknown,
     foz?: unknown,
@@ -1048,6 +1119,9 @@ export function installTimezone(
         if (typeof input === "string" && !hasExplicitOffset(input)) {
           return parseInZone(input, tz);
         }
+        if (Array.isArray(input)) {
+          return createFromArrayInZone(input, tz);
+        }
         return moment(input).tz(tz);
       }
       if (typeof input === "string") {
@@ -1062,6 +1136,9 @@ export function installTimezone(
     }
     if (typeof input === "string") {
       return moment().tz(input);
+    }
+    if (Array.isArray(input)) {
+      return moment(input);
     }
     return input != null ? moment(input) : moment();
   }

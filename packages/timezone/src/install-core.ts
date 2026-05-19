@@ -854,6 +854,29 @@ export function installTimezone(
     return parsed;
   }
 
+  function createFromArrayInZone(arr: unknown[], zone: string): MomentInstance {
+    const y = Number(arr[0] ?? 0);
+    const M = Number(arr[1] ?? 0);
+    const d = Number(arr[2] ?? 1);
+    const h = Number(arr[3] ?? 0);
+    const min = Number(arr[4] ?? 0);
+    const s = Number(arr[5] ?? 0);
+    const ms = Number(arr[6] ?? 0);
+    const zoneInfo = getZone(zone);
+    if (zoneInfo instanceof InternalZone) {
+      const base = Date.UTC(y, M, d, h, min, s, ms);
+      const offset = zoneInfo.parse(base);
+      const result = moment(base + offset * 60000);
+      result.utcOffset(
+        zoneInfo.utcOffset(result.valueOf()) ? -zoneInfo.utcOffset(result.valueOf()) : 0,
+        false,
+      );
+      result._z = zoneInfo;
+      return result;
+    }
+    return moment(arr).tz(zone);
+  }
+
   function momentTz(
     input?: unknown,
     foz?: unknown,
@@ -865,6 +888,7 @@ export function installTimezone(
         const tz = normalizeTz(foz);
         if (input == null) return moment().tz(tz);
         if (typeof input === "string" && !hasExplicitOffset(input)) return parseInZone(input, tz);
+        if (Array.isArray(input)) return createFromArrayInZone(input, tz);
         return moment(input).tz(tz);
       }
       if (typeof input === "string") {
@@ -876,6 +900,7 @@ export function installTimezone(
       }
     }
     if (typeof input === "string") return moment().tz(input);
+    if (Array.isArray(input)) return moment(input);
     return input != null ? moment(input) : moment();
   }
 

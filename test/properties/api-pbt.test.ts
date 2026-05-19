@@ -21,28 +21,37 @@ const knownFormats = fc.constantFrom(
 );
 
 test("[PBT] defaultFormat get/set round-trip preserves oracle equality", () => {
-  fc.assert(
-    fc.property(knownFormats, fc.date({ noInvalidDate: true }), (fmt, d) => {
-      const orig = moment.defaultFormat;
-      const origUtc = moment.defaultFormatUtc;
-      const oOrig = originalMoment.defaultFormat;
-      const oOrigUtc = originalMoment.defaultFormatUtc;
-      moment.defaultFormat = fmt;
-      moment.defaultFormatUtc = fmt;
-      originalMoment.defaultFormat = fmt;
-      originalMoment.defaultFormatUtc = fmt;
-      // use date-only ISO to avoid UTC mode path using defaultFormatUtc
-      const iso = d.toISOString().slice(0, 10);
-      const m = moment(iso);
-      const om = originalMoment(iso);
-      expect(m.format()).toBe(om.format());
-      moment.defaultFormat = orig;
-      moment.defaultFormatUtc = origUtc;
-      originalMoment.defaultFormat = oOrig;
-      originalMoment.defaultFormatUtc = oOrigUtc;
-    }),
-    { numRuns: 50 },
-  );
+  const orig = moment.defaultFormat;
+  const origUtc = moment.defaultFormatUtc;
+  const oOrig = originalMoment.defaultFormat;
+  const oOrigUtc = originalMoment.defaultFormatUtc;
+  const origLocale = moment.locale();
+  try {
+    moment.locale("en");
+    fc.assert(
+      fc.property(knownFormats, fc.date({ noInvalidDate: true }), (fmt, d) => {
+        moment.defaultFormat = fmt;
+        moment.defaultFormatUtc = fmt;
+        originalMoment.defaultFormat = fmt;
+        originalMoment.defaultFormatUtc = fmt;
+        const iso = d.toISOString().slice(0, 10);
+        const m = moment(iso);
+        const om = originalMoment(iso);
+        expect(m.format()).toBe(om.format());
+        moment.defaultFormat = orig;
+        moment.defaultFormatUtc = origUtc;
+        originalMoment.defaultFormat = oOrig;
+        originalMoment.defaultFormatUtc = oOrigUtc;
+      }),
+      { numRuns: 50 },
+    );
+  } finally {
+    moment.defaultFormat = orig;
+    moment.defaultFormatUtc = origUtc;
+    originalMoment.defaultFormat = oOrig;
+    originalMoment.defaultFormatUtc = oOrigUtc;
+    moment.locale(origLocale);
+  }
 });
 
 // -----------------------------------------------------------------------
