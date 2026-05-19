@@ -47,16 +47,16 @@ function statusClass(status: string): string {
 
     <div class="hero-code-card" aria-label="Installation and usage examples">
       <div class="code-step">
-        <p class="eyebrow">Recommended — lite/fns (~1KB, tree-shakeable)</p>
-        <CodeBlock code={`import { format, startOf } from "mmntjs/lite/fns";
-
-format(new Date(), "YYYY-MM-DD");`} lang="js" />
-      </div>
-      <div class="code-step">
-        <p class="eyebrow">Lite — method chaining (42KB)</p>
+        <p class="eyebrow">Recommended — lite (42KB, moment-compatible)</p>
         <CodeBlock code={`import moment from "mmntjs/lite";
 
 moment().add(1, "day").format("YYYY-MM-DD");`} lang="js" />
+      </div>
+      <div class="code-step">
+        <p class="eyebrow">Also available — lite/fns (standalone functions)</p>
+        <CodeBlock code={`import { format, startOf, add } from "mmntjs/lite/fns";
+
+format(add(new Date(), 1, "day"), "YYYY-MM-DD");`} lang="js" />
       </div>
       <div class="code-step">
         <p class="eyebrow">Full — moment.js compat (141KB)</p>
@@ -90,13 +90,13 @@ mmntjs migrate --apply --fns  # force lite/fns`} lang="sh" />
         Evaluate mmntjs in one module, run the tests you already trust, and expand only after
         checking compatibility-sensitive behavior.
       </p>
-      <CodeBlock code={`# recommended: standalone functions (~1KB)
+      <CodeBlock code={`# recommended: lite (42KB, moment-compatible)
 npm install mmntjs
-import { format, add } from "mmntjs/lite/fns";
-
-# or method chaining (42KB)
 import moment from "mmntjs/lite";
 moment().add(1, "day").format("YYYY-MM-DD");
+
+# or standalone functions (base is small, scales with imports)
+import { format, add } from "mmntjs/lite/fns";
 
 # or full compat (141KB) for migration
 import moment from "mmntjs";

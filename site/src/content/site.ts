@@ -68,11 +68,11 @@ export const docsPages: DocPage[] = [
   {
     slug: "lite-usage",
     title: "Lite and fns Usage",
-    summary: "Use `mmntjs/lite` (42KB) for moment-compatible method chaining, or `mmntjs/lite/fns` (~1KB) for standalone pure functions that tree-shake completely.",
+    summary: "`mmntjs/lite` (42KB) is the recommended default: moment-compatible method chaining. `mmntjs/lite/fns` is an alternative for teams that prefer standalone functions.",
     purpose: "Explain when the lite and fns entries are a good fit and what teams must choose based on their API needs.",
     focus: [
       "What the lite entry includes by default (42KB, method chaining)",
-      "What the fns entry offers (~1KB, standalone functions, full tree-shaking)",
+      "What the fns entry offers (standalone functions, small base, tree-shaking scales with imports)",
       "Which plugins or locale modules must be imported explicitly",
       "How to evaluate lite vs fns before switching browser code",
     ],
@@ -210,7 +210,6 @@ export const docsPages: DocPage[] = [
 ];
 
 export const compatibilitySnapshot = [
-  ["Parsing", "Mostly compatible", "Standard ISO, RFC 2822, custom format, array, object, sign-prefixed, and control-character inputs match moment.js. One known difference is mixed input like `\"93280531 09-3911\"`."],
   ["Formatting", "Compatible", "Token and locale output are covered by upstream and locale-derived tests."],
   ["Manipulation", "Compatible", "add/subtract/startOf/endOf semantics are treated as compatibility-critical."],
   ["Query and comparison", "Compatible", "diff and comparison methods are covered by oracle and property tests."],
@@ -218,6 +217,7 @@ export const compatibilitySnapshot = [
   ["Locale", "Compatible", "Locale behavior is validated against the upstream locale suite."],
   ["UTC and parseZone", "Compatible", "UTC and fixed-offset behavior are tested; timezone package provides compatible IANA timezone data support."],
   ["Invalid dates", "Compatible", "Examples: `moment(\"2024-02-31\")`, `moment(\"not-a-date\")`, `moment([2024, 1, 31])`, and `moment.invalid()`."],
+  ["Parsing", "Mostly compatible", "Standard ISO, RFC 2822, custom format, array, object, sign-prefixed, and control-character inputs match moment.js. One known difference is mixed input like `\"93280531 09-3911\"`."],
 ];
 
 export const compatibilityEvidence = [
@@ -312,7 +312,7 @@ export const performancePrinciples = [
 export const migrationPhases = [
   ["Phase 0", "Inventory current moment usage with `mmntjs migrate --check`. Identify timezone, locale, and parsing hotspots."],
   ["Phase 1", "Run `mmntjs migrate --apply` to auto-rewrite imports. For full-only codebases, start with `mmntjs` (full compat). For lite-compatible code, switch directly to `mmntjs/lite`."],
-  ["Phase 2", "If your code only uses basic formatting/manipulation, consider `mmntjs/lite/fns` — standalone pure functions at ~1KB, fully tree-shakeable. Run `mmntjs migrate --apply --fns --dry` to preview."],
+  ["Phase 2", "If your code only uses basic formatting/manipulation, `mmntjs/lite/fns` is an option — standalone functions with a small base. Run `mmntjs migrate --apply --fns --dry` to preview."],
   ["Phase 3", "Run compatibility checks and review known differences for the APIs your codebase uses. Compare production-like behavior, especially invalid dates, offsets, and custom parsing."],
   ["Phase 4", "Replace imports in a low-risk module or service and run the existing test suite. Expand rollout module by module with ownership and rollback clarity."],
   ["Phase 5", "Use the bridge period to guide new code toward modern date/time APIs, including Temporal where it fits."],
@@ -486,12 +486,12 @@ export const faqAnswers = [
     {
     question: "Is bundle size smaller?",
     answer:
-      "Yes. The main `mmntjs` entry (141KB) is comparable to moment.js. The recommended `mmntjs/lite` (42KB) is smaller than moment.js (60KB). For minimal bundles, use `mmntjs/lite/fns` — standalone functions like `format()` that tree-shake down to ~1KB. Import only what you need.",
+      "Yes. The main `mmntjs` entry (141KB) is comparable to moment.js. The recommended `mmntjs/lite` (42KB) is smaller than moment.js (60KB). For users who prefer standalone functions, `mmntjs/lite/fns` offers a small base that scales with imports.",
   },
   {
     question: "Which entry point should browser apps use?",
     answer:
-      "For most apps, start with `mmntjs/lite` at 42KB. If you only use basic formatting and manipulation, `mmntjs/lite/fns` at ~1KB is the best choice. The main `mmntjs` entry (141KB) is for full moment.js compatibility during migration.",
+      "Start with `mmntjs/lite` at 42KB — it is moment-compatible with method chaining and is the recommended default. If you prefer standalone functions, `mmntjs/lite/fns` is also an option with a small base. The main `mmntjs` entry (141KB) is for full moment.js compatibility during migration.",
   },
   {
     question: "Can mmntjs coexist with dayjs, date-fns, Luxon, or Temporal?",
