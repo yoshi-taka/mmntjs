@@ -137,7 +137,7 @@ mmntjs wins on both runtimes. Absolute speeds differ slightly (V8 vs JSC), but t
 - `bun run bench:guard` -> 回帰閾値チェック (`test/bench-regression.ts`)
 - `bun run bench:mem` -> モジュールのメモリ footprint (`test/bench-mem.ts`)
 - `bun test test/bench-cold-warm.ts` -> locale cold/warm 挙動
-- `bun test test/bench-temporal.ts` -> Temporal 比較
+- `node test/bench-temporal.ts` -> Temporal 比較（Node.js 26+ の native Temporal が必要）
 
 ## mmntjs vs native Temporal (Node.js 26)
 

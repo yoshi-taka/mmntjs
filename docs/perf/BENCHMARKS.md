@@ -149,7 +149,7 @@ Useful commands:
 - `bun run bench:guard` -> regression guard thresholds (`test/bench-regression.ts`)
 - `bun run bench:mem` -> module footprint (`test/bench-mem.ts`)
 - `bun test test/bench-cold-warm.ts` -> locale cold/warm behavior
-- `bun test test/bench-temporal.ts` -> Temporal comparison
+- `node test/bench-temporal.ts` -> Temporal comparison (requires Node.js 26+ with native Temporal)
 
 ## mmntjs vs native Temporal (Node.js 26)
 

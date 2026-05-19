@@ -5,6 +5,20 @@ import { renderInlineCodeHTML } from "../../lib/inline-code";
 import { githubUrl, performancePrinciples } from "../../content/site";
 import { withBase } from "../../lib/urls";
 
+function ratio(mmntjs: string, dateFns: string): string {
+  const parse = (s: string): number => {
+    const m = s.match(/^([\d.]+)\s*(ns|us|μs|ms)$/);
+    if (!m) return 0;
+    const v = parseFloat(m[1]);
+    if (m[2] === "us" || m[2] === "μs") return v * 1000;
+    if (m[2] === "ms") return v * 1_000_000;
+    return v;
+  };
+  const nmm = parse(mmntjs), ndf = parse(dateFns);
+  if (!nmm || !ndf) return "-";
+  return `${(ndf / nmm).toFixed(1)}x`;
+}
+
 const methodology = [
   ["CPU", "Apple M4 performance core"],
   ["OS", "macOS arm64"],
@@ -26,12 +40,12 @@ const headlineResults = [
 ];
 
 const operationRows = [
-  ["format YYYY-MM-DD", "56 ns", "1.31 us", "420 ns", "Common fast-path formatting is substantially lower overhead than both date-fns and moment.js in this benchmark."],
-  ["parse ISO string", "363 ns", "1.30 us", "4.20 us", "Parsing is one of the clearest wins in the current microbenchmarks."],
-  ["diff in days", "20 ns", "935 ns", "491 ns", "Difference calculations benefit from a smaller internal path and cached fields."],
-  ["add 1 second", "15 ns", "108 ns", "-", "Simple mutation-heavy arithmetic is a strong case for the current implementation."],
-  ["startOf month", "17 ns", "75 ns", "-", "Boundary normalization is cheap in the common path benchmark."],
-  ["moment() / new Date()", "40 ns", "35 ns", "221 ns", "This is the main place where raw construction can still lose to a bare Date-style path because compatibility wrapping has a cost."],
+  ["format YYYY-MM-DD", "56 ns", "1.31 us", "420 ns", ratio("56 ns", "1.31 us")],
+  ["parse ISO string", "363 ns", "1.30 us", "4.20 us", ratio("363 ns", "1.30 us")],
+  ["diff in days", "20 ns", "935 ns", "491 ns", ratio("20 ns", "935 ns")],
+  ["add 1 second", "15 ns", "108 ns", "-", ratio("15 ns", "108 ns")],
+  ["startOf month", "17 ns", "75 ns", "-", ratio("17 ns", "75 ns")],
+  ["moment() / new Date()", "40 ns", "35 ns", "221 ns", ratio("40 ns", "35 ns")],
 ];
 
 const techniqueRows = [
@@ -99,13 +113,7 @@ const commands = [
   "bun run bench",
   "bun run bench:guard",
   "bun run bench:mem",
-  "bun test test/bench-temporal.ts",
-];
-
-const temporalNotes = [
-  "In the current Node.js 26 microbenchmarks, `mmntjs` wins 7 of 10 listed operations against native Temporal.",
-  "Temporal is faster in some parsing-oriented cases, while `mmntjs` tends to win in mutation-heavy and formatting-heavy paths.",
-  "This should be read as a trade-off note, not as an argument against Temporal's design goals.",
+  "node test/bench-temporal.ts       # Node.js 26+",
 ];
 ---
 
@@ -118,45 +126,10 @@ const temporalNotes = [
     <p class="eyebrow">Performance</p>
     <h1>Performance should be explained, not advertised.</h1>
     <p>
-      The goal of this page is to show what is measured, how it is measured, and how to interpret
-      the numbers without treating microbenchmarks as universal truth.
-    </p>
-  </section>
-
-  <section class="panel section">
-    <p class="eyebrow">Performance Philosophy</p>
-    <h2>Performance is not one number either.</h2>
-    <p>
-      Just as bundle size should not be reduced to a single gzip number, runtime performance should
-      not be reduced to a single microbenchmark result. Different environments optimise for different
-      costs: hot-path throughput in the browser, startup latency in edge functions, parse time in
-      SSR contexts, and dependency depth in server environments.
-    </p>
-    <p>
       mmntjs treats performance as a set of trade-offs that are measured, documented, and reproducible
       rather than advertised. The benchmark harness, methodology, and results are all in the repository
       so that reviewers can verify the claims against their own workloads.
     </p>
-  </section>
-
-  <section class="grid">
-    <article class="panel section">
-      <p class="eyebrow">Principles</p>
-      <ul>
-        {performancePrinciples.map((item) => <li>{item}</li>)}
-      </ul>
-    </article>
-    <article class="panel section">
-      <p class="eyebrow">Methodology</p>
-      <div class="meta-list">
-        {methodology.map(([label, value]) => (
-          <div class="meta-row">
-            <div class="label">{label}</div>
-            <div>{value}</div>
-          </div>
-        ))}
-      </div>
-    </article>
   </section>
 
   <section class="panel section">
@@ -177,20 +150,20 @@ const temporalNotes = [
       <thead>
         <tr>
           <th>Operation</th>
-          <th>mmntjs</th>
-          <th>date-fns</th>
-          <th>moment.js</th>
-          <th>How to read it</th>
+          <th class="num">mmntjs</th>
+          <th class="num">date-fns</th>
+          <th class="num">moment.js</th>
+          <th class="num">vs date-fns</th>
         </tr>
       </thead>
       <tbody>
-        {operationRows.map(([operation, mmntjs, dateFns, moment, notes]) => (
+        {operationRows.map(([operation, mmntjs, dateFns, moment, vsDateFns]) => (
           <tr>
             <td>{operation}</td>
-            <td>{mmntjs}</td>
-            <td>{dateFns}</td>
-            <td>{moment}</td>
-            <td>{notes}</td>
+            <td class="num">{mmntjs}</td>
+            <td class="num">{dateFns}</td>
+            <td class="num">{moment}</td>
+            <td class="num">{vsDateFns}</td>
           </tr>
         ))}
       </tbody>
@@ -199,6 +172,48 @@ const temporalNotes = [
       These rows are deliberately representative rather than exhaustive. The intent is to show the
       shape of the current results while keeping the page honest about what microbenchmarks can and
       cannot prove.
+    </p>
+    <p class="footnote">
+      ns = nanosecond, μs = microsecond (1,000 ns = 1 μs). Lower is faster. "vs date-fns" >1 means mmntjs is faster.
+    </p>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Temporal Comparison</p>
+    <p>Measured on Node.js 26 with native Temporal. Results shown as warm-path medians.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Operation</th>
+          <th class="num">mmntjs</th>
+          <th class="num">Temporal</th>
+          <th class="num">Ratio</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>now/create</td><td class="num">70 ns</td><td class="num">657 ns</td><td class="num">9.3x</td></tr>
+        <tr><td>parse ISO string</td><td class="num">424 ns</td><td class="num">177 ns</td><td class="num">0.4x</td></tr>
+        <tr><td>parse [y,M,d]</td><td class="num">322 ns</td><td class="num">100 ns</td><td class="num">0.3x</td></tr>
+        <tr><td>get year</td><td class="num">8 ns</td><td class="num">12 ns</td><td class="num">1.5x</td></tr>
+        <tr><td>add 1 day</td><td class="num">89 ns</td><td class="num">537 ns</td><td class="num">6.0x</td></tr>
+        <tr><td>add 1 month</td><td class="num">203 ns</td><td class="num">454 ns</td><td class="num">2.2x</td></tr>
+        <tr><td>diff in days</td><td class="num">26 ns</td><td class="num">348 ns</td><td class="num">13.3x</td></tr>
+        <tr><td>format YYYY-MM-DD</td><td class="num">64 ns</td><td class="num">132 ns</td><td class="num">2.1x</td></tr>
+        <tr><td>startOf month</td><td class="num">14 ns</td><td class="num">284 ns</td><td class="num">19.9x</td></tr>
+        <tr><td>daysInMonth</td><td class="num">16 ns</td><td class="num">14 ns</td><td class="num">0.9x</td></tr>
+      </tbody>
+    </table>
+    <p class="footnote">"Ratio" >1 means mmntjs is faster. &lt;1 means Temporal is faster. Data from <code>node test/bench-temporal.ts</code> on Node.js 26.</p>
+    <p>mmntjs wins 7 of 10 operations. Temporal is faster on parsing (C++ <code>PlainDate.from</code>/constructor) and <code>daysInMonth</code> (C++ property read). mmntjs wins on mutation-heavy and formatting-heavy paths where its cached-fields + mutable-object design avoids the allocation cost of Temporal's immutable objects.</p>
+    <p>This should be read as a trade-off note, not as an argument against Temporal's design goals.</p>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Cross-Runtime Note</p>
+    <p>
+      The performance docs explicitly validate key rows on Node.js 26 as well as Bun. That is
+      important because absolute numbers move with the engine, but the useful migration claim is
+      whether the relative advantage stays intact across runtimes teams actually deploy.
     </p>
   </section>
 
@@ -239,50 +254,69 @@ const temporalNotes = [
 
   <section class="grid">
     <article class="panel section">
-      <p class="eyebrow">How To Interpret Results</p>
+      <p class="eyebrow">Principles</p>
       <ul>
-        {interpretationNotes.map((item) => <li set:html={renderInlineCodeHTML(item)} />)}
+        {performancePrinciples.map((item) => <li>{item}</li>)}
       </ul>
-      <h3>Scenario-based reading</h3>
-      <p>The metric that matters depends on your deployment environment:</p>
-      <table>
-        <thead>
-          <tr>
-            <th>Scenario</th>
-            <th>Most relevant factors</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td>CDN script tag</td><td>Compressed transfer size (gzip/brotli), minified output</td></tr>
-          <tr><td>SPA or browser app</td><td>Bundled output after tree-shaking, parse/eval cost</td></tr>
-          <tr><td>SSR or edge runtime</td><td>Startup cost, cold start, dependency footprint</td></tr>
-          <tr><td>Node backend</td><td>Initialization time, total dependency depth</td></tr>
-        </tbody>
-      </table>
-      <p>
-        These microbenchmarks measure hot-path throughput, which is one dimension of performance.
-        Compressed transfer, parse time, and cold-start behavior are reported separately.
-      </p>
     </article>
     <article class="panel section">
-      <p class="eyebrow">Reproducibility</p>
-      <p>
-        A performance page for this project should make it easy for a skeptical engineer to rerun
-        the numbers rather than trust a screenshot. The benchmark files live in the repository and
-        are intended to be rerun locally with documented commands.
-      </p>
-      <ul>
-        {benchmarkFiles.map(([file, purpose]) => <li><code>{file}</code>: <span set:html={renderInlineCodeHTML(purpose)} /></li>)}
-      </ul>
-      <ul>
-        {commands.map((command) => <li><code>{command}</code></li>)}
-      </ul>
-      <p>
-        The benchmark source of truth is split between <code>README.md</code> and
-        <code>docs/perf/BENCHMARKS.md</code>. This page should track those numbers rather than invent
-        a separate performance story.
-      </p>
+      <p class="eyebrow">Methodology</p>
+      <div class="meta-list">
+        {methodology.map(([label, value]) => (
+          <div class="meta-row">
+            <div class="label">{label}</div>
+            <div>{value}</div>
+          </div>
+        ))}
+      </div>
     </article>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">How To Interpret Results</p>
+    <ul>
+      {interpretationNotes.map((item) => <li set:html={renderInlineCodeHTML(item)} />)}
+    </ul>
+    <h3>Scenario-based reading</h3>
+    <p>The metric that matters depends on your deployment environment:</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Scenario</th>
+          <th>Most relevant factors</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>CDN script tag</td><td>Compressed transfer size (gzip/brotli), minified output</td></tr>
+        <tr><td>SPA or browser app</td><td>Bundled output after tree-shaking, parse/eval cost</td></tr>
+        <tr><td>SSR or edge runtime</td><td>Startup cost, cold start, dependency footprint</td></tr>
+        <tr><td>Node backend</td><td>Initialization time, total dependency depth</td></tr>
+      </tbody>
+    </table>
+    <p>
+      These microbenchmarks measure hot-path throughput, which is one dimension of performance.
+      Compressed transfer, parse time, and cold-start behavior are reported separately.
+    </p>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Reproducibility</p>
+    <p>
+      A performance page for this project should make it easy for a skeptical engineer to rerun
+      the numbers rather than trust a screenshot. The benchmark files live in the repository and
+      are intended to be rerun locally with documented commands.
+    </p>
+    <ul>
+      {benchmarkFiles.map(([file, purpose]) => <li><code>{file}</code>: <span set:html={renderInlineCodeHTML(purpose)} /></li>)}
+    </ul>
+    <ul>
+      {commands.map((command) => <li><code>{command}</code></li>)}
+    </ul>
+    <p>
+      The benchmark source of truth is split between <code>README.md</code> and
+      <code>docs/perf/BENCHMARKS.md</code>. This page should track those numbers rather than invent
+      a separate performance story.
+    </p>
   </section>
 
   <section class="panel section">
@@ -305,24 +339,4 @@ const temporalNotes = [
     </div>
   </section>
 
-  <section class="grid">
-    <article class="panel section">
-      <p class="eyebrow">Temporal Comparison</p>
-      <ul>
-        {temporalNotes.map((item) => <li set:html={renderInlineCodeHTML(item)} />)}
-      </ul>
-      <p>
-        That comparison is useful mainly as context. Temporal optimizes for a different design
-        point, and this site should not frame the result as a universal ranking of libraries.
-      </p>
-    </article>
-    <article class="panel section">
-      <p class="eyebrow">Cross-Runtime Note</p>
-      <p>
-        The performance docs explicitly validate key rows on Node.js 26 as well as Bun. That is
-        important because absolute numbers move with the engine, but the useful migration claim is
-        whether the relative advantage stays intact across runtimes teams actually deploy.
-      </p>
-    </article>
-  </section>
 </BaseLayout>
