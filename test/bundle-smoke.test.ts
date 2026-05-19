@@ -2,7 +2,6 @@ import { test, expect, describe } from "bun:test";
 import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 const projectRoot = join(import.meta.dir, "..");
-// fallow-ignore-next-line unresolved-imports
 const hasDist = existsSync(new URL("../dist/index.js", import.meta.url).pathname);
 
 async function bundleAndGetCode(entryCode: string): Promise<string> {

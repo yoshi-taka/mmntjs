@@ -24,6 +24,7 @@
     "test/sbst-*",
     "test/bin.test.ts",
     "test/*-extra.test.ts",
+    "test/bundle-smoke.test.ts",
     "test/*-lite.test.ts",
     "test/*-lite-strict.test.ts",
     "test/format-basic.test.ts",
@@ -42,7 +43,7 @@
     "docs/**",
     "site/**"
   ],
-  "ignoreDependencies": ["acorn", "benchmark", "date-fns", "dayjs", "fast-check", "luxon", "moment-timezone", "@date-fns/tz", "@date-fns/utc", "date-fns-tz"],
+  "ignoreDependencies": ["acorn", "benchmark", "date-fns", "dayjs", "fast-check", "luxon", "moment-timezone", "@date-fns/tz", "@date-fns/utc", "date-fns-tz", "mmntjs"],
   "duplicates": {
     "mode": "mild",
     "minLines": 5,
