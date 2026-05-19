@@ -297,7 +297,7 @@ describe("runApply", () => {
     try {
       addFiles(d, { "a.ts": "import moment from 'mmntjs';" });
       const out = capture(() => runApply(d));
-      expect(out.join("\n")).toMatch(/Updated import paths in 0 file/);
+      expect(out.join("\n")).toMatch(/Updated 0 file/);
     } finally {
       rmSync(d, { recursive: true, force: true });
     }
