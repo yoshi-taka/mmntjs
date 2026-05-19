@@ -1,6 +1,6 @@
 {
   "name": "mmntjs-timezone",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Drop-in replacement for moment-timezone",
   "type": "module",
   "main": "./dist/index.cjs",

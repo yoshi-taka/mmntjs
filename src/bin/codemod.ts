@@ -17,7 +17,9 @@ const LOCALE_CALL_RE = /\.locale\(\s*['"]([a-z]{2}(?:-[a-z]{2})?)['"]\s*\)/g;
 
 function transformLocaleImport(line: string): string {
   const m = line.match(LOCALE_IMPORT_RE);
-  if (!m) { return line; }
+  if (!m) {
+    return line;
+  }
   const name = m[1];
   if (/import\s/.test(line)) {
     return `import { ${name}Locale } from 'mmntjs/locale/${name}';\nmoment.defineLocale('${name}', ${name}Locale);`;
@@ -42,7 +44,9 @@ function localePreamble(names: Set<string>, isEsm: boolean): string {
 
 export function runCheck(dir = ".") {
   const results = scanFiles(dir);
-  if (!results.dynamicLocaleFiles) { (results as any).dynamicLocaleFiles = {}; }
+  if (!results.dynamicLocaleFiles) {
+    (results as any).dynamicLocaleFiles = {};
+  }
   console.log(`\nFound ${results.total} moment import(s) in ${results.files} file(s):`);
   for (const [file, count] of Object.entries(results.fileCounts)) {
     console.log(`  ${file}: ${count} import(s)`);
@@ -67,7 +71,9 @@ export function runCheck(dir = ".") {
 
 export function runApply(dir = ".") {
   const results = scanFiles(dir);
-  if (!results.dynamicLocaleFiles) { (results as any).dynamicLocaleFiles = {}; }
+  if (!results.dynamicLocaleFiles) {
+    (results as any).dynamicLocaleFiles = {};
+  }
   let modified = 0;
   for (const file of results.modifiedFiles) {
     let content = fs.readFileSync(file, "utf-8");
@@ -141,7 +147,9 @@ function scanFiles(dir: string) {
     let count = 0;
     for (const pattern of IMPORT_PATTERNS) {
       const matches = content.match(pattern.from);
-      if (matches) { count += matches.length; }
+      if (matches) {
+        count += matches.length;
+      }
     }
     const hasLocale = LOCALE_IMPORT_RE.test(content);
     if (count > 0 || hasLocale || dynamicLocales.size > 0) {
