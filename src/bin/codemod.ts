@@ -161,36 +161,3 @@ function scanFiles(dir: string) {
   });
   return results;
 }
-
-function scanFiles(dir: string) {
-  const results = {
-    total: 0,
-    files: 0,
-    fileCounts: {} as Record<string, number>,
-    modifiedFiles: [] as string[],
-    localeFiles: [] as string[],
-  };
-
-  walkSourceFiles(dir, (p) => {
-    const content = fs.readFileSync(p, "utf-8");
-    // Check locale imports (not auto-migratable — needs manual defineLocale)
-    if (LOCALE_IMPORT_RE.test(content)) {
-      results.localeFiles.push(p);
-    }
-    let count = 0;
-    for (const pattern of IMPORT_PATTERNS) {
-      const matches = content.match(pattern.from);
-      if (matches) {
-        count += matches.length;
-      }
-    }
-    const hasLocale = LOCALE_IMPORT_RE.test(content);
-    if (count > 0 || hasLocale) {
-      results.total += count;
-      results.files++;
-      results.fileCounts[p] = count;
-      results.modifiedFiles.push(p);
-    }
-  });
-  return results;
-}
