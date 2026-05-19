@@ -3,7 +3,9 @@ name: Publish
 on:
   push:
     tags:
-      - "v*"
+      - "release-v*"
+      - "mmntjs-v*"
+      - "timezone-v*"
 
 permissions:
   contents: write
@@ -30,16 +32,87 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
+      - run: mkdir -p packages/timezone/node_modules && ln -sfn "$PWD" packages/timezone/node_modules/mmntjs
+
+      - name: Resolve publish mode
+        id: mode
+        run: |
+          case "${GITHUB_REF_NAME}" in
+            release-v*)
+              echo "mode=both" >> "$GITHUB_OUTPUT"
+              echo "version=${GITHUB_REF_NAME#release-v}" >> "$GITHUB_OUTPUT"
+              ;;
+            mmntjs-v*)
+              echo "mode=root-only" >> "$GITHUB_OUTPUT"
+              echo "version=${GITHUB_REF_NAME#mmntjs-v}" >> "$GITHUB_OUTPUT"
+              ;;
+            timezone-v*)
+              echo "mode=timezone-only" >> "$GITHUB_OUTPUT"
+              echo "version=${GITHUB_REF_NAME#timezone-v}" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unsupported tag: ${GITHUB_REF_NAME}" >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Check version consistency
+        env:
+          RELEASE_MODE: ${{ steps.mode.outputs.mode }}
+          RELEASE_VERSION: ${{ steps.mode.outputs.version }}
+        run: |
+          ROOT_VERSION=$(node -e "console.log(JSON.parse(require('fs').readFileSync('package.json','utf8')).version)")
+          TZ_VERSION=$(node -e "console.log(JSON.parse(require('fs').readFileSync('packages/timezone/package.json','utf8')).version)")
+          echo "mode=${RELEASE_MODE}"
+          echo "tag version=${RELEASE_VERSION}"
+          echo "root version=${ROOT_VERSION}"
+          echo "timezone version=${TZ_VERSION}"
+          case "${RELEASE_MODE}" in
+            both)
+              test "${ROOT_VERSION}" = "${RELEASE_VERSION}"
+              test "${TZ_VERSION}" = "${RELEASE_VERSION}"
+              test "${ROOT_VERSION}" = "${TZ_VERSION}"
+              ;;
+            root-only)
+              test "${ROOT_VERSION}" = "${RELEASE_VERSION}"
+              ;;
+            timezone-only)
+              test "${TZ_VERSION}" = "${RELEASE_VERSION}"
+              ;;
+          esac
+
       - run: bun run knip
       - run: bun run fallow
 
       - run: bun run build
 
-      - run: TZ=UTC bun test ./test/bundle-smoke.test.ts -t 'runtime smoke'
+      - name: Build timezone
+        if: steps.mode.outputs.mode != 'root-only'
+        run: cd packages/timezone && bun run build
 
-      - run: npm pack --dry-run
+      - name: Run root runtime smoke
+        if: steps.mode.outputs.mode != 'timezone-only'
+        run: TZ=UTC bun test ./test/bundle-smoke.test.ts -t 'runtime smoke'
 
-      - run: npm publish --access public
+      - name: Run timezone runtime smoke
+        if: steps.mode.outputs.mode != 'root-only'
+        run: TZ=UTC bun test ./packages/timezone/test/runtime-smoke.test.ts
+
+      - name: Pack root package
+        if: steps.mode.outputs.mode != 'timezone-only'
+        run: npm pack --dry-run
+
+      - name: Pack timezone package
+        if: steps.mode.outputs.mode != 'root-only'
+        run: cd packages/timezone && npm pack --dry-run
+
+      - name: Publish root package
+        if: steps.mode.outputs.mode != 'timezone-only'
+        run: npm publish --access public
+
+      - name: Publish timezone package
+        if: steps.mode.outputs.mode != 'root-only'
+        run: cd packages/timezone && npm publish --access public
 
       - uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
         with:

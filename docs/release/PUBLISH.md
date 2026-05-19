@@ -2,79 +2,109 @@
 
 ## Current state
 
-- `mmntjs` and `mmntjs-timezone` are **not published simultaneously**.
-- They use **separate GitHub Actions workflows** and **separate tags**.
+- `mmntjs` and `mmntjs-timezone` are published by **one unified workflow**.
+- Default release mode is **both packages at once**.
+- Root-only and timezone-only releases are also supported.
 
-## Root package: `mmntjs`
+## Workflow
 
-- Package version: `package.json` `version`
 - Workflow: `.github/workflows/publish.yml`
-- Trigger tag: `v*`
-- Example: `v0.0.1`
+- Trigger tags:
+  - `release-v*` → publish both packages
+  - `mmntjs-v*` → publish root package only
+  - `timezone-v*` → publish timezone package only
+
+Examples:
+
+- `release-v0.0.1`
+- `mmntjs-v0.0.1`
+- `timezone-v0.0.1`
+
+## Default mode: publish both
+
+Use this unless there is a concrete reason to ship only one package.
+
+### Tag
+
+- `release-v0.0.1`
 
 ### What the workflow does
 
-1. `bun install --frozen-lockfile`
-2. `bun run knip`
-3. `bun run fallow`
-4. `bun run build`
-5. `TZ=UTC bun test ./test/bundle-smoke.test.ts -t 'runtime smoke'`
-6. `npm pack --dry-run`
-7. `npm publish --access public`
+1. Resolve release mode from tag
+2. Check tag version and package version consistency
+3. `bun install --frozen-lockfile`
+4. `bun run knip`
+5. `bun run fallow`
+6. `bun run build`
+7. `cd packages/timezone && bun run build`
+8. `TZ=UTC bun test ./test/bundle-smoke.test.ts -t 'runtime smoke'`
+9. `TZ=UTC bun test ./packages/timezone/test/runtime-smoke.test.ts`
+10. `npm pack --dry-run`
+11. `cd packages/timezone && npm pack --dry-run`
+12. `npm publish --access public`
+13. `cd packages/timezone && npm publish --access public`
 
-### Manual safety rail
+## Root-only release
 
-- `prepublishOnly` runs before manual `npm publish`
-- Current command:
+### Tag
 
-```sh
-bun run build && TZ=UTC bun test ./test/bundle-smoke.test.ts -t 'runtime smoke'
-```
-
-## Timezone package: `mmntjs-timezone`
-
-- Package version: `packages/timezone/package.json` `version`
-- Workflow: `.github/workflows/publish-timezone.yml`
-- Trigger tag: `timezone-v*`
-- Example: `timezone-v0.0.1`
+- `mmntjs-v0.0.1`
 
 ### What the workflow does
 
-1. `bun install --frozen-lockfile`
-2. `mkdir -p packages/timezone/node_modules && ln -sfn "$PWD" packages/timezone/node_modules/mmntjs`
-3. `bun run knip`
-4. `bun run fallow`
-5. `bun run build` (root)
-6. `cd packages/timezone && bun run build`
-7. Verify timezone dist files exist
+1. Resolve release mode from tag
+2. Check root version matches tag version
+3. `bun install --frozen-lockfile`
+4. `bun run knip`
+5. `bun run fallow`
+6. `bun run build`
+7. `TZ=UTC bun test ./test/bundle-smoke.test.ts -t 'runtime smoke'`
+8. `npm pack --dry-run`
+9. `npm publish --access public`
+
+## Timezone-only release
+
+### Tag
+
+- `timezone-v0.0.1`
+
+### What the workflow does
+
+1. Resolve release mode from tag
+2. Check timezone version matches tag version
+3. `bun install --frozen-lockfile`
+4. `bun run knip`
+5. `bun run fallow`
+6. `bun run build` (root)
+7. `cd packages/timezone && bun run build`
 8. `TZ=UTC bun test ./packages/timezone/test/runtime-smoke.test.ts`
 9. `cd packages/timezone && npm pack --dry-run`
 10. `cd packages/timezone && npm publish --access public`
 
-### Manual safety rail
-
-- `packages/timezone/package.json` has `prepublishOnly`
-- Current command:
-
-```sh
-bun run build && TZ=UTC bun test ./test/runtime-smoke.test.ts
-```
-
 ## Versioning rule
 
 - Keep `mmntjs` and `mmntjs-timezone` on the same version unless there is a strong reason not to.
-- Current version pair:
+- For `release-v*`, both package versions must exactly match the tag.
+- For `mmntjs-v*`, only the root package version must match the tag.
+- For `timezone-v*`, only the timezone package version must match the tag.
+
+Current version pair:
 
 ```text
 mmntjs           0.0.1
 mmntjs-timezone  0.0.1
 ```
 
-## If publishing both packages for the same release
+## Manual safety rails
 
-Because current workflows are separate, publish requires **two tags**:
+- Root package: `prepublishOnly`
 
-1. Push `v0.0.1` to publish `mmntjs`
-2. Push `timezone-v0.0.1` to publish `mmntjs-timezone`
+```sh
+bun run build && TZ=UTC bun test ./test/bundle-smoke.test.ts -t 'runtime smoke'
+```
 
-If we want true simultaneous release later, unify the workflows around a single tag and publish both packages in one job or coordinated jobs.
+- Timezone package: `packages/timezone/package.json` `prepublishOnly`
+
+```sh
+bun run build && TZ=UTC bun test ./test/runtime-smoke.test.ts
+```
