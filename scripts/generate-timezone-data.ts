@@ -223,7 +223,8 @@ function collectZoneStrings(
   range?: { from: number; to: number },
 ): string[] {
   const out: string[] = [];
-  for (const [norm, v] of Object.entries(zoneSource)) {
+  const entries = Object.entries(zoneSource).sort(([a], [b]) => a.localeCompare(b));
+  for (const [_norm, v] of entries) {
     if (typeof v !== "string") continue;
     if (!range) {
       out.push(v);
@@ -256,7 +257,7 @@ function collectLinks(): string[] {
 
 function collectCountryStrings(): string[] {
   return Object.entries(tz._countries!)
-    .map(([code, info]) => `${code}|${info.zones.join(" ")}`)
+    .map(([code, info]) => `${code}|${[...info.zones].sort().join(" ")}`)
     .sort();
 }
 
@@ -343,7 +344,9 @@ function writeBlobFile(
     if (aRegion !== bRegion) return aRegion.localeCompare(bRegion);
     const aParts = a.split("|");
     const bParts = b.split("|");
-    return (aParts[2] ?? "").localeCompare(bParts[2] ?? "");
+    const offsetCmp = (aParts[2] ?? "").localeCompare(bParts[2] ?? "");
+    if (offsetCmp !== 0) return offsetCmp;
+    return aName.localeCompare(bName);
   });
 
   const { zones: idZones, links: idLinks, countries: idCountries } =
