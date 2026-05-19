@@ -266,6 +266,18 @@ export const knownDifferences: KnownDifference[] = [
       "Import the locale data and register it explicitly: import { jaLocale } from 'mmntjs/locale/ja'; moment.locale('ja', jaLocale). This is intentional: pure exports enable better tree-shaking.",
   },
   {
+    category: "CJS require interop",
+    title: "require('mmntjs') returns the default function with named exports attached",
+    momentBehavior:
+      "require('moment') returns the moment function directly as module.exports.",
+    mmntjsBehavior:
+      "require('mmntjs') also returns the moment function directly. Named exports like isMoment, Duration, and locale are attached as properties. This matches moment.js behavior; no adapter or .default access needed.",
+    impact:
+      "No impact for ESM import users. CJS require users get the same shape as moment.js.",
+    workaround:
+      "No workaround needed. This is handled at build time.",
+  },
+  {
     category: "Performance comparison semantics",
     title: "Some benchmark rows are cost comparisons, not perfectly equivalent APIs",
     momentBehavior:

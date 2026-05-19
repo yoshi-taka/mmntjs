@@ -226,9 +226,9 @@ describe("bundle smoke: package.json contract", () => {
     });
     test("cjs require default", () => {
       const m = require(dist("index.cjs"));
-      expect(m.default).toBeFunction();
-      expect(m.default(0).isValid()).toBe(true);
-      expect(m.moment).toBeFunction();
+      expect(m).toBeFunction();
+      expect(m(0).isValid()).toBe(true);
+      expect(m.isMoment).toBeFunction();
     });
   });
 
@@ -240,8 +240,8 @@ describe("bundle smoke: package.json contract", () => {
     });
     test("cjs require lite", () => {
       const m = require(dist("lite.cjs"));
-      expect(m.default).toBeFunction();
-      expect(m.default(0).isValid()).toBe(true);
+      expect(m).toBeFunction();
+      expect(m(0).isValid()).toBe(true);
     });
   });
 
@@ -252,7 +252,7 @@ describe("bundle smoke: package.json contract", () => {
     });
     test("cjs require full", () => {
       const m = require(dist("full.cjs"));
-      expect(m.default).toBeFunction();
+      expect(m).toBeFunction();
     });
   });
 

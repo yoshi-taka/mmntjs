@@ -9,11 +9,23 @@ const IMPORT_PATTERNS = [
   { from: /import\s+(\w+)\s+from\s+['"]moment['"]/g, to: "import $1 from 'mmntjs'" },
 ];
 
+const LOCALE_IMPORT_RE = /(?:from|require)\s*\(?\s*['"](?:moment|mmntjs)\/locale\/(\w+[-\w]*)/g;
+
 export function runCheck(dir = ".") {
   const results = scanFiles(dir);
   console.log(`\nFound ${results.total} moment import(s) in ${results.files} file(s):`);
   for (const [file, count] of Object.entries(results.fileCounts)) {
     console.log(`  ${file}: ${count} import(s)`);
+  }
+  if (results.localeFiles.length > 0) {
+    console.log(`\n⚠  ${results.localeFiles.length} file(s) import moment locale:`);
+    for (const file of results.localeFiles) {
+      console.log(`  ${file}`);
+    }
+    console.log("  mmntjs locales do not auto-register on import.");
+    console.log("  Replace each import with:\n");
+    console.log("    import { <name>Locale } from 'mmntjs/locale/<name>';");
+    console.log('    moment.defineLocale("<name>", <name>Locale);\n');
   }
   console.log(`\n${results.total} import(s) can be auto-migrated (import path replacement only)`);
   console.log("Run `mmntjs migrate --apply` to apply changes\n");
@@ -43,10 +55,15 @@ function scanFiles(dir: string) {
     files: 0,
     fileCounts: {} as Record<string, number>,
     modifiedFiles: [] as string[],
+    localeFiles: [] as string[],
   };
 
   walkSourceFiles(dir, (p) => {
     const content = fs.readFileSync(p, "utf-8");
+    // Check locale imports (not auto-migratable — needs manual defineLocale)
+    if (LOCALE_IMPORT_RE.test(content)) {
+      results.localeFiles.push(p);
+    }
     let count = 0;
     for (const pattern of IMPORT_PATTERNS) {
       const matches = content.match(pattern.from);
