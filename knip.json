@@ -3,6 +3,7 @@
   "entry": [
     "test/*.test.ts",
     "test/*.js",
+    "test/regression/*.test.ts",
     "packages/timezone/src/index.ts",
     "packages/timezone/src/logic.ts",
     "packages/timezone/src/1970-2030.ts",

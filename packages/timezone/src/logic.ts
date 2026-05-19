@@ -1,7 +1,11 @@
-import moment from "mmntjs";
+import * as mmntjs from "mmntjs";
 import { installTimezone, type MomentLike, type MomentTz } from "./install";
 
-installTimezone(moment as unknown as MomentLike);
+const momentFactory = ((mmntjs as unknown as Record<string, unknown>).moment ??
+  (mmntjs as unknown as Record<string, unknown>).default ??
+  mmntjs) as unknown as MomentLike;
 
-export default moment;
-export const tz: MomentTz = (moment as unknown as MomentLike).tz!;
+installTimezone(momentFactory);
+
+export default momentFactory;
+export const tz: MomentTz = momentFactory.tz!;

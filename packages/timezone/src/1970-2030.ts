@@ -1,8 +1,12 @@
-import moment from "mmntjs";
+import * as mmntjs from "mmntjs";
 import { installTimezone, type MomentLike, type MomentTz } from "./install-core";
 import { Z, L, C, N, V, T } from "./builtin-data-1970-2030.generated";
 
-installTimezone(moment as unknown as MomentLike, {
+const momentFactory = ((mmntjs as unknown as Record<string, unknown>).moment ??
+  (mmntjs as unknown as Record<string, unknown>).default ??
+  mmntjs) as unknown as MomentLike;
+
+installTimezone(momentFactory, {
   version: V,
   tzVersion: T,
   zonesBlob: Z,
@@ -11,5 +15,5 @@ installTimezone(moment as unknown as MomentLike, {
   namesBlob: N,
 });
 
-export default moment;
-export const tz: MomentTz = (moment as unknown as MomentLike).tz!;
+export default momentFactory;
+export const tz: MomentTz = momentFactory.tz!;

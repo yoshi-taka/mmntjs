@@ -1,8 +1,12 @@
-import moment from "mmntjs";
+import * as mmntjs from "mmntjs";
 import { installTimezone, type MomentLike, type MomentTz } from "./install-core";
 import { Z, L, C, N, V, T } from "./builtin-data.generated";
 
-installTimezone(moment as unknown as MomentLike, {
+const momentFactory = ((mmntjs as unknown as Record<string, unknown>).moment ??
+  (mmntjs as unknown as Record<string, unknown>).default ??
+  mmntjs) as unknown as MomentLike;
+
+installTimezone(momentFactory, {
   version: V,
   tzVersion: T,
   zonesBlob: Z,
@@ -14,8 +18,8 @@ installTimezone(moment as unknown as MomentLike, {
 // Wrap moment factory to respect moment.defaultZone
 // When moment() is called with no args and defaultZone is set, redirect to moment.tz()
 // Internal timezone functions use the original (un-proxied) moment, so no infinite recursion.
-const momentAny = moment as unknown as Record<string, unknown>;
-const _wrappedFactory = new Proxy(moment, {
+const momentAny = momentFactory as unknown as Record<string, unknown>;
+const _wrappedFactory = new Proxy(momentFactory, {
   apply(_target, _thisArg, args: unknown[]) {
     if (args.length === 0 || (args.length === 1 && args[0] == null)) {
       const dz = momentAny.defaultZone as string | null | undefined;
@@ -24,7 +28,7 @@ const _wrappedFactory = new Proxy(moment, {
         return tzFn(args[0], dz);
       }
     }
-    return (moment as unknown as (...a: unknown[]) => unknown)(...args);
+    return (momentFactory as unknown as (...a: unknown[]) => unknown)(...args);
   },
   get(_target, prop: string) {
     return momentAny[prop];
@@ -34,15 +38,15 @@ const _wrappedFactory = new Proxy(moment, {
     return true;
   },
   has(_target, prop: string) {
-    return prop in moment;
+    return prop in momentFactory;
   },
   ownKeys() {
-    return Reflect.ownKeys(moment);
+    return Reflect.ownKeys(momentFactory);
   },
   getOwnPropertyDescriptor(_target, prop: string) {
-    return Object.getOwnPropertyDescriptor(moment, prop);
+    return Object.getOwnPropertyDescriptor(momentFactory, prop);
   },
 });
 
 export default _wrappedFactory;
-export const tz: MomentTz = (moment as unknown as MomentLike).tz!;
+export const tz: MomentTz = momentFactory.tz!;

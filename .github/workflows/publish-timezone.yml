@@ -41,7 +41,7 @@ jobs:
       - name: Build timezone
         run: cd packages/timezone && bun run build
 
-      - name: Verify timezone dist
+      - name: Verify timezone dist files
         run: |
           test -f packages/timezone/dist/index.js
           test -f packages/timezone/dist/index.cjs
@@ -49,12 +49,9 @@ jobs:
           test -f packages/timezone/dist/index.d.cts
           test -f packages/timezone/dist/logic.js
           test -f packages/timezone/dist/1970-2030.js
-          bun -e "
-            const m = await import('./packages/timezone/dist/index.js');
-            console.log('tz export:', typeof m.tz === 'function');
-            console.log('default:', typeof m.default === 'function');
-            console.log('timezone data version:', typeof m.tz.dataVersion);
-          " 2>&1
+
+      - name: Run timezone runtime smoke
+        run: TZ=UTC bun test ./packages/timezone/test/runtime-smoke.test.ts
 
       - name: Dry-run pack
         run: cd packages/timezone && npm pack --dry-run
