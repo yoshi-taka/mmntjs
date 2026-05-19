@@ -11,7 +11,7 @@
     linear-gradient(180deg, hsl(var(--card) / 0.94), hsl(var(--card) / 0.68));
   box-shadow: var(--shadow-soft), var(--glow-primary);
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(370px, 0.7fr);
+  grid-template-columns: minmax(0, 1.1fr) minmax(400px, 0.8fr);
   align-items: center;
   gap: clamp(2.5rem, 6vw, 5rem);
   min-height: min(680px, calc(100vh - 120px));
@@ -86,7 +86,7 @@
 }
 
 .code-step {
-  padding: 1.2rem;
+  padding: 1rem 1rem 0.8rem;
 }
 
 .code-step + .code-step {
@@ -94,9 +94,9 @@
 }
 
 .code-step .eyebrow {
-  margin-bottom: 0.8rem;
+  margin-bottom: 0.6rem;
   color: hsl(var(--muted-foreground));
-  font-size: 0.72rem;
+  font-size: 0.68rem;
 }
 
 .hero-code-card pre {
@@ -105,7 +105,12 @@
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  font-size: 0.92rem;
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+  overflow-x: visible;
+  word-break: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
 }
 
 .hero-code-card pre::before {

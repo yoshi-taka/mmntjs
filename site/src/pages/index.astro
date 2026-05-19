@@ -50,19 +50,30 @@ function statusClass(status: string): string {
         <p class="eyebrow">Recommended — lite (42KB, moment-compatible)</p>
         <CodeBlock code={`import moment from "mmntjs/lite";
 
-moment().add(1, "day").format("YYYY-MM-DD");`} lang="js" />
+moment()
+  .add(1, "day")
+  .format("YYYY-MM-DD");`} lang="js" />
       </div>
       <div class="code-step">
         <p class="eyebrow">Also available — lite/fns (standalone functions)</p>
-        <CodeBlock code={`import { format, startOf, add } from "mmntjs/lite/fns";
+        <CodeBlock code={`import {
+  format,
+  startOf,
+  add,
+} from "mmntjs/lite/fns";
 
-format(add(new Date(), 1, "day"), "YYYY-MM-DD");`} lang="js" />
+format(
+  add(new Date(), 1, "day"),
+  "YYYY-MM-DD",
+);`} lang="js" />
       </div>
       <div class="code-step">
         <p class="eyebrow">Full — moment.js compat (141KB)</p>
         <CodeBlock code={`import moment from "mmntjs";
 
-moment.utc("2024-01-01").format("YYYY-MM-DD");`} lang="js" />
+moment
+  .utc("2024-01-01")
+  .format("YYYY-MM-DD");`} lang="js" />
       </div>
       <div class="code-step">
         <p class="eyebrow">Migration tool</p>
@@ -93,14 +104,23 @@ mmntjs migrate --apply --fns  # force lite/fns`} lang="sh" />
       <CodeBlock code={`# recommended: lite (42KB, moment-compatible)
 npm install mmntjs
 import moment from "mmntjs/lite";
-moment().add(1, "day").format("YYYY-MM-DD");
 
-# or standalone functions (base is small, scales with imports)
-import { format, add } from "mmntjs/lite/fns";
+moment()
+  .add(1, "day")
+  .format("YYYY-MM-DD");
+
+# or standalone functions (small base)
+import {
+  format,
+  add,
+} from "mmntjs/lite/fns";
 
 # or full compat (141KB) for migration
 import moment from "mmntjs";
-moment.utc("2024-01-01").format();`} lang="js" />
+
+moment
+  .utc("2024-01-01")
+  .format();`} lang="js" />
       <div class="actions">
         <a class="button" href={withBase("/docs/installation/")}>Installation Options</a>
         <a class="button" href={withBase("/docs/lite-usage/")}>Lite &amp; fns Guide</a>
