@@ -84,9 +84,10 @@ jobs:
           esac
 
       - run: bun run knip
-      - run: bun run fallow
 
       - run: bun run build
+
+      - run: bun run fallow
 
       - name: Build timezone
         if: steps.mode.outputs.mode != 'root-only'
