@@ -127,6 +127,14 @@
     "temporal",
     "compat"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yoshi-taka/mmntjs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yoshi-taka/mmntjs/issues"
+  },
+  "homepage": "https://github.com/yoshi-taka/mmntjs#readme",
   "license": "MIT",
   "devDependencies": {
     "@date-fns/tz": "^1.4.1",
