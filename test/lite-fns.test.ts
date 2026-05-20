@@ -229,9 +229,11 @@ describe("boundary values", () => {
     expect(r.getDate()).toBe(31);
   });
 
-  test("epoch timestamp (1970-01-01)", () => {
+  test("epoch timestamp", () => {
     const d = new Date(0);
-    expect(format(d, "YYYY-MM-DD")).toBe("1970-01-01");
+    // epoch 0 is always 1970-01-01 in UTC; local date depends on offset sign
+    const expected = d.getTimezoneOffset() > 0 ? "1969-12-31" : "1970-01-01";
+    expect(format(d, "YYYY-MM-DD")).toBe(expected);
   });
 
   test("year 2038 problem boundary", () => {

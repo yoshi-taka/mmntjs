@@ -272,12 +272,14 @@ export function diff(a: Date, b: Date, unitRaw: string): number {
       return t || 0;
     }
     case "day": {
-      const r = diffMs / 86400000;
+      const zoneDelta = (a.getTimezoneOffset() - b.getTimezoneOffset()) * 60000;
+      const r = (diffMs - zoneDelta) / 86400000;
       const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
       return t || 0;
     }
     case "week": {
-      const r = diffMs / 604800000;
+      const zoneDelta = (a.getTimezoneOffset() - b.getTimezoneOffset()) * 60000;
+      const r = (diffMs - zoneDelta) / 604800000;
       const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
       return t || 0;
     }
