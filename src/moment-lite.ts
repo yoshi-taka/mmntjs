@@ -171,6 +171,9 @@ function valueOfInput(input: unknown): number {
     return input.getTime();
   }
   if (typeof input === "number") {
+    if (!isFinite(input)) {
+      return NaN;
+    }
     return input;
   }
   if (typeof input === "string") {
@@ -1438,6 +1441,9 @@ export class MomentLite {
   }
 
   diff(input: MomentInput, unit?: string, float?: boolean): number {
+    if (!this._isValid) {
+      return NaN;
+    }
     const other = new MomentLite({ _t: valueOfInput(input), _dClone: false });
     const diff = this.valueOf() - other.valueOf();
 

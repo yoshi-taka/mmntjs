@@ -1006,6 +1006,9 @@ export class Moment {
   isoWeekday(): number;
   isoWeekday(d: unknown): this;
   isoWeekday(d?: unknown): number | this {
+    if (!this._isValid) {
+      return d !== undefined ? this : NaN;
+    }
     this._ensureFields();
     // oxlint-disable-next-line typescript/no-explicit-any
     return isoWeekdayMoment(_cast<CalendarAwareMoment>(this), d) as number | this;
@@ -1014,6 +1017,9 @@ export class Moment {
   dayOfYear(): number;
   dayOfYear(d: number): this;
   dayOfYear(d?: number): number | this {
+    if (!this._isValid) {
+      return d !== undefined ? this : NaN;
+    }
     this._ensureFields();
     return dayOfYearMoment(_cast<CalendarAwareMoment>(this), d) as number | this;
   }
@@ -2554,6 +2560,9 @@ export class Moment {
   week(): number;
   week(w: number): this;
   week(w?: number): number | this {
+    if (!this._isValid) {
+      return w !== undefined ? this : NaN;
+    }
     this._ensureFields();
     return localeWeek(_cast<LocaleAwareMoment>(this), w) as number | this;
   }
@@ -2601,6 +2610,9 @@ export class Moment {
   weekYear(): number;
   weekYear(y: number): this;
   weekYear(y?: number): number | this {
+    if (!this._isValid) {
+      return y !== undefined ? this : NaN;
+    }
     this._ensureFields();
     return localeWeekYear(_cast<LocaleAwareMoment>(this), y) as number | this;
   }
@@ -2608,6 +2620,9 @@ export class Moment {
   isoWeek(): number;
   isoWeek(w: number): this;
   isoWeek(w?: number): number | this {
+    if (!this._isValid) {
+      return w !== undefined ? this : NaN;
+    }
     this._ensureFields();
     return isoWeekMoment(_cast<CalendarAwareMoment>(this), w) as number | this;
   }
@@ -2621,23 +2636,38 @@ export class Moment {
   isoWeekYear(): number;
   isoWeekYear(y: number): this;
   isoWeekYear(y?: number): number | this {
+    if (!this._isValid) {
+      return y !== undefined ? this : NaN;
+    }
     this._ensureFields();
     return isoWeekYearMoment(_cast<CalendarAwareMoment>(this), y) as number | this;
   }
 
   isoWeeksInYear(): number {
+    if (!this._isValid) {
+      return NaN;
+    }
     return isoWeeksInYearMoment(_cast<CalendarAwareMoment>(this));
   }
 
   weeksInYear(): number {
+    if (!this._isValid) {
+      return NaN;
+    }
     return localeWeeksInYear(_cast<LocaleAwareMoment>(this));
   }
 
   weeksInWeekYear(): number {
+    if (!this._isValid) {
+      return NaN;
+    }
     return localeWeeksInWeekYear(_cast<LocaleAwareMoment>(this));
   }
 
   isoWeeksInISOWeekYear(): number {
+    if (!this._isValid) {
+      return NaN;
+    }
     return isoWeeksInISOWeekYearMoment(_cast<CalendarAwareMoment>(this));
   }
 
@@ -2710,7 +2740,8 @@ export class Moment {
   }
 
   hasAlignedHourOffset(other?: MomentInput): boolean {
-    return hasAlignedHourOffsetMoment(_cast<UtcMoment>(this), other as unknown as Moment);
+    const otherMoment = other !== undefined ? momentFromAnything(other) : undefined;
+    return hasAlignedHourOffsetMoment(_cast<UtcMoment>(this), otherMoment);
   }
 
   invalidAt(): number {

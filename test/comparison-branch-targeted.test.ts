@@ -935,3 +935,97 @@ describe("PBT: isAfter family with string inputs (vs oracle)", () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// 5. hasAlignedHourOffset with various MomentInput types
+// ---------------------------------------------------------------------------
+describe("hasAlignedHourOffset input validation", () => {
+  test("number input does not crash", () => {
+    const v = moment.utc("2024-06-15");
+    expect(() => v.hasAlignedHourOffset(42)).not.toThrow();
+    expect(() => v.hasAlignedHourOffset(0)).not.toThrow();
+  });
+
+  test("Date input does not crash", () => {
+    const v = moment.utc("2024-06-15");
+    expect(() => v.hasAlignedHourOffset(new Date())).not.toThrow();
+  });
+
+  test("string input does not crash", () => {
+    const v = moment.utc("2024-06-15");
+    expect(() => v.hasAlignedHourOffset("2024-06-15")).not.toThrow();
+  });
+
+  test("null/undefined input does not crash", () => {
+    const v = moment.utc("2024-06-15");
+    expect(() => v.hasAlignedHourOffset(null)).not.toThrow();
+    expect(() => v.hasAlignedHourOffset()).not.toThrow();
+  });
+
+  test("Moment input works normally", () => {
+    const v = moment.utc("2024-06-15");
+    const other = moment.utc("2024-06-15");
+    expect(typeof v.hasAlignedHourOffset(other)).toBe("boolean");
+  });
+
+  test("invalid other returns false", () => {
+    const v = moment.utc("2024-06-15");
+    expect(v.hasAlignedHourOffset(NaN)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 6. ISO/calendar getters return NaN for invalid moments
+// ---------------------------------------------------------------------------
+describe("ISO/calendar getters on invalid moments", () => {
+  const inv = moment.invalid();
+
+  test("isoWeekday returns NaN", () => {
+    expect(inv.isoWeekday()).toBe(NaN);
+  });
+
+  test("dayOfYear returns NaN", () => {
+    expect(inv.dayOfYear()).toBe(NaN);
+  });
+
+  test("week returns NaN", () => {
+    expect(inv.week()).toBe(NaN);
+  });
+
+  test("isoWeek returns NaN", () => {
+    expect(inv.isoWeek()).toBe(NaN);
+  });
+
+  test("weekYear returns NaN", () => {
+    expect(inv.weekYear()).toBe(NaN);
+  });
+
+  test("isoWeekYear returns NaN", () => {
+    expect(inv.isoWeekYear()).toBe(NaN);
+  });
+
+  test("weeksInYear returns NaN", () => {
+    expect(inv.weeksInYear()).toBe(NaN);
+  });
+
+  test("isoWeeksInYear returns NaN", () => {
+    expect(inv.isoWeeksInYear()).toBe(NaN);
+  });
+
+  test("weeksInWeekYear returns NaN", () => {
+    expect(inv.weeksInWeekYear()).toBe(NaN);
+  });
+
+  test("isoWeeksInISOWeekYear returns NaN", () => {
+    expect(inv.isoWeeksInISOWeekYear()).toBe(NaN);
+  });
+
+  test("setters return invalid moment unchanged", () => {
+    expect(inv.isoWeekday(1)).toBe(inv);
+    expect(inv.dayOfYear(1)).toBe(inv);
+    expect(inv.week(1)).toBe(inv);
+    expect(inv.isoWeek(1)).toBe(inv);
+    expect(inv.weekYear(2025)).toBe(inv);
+    expect(inv.isoWeekYear(2025)).toBe(inv);
+  });
+});

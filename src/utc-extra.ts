@@ -345,6 +345,9 @@ export function hasAlignedHourOffsetMoment(m: UtcMoment, other?: Moment): boolea
   if (!m._isValid) {
     return false;
   }
-  const otherOffset = other ? (other as unknown as UtcMoment).utcOffset() : 0;
+  if (other && !other._isValid) {
+    return false;
+  }
+  const otherOffset = other ? other.utcOffset() : 0;
   return (m.utcOffset() - otherOffset) % 60 === 0;
 }

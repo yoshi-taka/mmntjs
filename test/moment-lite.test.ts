@@ -408,3 +408,45 @@ describe("MomentLite isoWeekYear", () => {
     expect(m.format("YYYY-MM-DD")).toBe(o.format("YYYY-MM-DD"));
   });
 });
+
+describe("MomentLite edge cases: null/Infinity/NaN", () => {
+  test("momentLite(Infinity) is invalid", () => {
+    const m = moment(Infinity);
+    expect(m.isValid()).toBe(false);
+  });
+
+  test("momentLite(-Infinity) is invalid", () => {
+    const m = moment(-Infinity);
+    expect(m.isValid()).toBe(false);
+  });
+
+  test("momentLite(NaN) is invalid", () => {
+    const m = moment(NaN);
+    expect(m.isValid()).toBe(false);
+  });
+
+  test("momentLite(null) is invalid", () => {
+    const m = moment(null);
+    expect(m.isValid()).toBe(false);
+  });
+
+  test("diff returns NaN for invalid input", () => {
+    const v = moment.utc("2024-06-15");
+    expect(v.diff(null)).toBe(NaN);
+    expect(v.diff(Infinity)).toBe(NaN);
+    expect(v.diff(-Infinity)).toBe(NaN);
+  });
+
+  test("diff returns NaN when this is invalid", () => {
+    const inv = moment(null);
+    expect(inv.diff(moment.utc("2024-06-15"))).toBe(NaN);
+    expect(inv.diff("2024-06-15")).toBe(NaN);
+  });
+
+  test("isBefore/isAfter/isSame with Infinity returns false", () => {
+    const v = moment.utc("2024-06-15");
+    expect(v.isAfter(Infinity)).toBe(false);
+    expect(v.isBefore(Infinity)).toBe(false);
+    expect(v.isSame(Infinity)).toBe(false);
+  });
+});

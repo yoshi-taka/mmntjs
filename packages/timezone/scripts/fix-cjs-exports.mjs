@@ -17,7 +17,7 @@ for (const f of ["index", "logic", "1970-2030"]) {
   if (c.includes("//# sourceMappingURL")) {
     c = c.replace(
       "//# sourceMappingURL",
-      "module.exports = src_default;\nif (typeof tz !== 'undefined') module.exports.tz = tz;\n//# sourceMappingURL",
+      "module.exports = src_default;\nmodule.exports.default = src_default;\nif (typeof tz !== 'undefined') module.exports.tz = tz;\n//# sourceMappingURL",
     );
   }
 
