@@ -15,5 +15,8 @@ test/fuzz/corpus-summary.json
 # Generated regression test file
 test/regression/generated.test.ts
 
+# npm pack artifacts
+*.tgz
+
 # Internal working docs (not for publishing)
 docs/internal/

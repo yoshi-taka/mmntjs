@@ -27,7 +27,7 @@
   "files": ["dist", "!dist/**/*.map"],
   "scripts": {
     "prepublishOnly": "bun run build && TZ=UTC bun test ./test/runtime-smoke.test.ts",
-    "build": "bun ../../scripts/generate-timezone-data.ts && tsup && bun ../../scripts/copy-dts.ts",
+    "build": "bun ../../scripts/generate-timezone-data.ts && tsup && bun ../../scripts/copy-dts.ts && node scripts/fix-cjs-exports.mjs",
     "test": "bun test"
   },
   "peerDependencies": {

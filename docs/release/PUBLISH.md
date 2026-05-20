@@ -96,6 +96,33 @@ mmntjs           0.0.1
 mmntjs-timezone  0.0.1
 ```
 
+## Partial failure recovery (release-v*)
+
+`release-v*` publishes both packages sequentially. If one fails after the other succeeded:
+
+### Root published, timezone failed
+
+```
+npm publish --access public  ← success
+cd packages/timezone && npm publish --access public  ← failure
+```
+
+**Recovery**: push a fix for the timezone issue, then use `timezone-v<same-version>` tag.
+  - `release-v*` を再pushしない（root は既に上がっているので rejected になる）
+  - Example: root 0.0.3 が publish 済み、timezone だけ失敗 → `timezone-v0.0.3` を push
+
+### Timezone published, root failed
+
+```
+npm publish --access public  ← failure
+```
+
+**Recovery**: unlikely（timezone より先に root が publish されるため）。万が一起こった場合は root の修正後に `mmntjs-v<same-version>` を push。
+
+### 両方失敗した場合
+
+fix → `release-v<same-version>` を打ち直し（古い tag を削除して再 push）。
+
 ## Manual safety rails
 
 - Root package: `prepublishOnly`

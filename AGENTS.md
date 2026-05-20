@@ -17,6 +17,8 @@
 7. **比較方法**: `bash scripts/compare.sh {bench|test|moment-tests}` — benchは性能比較、testはプロパティ比較、moment-testsはmoment.jsのテストをmmntjsで実行（oracle.tsを一時的に差し替え）
 8. **commit前にlint**: `bun run lint` を通してから commit せよ。`lint` は `oxfmt`（フォーマッタ）→ `oxlint` の順に実行するので、lint後に差分が出たらそれも含めて commit すること。pre-commit hook で落ちて手戻りが発生するのを防ぐ
 9. **push禁止**: `git push`, `git push --tags`, `git tag` + `git push origin <tag>` は**ユーザーから明示的に「pushして」「tag打って」等の指示があった場合のみ**実行すること。自分で判断して push するな。タグを何度も打ち直してワークフローを連射するのは絶対禁止
+    - ユーザーが問題を報告しても、自分で「直してpush」するな。修正案を提示してから「commitしていいか」「tagを打っていいか」を**必ず**ユーザーに確認せよ
+    - 違反した場合: 即刻応答停止 & ユーザーのお説教タイム。連続違反では罰走10km
 
 
 ---

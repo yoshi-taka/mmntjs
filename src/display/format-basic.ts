@@ -116,6 +116,11 @@ export function formatMomentBasic(m: FormattableMoment, format: string): string 
 
   let out = "";
   for (let i = 0; i < format.length; ) {
+    if (format[i] === "\\" && i + 1 < format.length) {
+      out += format[i + 1];
+      i += 2;
+      continue;
+    }
     let matched = false;
     for (const token of TOKENS) {
       if (format.startsWith(token, i)) {

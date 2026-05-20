@@ -601,6 +601,13 @@ export function buildRenderFns(format: string): RenderFn[] {
   while (i < len) {
     const ch = format[i];
 
+    if (ch === "\\" && i + 1 < len) {
+      const literal = format[i + 1];
+      result.push(() => literal);
+      i += 2;
+      continue;
+    }
+
     if (ch === "[") {
       const close = format.indexOf("]", i);
       if (close !== -1) {

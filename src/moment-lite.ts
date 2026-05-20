@@ -177,6 +177,7 @@ function valueOfInput(input: unknown): number {
     const locale = getLiteCurrentLocale();
     const parsed = parseString(input, undefined, getLiteLocale(locale) as unknown as ParseLocale);
     if (parsed && !(parsed as unknown as { _claimed?: boolean })._claimed) {
+      const hasOffset = parsed.offset !== undefined;
       const d = createDateSafe(
         parsed.year ?? 0,
         parsed.month ?? 0,
@@ -185,9 +186,10 @@ function valueOfInput(input: unknown): number {
         parsed.minute ?? 0,
         parsed.second ?? 0,
         parsed.millisecond ?? 0,
-        false,
+        hasOffset,
       );
-      return d.getTime();
+      // When string has offset, adjust epoch so valueOf returns correct UTC
+      return hasOffset ? d.getTime() - parsed.offset! * 60000 : d.getTime();
     }
     return new Date(input).getTime();
   }

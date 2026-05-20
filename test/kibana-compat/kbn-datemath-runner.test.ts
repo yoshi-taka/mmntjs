@@ -306,7 +306,10 @@ if (!dateMath) {
       it("should use the default moment instance if parameter not specified", () => {
         const orig = (moment as any).isMoment;
         let called = false;
-        (moment as any).isMoment = (...args: unknown[]) => { called = true; return orig(...args); };
+        (moment as any).isMoment = (...args: unknown[]) => {
+          called = true;
+          return orig(...args);
+        };
         (dateMath as any).parse("now", { momentInstance: moment as any });
         expect(called).toBe(true);
         (moment as any).isMoment = orig;
