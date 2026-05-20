@@ -450,3 +450,235 @@ describe("MomentLite edge cases: null/Infinity/NaN", () => {
     expect(v.isSame(Infinity)).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Property-based: oracle comparison with moment.js
+// ---------------------------------------------------------------------------
+import fc from "fast-check";
+
+const safeMin = new Date("1900-01-01");
+const safeMax = new Date("2100-01-01");
+const safeDates = fc.date({ min: safeMin, max: safeMax, noInvalidDate: true });
+const anyInt = fc.integer({ min: -1000, max: 1000 });
+const allUnits = fc.constantFrom(
+  "year",
+  "quarter",
+  "month",
+  "week",
+  "day",
+  "hour",
+  "minute",
+  "second",
+  "millisecond",
+);
+
+describe("MomentLite property-based vs moment.js", () => {
+  const mm = (d: Date) => moment(d);
+  const om = (d: Date) => originalMoment(d);
+
+  test("add matches moment.js", () => {
+    fc.assert(
+      fc.property(safeDates, anyInt, allUnits, (date, amount, unit) => {
+        const mmUnit = unit === "day" ? "days" : `${unit}s`;
+        const a = mm(date).add(amount, mmUnit).valueOf();
+        const b = om(date).add(amount, mmUnit).valueOf();
+        expect(a).toBe(b);
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  test("subtract matches moment.js", () => {
+    const smallInt = fc.integer({ min: -50, max: 50 });
+    fc.assert(
+      fc.property(safeDates, smallInt, allUnits, (date, amount, unit) => {
+        const mmUnit = unit === "day" ? "days" : `${unit}s`;
+        expect(mm(date).subtract(amount, mmUnit).valueOf()).toBe(
+          om(date).subtract(amount, mmUnit).valueOf(),
+        );
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  const diffUnits = fc.constantFrom("week", "day", "hour", "minute", "second", "millisecond");
+  test("diff matches moment.js", () => {
+    fc.assert(
+      fc.property(safeDates, safeDates, diffUnits, (a, b, unit) => {
+        const mmUnit = unit === "day" ? "days" : `${unit}s`;
+        expect(mm(a).diff(mm(b), mmUnit)).toBe(om(a).diff(om(b), mmUnit));
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  test("format matches moment.js with basic tokens", () => {
+    const formats = fc.constantFrom(
+      "YYYY-MM-DD",
+      "HH:mm:ss",
+      "YYYY-MM-DD HH:mm:ss.SSS",
+      "MM/DD/YYYY",
+    );
+    fc.assert(
+      fc.property(safeDates, formats, (date, fmt) => {
+        const d = mm(date);
+        expect(d.format(fmt)).toBe(om(date).format(fmt));
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  test("startOf matches moment.js", () => {
+    const startUnits = fc.constantFrom("year", "month", "day", "hour", "minute", "second");
+    fc.assert(
+      fc.property(safeDates, startUnits, (date, unit) => {
+        expect(mm(date).startOf(unit).valueOf()).toBe(om(date).startOf(unit).valueOf());
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  test("endOf matches moment.js", () => {
+    const endUnits = fc.constantFrom("year", "month", "day", "hour", "minute", "second");
+    fc.assert(
+      fc.property(safeDates, endUnits, (date, unit) => {
+        expect(mm(date).endOf(unit).valueOf()).toBe(om(date).endOf(unit).valueOf());
+      }),
+      { numRuns: 200 },
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Metamorphic: round-trip, idempotence
+// ---------------------------------------------------------------------------
+describe("MomentLite metamorphic", () => {
+  const d = moment("2024-06-15T10:30:45.123");
+
+  test("add/subtract round-trip", () => {
+    const units = [
+      "year",
+      "month",
+      "quarter",
+      "week",
+      "day",
+      "hour",
+      "minute",
+      "second",
+      "millisecond",
+    ];
+    for (const unit of units) {
+      const m = d.clone().add(3, unit).subtract(3, unit);
+      expect(m.valueOf()).toBe(d.valueOf());
+    }
+  });
+
+  test("startOf idempotence", () => {
+    const units = ["year", "month", "day", "hour", "minute", "second"];
+    for (const unit of units) {
+      const once = d.clone().startOf(unit);
+      const twice = once.clone().startOf(unit);
+      expect(twice.valueOf()).toBe(once.valueOf());
+    }
+  });
+
+  test("endOf idempotence", () => {
+    const units = ["year", "month", "day", "hour", "minute", "second"];
+    for (const unit of units) {
+      const once = d.clone().endOf(unit);
+      const twice = once.clone().endOf(unit);
+      expect(twice.valueOf()).toBe(once.valueOf());
+    }
+  });
+
+  test("startOf <= original <= endOf", () => {
+    const units = ["year", "month", "day"];
+    for (const unit of units) {
+      const m = moment("2024-06-15T10:30:45");
+      const s = m.clone().startOf(unit).valueOf();
+      const e = m.clone().endOf(unit).valueOf();
+      expect(s).toBeLessThanOrEqual(m.valueOf());
+      expect(m.valueOf()).toBeLessThanOrEqual(e);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Boundary values
+// ---------------------------------------------------------------------------
+describe("MomentLite boundaries", () => {
+  test("leap year Feb 29 add month", () => {
+    const m = moment("2020-02-29");
+    m.add(1, "month");
+    expect(m.format("MM-DD")).toBe("03-29");
+  });
+
+  test("leap year Feb 29 add year to non-leap clamps", () => {
+    const m = moment("2020-02-29");
+    m.add(1, "year");
+    expect(m.format("MM-DD")).toBe("02-28");
+  });
+
+  test("year 2038 boundary", () => {
+    const m = moment("2038-01-19T03:14:07");
+    m.add(1, "second");
+    expect(m.format("YYYY-MM-DD HH:mm:ss")).toBe("2038-01-19 03:14:08");
+  });
+
+  test("diff across month boundary", () => {
+    expect(moment("2024-01-31").diff(moment("2024-02-01"), "days")).toBe(-1);
+    expect(moment("2024-02-01").diff(moment("2024-01-31"), "days")).toBe(1);
+  });
+
+  test("Dec 31 add 1 day crosses year", () => {
+    const m = moment("2024-12-31");
+    m.add(1, "day");
+    expect(m.format("YYYY-MM-DD")).toBe("2025-01-01");
+  });
+
+  test("Jan 1 subtract 1 day crosses year", () => {
+    const m = moment("2024-01-01");
+    m.subtract(1, "day");
+    expect(m.format("YYYY-MM-DD")).toBe("2023-12-31");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Equivalence partitioning
+// ---------------------------------------------------------------------------
+describe("MomentLite equivalence", () => {
+  test("month valid indices", () => {
+    for (const m of [0, 6, 11]) {
+      const d = moment("2024-01-15").month(m);
+      expect(d.month()).toBe(m);
+    }
+  });
+
+  test("day safe (1-28) vs boundary (29-31)", () => {
+    expect(moment("2024-01-28").add(1, "day").date()).toBe(29);
+    expect(moment("2024-01-29").add(1, "day").date()).toBe(30);
+    expect(moment("2024-01-30").add(1, "day").date()).toBe(31);
+    expect(moment("2024-01-31").add(1, "day").date()).toBe(1);
+  });
+
+  test("hour/min/sec/ms boundaries", () => {
+    expect(moment("2024-01-01 23:00").add(1, "hour").hour()).toBe(0);
+    expect(moment("2024-01-01 00:59").add(1, "minute").minute()).toBe(0);
+    expect(moment("2024-01-01 00:00:59").add(1, "second").second()).toBe(0);
+    expect(moment("2024-01-01 00:00:00.999").add(1, "millisecond").millisecond()).toBe(0);
+  });
+
+  test("quarter getter partitions", () => {
+    const cases: [number, number, number][] = [
+      [1, 1, 1],
+      [4, 1, 2],
+      [7, 1, 3],
+      [10, 1, 4],
+    ];
+    for (const [month, day, expectedQ] of cases) {
+      expect(
+        moment(`2024-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`).quarter(),
+      ).toBe(expectedQ);
+    }
+  });
+});
