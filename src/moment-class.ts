@@ -2344,7 +2344,10 @@ export class Moment {
   }
 
   daysInMonth(): number {
-    return daysInMonth(this.year(), this.month());
+    if (this._p.dirty) {
+      this._ensureFields();
+    }
+    return daysInMonthFast(this._p.y, this._p.M);
   }
 
   toDate(): Date {
@@ -2557,8 +2560,10 @@ export class Moment {
   }
 
   isLeapYear(): boolean {
-    this._ensureFields();
-    return !this._isValid ? false : isLeapYear(this._p.y);
+    if (this._p.dirty) {
+      this._ensureFields();
+    }
+    return this._isValid && isLeapYear(this._p.y);
   }
 
   isDST(): boolean {

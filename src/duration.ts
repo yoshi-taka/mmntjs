@@ -1103,9 +1103,9 @@ export function createDurationFast(input?: DurationLike, unit?: string): Duratio
     } else if (aliasKey === "quarters") {
       d._months = input * 3;
     } else if (aliasKey === "weeks") {
-      d._days = input * 7;
+      return bubbleDaysOnly(d, input * 7);
     } else if (aliasKey === "days") {
-      d._days = input;
+      return bubbleDaysOnly(d, input);
     } else {
       return bubbleMillisecondsOnly(d, Math.round(input * unitToMs(unit)));
     }

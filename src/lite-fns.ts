@@ -65,8 +65,6 @@ const PAD2 = [
   "59",
 ];
 
-const TOKENS = ["YYYY", "SSS", "MM", "DD", "HH", "mm", "ss"] as const;
-
 function padYear(y: number): string {
   const abs = Math.abs(y);
   const s = abs < 10 ? `000${abs}` : abs < 100 ? `00${abs}` : abs < 1000 ? `0${abs}` : String(abs);
@@ -84,43 +82,60 @@ export function format(d: Date, fmt: string): string {
   }
   let out = "";
   for (let i = 0; i < fmt.length; ) {
-    if (fmt[i] === "\\" && i + 1 < fmt.length) {
+    const ch = fmt[i];
+    if (ch === "\\" && i + 1 < fmt.length) {
       out += fmt[i + 1];
       i += 2;
       continue;
     }
-    let matched = false;
-    for (const token of TOKENS) {
-      if (fmt.startsWith(token, i)) {
-        switch (token) {
-          case "YYYY":
-            out += padYear(d.getFullYear());
-            break;
-          case "MM":
-            out += PAD2[d.getMonth() + 1];
-            break;
-          case "DD":
-            out += PAD2[d.getDate()];
-            break;
-          case "HH":
-            out += PAD2[d.getHours()];
-            break;
-          case "mm":
-            out += PAD2[d.getMinutes()];
-            break;
-          case "ss":
-            out += PAD2[d.getSeconds()];
-            break;
-          case "SSS":
-            out += pad3(d.getMilliseconds());
-            break;
+    let tokenLen = 0;
+    switch (ch) {
+      case "Y":
+        if (fmt.startsWith("YYYY", i)) {
+          out += padYear(d.getFullYear());
+          tokenLen = 4;
         }
-        i += token.length;
-        matched = true;
         break;
-      }
+      case "M":
+        if (fmt.startsWith("MM", i)) {
+          out += PAD2[d.getMonth() + 1];
+          tokenLen = 2;
+        }
+        break;
+      case "D":
+        if (fmt.startsWith("DD", i)) {
+          out += PAD2[d.getDate()];
+          tokenLen = 2;
+        }
+        break;
+      case "H":
+        if (fmt.startsWith("HH", i)) {
+          out += PAD2[d.getHours()];
+          tokenLen = 2;
+        }
+        break;
+      case "m":
+        if (fmt.startsWith("mm", i)) {
+          out += PAD2[d.getMinutes()];
+          tokenLen = 2;
+        }
+        break;
+      case "s":
+        if (fmt.startsWith("ss", i)) {
+          out += PAD2[d.getSeconds()];
+          tokenLen = 2;
+        }
+        break;
+      case "S":
+        if (fmt.startsWith("SSS", i)) {
+          out += pad3(d.getMilliseconds());
+          tokenLen = 3;
+        }
+        break;
     }
-    if (!matched) {
+    if (tokenLen > 0) {
+      i += tokenLen;
+    } else {
       out += fmt[i];
       i++;
     }

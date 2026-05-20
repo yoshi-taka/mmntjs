@@ -63,8 +63,6 @@ const PAD2 = [
   "59",
 ];
 
-const TOKENS = ["YYYY", "SSS", "MM", "DD", "HH", "mm", "ss"] as const;
-
 function padYear(y: number): string {
   const abs = Math.abs(y);
   const s = abs < 10 ? `000${abs}` : abs < 100 ? `00${abs}` : abs < 1000 ? `0${abs}` : String(abs);
@@ -84,7 +82,6 @@ export function formatMomentBasic(m: FormattableMoment, format: string): string 
       y: number;
       M: number;
       D: number;
-      W: number;
       H: number;
       m: number;
       s: number;
@@ -99,50 +96,66 @@ export function formatMomentBasic(m: FormattableMoment, format: string): string 
     raw._ensureFields();
   }
 
+  const p = raw._p;
   let out = "";
   for (let i = 0; i < format.length; ) {
-    if (format[i] === "\\" && i + 1 < format.length) {
+    const ch = format[i];
+    if (ch === "\\" && i + 1 < format.length) {
       out += format[i + 1];
       i += 2;
       continue;
     }
-    let matched = false;
-    for (const token of TOKENS) {
-      if (format.startsWith(token, i)) {
-        switch (token) {
-          case "YYYY":
-            out += padYear(raw._p.y);
-            break;
-          case "MM":
-            out += PAD2[raw._p.M + 1];
-            break;
-          case "DD":
-            out += PAD2[raw._p.D];
-            break;
-          case "HH":
-            out += PAD2[raw._p.H];
-            break;
-          case "mm":
-            out += PAD2[raw._p.m];
-            break;
-          case "ss":
-            out += PAD2[raw._p.s];
-            break;
-          case "SSS":
-            out += pad3(raw._p.ms);
-            break;
+    let tokenLen = 0;
+    switch (ch) {
+      case "Y":
+        if (format.startsWith("YYYY", i)) {
+          out += padYear(p.y);
+          tokenLen = 4;
         }
-        i += token.length;
-        matched = true;
         break;
-      }
+      case "M":
+        if (format.startsWith("MM", i)) {
+          out += PAD2[p.M + 1];
+          tokenLen = 2;
+        }
+        break;
+      case "D":
+        if (format.startsWith("DD", i)) {
+          out += PAD2[p.D];
+          tokenLen = 2;
+        }
+        break;
+      case "H":
+        if (format.startsWith("HH", i)) {
+          out += PAD2[p.H];
+          tokenLen = 2;
+        }
+        break;
+      case "m":
+        if (format.startsWith("mm", i)) {
+          out += PAD2[p.m];
+          tokenLen = 2;
+        }
+        break;
+      case "s":
+        if (format.startsWith("ss", i)) {
+          out += PAD2[p.s];
+          tokenLen = 2;
+        }
+        break;
+      case "S":
+        if (format.startsWith("SSS", i)) {
+          out += pad3(p.ms);
+          tokenLen = 3;
+        }
+        break;
     }
-    if (matched) {
-      continue;
+    if (tokenLen > 0) {
+      i += tokenLen;
+    } else {
+      out += format[i];
+      i++;
     }
-
-    out += format[i];
-    i++;
   }
 
   return out;

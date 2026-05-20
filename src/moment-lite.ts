@@ -477,33 +477,13 @@ export class MomentLite {
   }
 
   clone(): this {
-    this._ensureFields();
     const m = Object.create(MomentLite.prototype) as this;
     m._isAMomentObject = true;
     m._l = this._l;
-    m._p = {
-      t: this._p.t,
-      d: undefined,
-      dirty: false,
-      isUTC: this._p.isUTC,
-      offset: this._p.offset,
-      locale: this._p.locale,
-      y: this._p.y,
-      M: this._p.M,
-      D: this._p.D,
-      W: this._p.W,
-      H: this._p.H,
-      m: this._p.m,
-      s: this._p.s,
-      ms: this._p.ms,
-    };
+    m._p = { ...this._p, d: undefined, dirty: false };
     m._isValid = this._isValid;
-    if (this._i !== undefined) {
-      m._i = this._i;
-    }
-    if (this._f !== undefined) {
-      m._f = this._f;
-    }
+    m._i = this._i;
+    m._f = this._f;
     m._strict = this._strict;
     if (this._cold) {
       m._cold = { ...this._cold };
@@ -1958,12 +1938,17 @@ export class MomentLite {
   }
 
   isLeapYear(): boolean {
-    this._ensureFields();
-    return !this._isValid ? false : isLeapYear(this._p.y);
+    if (this._p.dirty) {
+      this._ensureFields();
+    }
+    return this._isValid && isLeapYear(this._p.y);
   }
 
   daysInMonth(): number {
-    return daysInMonth(this.year(), this.month());
+    if (this._p.dirty) {
+      this._ensureFields();
+    }
+    return daysInMonthFast(this._p.y, this._p.M);
   }
 
   quarter(): number;
