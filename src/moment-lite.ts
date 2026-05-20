@@ -264,7 +264,7 @@ export class MomentLite {
   }
 
   private _getD(): Date {
-    this._ensureFields();
+    if (this._p.dirty) { this._p.dirty = false; this._refreshFields(); }
     if (this._p.d) {
       return this._p.d;
     }
@@ -573,21 +573,22 @@ export class MomentLite {
       }
       const dt = this._getD();
       const date = this._p.D;
-      if (this._p.isUTC) {
+      const utc = this._p.isUTC;
+      if (utc) {
         dt.setUTCFullYear(num);
       } else {
         dt.setFullYear(num);
       }
-      if ((this._p.isUTC ? dt.getUTCDate() : dt.getDate()) !== date) {
-        if (this._p.isUTC) {
+      if ((utc ? dt.getUTCDate() : dt.getDate()) !== date) {
+        if (utc) {
           dt.setUTCDate(0);
         } else {
           dt.setDate(0);
         }
       }
-      this._p.y = this._p.isUTC ? dt.getUTCFullYear() : dt.getFullYear();
-      this._p.M = this._p.isUTC ? dt.getUTCMonth() : dt.getMonth();
-      this._p.D = this._p.isUTC ? dt.getUTCDate() : dt.getDate();
+      this._p.y = num;
+      this._p.M = utc ? dt.getUTCMonth() : dt.getMonth();
+      this._p.D = utc ? dt.getUTCDate() : dt.getDate();
       this._p.W = _dayOfWeek(this._p.y, this._p.M, this._p.D);
       this._p.t = dt.getTime();
       return this;
@@ -1608,6 +1609,7 @@ export class MomentLite {
     }
     this._ensureFields();
     const utc = this._p.isUTC;
+    let d: Date | undefined;
 
     switch (code) {
       case YEAR:
@@ -1615,7 +1617,7 @@ export class MomentLite {
           this._p.t = ymdToEpochDays(this._p.y, 0, 1) * DAY_MS;
           this._p.d = undefined;
         } else {
-          const d = this._getDNoEnsure();
+          d = this._getDNoEnsure();
           d.setMonth(0, 1);
           d.setHours(0, 0, 0, 0);
           this._p.t = d.getTime();
@@ -1633,7 +1635,7 @@ export class MomentLite {
           this._p.t = ymdToEpochDays(this._p.y, this._p.M, 1) * DAY_MS;
           this._p.d = undefined;
         } else {
-          const d = this._getDNoEnsure();
+          d = this._getDNoEnsure();
           d.setDate(1);
           d.setHours(0, 0, 0, 0);
           this._p.t = d.getTime();
@@ -1651,7 +1653,7 @@ export class MomentLite {
           this._p.t = floorUnitEpoch(this._p.t, DAY_MS);
           this._p.d = undefined;
         } else {
-          const d = this._getDNoEnsure();
+          d = this._getDNoEnsure();
           d.setHours(0, 0, 0, 0);
           this._p.t = d.getTime();
         }
@@ -1665,7 +1667,7 @@ export class MomentLite {
           this._p.t = floorUnitEpoch(this._p.t, HOUR_MS);
           this._p.d = undefined;
         } else {
-          const d = this._getDNoEnsure();
+          d = this._getDNoEnsure();
           d.setMinutes(0, 0, 0);
           this._p.t = d.getTime();
         }
@@ -1678,7 +1680,7 @@ export class MomentLite {
           this._p.t = floorUnitEpoch(this._p.t, MINUTE_MS);
           this._p.d = undefined;
         } else {
-          const d = this._getDNoEnsure();
+          d = this._getDNoEnsure();
           d.setSeconds(0, 0);
           this._p.t = d.getTime();
         }
@@ -1690,15 +1692,15 @@ export class MomentLite {
           this._p.t = floorUnitEpoch(this._p.t, SECOND_MS);
           this._p.d = undefined;
         } else {
-          const d = this._getDNoEnsure();
+          d = this._getDNoEnsure();
           d.setMilliseconds(0);
           this._p.t = d.getTime();
         }
         this._p.ms = 0;
         break;
     }
-    if (!utc) {
-      this._p.offset = -this._getDNoEnsure().getTimezoneOffset();
+    if (!utc && d) {
+      this._p.offset = -d.getTimezoneOffset();
     }
     return this;
   }
@@ -1710,6 +1712,7 @@ export class MomentLite {
     }
     this._ensureFields();
     const utc = this._p.isUTC;
+    let d: Date | undefined;
 
     switch (code) {
       case YEAR:
@@ -1717,7 +1720,7 @@ export class MomentLite {
           this._p.t = (ymdToEpochDays(this._p.y, 11, 31) + 1) * DAY_MS - 1;
           this._p.d = undefined;
         } else {
-          const d = this._getDNoEnsure();
+          d = this._getDNoEnsure();
           d.setFullYear(this._p.y, 11, 31);
           d.setHours(23, 59, 59, 999);
           this._p.t = d.getTime();
@@ -1736,7 +1739,7 @@ export class MomentLite {
           this._p.t = (ymdToEpochDays(this._p.y, this._p.M, _eomMaxDay) + 1) * DAY_MS - 1;
           this._p.d = undefined;
         } else {
-          const d = this._getDNoEnsure();
+          d = this._getDNoEnsure();
           d.setFullYear(this._p.y, this._p.M, _eomMaxDay);
           d.setHours(23, 59, 59, 999);
           this._p.t = d.getTime();
@@ -1755,7 +1758,7 @@ export class MomentLite {
           this._p.t = endOfUnitEpoch(this._p.t, DAY_MS);
           this._p.d = undefined;
         } else {
-          const d = this._getDNoEnsure();
+          d = this._getDNoEnsure();
           d.setHours(0, 0, 0, 0);
           d.setDate(d.getDate() + 1);
           d.setMilliseconds(-1);
@@ -1773,7 +1776,7 @@ export class MomentLite {
           this._p.t = endOfUnitEpoch(this._p.t, HOUR_MS);
           this._p.d = undefined;
         } else {
-          const d = this._getDNoEnsure();
+          d = this._getDNoEnsure();
           d.setMinutes(0, 0, 0);
           d.setHours(d.getHours() + 1, 0, 0, -1);
           this._p.H = d.getHours();
@@ -1788,7 +1791,7 @@ export class MomentLite {
           this._p.t = endOfUnitEpoch(this._p.t, MINUTE_MS);
           this._p.d = undefined;
         } else {
-          const d = this._getDNoEnsure();
+          d = this._getDNoEnsure();
           d.setSeconds(0, 0);
           d.setMinutes(d.getMinutes() + 1, 0, -1);
           this._p.m = d.getMinutes();
@@ -1802,7 +1805,7 @@ export class MomentLite {
           this._p.t = endOfUnitEpoch(this._p.t, SECOND_MS);
           this._p.d = undefined;
         } else {
-          const d = this._getDNoEnsure();
+          d = this._getDNoEnsure();
           d.setSeconds(d.getSeconds() + 1, -1);
           this._p.s = d.getSeconds();
           this._p.ms = d.getMilliseconds();
@@ -1810,8 +1813,8 @@ export class MomentLite {
         }
         break;
     }
-    if (!utc) {
-      this._p.offset = -this._getDNoEnsure().getTimezoneOffset();
+    if (!utc && d) {
+      this._p.offset = -d.getTimezoneOffset();
     }
     return this;
   }
