@@ -75,28 +75,6 @@ function pad3(n: number): string {
   return n < 10 ? `00${n}` : n < 100 ? `0${n}` : String(n);
 }
 
-function getTokenValue(m: FormattableMoment, token: (typeof TOKENS)[number]): string {
-  const raw = m as unknown as {
-    _p: { y: number; M: number; D: number; H: number; m: number; s: number; ms: number };
-  };
-  switch (token) {
-    case "YYYY":
-      return padYear(raw._p.y);
-    case "MM":
-      return PAD2[raw._p.M + 1];
-    case "DD":
-      return PAD2[raw._p.D];
-    case "HH":
-      return PAD2[raw._p.H];
-    case "mm":
-      return PAD2[raw._p.m];
-    case "ss":
-      return PAD2[raw._p.s];
-    case "SSS":
-      return pad3(raw._p.ms);
-  }
-}
-
 export function formatMomentBasic(m: FormattableMoment, format: string): string {
   const raw = m as unknown as {
     _isValid: boolean;
@@ -131,7 +109,29 @@ export function formatMomentBasic(m: FormattableMoment, format: string): string 
     let matched = false;
     for (const token of TOKENS) {
       if (format.startsWith(token, i)) {
-        out += getTokenValue(m, token);
+        switch (token) {
+          case "YYYY":
+            out += padYear(raw._p.y);
+            break;
+          case "MM":
+            out += PAD2[raw._p.M + 1];
+            break;
+          case "DD":
+            out += PAD2[raw._p.D];
+            break;
+          case "HH":
+            out += PAD2[raw._p.H];
+            break;
+          case "mm":
+            out += PAD2[raw._p.m];
+            break;
+          case "ss":
+            out += PAD2[raw._p.s];
+            break;
+          case "SSS":
+            out += pad3(raw._p.ms);
+            break;
+        }
         i += token.length;
         matched = true;
         break;
