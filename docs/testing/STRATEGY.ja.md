@@ -6,15 +6,18 @@ mmntjs は moment.js のドロップイン代替品であり、テスト戦略�
 全テストは `TZ=UTC` 固定で実行される。
 
 ```
-Core test (moment.js公式):  678/678 ✅
+Core test (moment.js公式):  630/630 ✅
 Property-based:             112 tests, ~14.8k oracle assertions ✅
+Stateful Model-Based:         3 tests, 400 sequences, ~4800 oracle assertions ✅
+Branch-Targeted:             37 tests, ~5.3k oracle/consistency assertions ✅
 Mutation:                   10/10 kill ✅
 Timezone:                    8/8 tests ✅
 Locale:                   3246/3246 (138 locales) ✅
 Tree-shaking:                7/7 tests ✅
 Moment2 spec:               14/14 tests ✅
-─────────────────────────────────────
-Total:                    ~4122/4122 ✅
+──────────────────────────────────────
+Regression Corpus:           41 tests ✅
+Total:                    ~4108/4108 ✅
 ```
 
 ## テスト手法一覧

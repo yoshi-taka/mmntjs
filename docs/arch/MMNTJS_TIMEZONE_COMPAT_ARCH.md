@@ -1,13 +1,16 @@
 # mmntjs-timezone Compatibility-First Architecture
 
-## Current Architecture Risks
+## Current Architecture
 
-- The current `packages/timezone` implementation is `Intl`-backed and therefore cannot be the authoritative source of truth for exact Moment Timezone compatibility.
-- `moment.tz.add()` is currently a no-op, `moment.tz.link()` is currently a no-op, and `countries()` / `zonesForCountry()` are currently empty. That breaks real Moment Timezone API compatibility.
-- Runtime `Intl` probing makes behavior depend on host tzdata version, alias resolution, abbreviation support, and browser/OS differences.
-- Historical correctness is not stable under `Intl` because pre-1970 transitions, abbreviations, and legacy links are not guaranteed to match Moment Timezone.
-- The current approach pays repeated runtime costs in `toLocaleString()` / `DateTimeFormat` setup rather than using compact authoritative transition data.
-- JS object and `Map` overhead amplifies memory use compared with packed transition tables and typed arrays.
+The `packages/timezone` implementation uses Moment Timezone's native **packed data format** (base-60 encoded strings) as the authoritative source.
+
+Key facts:
+- Authoritative data is stored in packed format (`builtin-data.generated.ts`), decoded lazily via `unpack()` on first zone access.
+- `moment.tz.add()` and `moment.tz.link()` are **fully implemented** — runtime zone/link addition works.
+- `countries()` and `zonesForCountry()` are **fully implemented** — country metadata is bundled alongside zone data.
+- `Intl.DateTimeFormat` is used only for `moment.tz.guess()` and as a fallback for `.tz()` when no zone is set — never as the authoritative tzdata source.
+- Packed format achieved ~73% reduction (2.74 MB → 725 KB) over the previous pre-unpacked JSON representation.
+- The implementation passes 358 timezone compatibility tests against upstream moment-timezone.
 
 ## Safe Optimizations
 

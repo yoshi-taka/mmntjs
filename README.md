@@ -107,7 +107,7 @@ moment.locale("ja", jaLocale);
 | Strict ISO 8601 parsing | ✅ | ✅ | ✅ | — |
 | `.add()` / `.subtract()` / `.startOf()` / `.endOf()` | ✅ | ✅ | ✅ | — |
 | `.diff()` / `.from()` / `.to()` | ✅ | ✅ | ✅ | — |
-| UTC mode (`moment.utc()` / `.utc()` / `.local()`) | via plugin | ✅ | ✅ | — |
+| UTC mode (`moment.utc()` / `.utc()` / `.local()`) | ✅ | ✅ | ✅ | — |
 | Locale registry (`moment.locale()` / `defineLocale()`) | — | ✅ | ✅ | — |
 | Custom format parsing (`moment("…", "YYYY-MM-DD")`) | via plugin | ✅ | ✅ | — |
 | `.format("LLL")` locale-aware | via plugin | ✅ | ✅ | — |
@@ -155,7 +155,7 @@ const moment = require("mmntjs");
 
 ### 1. Near-100% Drop-in Compatibility
 
-**moment.js's own test suite**: 678/678 pass (52 QUnit files via compat layer).  
+**moment.js's own test suite**: 630/630 pass (52 QUnit files via compat layer).  
 **Oracle comparison**: 112 properties, 45k+ assertions against upstream moment.js.  
 **Mutation**: 20 operators, 100% kill rate (12/12 applicable, 8 N/A).  
 **Fuzzing**: 9 coverage-guided harnesses + grammar-based ISO 8601 generator.

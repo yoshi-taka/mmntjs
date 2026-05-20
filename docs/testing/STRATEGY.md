@@ -6,7 +6,7 @@ mmntjs is a drop-in replacement for moment.js. The core testing strategy is **Di
 All tests run with `TZ=UTC` fixed.
 
 ```
-Core test (moment.js official):  678/678 ✅
+Core test (moment.js official):  630/630 ✅
 Property-based:                  112 tests, ~14.8k oracle assertions ✅
 Stateful Model-Based:            3 tests, 400 sequences, ~4800 oracle assertions ✅
 Branch-Targeted:                 37 tests, ~5.3k oracle/consistency assertions ✅
@@ -17,7 +17,7 @@ Tree-shaking:                     7/7 tests ✅
 Moment2 spec:                    14/14 tests ✅
 ──────────────────────────────────────
 Regression Corpus (generated): 41 tests ✅
-Total:                         ~4203/4203 ✅
+Total:                         ~4108/4108 ✅
 ```
 
 ## Test Methods

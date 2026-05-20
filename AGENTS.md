@@ -38,7 +38,7 @@
 
 ## テスト結果
 
-- `bun run test` (678 tests): ✅ 0 fail
+- `bun run test` (630 tests): ✅ 0 fail
 - `bun run test:hard` (4642 tests): ✅ 0 fail
 - `bun run test:tz`: 全6タイムゾーン × 124 tests = 744 tests ✅
 - ファズ: `bun run fuzz` で実行可能
