@@ -2166,6 +2166,7 @@ export class Moment {
       case DAY: {
         const a = isUTC ? this._p.t - this._p.offset * 60000 : this._p.t;
         const b = otherUTC ? other._p.t - other._p.offset * 60000 : other._p.t;
+        const zoneDelta = isUTC || otherUTC ? 0 : (other._p.offset - this._p.offset) * 60000;
         if (isUTC && otherUTC) {
           if (float) {
             return (a - b) / 86400000;
@@ -2173,7 +2174,7 @@ export class Moment {
           const days = Math.floor(a / 86400000) - Math.floor(b / 86400000);
           return days || 0;
         }
-        const r = (a - b) / 86400000;
+        const r = (a - b - zoneDelta) / 86400000;
         if (float) {
           return r;
         }
@@ -2205,12 +2206,13 @@ export class Moment {
       case WEEK: {
         const a = isUTC ? this._p.t - this._p.offset * 60000 : this._p.t;
         const b = otherUTC ? other._p.t - other._p.offset * 60000 : other._p.t;
+        const zoneDelta = isUTC || otherUTC ? 0 : (other._p.offset - this._p.offset) * 60000;
         if (isUTC && otherUTC) {
           const days = Math.floor(a / 86400000) - Math.floor(b / 86400000);
           const r = days / 7;
           return float ? r : Math.trunc(r) || 0;
         }
-        const r = (a - b) / 604800000;
+        const r = (a - b - zoneDelta) / 604800000;
         if (float) {
           return r;
         }

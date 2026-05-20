@@ -1472,7 +1472,9 @@ export class MomentLite {
             Math.floor(this.valueOf() / 86400000) - Math.floor(other.valueOf() / 86400000);
           return float ? days : days || 0;
         }
-        const r = diff / 86400000;
+        const zoneDelta =
+          this._p.isUTC || other._p.isUTC ? 0 : (other._p.offset - this._p.offset) * 60000;
+        const r = (diff - zoneDelta) / 86400000;
         if (float) {
           return r;
         }
@@ -1503,7 +1505,9 @@ export class MomentLite {
           const r = days / 7;
           return float ? r : Math.trunc(r) || 0;
         }
-        const r = diff / 604800000;
+        const zoneDelta =
+          this._p.isUTC || other._p.isUTC ? 0 : (other._p.offset - this._p.offset) * 60000;
+        const r = (diff - zoneDelta) / 604800000;
         if (float) {
           return r;
         }

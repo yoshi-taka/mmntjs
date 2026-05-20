@@ -859,6 +859,24 @@ describe("diff", () => {
   test("unknown unit returns NaN", () => {
     expect(diff(new Date(2024, 0, 1), new Date(2024, 0, 2), "unknown" as never)).toBe(NaN);
   });
+
+  test("zoneDelta corrects week diff across DST offset change", () => {
+    // Dates with different UTC offsets (e.g., DST adoption in Sydney 1970→1975).
+    // Without zoneDelta: (a-b)/604800000 = 261.994 → trunc = 261
+    // With zoneDelta:    (a-b-zoneDelta)/604800000 = 262.0 → floor = 262 (matches moment.js)
+    const a = new Date("1975-01-08T23:00:00.000Z");
+    const b = new Date("1970-01-01T00:00:00.000Z");
+    const momentWeeks = originalMoment(a).diff(originalMoment(b), "weeks");
+    expect(diff(a, b, "week")).toBe(momentWeeks);
+  });
+
+  test("zoneDelta corrects day diff across DST offset change", () => {
+    // Same scenario: diff with DST offset difference
+    const a = new Date("1975-01-08T23:00:00.000Z");
+    const b = new Date("1970-01-01T00:00:00.000Z");
+    const momentDays = originalMoment(a).diff(originalMoment(b), "days");
+    expect(diff(a, b, "day")).toBe(momentDays);
+  });
 });
 
 // ---------------------------------------------------------------------------
