@@ -65,24 +65,30 @@ const PAD2 = [
   "59",
 ];
 
-const TOKENS = ["YYYY", "MM", "DD", "HH", "mm", "ss", "SSS"] as const;
+const TOKENS = ["YYYY", "SSS", "MM", "DD", "HH", "mm", "ss"] as const;
 
 function padYear(y: number): string {
   const abs = Math.abs(y);
   const s = abs < 10 ? `000${abs}` : abs < 100 ? `00${abs}` : abs < 1000 ? `0${abs}` : String(abs);
   return y < 0 ? `-${s}` : y > 9999 ? `+${s}` : s;
 }
+
 function pad3(n: number): string {
   return n < 10 ? `00${n}` : n < 100 ? `0${n}` : String(n);
 }
 
-// Same token handling as formatMomentBasic (used by MomentLite.format())
+// copied from format-basic.ts — same token handling as MomentLite.format()
 export function format(d: Date, fmt: string): string {
   if (isNaN(d.getTime())) {
     return "Invalid date";
   }
   let out = "";
   for (let i = 0; i < fmt.length; ) {
+    if (fmt[i] === "\\" && i + 1 < fmt.length) {
+      out += fmt[i + 1];
+      i += 2;
+      continue;
+    }
     let matched = false;
     for (const token of TOKENS) {
       if (fmt.startsWith(token, i)) {
@@ -122,6 +128,7 @@ export function format(d: Date, fmt: string): string {
   return out;
 }
 
+// copied from moment-lite.ts startOf() LOCAL path
 export function startOf(d: Date, unit: string): Date {
   const r = new Date(d);
   const u = unit === "date" ? "day" : unit;
@@ -150,109 +157,175 @@ export function startOf(d: Date, unit: string): Date {
   return r;
 }
 
+// copied from moment-lite.ts endOf() LOCAL path
 export function endOf(d: Date, unit: string): Date {
   const r = new Date(d);
   const u = unit === "date" ? "day" : unit;
   switch (u) {
     case "year":
-      r.setMonth(11, 31);
+      r.setFullYear(r.getFullYear(), 11, 31);
       r.setHours(23, 59, 59, 999);
       break;
     case "month":
+      r.setFullYear(r.getFullYear(), r.getMonth(), 1);
       r.setMonth(r.getMonth() + 1, 0);
       r.setHours(23, 59, 59, 999);
       break;
     case "day":
-      r.setHours(23, 59, 59, 999);
+      r.setHours(0, 0, 0, 0);
+      r.setDate(r.getDate() + 1);
+      r.setMilliseconds(-1);
       break;
     case "hour":
-      r.setMinutes(59, 59, 999);
+      r.setMinutes(0, 0, 0);
+      r.setHours(r.getHours() + 1, 0, 0, -1);
       break;
     case "minute":
-      r.setSeconds(59, 999);
+      r.setSeconds(0, 0);
+      r.setMinutes(r.getMinutes() + 1, 0, -1);
       break;
     case "second":
-      r.setMilliseconds(999);
+      r.setSeconds(r.getSeconds() + 1, -1);
       break;
   }
   return r;
 }
 
-function daysInMonth(y: number, m: number): number {
-  if (m === 1) {
-    return y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0) ? 29 : 28;
-  }
-  if (m === 3 || m === 5 || m === 8 || m === 10) {
-    return 30;
-  }
-  return 31;
-}
-
+// copied from moment-lite.ts _addSimple() LOCAL path + add() MONTH path
 export function add(d: Date, amount: number, unit: string): Date {
   const r = new Date(d);
   switch (unit) {
     case "year": {
-      const ny = r.getFullYear() + amount;
+      const raw = Number.isInteger(amount)
+        ? amount
+        : amount < 0
+          ? Math.round(-amount) * -1
+          : Math.round(amount);
+      const ny = r.getFullYear() + raw;
       const m = r.getMonth();
-      const md = daysInMonth(ny, m);
-      r.setFullYear(ny, m, r.getDate() > md ? md : r.getDate());
+      let d_ = r.getDate();
+      if (d_ > 28) {
+        const md =
+          m === 1
+            ? ny % 4 === 0 && (ny % 100 !== 0 || ny % 400 === 0)
+              ? 29
+              : 28
+            : m === 3 || m === 5 || m === 8 || m === 10
+              ? 30
+              : 31;
+        if (d_ > md) {
+          d_ = md;
+        }
+      }
+      r.setFullYear(ny, m, d_);
       break;
     }
     case "month": {
-      const total = r.getFullYear() * 12 + r.getMonth() + amount;
+      const raw = Number.isInteger(amount)
+        ? amount
+        : amount < 0
+          ? Math.round(-amount) * -1
+          : Math.round(amount);
+      const total = r.getFullYear() * 12 + r.getMonth() + raw;
       const ny = Math.floor(total / 12);
       const nm = ((total % 12) + 12) % 12;
-      const md = daysInMonth(ny, nm);
-      r.setFullYear(ny, nm, r.getDate() > md ? md : r.getDate());
+      let d_ = r.getDate();
+      if (d_ > 28) {
+        const md =
+          nm === 1
+            ? ny % 4 === 0 && (ny % 100 !== 0 || ny % 400 === 0)
+              ? 29
+              : 28
+            : nm === 3 || nm === 5 || nm === 8 || nm === 10
+              ? 30
+              : 31;
+        if (d_ > md) {
+          d_ = md;
+        }
+      }
+      r.setFullYear(ny, nm, d_);
       break;
     }
     case "quarter":
-      return add(r, amount * 3, "month");
-    case "week":
-      r.setDate(r.getDate() + amount * 7);
+      return add(r, Math.round(amount * 3), "month");
+    case "week": {
+      const raw = amount * 7;
+      const rounded = Number.isInteger(raw)
+        ? raw
+        : raw < 0
+          ? Math.round(-raw) * -1
+          : Math.round(raw);
+      r.setDate(r.getDate() + rounded);
       break;
+    }
     case "day":
-    case "date":
-      r.setDate(r.getDate() + amount);
+    case "date": {
+      const raw = Number.isInteger(amount)
+        ? amount
+        : amount < 0
+          ? Math.round(-amount) * -1
+          : Math.round(amount);
+      r.setDate(r.getDate() + raw);
       break;
+    }
     case "hour":
-      r.setTime(r.getTime() + amount * 3600000);
+      r.setTime(r.getTime() + Math.round(amount * 3600000));
       break;
     case "minute":
-      r.setTime(r.getTime() + amount * 60000);
+      r.setTime(r.getTime() + Math.round(amount * 60000));
       break;
     case "second":
-      r.setTime(r.getTime() + amount * 1000);
+      r.setTime(r.getTime() + Math.round(amount * 1000));
       break;
     case "millisecond":
-      r.setTime(r.getTime() + amount);
+      r.setTime(r.getTime() + Math.round(amount));
       break;
   }
   return r;
 }
 
+// copied from moment-lite.ts subtract()
 export function subtract(d: Date, amount: number, unit: string): Date {
   return add(d, -amount, unit);
 }
 
+// copied from moment-lite.ts diff() (non-float, LOCAL path)
 export function diff(a: Date, b: Date, unit: string): number {
-  const ms = a.getTime() - b.getTime();
-  if (isNaN(ms)) {
+  const diffMs = a.getTime() - b.getTime();
+  if (isNaN(diffMs)) {
     return NaN;
   }
-  switch (unit) {
-    case "millisecond":
-      return ms || 0;
-    case "second":
-      return Math.trunc(ms / 1000) || 0;
-    case "minute":
-      return Math.trunc(ms / 60000) || 0;
-    case "hour":
-      return Math.trunc(ms / 3600000) || 0;
-    case "day":
-      return Math.trunc(ms / 86400000) || 0;
-    case "week":
-      return Math.trunc(ms / 604800000) || 0;
+  const u = unit === "date" ? "day" : unit;
+  switch (u) {
+    case "millisecond": {
+      const t = diffMs < 0 ? -Math.floor(-diffMs) : Math.floor(diffMs);
+      return t || 0;
+    }
+    case "second": {
+      const r = diffMs / 1000;
+      const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
+      return t || 0;
+    }
+    case "minute": {
+      const r = diffMs / 60000;
+      const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
+      return t || 0;
+    }
+    case "hour": {
+      const r = diffMs / 3600000;
+      const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
+      return t || 0;
+    }
+    case "day": {
+      const r = diffMs / 86400000;
+      const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
+      return t || 0;
+    }
+    case "week": {
+      const r = diffMs / 604800000;
+      const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
+      return t || 0;
+    }
     case "month": {
       const m = (a.getFullYear() - b.getFullYear()) * 12 + (a.getMonth() - b.getMonth());
       const r = a.getDate() < b.getDate() ? m - 1 : m;
@@ -266,35 +339,84 @@ export function diff(a: Date, b: Date, unit: string): number {
   return NaN;
 }
 
-function startOfMs(d: Date, unit?: string): number {
-  return unit ? startOf(d, unit).getTime() : d.getTime();
+// copied from moment-lite.ts isBefore/isAfter/isSame LOCAL path + _compareCalendarValues
+function compareCalendarValues(a: Date, b: Date, unit: string): number {
+  switch (unit) {
+    case "millisecond":
+      return a.getTime() - b.getTime();
+    case "second":
+      return Math.floor(a.getTime() / 1000) - Math.floor(b.getTime() / 1000);
+    case "minute":
+      return Math.floor(a.getTime() / 60000) - Math.floor(b.getTime() / 60000);
+    case "hour":
+      return Math.floor(a.getTime() / 3600000) - Math.floor(b.getTime() / 3600000);
+    case "year":
+      return a.getFullYear() - b.getFullYear();
+    case "month": {
+      const yd = a.getFullYear() - b.getFullYear();
+      if (yd !== 0) {
+        return yd;
+      }
+      return a.getMonth() - b.getMonth();
+    }
+    case "day":
+    case "date":
+    default: {
+      const yd = a.getFullYear() - b.getFullYear();
+      if (yd !== 0) {
+        return yd;
+      }
+      const md = a.getMonth() - b.getMonth();
+      if (md !== 0) {
+        return md;
+      }
+      return a.getDate() - b.getDate();
+    }
+  }
 }
 
+// copied from moment-lite.ts isBefore/isAfter/isSame/isSameOrBefore/isSameOrAfter
 export function isBefore(a: Date, b: Date, unit?: string): boolean {
-  return startOfMs(a, unit) < startOfMs(b, unit);
+  if (!unit) {
+    return a.getTime() < b.getTime();
+  }
+  return compareCalendarValues(a, b, unit) < 0;
 }
 
 export function isAfter(a: Date, b: Date, unit?: string): boolean {
-  return startOfMs(a, unit) > startOfMs(b, unit);
+  if (!unit) {
+    return a.getTime() > b.getTime();
+  }
+  return compareCalendarValues(a, b, unit) > 0;
 }
 
 export function isSame(a: Date, b: Date, unit?: string): boolean {
-  return startOfMs(a, unit) === startOfMs(b, unit);
+  if (!unit) {
+    return a.getTime() === b.getTime();
+  }
+  return compareCalendarValues(a, b, unit) === 0;
 }
 
 export function isSameOrBefore(a: Date, b: Date, unit?: string): boolean {
-  return startOfMs(a, unit) <= startOfMs(b, unit);
+  if (!unit) {
+    return a.getTime() <= b.getTime();
+  }
+  return compareCalendarValues(a, b, unit) <= 0;
 }
 
 export function isSameOrAfter(a: Date, b: Date, unit?: string): boolean {
-  return startOfMs(a, unit) >= startOfMs(b, unit);
+  if (!unit) {
+    return a.getTime() >= b.getTime();
+  }
+  return compareCalendarValues(a, b, unit) >= 0;
 }
 
+// copied from moment-lite.ts isBetween()
 export function isBetween(a: Date, b: Date, c: Date, inclusivity?: string, unit?: string): boolean {
-  const sa = startOfMs(a, unit);
-  const sb = startOfMs(b, unit);
-  const sc = startOfMs(c, unit);
-  const startOk = inclusivity?.includes("[") ? sa >= sb : sa > sb;
-  const endOk = inclusivity?.includes("]") ? sa <= sc : sa < sc;
-  return startOk && endOk;
+  const fromStr = inclusivity ?? "()";
+  const startOpen = fromStr[0] === "(";
+  const endOpen = fromStr.at(-1) === ")";
+  const startCheck = startOpen ? isAfter(a, b, unit) : isSameOrAfter(a, b, unit);
+  const endCheck = endOpen ? isBefore(a, c, unit) : isSameOrBefore(a, c, unit);
+  return startCheck && endCheck;
 }
