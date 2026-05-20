@@ -702,6 +702,86 @@ makeMutations([
     },
   },
   {
+    name: "isSame: unit comparison === flipped to !==",
+    file: "src/moment-class.ts",
+    patterns: [
+      [/_compareCalendarValues\(other, unit\) === 0/g, "_compareCalendarValues(other, unit) !== 0"],
+      [/return a === b;/g, "return a !== b;"],
+    ],
+    inputs: fc.date({ noInvalidDate: true }),
+    testFn: (input: unknown) => {
+      const d = input as Date;
+      return (
+        mutatedMoment(d).isSame(new Date(d.getTime() + 86400000), "day") ===
+          originalMoment(d as Date).isSame(new Date(d.getTime() + 86400000), "day") &&
+        mutatedMoment(d).isSame(d, "day") === originalMoment(d as Date).isSame(d as Date, "day")
+      );
+    },
+  },
+  {
+    name: "isSameOrBefore: <= flipped to <",
+    file: "src/moment-class.ts",
+    patterns: [
+      [
+        /_compareCalendarValues\(other, unit \?\? "millisecond"\) <= 0/g,
+        '_compareCalendarValues(other, unit ?? "millisecond") < 0',
+      ],
+    ],
+    inputs: fc.date({ noInvalidDate: true }),
+    testFn: (input: unknown) => {
+      const d = input as Date;
+      return (
+        mutatedMoment(d).isSameOrBefore(new Date(d.getTime() + 86400000)) ===
+          originalMoment(d as Date).isSameOrBefore(new Date(d.getTime() + 86400000)) &&
+        mutatedMoment(d).isSameOrBefore(d) === originalMoment(d as Date).isSameOrBefore(d as Date)
+      );
+    },
+  },
+  {
+    name: "isSameOrAfter: >= flipped to >",
+    file: "src/moment-class.ts",
+    patterns: [
+      [
+        /_compareCalendarValues\(other, unit \?\? "millisecond"\) >= 0/g,
+        '_compareCalendarValues(other, unit ?? "millisecond") > 0',
+      ],
+    ],
+    inputs: fc.date({ noInvalidDate: true }),
+    testFn: (input: unknown) => {
+      const d = input as Date;
+      return (
+        mutatedMoment(d).isSameOrAfter(new Date(d.getTime() - 86400000)) ===
+          originalMoment(d as Date).isSameOrAfter(new Date(d.getTime() - 86400000)) &&
+        mutatedMoment(d).isSameOrAfter(d) === originalMoment(d as Date).isSameOrAfter(d as Date)
+      );
+    },
+  },
+  {
+    name: "isBetween: startOpen === flipped",
+    file: "src/moment-class.ts",
+    patterns: [[/fromStr\[0\] === "\("/g, 'fromStr[0] === "["']],
+    inputs: fc.constantFrom(
+      // 'a' at exactly 'from' boundary: mutation makes inclusive instead of exclusive
+      {
+        a: new Date("2024-06-15T12:00:00Z"),
+        from: new Date("2024-06-15T12:00:00Z"),
+        to: new Date("2024-06-16T12:00:00Z"),
+      },
+      {
+        a: new Date("2024-06-15T13:00:00Z"),
+        from: new Date("2024-06-14T12:00:00Z"),
+        to: new Date("2024-06-16T12:00:00Z"),
+      },
+    ),
+    testFn: (input: unknown) => {
+      const { a, from, to } = input as { a: Date; from: Date; to: Date };
+      return (
+        mutatedMoment(a).isBetween(from, to, undefined, "()") ===
+        originalMoment(a).isBetween(from, to, undefined, "()")
+      );
+    },
+  },
+  {
     name: "localeData: pastFuture sign flipped",
     file: "src/locale-runtime.ts",
     patterns: [[/diff > 0/g, "diff < 0"]],

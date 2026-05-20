@@ -76,6 +76,25 @@ export function fuzz(buf) {
         );
       }
     } catch {}
+    // Compare isAfter/isBefore/isSame with a shifted version of itself
+    try {
+      const shifted = m2.clone().add(1, "day");
+      const sOrig = mOrig.clone().add(1, "day");
+      if (m2.isAfter(shifted) !== mOrig.isAfter(sOrig)) {
+        throw new Error(`isAfter(shifted) mismatch for offset=${offset}`);
+      }
+      if (m2.isBefore(shifted) !== mOrig.isBefore(sOrig)) {
+        throw new Error(`isBefore(shifted) mismatch for offset=${offset}`);
+      }
+      if (m2.isSame(shifted) !== mOrig.isSame(sOrig)) {
+        throw new Error(`isSame(shifted) mismatch for offset=${offset}`);
+      }
+      // Compare with string input
+      const strInput = shifted.format("YYYY-MM-DDTHH:mm:ssZ");
+      if (m2.isAfter(strInput) !== mOrig.isAfter(strInput)) {
+        throw new Error(`isAfter(string) mismatch for offset=${offset}`);
+      }
+    } catch {}
   } catch (error) {
     if (
       error instanceof Error &&
@@ -83,7 +102,10 @@ export function fuzz(buf) {
         error.message.startsWith("isValid() mismatch") ||
         error.message.startsWith("add(") ||
         error.message.startsWith("startOf(") ||
-        error.message.startsWith("diff("))
+        error.message.startsWith("diff(") ||
+        error.message.startsWith("isAfter(") ||
+        error.message.startsWith("isBefore(") ||
+        error.message.startsWith("isSame("))
     ) {
       throw error;
     }
