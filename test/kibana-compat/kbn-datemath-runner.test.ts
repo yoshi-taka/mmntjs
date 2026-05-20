@@ -304,10 +304,12 @@ if (!dateMath) {
 
     describe("used momentjs instance", () => {
       it("should use the default moment instance if parameter not specified", () => {
-        const momentSpy = jest.spyOn(moment as any, "isMoment");
-        (dateMath as any).parse("now");
-        expect(momentSpy).toHaveBeenCalled();
-        momentSpy.mockRestore();
+        const orig = (moment as any).isMoment;
+        let called = false;
+        (moment as any).isMoment = (...args: unknown[]) => { called = true; return orig(...args); };
+        (dateMath as any).parse("now", { momentInstance: moment as any });
+        expect(called).toBe(true);
+        (moment as any).isMoment = orig;
       });
 
       it("should not use default moment instance if parameter is specified", () => {
