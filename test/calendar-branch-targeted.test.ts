@@ -47,6 +47,47 @@ describe("dayOfYearMoment (calendar-extra.ts) branch coverage", () => {
     expect(m.dayOfYear()).toBe(o.dayOfYear());
     expect(m.format("MM-DD")).toBe(o.format("MM-DD"));
   });
+
+  test("dayOfYear setter non-UTC: month-end date does not roll over", () => {
+    const m = moment("2024-01-31");
+    const o = originalMoment("2024-01-31");
+    m.dayOfYear(59);
+    o.dayOfYear(59);
+    expect(m.dayOfYear()).toBe(o.dayOfYear());
+    expect(m.valueOf()).toBe(o.valueOf());
+    expect(m.format("MM-DD")).toBe(o.format("MM-DD"));
+  });
+
+  test("dayOfYear setter UTC: month-end date does not roll over", () => {
+    const m = moment.utc("2024-01-31");
+    const o = originalMoment.utc("2024-01-31");
+    m.dayOfYear(59);
+    o.dayOfYear(59);
+    expect(m.dayOfYear()).toBe(o.dayOfYear());
+    expect(m.valueOf()).toBe(o.valueOf());
+    expect(m.format("MM-DD")).toBe(o.format("MM-DD"));
+  });
+
+  test("dayOfYear setter non-UTC: rollover from various month-end dates", () => {
+    const cases = [
+      { date: "2024-01-31", dayOfYear: 59, expected: "02-28" },
+      { date: "2024-01-31", dayOfYear: 60, expected: "02-29" },
+      { date: "2023-01-31", dayOfYear: 59, expected: "02-28" },
+      { date: "2024-03-31", dayOfYear: 91, expected: "03-31" },
+      { date: "2024-05-31", dayOfYear: 152, expected: "05-31" },
+      { date: "2024-08-31", dayOfYear: 244, expected: "08-31" },
+    ];
+    for (const { date, dayOfYear: doy, expected } of cases) {
+      const m = moment(date);
+      const o = originalMoment(date);
+      m.dayOfYear(doy);
+      o.dayOfYear(doy);
+      expect(m.dayOfYear()).toBe(o.dayOfYear());
+      expect(m.valueOf()).toBe(o.valueOf());
+      expect(m.format("MM-DD")).toBe(expected);
+      expect(o.format("MM-DD")).toBe(expected);
+    }
+  });
 });
 
 describe("isoWeekMoment (calendar-extra.ts) branch coverage", () => {

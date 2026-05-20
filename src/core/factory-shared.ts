@@ -101,6 +101,22 @@ function parseFixedISOZ(str: string): Date | null {
   ) {
     return null;
   }
+  if (
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > 31 ||
+    hour < 0 ||
+    hour > 23 ||
+    minute < 0 ||
+    minute > 59 ||
+    second < 0 ||
+    second > 59 ||
+    millisecond < 0 ||
+    millisecond > 999
+  ) {
+    return null;
+  }
   return createUTCDate(year, month - 1, day, hour, minute, second, millisecond);
 }
 
@@ -115,6 +131,9 @@ function parseFixedLocalDate(str: string): Date | null {
   const month = Number(str.slice(5, 7));
   const day = Number(str.slice(8, 10));
   if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) {
+    return null;
+  }
+  if (month < 1 || month > 12 || day < 1 || day > 31) {
     return null;
   }
   return createDateSafe(year, month - 1, day, 0, 0, 0, 0, false);

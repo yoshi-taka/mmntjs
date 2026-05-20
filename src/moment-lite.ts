@@ -2081,8 +2081,7 @@ export class MomentLite {
         this._p.t = this._p.d.getTime();
         this._p.dirty = true;
       } else {
-        dt.setMonth(date.getMonth());
-        dt.setDate(date.getDate());
+        dt.setMonth(date.getMonth(), date.getDate());
         this._p.t = dt.getTime();
       }
       return this;
