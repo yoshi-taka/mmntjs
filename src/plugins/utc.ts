@@ -40,6 +40,28 @@ function parseFixedISOZ(str: string): Date | null {
   );
 }
 
+function parseFixedISODate(str: string): Date | null {
+  const len = str.length;
+  if (len !== 19 && len !== 16) {
+    return null;
+  }
+  if (str.charCodeAt(4) !== 45 || str.charCodeAt(7) !== 45 || str.charCodeAt(10) !== 84) {
+    return null;
+  }
+  if (len === 19 && str.charCodeAt(16) !== 58) {
+    return null;
+  }
+  return createUTCDate(
+    Number(str.slice(0, 4)),
+    Number(str.slice(5, 7)) - 1,
+    Number(str.slice(8, 10)),
+    Number(str.slice(11, 13)),
+    Number(str.slice(14, 16)),
+    len === 19 ? Number(str.slice(17, 19)) : 0,
+    0,
+  );
+}
+
 export function registerUtcApi(target: UtcMomentTarget, deps: UtcApiDeps): void {
   const momentRecord = target as unknown as Record<string, unknown>;
   momentRecord.utc = function (
@@ -67,6 +89,16 @@ export function registerUtcApi(target: UtcMomentTarget, deps: UtcApiDeps): void 
       if (fixedIsoZ) {
         return createMomentFromDate({
           _d: fixedIsoZ,
+          _isUTC: true,
+          _offset: 0,
+          _i: input,
+          _dClone: false,
+        });
+      }
+      const fixedIsoDate = parseFixedISODate(input);
+      if (fixedIsoDate) {
+        return createMomentFromDate({
+          _d: fixedIsoDate,
           _isUTC: true,
           _offset: 0,
           _i: input,
@@ -103,26 +135,19 @@ export function registerUtcApi(target: UtcMomentTarget, deps: UtcApiDeps): void 
           m._p.d = new Date(absTime);
         }
       } else if (m._cold !== undefined) {
-        const origHour = m._cold._parsedDateParts?.[3];
-        if (origHour !== undefined) {
-          const d = m._p.d!;
-          const gap = d.getHours() - origHour;
-          m._p.d = new Date(absTime - d.getTimezoneOffset() * 60000 - gap * 3600000);
+        const parts = m._cold._parsedDateParts;
+        if (parts && parts.length > 0) {
+          m._p.d = createUTCDate(
+            parts[0],
+            parts[1] ?? 0,
+            parts[2] ?? 1,
+            parts[3] ?? 0,
+            parts[4] ?? 0,
+            parts[5] ?? 0,
+            parts[6] ?? 0,
+          );
         } else {
-          const parts = m._cold._parsedDateParts;
-          if (parts && parts.length > 0) {
-            m._p.d = createUTCDate(
-              parts[0],
-              parts[1] ?? 0,
-              parts[2] ?? 1,
-              parts[3] ?? 0,
-              parts[4] ?? 0,
-              parts[5] ?? 0,
-              parts[6] ?? 0,
-            );
-          } else {
-            m._p.d = new Date(absTime);
-          }
+          m._p.d = new Date(absTime);
         }
       } else {
         const utcDate = new Date(`${input} UTC`);
