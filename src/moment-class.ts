@@ -830,15 +830,15 @@ export class Moment {
     if (!this._isValid) {
       return NaN;
     }
-    this._ensureFields();
-    return this._p.y;
+    const d = this._getDNoEnsure();
+    return this._p.isUTC ? d.getUTCFullYear() : d.getFullYear();
   }
 
   month(): number;
   month(m: unknown): this;
   month(m?: unknown): number | this {
-    this._ensureFields();
     if (m !== undefined) {
+      this._ensureFields();
       if (typeof m === "string" && !/^-?\d+$/.test(m)) {
         const lower = m.toLowerCase();
         const localeMonthsFull = this._getLocale().monthsArray();
@@ -891,7 +891,8 @@ export class Moment {
     if (!this._isValid) {
       return NaN;
     }
-    return this._p.M;
+    const d = this._getDNoEnsure();
+    return this._p.isUTC ? d.getUTCMonth() : d.getMonth();
   }
 
   date(): number;
@@ -923,15 +924,15 @@ export class Moment {
     if (!this._isValid) {
       return NaN;
     }
-    this._ensureFields();
-    return this._p.D;
+    const _dd = this._getDNoEnsure();
+    return this._p.isUTC ? _dd.getUTCDate() : _dd.getDate();
   }
 
   day(): number;
   day(d: unknown): this;
   day(d?: unknown): number | this {
-    this._ensureFields();
     if (d !== undefined) {
+      this._ensureFields();
       let dayNum = Number(d);
       if (typeof d === "string") {
         const lower = d.toLowerCase();
@@ -989,8 +990,8 @@ export class Moment {
     if (!this._isValid) {
       return NaN;
     }
-    this._ensureFields();
-    return this._p.W;
+    const _dd = this._getDNoEnsure();
+    return this._p.isUTC ? _dd.getUTCDay() : _dd.getDay();
   }
 
   weekday(): number;
@@ -999,7 +1000,6 @@ export class Moment {
     if (!this._isValid) {
       return NaN;
     }
-    this._ensureFields();
     return localeWeekday(this, d as never) as number | this;
   }
 
@@ -1048,8 +1048,8 @@ export class Moment {
     if (!this._isValid) {
       return NaN;
     }
-    this._ensureFields();
-    return this._p.H;
+    const d = this._getDNoEnsure();
+    return this._p.isUTC ? d.getUTCHours() : d.getHours();
   }
 
   minute(): number;
@@ -1076,8 +1076,8 @@ export class Moment {
     if (!this._isValid) {
       return NaN;
     }
-    this._ensureFields();
-    return this._p.m;
+    const d = this._getDNoEnsure();
+    return this._p.isUTC ? d.getUTCMinutes() : d.getMinutes();
   }
 
   second(): number;
@@ -1104,8 +1104,8 @@ export class Moment {
     if (!this._isValid) {
       return NaN;
     }
-    this._ensureFields();
-    return this._p.s;
+    const d = this._getDNoEnsure();
+    return this._p.isUTC ? d.getUTCSeconds() : d.getSeconds();
   }
 
   millisecond(): number;
@@ -1134,8 +1134,8 @@ export class Moment {
     if (!this._isValid) {
       return NaN;
     }
-    this._ensureFields();
-    return this._p.ms;
+    const d = this._getDNoEnsure();
+    return this._p.isUTC ? d.getUTCMilliseconds() : d.getMilliseconds();
   }
 
   get(unit: string): number;
