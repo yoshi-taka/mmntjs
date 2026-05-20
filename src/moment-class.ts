@@ -805,15 +805,7 @@ export class Moment {
       } else {
         const maxDay = daysInMonth(num, this._p.M);
         const d_ = this._p.D > maxDay ? maxDay : this._p.D;
-        const dt = new Date(
-          this._p.y,
-          this._p.M,
-          d_,
-          this._p.H,
-          this._p.m,
-          this._p.s,
-          this._p.ms,
-        );
+        const dt = new Date(this._p.y, this._p.M, d_, this._p.H, this._p.m, this._p.s, this._p.ms);
         dt.setFullYear(num);
         this._p.d = dt;
         this._p.y = dt.getFullYear();

@@ -1,4 +1,6 @@
-// lite/fns — standalone date functions with zero side effects, fully tree-shakeable
+// lite/fns — standalone date functions
+// Same logic as MomentLite (mmntjs/lite), adapted for plain Date objects.
+// No MomentLite instance created — zero object overhead.
 
 const PAD2 = [
   "00",
@@ -63,16 +65,16 @@ const PAD2 = [
   "59",
 ];
 
+const TOKENS = ["YYYY", "MM", "DD", "HH", "mm", "ss", "SSS"] as const;
+
 function padYear(y: number): string {
   return y < 10 ? `000${y}` : y < 100 ? `00${y}` : y < 1000 ? `0${y}` : String(y);
 }
-
 function pad3(n: number): string {
   return n < 10 ? `00${n}` : n < 100 ? `0${n}` : String(n);
 }
 
-const TOKENS = ["YYYY", "MM", "DD", "HH", "mm", "ss", "SSS"] as const;
-
+// Same token handling as formatMomentBasic (used by MomentLite.format())
 export function format(d: Date, fmt: string): string {
   if (isNaN(d.getTime())) {
     return "Invalid date";
@@ -82,36 +84,27 @@ export function format(d: Date, fmt: string): string {
     let matched = false;
     for (const token of TOKENS) {
       if (fmt.startsWith(token, i)) {
-        const v = d as unknown as {
-          getFullYear: () => number;
-          getMonth: () => number;
-          getDate: () => number;
-          getHours: () => number;
-          getMinutes: () => number;
-          getSeconds: () => number;
-          getMilliseconds: () => number;
-        };
         switch (token) {
           case "YYYY":
-            out += padYear(v.getFullYear());
+            out += padYear(d.getFullYear());
             break;
           case "MM":
-            out += PAD2[v.getMonth() + 1];
+            out += PAD2[d.getMonth() + 1];
             break;
           case "DD":
-            out += PAD2[v.getDate()];
+            out += PAD2[d.getDate()];
             break;
           case "HH":
-            out += PAD2[v.getHours()];
+            out += PAD2[d.getHours()];
             break;
           case "mm":
-            out += PAD2[v.getMinutes()];
+            out += PAD2[d.getMinutes()];
             break;
           case "ss":
-            out += PAD2[v.getSeconds()];
+            out += PAD2[d.getSeconds()];
             break;
           case "SSS":
-            out += pad3(v.getMilliseconds());
+            out += pad3(d.getMilliseconds());
             break;
         }
         i += token.length;
@@ -129,7 +122,8 @@ export function format(d: Date, fmt: string): string {
 
 export function startOf(d: Date, unit: string): Date {
   const r = new Date(d);
-  switch (unit) {
+  const u = unit === "date" ? "day" : unit;
+  switch (u) {
     case "year":
       r.setMonth(0, 1);
       r.setHours(0, 0, 0, 0);
@@ -138,13 +132,7 @@ export function startOf(d: Date, unit: string): Date {
       r.setDate(1);
       r.setHours(0, 0, 0, 0);
       break;
-    case "week":
-    case "isoWeek":
-      r.setDate(r.getDate() - r.getDay());
-      r.setHours(0, 0, 0, 0);
-      break;
     case "day":
-    case "date":
       r.setHours(0, 0, 0, 0);
       break;
     case "hour":
@@ -156,17 +144,14 @@ export function startOf(d: Date, unit: string): Date {
     case "second":
       r.setMilliseconds(0);
       break;
-    case "quarter":
-      r.setMonth(Math.floor(r.getMonth() / 3) * 3, 1);
-      r.setHours(0, 0, 0, 0);
-      break;
   }
   return r;
 }
 
 export function endOf(d: Date, unit: string): Date {
   const r = new Date(d);
-  switch (unit) {
+  const u = unit === "date" ? "day" : unit;
+  switch (u) {
     case "year":
       r.setMonth(11, 31);
       r.setHours(23, 59, 59, 999);
@@ -175,13 +160,7 @@ export function endOf(d: Date, unit: string): Date {
       r.setMonth(r.getMonth() + 1, 0);
       r.setHours(23, 59, 59, 999);
       break;
-    case "week":
-    case "isoWeek":
-      r.setDate(r.getDate() + (6 - r.getDay()));
-      r.setHours(23, 59, 59, 999);
-      break;
     case "day":
-    case "date":
       r.setHours(23, 59, 59, 999);
       break;
     case "hour":
@@ -193,27 +172,40 @@ export function endOf(d: Date, unit: string): Date {
     case "second":
       r.setMilliseconds(999);
       break;
-    case "quarter":
-      r.setMonth(Math.floor(r.getMonth() / 3) * 3 + 2, 1);
-      r.setMonth(r.getMonth() + 1, 0);
-      r.setHours(23, 59, 59, 999);
-      break;
   }
   return r;
+}
+
+function daysInMonth(y: number, m: number): number {
+  if (m === 1) {
+    return y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0) ? 29 : 28;
+  }
+  if (m === 3 || m === 5 || m === 8 || m === 10) {
+    return 30;
+  }
+  return 31;
 }
 
 export function add(d: Date, amount: number, unit: string): Date {
   const r = new Date(d);
   switch (unit) {
-    case "year":
-      r.setFullYear(r.getFullYear() + amount);
+    case "year": {
+      const ny = r.getFullYear() + amount;
+      const m = r.getMonth();
+      const md = daysInMonth(ny, m);
+      r.setFullYear(ny, m, r.getDate() > md ? md : r.getDate());
       break;
-    case "month":
-      r.setMonth(r.getMonth() + amount);
+    }
+    case "month": {
+      const total = r.getFullYear() * 12 + r.getMonth() + amount;
+      const ny = Math.floor(total / 12);
+      const nm = ((total % 12) + 12) % 12;
+      const md = daysInMonth(ny, nm);
+      r.setFullYear(ny, nm, r.getDate() > md ? md : r.getDate());
       break;
+    }
     case "quarter":
-      r.setMonth(r.getMonth() + amount * 3);
-      break;
+      return add(r, amount * 3, "month");
     case "week":
       r.setDate(r.getDate() + amount * 7);
       break;
@@ -257,49 +249,46 @@ export function diff(a: Date, b: Date, unit: string): number {
     case "week":
       return Math.trunc(ms / 604800000);
     case "month": {
-      const months = (a.getFullYear() - b.getFullYear()) * 12 + (a.getMonth() - b.getMonth());
-      if (a.getDate() < b.getDate()) {
-        return months - 1;
-      }
-      return months;
+      const m = (a.getFullYear() - b.getFullYear()) * 12 + (a.getMonth() - b.getMonth());
+      return a.getDate() < b.getDate() ? m - 1 : m;
     }
     case "year":
       return Math.trunc(diff(a, b, "month") / 12);
+    case "quarter":
+      return Math.trunc(diff(a, b, "month") / 3);
   }
   return NaN;
 }
 
+function startOfMs(d: Date, unit?: string): number {
+  return unit ? startOf(d, unit).getTime() : d.getTime();
+}
+
 export function isBefore(a: Date, b: Date, unit?: string): boolean {
-  if (!unit) {
-    return a.getTime() < b.getTime();
-  }
-  return startOf(a, unit).getTime() < startOf(b, unit).getTime();
+  return startOfMs(a, unit) < startOfMs(b, unit);
 }
 
 export function isAfter(a: Date, b: Date, unit?: string): boolean {
-  if (!unit) {
-    return a.getTime() > b.getTime();
-  }
-  return startOf(a, unit).getTime() > startOf(b, unit).getTime();
+  return startOfMs(a, unit) > startOfMs(b, unit);
 }
 
 export function isSame(a: Date, b: Date, unit?: string): boolean {
-  if (!unit) {
-    return a.getTime() === b.getTime();
-  }
-  return startOf(a, unit).getTime() === startOf(b, unit).getTime();
+  return startOfMs(a, unit) === startOfMs(b, unit);
 }
 
 export function isSameOrBefore(a: Date, b: Date, unit?: string): boolean {
-  return isBefore(a, b, unit) || isSame(a, b, unit);
+  return startOfMs(a, unit) <= startOfMs(b, unit);
 }
 
 export function isSameOrAfter(a: Date, b: Date, unit?: string): boolean {
-  return isAfter(a, b, unit) || isSame(a, b, unit);
+  return startOfMs(a, unit) >= startOfMs(b, unit);
 }
 
-export function isBetween(a: Date, b: Date, c: Date, inclusivity?: string): boolean {
-  const left = inclusivity?.includes("[") ? isSameOrAfter : isAfter;
-  const right = inclusivity?.includes("]") ? isSameOrBefore : isBefore;
-  return left(a, b) && right(a, c);
+export function isBetween(a: Date, b: Date, c: Date, inclusivity?: string, unit?: string): boolean {
+  const sa = startOfMs(a, unit);
+  const sb = startOfMs(b, unit);
+  const sc = startOfMs(c, unit);
+  const startOk = inclusivity?.includes("[") ? sa >= sb : sa > sb;
+  const endOk = inclusivity?.includes("]") ? sa <= sc : sa < sc;
+  return startOk && endOk;
 }
