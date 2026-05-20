@@ -65,26 +65,15 @@ const PAD2 = [
   "59",
 ];
 
-const TOKENS = ["YYYY", "SSS", "MM", "DD", "HH", "mm", "ss"] as const;
+const TOKENS = ["YYYY", "MM", "DD", "HH", "mm", "ss", "SSS"] as const;
 
 function padYear(y: number): string {
   const abs = Math.abs(y);
   const s = abs < 10 ? `000${abs}` : abs < 100 ? `00${abs}` : abs < 1000 ? `0${abs}` : String(abs);
   return y < 0 ? `-${s}` : y > 9999 ? `+${s}` : s;
 }
-
 function pad3(n: number): string {
   return n < 10 ? `00${n}` : n < 100 ? `0${n}` : String(n);
-}
-
-function daysInMonth(y: number, m: number): number {
-  if (m === 1) {
-    return (y & 3) === 0 && (y % 100 !== 0 || (y & 15) === 0) ? 29 : 28;
-  }
-  if (m === 3 || m === 5 || m === 8 || m === 10) {
-    return 30;
-  }
-  return 31;
 }
 
 // Same token handling as formatMomentBasic (used by MomentLite.format())
@@ -94,11 +83,6 @@ export function format(d: Date, fmt: string): string {
   }
   let out = "";
   for (let i = 0; i < fmt.length; ) {
-    if (fmt[i] === "\\" && i + 1 < fmt.length) {
-      out += fmt[i + 1];
-      i += 2;
-      continue;
-    }
     let matched = false;
     for (const token of TOKENS) {
       if (fmt.startsWith(token, i)) {
@@ -179,39 +163,43 @@ export function endOf(d: Date, unit: string): Date {
       r.setHours(23, 59, 59, 999);
       break;
     case "day":
-      r.setHours(0, 0, 0, 0);
-      r.setDate(r.getDate() + 1);
-      r.setMilliseconds(-1);
+      r.setHours(23, 59, 59, 999);
       break;
     case "hour":
-      r.setMinutes(0, 0, 0);
-      r.setHours(r.getHours() + 1, 0, 0, -1);
+      r.setMinutes(59, 59, 999);
       break;
     case "minute":
-      r.setSeconds(0, 0);
-      r.setMinutes(r.getMinutes() + 1, 0, -1);
+      r.setSeconds(59, 999);
       break;
     case "second":
-      r.setSeconds(r.getSeconds() + 1, -1);
+      r.setMilliseconds(999);
       break;
   }
   return r;
+}
+
+function daysInMonth(y: number, m: number): number {
+  if (m === 1) {
+    return y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0) ? 29 : 28;
+  }
+  if (m === 3 || m === 5 || m === 8 || m === 10) {
+    return 30;
+  }
+  return 31;
 }
 
 export function add(d: Date, amount: number, unit: string): Date {
   const r = new Date(d);
   switch (unit) {
     case "year": {
-      const raw = Number.isInteger(amount) ? amount : Math.round(amount);
-      const ny = r.getFullYear() + raw;
+      const ny = r.getFullYear() + amount;
       const m = r.getMonth();
       const md = daysInMonth(ny, m);
       r.setFullYear(ny, m, r.getDate() > md ? md : r.getDate());
       break;
     }
     case "month": {
-      const raw = Number.isInteger(amount) ? amount : Math.round(amount);
-      const total = r.getFullYear() * 12 + r.getMonth() + raw;
+      const total = r.getFullYear() * 12 + r.getMonth() + amount;
       const ny = Math.floor(total / 12);
       const nm = ((total % 12) + 12) % 12;
       const md = daysInMonth(ny, nm);
@@ -219,25 +207,25 @@ export function add(d: Date, amount: number, unit: string): Date {
       break;
     }
     case "quarter":
-      return add(r, Math.round(amount * 3), "month");
+      return add(r, amount * 3, "month");
     case "week":
-      r.setDate(r.getDate() + Math.round(amount * 7));
+      r.setDate(r.getDate() + amount * 7);
       break;
     case "day":
     case "date":
-      r.setDate(r.getDate() + Math.round(amount));
+      r.setDate(r.getDate() + amount);
       break;
     case "hour":
-      r.setTime(r.getTime() + Math.round(amount * 3600000));
+      r.setTime(r.getTime() + amount * 3600000);
       break;
     case "minute":
-      r.setTime(r.getTime() + Math.round(amount * 60000));
+      r.setTime(r.getTime() + amount * 60000);
       break;
     case "second":
-      r.setTime(r.getTime() + Math.round(amount * 1000));
+      r.setTime(r.getTime() + amount * 1000);
       break;
     case "millisecond":
-      r.setTime(r.getTime() + Math.round(amount));
+      r.setTime(r.getTime() + amount);
       break;
   }
   return r;
@@ -247,148 +235,66 @@ export function subtract(d: Date, amount: number, unit: string): Date {
   return add(d, -amount, unit);
 }
 
-export function diff(a: Date, b: Date, unitRaw: string): number {
-  const diffMs = a.getTime() - b.getTime();
-  if (isNaN(diffMs)) {
+export function diff(a: Date, b: Date, unit: string): number {
+  const ms = a.getTime() - b.getTime();
+  if (isNaN(ms)) {
     return NaN;
   }
-  const unit = unitRaw === "date" ? "day" : unitRaw;
   switch (unit) {
     case "millisecond":
-      return diffMs || 0;
-    case "second": {
-      const r = diffMs / 1000;
-      const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
-      return t || 0;
-    }
-    case "minute": {
-      const r = diffMs / 60000;
-      const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
-      return t || 0;
-    }
-    case "hour": {
-      const r = diffMs / 3600000;
-      const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
-      return t || 0;
-    }
-    case "day": {
-      const zoneDelta = (a.getTimezoneOffset() - b.getTimezoneOffset()) * 60000;
-      const r = (diffMs - zoneDelta) / 86400000;
-      const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
-      return t || 0;
-    }
-    case "week": {
-      const zoneDelta = (a.getTimezoneOffset() - b.getTimezoneOffset()) * 60000;
-      const r = (diffMs - zoneDelta) / 604800000;
-      const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
-      return t || 0;
-    }
-    case "quarter":
-    case "month":
-    case "year": {
-      const aDay = a.getDate();
-      const bDay = b.getDate();
-      const swap = aDay < bDay;
-      const later = swap ? b : a;
-      const earlier = swap ? a : b;
-      const whole = monthDiff(later, earlier);
-      let result = swap ? whole : -whole;
-      if (unit === "year") {
-        result = Math.trunc(result / 12);
-      } else if (unit === "quarter") {
-        result = Math.trunc(result / 3);
-      }
-      return Object.is(result, -0) ? 0 : result;
-    }
-  }
-  return NaN;
-}
-
-function monthDiff(later: Date, earlier: Date): number {
-  const wholeMonths =
-    (earlier.getFullYear() - later.getFullYear()) * 12 + (earlier.getMonth() - later.getMonth());
-  const anchor = add(later, wholeMonths, "month");
-  const earlierTime = earlier.getTime();
-  const anchorTime = anchor.getTime();
-  if (wholeMonths > 0) {
-    return earlierTime < anchorTime ? wholeMonths - 1 : wholeMonths;
-  }
-  if (wholeMonths < 0) {
-    return earlierTime > anchorTime ? wholeMonths + 1 : wholeMonths;
-  }
-  return wholeMonths;
-}
-
-function compareCalendarValues(a: Date, b: Date, unit: string): number {
-  switch (unit) {
-    case "millisecond":
-      return a.getTime() - b.getTime();
+      return ms || 0;
     case "second":
-      return Math.floor(a.getTime() / 1000) - Math.floor(b.getTime() / 1000);
+      return Math.trunc(ms / 1000) || 0;
     case "minute":
-      return Math.floor(a.getTime() / 60000) - Math.floor(b.getTime() / 60000);
+      return Math.trunc(ms / 60000) || 0;
     case "hour":
-      return Math.floor(a.getTime() / 3600000) - Math.floor(b.getTime() / 3600000);
+      return Math.trunc(ms / 3600000) || 0;
     case "day":
-    case "date": {
-      const yd = a.getFullYear() - b.getFullYear();
-      if (yd !== 0) {
-        return yd;
-      }
-      const md = a.getMonth() - b.getMonth();
-      if (md !== 0) {
-        return md;
-      }
-      return a.getDate() - b.getDate();
+      return Math.trunc(ms / 86400000) || 0;
+    case "week":
+      return Math.trunc(ms / 604800000) || 0;
+    case "month": {
+      const m = (a.getFullYear() - b.getFullYear()) * 12 + (a.getMonth() - b.getMonth());
+      const r = a.getDate() < b.getDate() ? m - 1 : m;
+      return r || 0;
     }
-    case "month":
-      return (a.getFullYear() - b.getFullYear()) * 12 + (a.getMonth() - b.getMonth());
     case "year":
-      return a.getFullYear() - b.getFullYear();
+      return Math.trunc(diff(a, b, "month") / 12) || 0;
+    case "quarter":
+      return Math.trunc(diff(a, b, "month") / 3) || 0;
   }
   return NaN;
+}
+
+function startOfMs(d: Date, unit?: string): number {
+  return unit ? startOf(d, unit).getTime() : d.getTime();
 }
 
 export function isBefore(a: Date, b: Date, unit?: string): boolean {
-  if (!unit) {
-    return a.getTime() < b.getTime();
-  }
-  return compareCalendarValues(a, b, unit) < 0;
+  return startOfMs(a, unit) < startOfMs(b, unit);
 }
 
 export function isAfter(a: Date, b: Date, unit?: string): boolean {
-  if (!unit) {
-    return a.getTime() > b.getTime();
-  }
-  return compareCalendarValues(a, b, unit) > 0;
+  return startOfMs(a, unit) > startOfMs(b, unit);
 }
 
 export function isSame(a: Date, b: Date, unit?: string): boolean {
-  if (!unit) {
-    return a.getTime() === b.getTime();
-  }
-  return compareCalendarValues(a, b, unit) === 0;
+  return startOfMs(a, unit) === startOfMs(b, unit);
 }
 
 export function isSameOrBefore(a: Date, b: Date, unit?: string): boolean {
-  if (!unit) {
-    return a.getTime() <= b.getTime();
-  }
-  return compareCalendarValues(a, b, unit) <= 0;
+  return startOfMs(a, unit) <= startOfMs(b, unit);
 }
 
 export function isSameOrAfter(a: Date, b: Date, unit?: string): boolean {
-  if (!unit) {
-    return a.getTime() >= b.getTime();
-  }
-  return compareCalendarValues(a, b, unit) >= 0;
+  return startOfMs(a, unit) >= startOfMs(b, unit);
 }
 
 export function isBetween(a: Date, b: Date, c: Date, inclusivity?: string, unit?: string): boolean {
-  const fromStr = inclusivity ?? "()";
-  const startOpen = fromStr[0] === "(";
-  const endOpen = fromStr.at(-1) === ")";
-  const startCheck = startOpen ? isAfter(a, b, unit) : isSameOrAfter(a, b, unit);
-  const endCheck = endOpen ? isBefore(a, c, unit) : isSameOrBefore(a, c, unit);
-  return startCheck && endCheck;
+  const sa = startOfMs(a, unit);
+  const sb = startOfMs(b, unit);
+  const sc = startOfMs(c, unit);
+  const startOk = inclusivity?.includes("[") ? sa >= sb : sa > sb;
+  const endOk = inclusivity?.includes("]") ? sa <= sc : sa < sc;
+  return startOk && endOk;
 }
