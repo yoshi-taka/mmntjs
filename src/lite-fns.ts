@@ -289,6 +289,21 @@ export function subtract(d: Date, amount: number, unit: string): Date {
   return add(d, -amount, unit);
 }
 
+function monthDiff(later: Date, earlier: Date): number {
+  const wholeMonths =
+    (earlier.getFullYear() - later.getFullYear()) * 12 + (earlier.getMonth() - later.getMonth());
+  const anchor = add(later, wholeMonths, "month");
+  const earlierTime = earlier.getTime();
+  const anchorTime = anchor.getTime();
+  if (wholeMonths > 0) {
+    return earlierTime < anchorTime ? wholeMonths - 1 : wholeMonths;
+  }
+  if (wholeMonths < 0) {
+    return earlierTime > anchorTime ? wholeMonths + 1 : wholeMonths;
+  }
+  return wholeMonths;
+}
+
 // copied from moment-lite.ts diff() (non-float, LOCAL path)
 export function diff(a: Date, b: Date, unit: string): number {
   const diffMs = a.getTime() - b.getTime();
@@ -329,14 +344,23 @@ export function diff(a: Date, b: Date, unit: string): number {
       return t || 0;
     }
     case "month": {
-      const m = (a.getFullYear() - b.getFullYear()) * 12 + (a.getMonth() - b.getMonth());
-      const r = a.getDate() < b.getDate() ? m - 1 : m;
-      return r || 0;
+      const aDay = a.getDate();
+      const bDay = b.getDate();
+      const swap = aDay < bDay;
+      const later = swap ? b : a;
+      const earlier = swap ? a : b;
+      const whole = monthDiff(later, earlier);
+      const result = swap ? whole : -whole;
+      return result || 0;
     }
-    case "year":
-      return Math.trunc(diff(a, b, "month") / 12) || 0;
-    case "quarter":
-      return Math.trunc(diff(a, b, "month") / 3) || 0;
+    case "year": {
+      const m = diff(a, b, "month");
+      return Math.trunc(m / 12) || 0;
+    }
+    case "quarter": {
+      const m = diff(a, b, "month");
+      return Math.trunc(m / 3) || 0;
+    }
   }
   return NaN;
 }

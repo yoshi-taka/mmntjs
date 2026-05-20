@@ -78,10 +78,12 @@ describe("lite-fns property-based vs moment.js", () => {
     );
   });
 
-  test("diff months simple aligned case matches moment.js", () => {
+  test("diff calendar units match moment.js for same-day-of-month", () => {
     const a = new Date(2024, 0, 15);
     const b = new Date(2024, 5, 15);
     expect(diff(a, b, "month")).toBe(originalMoment(a).diff(originalMoment(b), "months"));
+    expect(diff(a, b, "year")).toBe(originalMoment(a).diff(originalMoment(b), "years"));
+    expect(diff(a, b, "quarter")).toBe(originalMoment(a).diff(originalMoment(b), "quarters"));
   });
 
   test("diff with float matches moment.js", () => {
@@ -809,6 +811,7 @@ describe("diff", () => {
   });
 
   test("months simple", () => {
+    // Same day-of-month → exact month diff
     expect(diff(new Date(2024, 5, 15), new Date(2024, 2, 15), "month")).toBe(3);
   });
 
@@ -816,12 +819,11 @@ describe("diff", () => {
     expect(diff(new Date(2024, 2, 15), new Date(2024, 5, 15), "month")).toBe(-3);
   });
 
-  test("months with day-of-month adjustment", () => {
-    // Jan 31 to Feb 28 = 1 month (Feb 31 doesn't exist, clamped to Feb 28)
-    // a.getDate()=28 < b.getDate()=31 → m - 1 = 0 → with clamp adjustment = 0 months
-    // Actually: Jan 31 (a) to Feb 28 (b), a is after b → positive
-    // m = 0*12 + 1 = 1, but a.getDate() (28) < b.getDate() (31) → 1 - 1 = 0
+  test("months with day-of-month adjustment (clamp-aware)", () => {
+    // Jan 31 to Feb 28 = 0 months (Feb 31 doesn't exist, clamped)
+    // moment.js returns 0 for both directions
     expect(diff(new Date(2024, 1, 28), new Date(2024, 0, 31), "month")).toBe(0);
+    expect(diff(new Date(2024, 0, 31), new Date(2024, 1, 28), "month")).toBe(0);
   });
 
   test("months year boundary", () => {
@@ -1029,5 +1031,156 @@ describe("edge cases: NaN / Invalid Date", () => {
   test("isBetween with NaN date returns false", () => {
     const valid = new Date(2024, 5, 15);
     expect(isBetween(new Date(NaN), valid, valid)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Metamorphic: round-trip, idempotence, antisymmetry
+// ---------------------------------------------------------------------------
+describe("metamorphic properties", () => {
+  const d = new Date(2024, 5, 15, 10, 30, 45, 123);
+
+  test("add/subtract round-trip", () => {
+    const units = [
+      "year",
+      "month",
+      "quarter",
+      "week",
+      "day",
+      "hour",
+      "minute",
+      "second",
+      "millisecond",
+    ];
+    for (const unit of units) {
+      const r = add(subtract(d, 3, unit), 3, unit);
+      expect(r.getTime()).toBe(d.getTime());
+    }
+  });
+
+  test("subtract/add round-trip", () => {
+    const r = subtract(add(d, 7, "day"), 7, "day");
+    expect(r.getTime()).toBe(d.getTime());
+  });
+
+  test("diff antisymmetry (non-calendar)", () => {
+    const a = new Date(2024, 0, 15);
+    const b = new Date(2024, 5, 20);
+    expect(diff(a, b, "day")).toBe(-diff(b, a, "day"));
+    expect(diff(a, b, "week")).toBe(-diff(b, a, "week"));
+  });
+
+  test("startOf idempotence", () => {
+    const units = ["year", "month", "day", "hour", "minute", "second"];
+    for (const unit of units) {
+      const once = startOf(d, unit);
+      const twice = startOf(once, unit);
+      expect(twice.getTime()).toBe(once.getTime());
+    }
+  });
+
+  test("endOf idempotence", () => {
+    const units = ["year", "month", "day", "hour", "minute", "second"];
+    for (const unit of units) {
+      const once = endOf(d, unit);
+      const twice = endOf(once, unit);
+      expect(twice.getTime()).toBe(once.getTime());
+    }
+  });
+
+  test("startOf <= original <= endOf", () => {
+    const units: [string, (d: Date) => Date, (d: Date) => Date][] = [
+      ["year", (v) => startOf(v, "year"), (v) => endOf(v, "year")],
+      ["month", (v) => startOf(v, "month"), (v) => endOf(v, "month")],
+      ["day", (v) => startOf(v, "day"), (v) => endOf(v, "day")],
+    ];
+    for (const [_, s, e] of units) {
+      const so = s(d);
+      const eo = e(d);
+      expect(so.getTime()).toBeLessThanOrEqual(d.getTime());
+      expect(d.getTime()).toBeLessThanOrEqual(eo.getTime());
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Leap year / year 68-69 boundaries
+// ---------------------------------------------------------------------------
+describe("year boundaries", () => {
+  test("year 68 boundary (unix epoch 2038)", () => {
+    const d = new Date(2038, 0, 19, 3, 14, 7);
+    expect(format(d, "YYYY-MM-DD HH:mm:ss")).toBe("2038-01-19 03:14:07");
+    const added = add(d, 1, "second");
+    expect(format(added, "YYYY-MM-DD HH:mm:ss")).toBe("2038-01-19 03:14:08");
+  });
+
+  test("year 69 boundary", () => {
+    const d = new Date(2039, 0, 1);
+    expect(format(add(d, 1, "year"), "YYYY")).toBe("2040");
+  });
+
+  test("year 99 → 100 rollover", () => {
+    const d = new Date(2024, 0, 1);
+    d.setFullYear(99);
+    expect(format(d, "YYYY")).toBe("0099");
+    d.setFullYear(d.getFullYear() + 1);
+    expect(format(d, "YYYY")).toBe("0100");
+  });
+
+  test("leap year Feb 29 add month", () => {
+    const d = new Date(2020, 1, 29);
+    expect(add(d, 1, "month")).toEqual(new Date(2020, 2, 29));
+    expect(add(d, 12, "month")).toEqual(new Date(2021, 1, 28));
+  });
+
+  test("non-leap year Feb 28 add month", () => {
+    const d = new Date(2023, 1, 28);
+    expect(add(d, 1, "month")).toEqual(new Date(2023, 2, 28));
+  });
+
+  test("divisible by 100 but not 400 is non-leap", () => {
+    const d = new Date(1900, 1, 28);
+    const r = add(d, 1, "day");
+    expect(r.getDate()).toBe(1);
+    expect(r.getMonth()).toBe(2);
+  });
+
+  test("divisible by 400 is leap", () => {
+    const d = new Date(2000, 1, 28);
+    const r = add(d, 1, "day");
+    expect(r.getDate()).toBe(29);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Equivalence classes: valid/invalid input partitions
+// ---------------------------------------------------------------------------
+describe("equivalence partitioning", () => {
+  test("month valid (0, 6, 11) add month", () => {
+    const d = new Date(2024, 0, 15);
+    expect(add(d, 1, "month").getMonth()).toBe(1);
+    const d2 = new Date(2024, 5, 15);
+    expect(add(d2, 1, "month").getMonth()).toBe(6);
+    const d3 = new Date(2024, 10, 15);
+    expect(add(d3, 1, "month").getMonth()).toBe(11);
+  });
+
+  test("day safe (1-28) vs month-boundary (29-31)", () => {
+    expect(add(new Date(2024, 0, 28), 1, "day").getDate()).toBe(29);
+    expect(add(new Date(2024, 0, 29), 1, "day").getDate()).toBe(30);
+    expect(add(new Date(2024, 0, 30), 1, "day").getDate()).toBe(31);
+    expect(add(new Date(2024, 0, 31), 1, "day").getDate()).toBe(1);
+  });
+
+  test("hour/min/sec/ms boundaries", () => {
+    expect(add(new Date(2024, 0, 1, 23), 1, "hour").getHours()).toBe(0);
+    expect(add(new Date(2024, 0, 1, 0, 59), 1, "minute").getMinutes()).toBe(0);
+    expect(add(new Date(2024, 0, 1, 0, 0, 59), 1, "second").getSeconds()).toBe(0);
+    expect(add(new Date(2024, 0, 1, 0, 0, 0, 999), 1, "millisecond").getMilliseconds()).toBe(0);
+  });
+
+  test("diff across month boundary", () => {
+    expect(diff(new Date(2024, 0, 31), new Date(2024, 1, 1), "day")).toBe(-1);
+    expect(diff(new Date(2024, 1, 1), new Date(2024, 0, 31), "day")).toBe(1);
   });
 });
