@@ -1,4 +1,4 @@
-import { Moment } from "../moment-class";
+import { createMomentFromDate, createSimpleMoment, Moment } from "../moment-class";
 import type { MomentInput } from "../moment-class";
 import { isString, isArray, createUTCDate } from "../utils";
 
@@ -13,6 +13,32 @@ type UtcMomentTarget = ((
 export type UtcApiDeps = {
   nowFn: () => number;
 };
+
+function parseFixedISOZ(str: string): Date | null {
+  if (str.length !== 24) {
+    return null;
+  }
+  if (
+    str.charCodeAt(4) !== 45 ||
+    str.charCodeAt(7) !== 45 ||
+    str.charCodeAt(10) !== 84 ||
+    str.charCodeAt(13) !== 58 ||
+    str.charCodeAt(16) !== 58 ||
+    str.charCodeAt(19) !== 46 ||
+    str.charCodeAt(23) !== 90
+  ) {
+    return null;
+  }
+  return createUTCDate(
+    Number(str.slice(0, 4)),
+    Number(str.slice(5, 7)) - 1,
+    Number(str.slice(8, 10)),
+    Number(str.slice(11, 13)),
+    Number(str.slice(14, 16)),
+    Number(str.slice(17, 19)),
+    Number(str.slice(20, 23)),
+  );
+}
 
 export function registerUtcApi(target: UtcMomentTarget, deps: UtcApiDeps): void {
   const momentRecord = target as unknown as Record<string, unknown>;
@@ -34,13 +60,19 @@ export function registerUtcApi(target: UtcMomentTarget, deps: UtcApiDeps): void 
       });
     }
     if (input === undefined) {
-      return new Moment({
-        _dClone: false,
-        _d: new Date(deps.nowFn()),
-        _isUTC: true,
-        _offset: 0,
-        _i: input,
-      });
+      return createSimpleMoment({ _t: deps.nowFn(), _isUTC: true, _offset: 0, _i: input });
+    }
+    if (isString(input)) {
+      const fixedIsoZ = parseFixedISOZ(input);
+      if (fixedIsoZ) {
+        return createMomentFromDate({
+          _d: fixedIsoZ,
+          _isUTC: true,
+          _offset: 0,
+          _i: input,
+          _dClone: false,
+        });
+      }
     }
     if (isArray(input)) {
       const arr = input;
@@ -53,13 +85,7 @@ export function registerUtcApi(target: UtcMomentTarget, deps: UtcApiDeps): void 
         arr[5] != null ? Number(arr[5]) : 0,
         arr[6] != null ? Number(arr[6]) : 0,
       );
-      return new Moment({
-        _d: d,
-        _dClone: false,
-        _isUTC: true,
-        _offset: 0,
-        _i: input,
-      });
+      return createMomentFromDate({ _d: d, _dClone: false, _isUTC: true, _offset: 0, _i: input });
     }
     const m = target(input, format, localeOrStrict, fourthArg);
     const absTime = m.valueOf();

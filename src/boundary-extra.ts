@@ -11,6 +11,7 @@ import type { Locale } from "./locale-runtime";
 import type { Moment } from "./moment-class";
 
 export type BoundaryAwareMoment = Moment & {
+  _l?: string;
   _p: {
     isUTC: boolean;
     t: number;
@@ -62,10 +63,14 @@ export function startOfExtraMoment(m: BoundaryAwareMoment, code: UnitCode): void
       m._p.t = d.getTime();
       break;
     case WEEK: {
-      const weekCfg = ((m._getLocale()._config as Record<string, unknown>).week as
-        | { dow: number; doy?: number }
-        | undefined) ?? { dow: 0 };
-      const dow = weekCfg.dow;
+      const dow =
+        m._p.locale === undefined && (m._l === undefined || m._l === "en")
+          ? 0
+          : (
+              ((m._getLocale()._config as Record<string, unknown>).week as
+                | { dow: number; doy?: number }
+                | undefined) ?? { dow: 0 }
+            ).dow;
       const day = utc ? d.getUTCDay() : d.getDay();
       const diff = (day - dow + 7) % 7;
       if (utc) {
@@ -134,10 +139,14 @@ export function endOfExtraMoment(m: BoundaryAwareMoment, code: UnitCode): void {
       break;
     }
     case WEEK: {
-      const weekCfg = ((m._getLocale()._config as Record<string, unknown>).week as
-        | { dow: number; doy?: number }
-        | undefined) ?? { dow: 0 };
-      const dow = weekCfg.dow;
+      const dow =
+        m._p.locale === undefined && (m._l === undefined || m._l === "en")
+          ? 0
+          : (
+              ((m._getLocale()._config as Record<string, unknown>).week as
+                | { dow: number; doy?: number }
+                | undefined) ?? { dow: 0 }
+            ).dow;
       const weekDay = utc ? d.getUTCDay() : d.getDay();
       const diff = (weekDay - dow + 7) % 7;
       if (utc) {

@@ -132,6 +132,54 @@ function unitToMs(unit: string): number {
   }
 }
 
+function bubbleMillisecondsOnly(d: Duration, milliseconds: number): Duration {
+  d._milliseconds = milliseconds;
+  d._days = 0;
+  d._months = 0;
+  d._bdMilliseconds = milliseconds % 1000;
+  const seconds = absFloor(milliseconds / 1000);
+  d._bdSeconds = seconds % 60;
+  const minutes = absFloor(seconds / 60);
+  d._bdMinutes = minutes % 60;
+  const hours = absFloor(minutes / 60);
+  d._bdHours = hours % 24;
+  d._bdDays = absFloor(hours / 24);
+  d._bdMonths = 0;
+  d._bdYears = 0;
+  return d;
+}
+
+function bubbleDaysOnly(d: Duration, days: number): Duration {
+  d._milliseconds = 0;
+  d._days = days;
+  d._months = 0;
+  d._bdMilliseconds = 0;
+  d._bdSeconds = 0;
+  d._bdMinutes = 0;
+  d._bdHours = 0;
+  d._bdDays = days;
+  d._bdMonths = 0;
+  d._bdYears = 0;
+  return d;
+}
+
+function createDurationShell(locale = "en", isValid = true): Duration {
+  const d = Object.create(Duration.prototype) as Duration;
+  d._milliseconds = 0;
+  d._days = 0;
+  d._months = 0;
+  d._bdYears = 0;
+  d._bdMonths = 0;
+  d._bdDays = 0;
+  d._bdHours = 0;
+  d._bdMinutes = 0;
+  d._bdSeconds = 0;
+  d._bdMilliseconds = 0;
+  d._locale = locale;
+  d._isValid = isValid;
+  return d;
+}
+
 export class Duration {
   _milliseconds = 0;
   _days = 0;
@@ -411,7 +459,7 @@ export class Duration {
     }
   }
 
-  private _bubble(): void {
+  _bubble(): void {
     if (!this._isValid) {
       return;
     }
@@ -710,13 +758,17 @@ export class Duration {
   }
 
   clone(): this {
-    const d = new Duration();
+    const d = createDurationShell(this._locale, this._isValid);
     d._milliseconds = this._milliseconds;
     d._days = this._days;
     d._months = this._months;
-    d._locale = this._locale;
-    d._isValid = this._isValid;
-    d._bubble();
+    d._bdYears = this._bdYears;
+    d._bdMonths = this._bdMonths;
+    d._bdDays = this._bdDays;
+    d._bdHours = this._bdHours;
+    d._bdMinutes = this._bdMinutes;
+    d._bdSeconds = this._bdSeconds;
+    d._bdMilliseconds = this._bdMilliseconds;
     return d as this;
   }
 
@@ -1028,6 +1080,40 @@ export class Duration {
   localeData(): Locale {
     return getLocale(this._locale);
   }
+}
+
+export function createDurationFast(input?: DurationLike, unit?: string): Duration {
+  if (input == null || input instanceof Duration || typeof input === "string" || isObject(input)) {
+    return new Duration(input, unit);
+  }
+  if (typeof input !== "number") {
+    return new Duration(input, unit);
+  }
+  const d = createDurationShell(getCurrentLocale(), !isNaN(input));
+  if (!d._isValid) {
+    d._milliseconds = NaN;
+    return d;
+  }
+  if (unit) {
+    const aliasKey = unitAliasToKey[unit];
+    if (aliasKey === "years") {
+      d._months = input * 12;
+    } else if (aliasKey === "months") {
+      d._months = input;
+    } else if (aliasKey === "quarters") {
+      d._months = input * 3;
+    } else if (aliasKey === "weeks") {
+      return bubbleDaysOnly(d, input * 7);
+    } else if (aliasKey === "days") {
+      return bubbleDaysOnly(d, input);
+    } else {
+      return bubbleMillisecondsOnly(d, Math.round(input * unitToMs(unit)));
+    }
+  } else {
+    return bubbleMillisecondsOnly(d, input);
+  }
+  d._bubble();
+  return d;
 }
 
 export function isDuration(input: unknown): input is Duration {

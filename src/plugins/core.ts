@@ -1,6 +1,6 @@
 import type { Moment } from "../moment-class";
 import { momentProperties } from "../moment-class";
-import { Duration, isDuration as checkIsDuration, type DurationLike } from "../duration";
+import { Duration, createDurationFast, isDuration as checkIsDuration } from "../duration";
 import { isMoment, isArray } from "../utils";
 import { parseTwoDigitYear as parseTwoDigitYearInternal, setParseTwoDigitYear } from "../parse";
 import { moment, nowFn, getMomentNowFunction, setMomentNowFunction } from "../core/factory";
@@ -24,9 +24,7 @@ export function registerCoreApi(
   const momentRecord = target as unknown as Record<string, unknown>;
 
   registerBaseCoreApi(target as unknown as Parameters<typeof registerBaseCoreApi>[0], deps);
-  momentRecord.duration = function (input?: unknown, unit?: string): Duration {
-    return new Duration(input as DurationLike, unit);
-  };
+  momentRecord.duration = createDurationFast;
   (momentRecord.duration as Record<string, unknown>).invalid = function (): Duration {
     return Duration.invalid();
   };

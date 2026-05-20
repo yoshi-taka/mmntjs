@@ -1,5 +1,5 @@
 import type { MomentConstructionConfig } from "../moment-class";
-import { Moment, checkOverflow, createSimpleMoment } from "../moment-class";
+import { Moment, checkOverflow, createMomentFromDate, createSimpleMoment } from "../moment-class";
 import type { InternalParsedData } from "../types";
 import {
   isMoment,
@@ -67,6 +67,58 @@ export type FactoryDeps = {
   createFromObjectInput?: ObjectInputHandler;
   nowFn: () => number;
 };
+
+function parseFixedISOZ(str: string): Date | null {
+  if (str.length !== 24) {
+    return null;
+  }
+  if (
+    str.charCodeAt(4) !== 45 ||
+    str.charCodeAt(7) !== 45 ||
+    str.charCodeAt(10) !== 84 ||
+    str.charCodeAt(13) !== 58 ||
+    str.charCodeAt(16) !== 58 ||
+    str.charCodeAt(19) !== 46 ||
+    str.charCodeAt(23) !== 90
+  ) {
+    return null;
+  }
+  const year = Number(str.slice(0, 4));
+  const month = Number(str.slice(5, 7));
+  const day = Number(str.slice(8, 10));
+  const hour = Number(str.slice(11, 13));
+  const minute = Number(str.slice(14, 16));
+  const second = Number(str.slice(17, 19));
+  const millisecond = Number(str.slice(20, 23));
+  if (
+    !Number.isInteger(year) ||
+    !Number.isInteger(month) ||
+    !Number.isInteger(day) ||
+    !Number.isInteger(hour) ||
+    !Number.isInteger(minute) ||
+    !Number.isInteger(second) ||
+    !Number.isInteger(millisecond)
+  ) {
+    return null;
+  }
+  return createUTCDate(year, month - 1, day, hour, minute, second, millisecond);
+}
+
+function parseFixedLocalDate(str: string): Date | null {
+  if (str.length !== 10) {
+    return null;
+  }
+  if (str.charCodeAt(4) !== 45 || str.charCodeAt(7) !== 45) {
+    return null;
+  }
+  const year = Number(str.slice(0, 4));
+  const month = Number(str.slice(5, 7));
+  const day = Number(str.slice(8, 10));
+  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) {
+    return null;
+  }
+  return createDateSafe(year, month - 1, day, 0, 0, 0, 0, false);
+}
 
 export function createMomentFactory(deps: FactoryDeps) {
   function createMomentFromParsed(
@@ -256,6 +308,45 @@ export function createMomentFactory(deps: FactoryDeps) {
     localeOrStrict?: unknown,
     fourthArg?: unknown,
   ): Moment {
+    const directFormat = typeof format === "string" ? format : undefined;
+    if (directFormat === "YYYY-MM-DDTHH:mm:ss.SSSZ" || directFormat === "YYYY-MM-DDTHH:mm:ssZ") {
+      const fixedIsoZ = parseFixedISOZ(str);
+      if (fixedIsoZ) {
+        return createMomentFromDate({
+          _d: fixedIsoZ,
+          _isUTC: true,
+          _offset: 0,
+          _i: str,
+          _f: directFormat,
+          _dClone: false,
+        });
+      }
+    }
+    if (directFormat === "YYYY-MM-DD") {
+      const fixedLocalDate = parseFixedLocalDate(str);
+      if (fixedLocalDate) {
+        return createMomentFromDate({
+          _d: fixedLocalDate,
+          _i: str,
+          _f: directFormat,
+          _dClone: false,
+        });
+      }
+    }
+    const fixedIsoZ = format === undefined ? parseFixedISOZ(str) : null;
+    if (fixedIsoZ) {
+      return createMomentFromDate({
+        _d: fixedIsoZ,
+        _isUTC: true,
+        _offset: 0,
+        _i: str,
+        _dClone: false,
+      });
+    }
+    const fixedLocalDate = format === undefined ? parseFixedLocalDate(str) : null;
+    if (fixedLocalDate) {
+      return createMomentFromDate({ _d: fixedLocalDate, _i: str, _dClone: false });
+    }
     const supportsFormattedInput =
       typeof deps.supportsFormattedInput === "function"
         ? deps.supportsFormattedInput()
@@ -312,7 +403,7 @@ export function createMomentFactory(deps: FactoryDeps) {
     );
     if (parsed && !parsed._claimed) {
       if (parsed._hasDate !== undefined) {
-        return new Moment({
+        return createMomentFromDate({
           _d: createDateSafe(
             parsed.year,
             parsed.month,
@@ -326,6 +417,7 @@ export function createMomentFactory(deps: FactoryDeps) {
           _offset: parsed.offset,
           _isUTC: parsed.offset !== undefined,
           _i: str,
+          _dClone: false,
         });
       }
       return createMomentFromParsed(parsed, str);
@@ -435,7 +527,7 @@ export function createMomentFactory(deps: FactoryDeps) {
       return new Moment(cfg);
     }
     if (isDate(input)) {
-      return createSimpleMoment({ _t: input.getTime(), _i: input });
+      return createMomentFromDate({ _d: input, _i: input });
     }
     if (isNumber(input)) {
       const n = input;

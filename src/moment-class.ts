@@ -760,32 +760,20 @@ export class Moment {
   }
 
   clone(): this {
-    const m = Object.create(Moment.prototype) as this;
-    m._isAMomentObject = true;
-    m._l = this._l;
-    m._p = {
-      t: this._p.t,
-      d: undefined,
-      dirty: this._p.dirty,
-      isUTC: this._p.isUTC,
-      offset: this._p.offset,
-      locale: this._p.locale,
-      y: this._p.y,
-      M: this._p.M,
-      D: this._p.D,
-      W: this._p.W,
-      H: this._p.H,
-      m: this._p.m,
-      s: this._p.s,
-      ms: this._p.ms,
-    };
-    m._isValid = this._isValid;
-    if (this._i !== undefined) {
-      m._i = this._i;
-    }
-    if (this._f !== undefined) {
-      m._f = this._f;
-    }
+    const m = createMomentShell(this._l, this._p.isUTC, this._p.offset, this._isValid) as this;
+    m._p.t = this._p.t;
+    m._p.dirty = this._p.dirty;
+    m._p.locale = this._p.locale;
+    m._p.y = this._p.y;
+    m._p.M = this._p.M;
+    m._p.D = this._p.D;
+    m._p.W = this._p.W;
+    m._p.H = this._p.H;
+    m._p.m = this._p.m;
+    m._p.s = this._p.s;
+    m._p.ms = this._p.ms;
+    m._i = this._i;
+    m._f = this._f;
     m._strict = this._strict;
     if (this._cold) {
       m._cold = { ...this._cold } as MomentCold;
@@ -815,20 +803,21 @@ export class Moment {
         this._p.D = d_;
         this._p.W = _dayOfWeek(num, this._p.M, d_);
       } else {
-        const dt = this._getD();
-        const date = this._p.D;
-        dt.setFullYear(num);
-        if (dt.getDate() !== date) {
-          dt.setDate(0);
-        }
+        const maxDay = daysInMonth(num, this._p.M);
+        const d_ = this._p.D > maxDay ? maxDay : this._p.D;
+        const dt = new Date(num, this._p.M, d_, this._p.H, this._p.m, this._p.s, this._p.ms);
+        this._p.d = dt;
         this._p.y = dt.getFullYear();
         this._p.M = dt.getMonth();
         this._p.D = dt.getDate();
-        this._p.W = _dayOfWeek(this._p.y, this._p.M, this._p.D);
+        this._p.W = dt.getDay();
         this._p.t = dt.getTime();
+        this._p.offset = -dt.getTimezoneOffset();
       }
       // $H, $m, $s, $ms unchanged
-      this._updateOffset(true);
+      if (updateOffsetCallback) {
+        this._updateOffset(true);
+      }
       return this;
     }
     if (!this._isValid) {
@@ -869,27 +858,36 @@ export class Moment {
       if (isNaN(num)) {
         return this;
       }
-      const d = this._getD();
       const utc = this._p.isUTC;
       const date = this._p.D;
       if (utc) {
+        const d = this._getD();
         d.setUTCMonth(num);
-      } else {
-        d.setMonth(num);
-      }
-      if ((utc ? d.getUTCDate() : d.getDate()) !== date) {
-        if (utc) {
+        if (d.getUTCDate() !== date) {
           d.setUTCDate(0);
-        } else {
-          d.setDate(0);
         }
+        this._p.y = d.getUTCFullYear();
+        this._p.M = d.getUTCMonth();
+        this._p.D = d.getUTCDate();
+        this._p.W = _dayOfWeek(this._p.y, this._p.M, this._p.D);
+        this._p.t = d.getTime();
+      } else {
+        const y = this._p.y + Math.floor(num / 12);
+        const _m = normalizeMonth(num);
+        const maxDay = daysInMonth(y, _m);
+        const d_ = date > maxDay ? maxDay : date;
+        const d = new Date(y, _m, d_, this._p.H, this._p.m, this._p.s, this._p.ms);
+        this._p.d = d;
+        this._p.y = d.getFullYear();
+        this._p.M = d.getMonth();
+        this._p.D = d.getDate();
+        this._p.W = d.getDay();
+        this._p.t = d.getTime();
+        this._p.offset = -d.getTimezoneOffset();
       }
-      this._p.y = utc ? d.getUTCFullYear() : d.getFullYear();
-      this._p.M = utc ? d.getUTCMonth() : d.getMonth();
-      this._p.D = utc ? d.getUTCDate() : d.getDate();
-      this._p.W = _dayOfWeek(this._p.y, this._p.M, this._p.D);
-      this._p.t = d.getTime();
-      this._updateOffset(true);
+      if (updateOffsetCallback) {
+        this._updateOffset(true);
+      }
       return this;
     }
     if (!this._isValid) {
@@ -918,12 +916,25 @@ export class Moment {
         dt.setUTCDate(num);
         this._p.t = dt.getTime();
       } else {
-        const dt = this._getD();
-        dt.setDate(num);
+        const dt = new Date(this._p.y, this._p.M, num, this._p.H, this._p.m, this._p.s, this._p.ms);
+        this._p.d = dt;
+        this._p.y = dt.getFullYear();
+        this._p.M = dt.getMonth();
+        this._p.D = dt.getDate();
+        this._p.W = dt.getDay();
+        this._p.H = dt.getHours();
+        this._p.m = dt.getMinutes();
+        this._p.s = dt.getSeconds();
+        this._p.ms = dt.getMilliseconds();
         this._p.t = dt.getTime();
+        this._p.offset = -dt.getTimezoneOffset();
       }
-      this._refreshFields();
-      this._updateOffset(true);
+      if (this._p.isUTC) {
+        this._refreshFields();
+      }
+      if (updateOffsetCallback) {
+        this._updateOffset(true);
+      }
       return this;
     }
     if (!this._isValid) {
@@ -987,7 +998,9 @@ export class Moment {
       }
       this._p.t = dt.getTime();
       this._refreshFields();
-      this._updateOffset(true);
+      if (updateOffsetCallback) {
+        this._updateOffset(true);
+      }
       return this;
     }
     if (!this._isValid) {
@@ -1046,7 +1059,9 @@ export class Moment {
       }
       this._p.t = dt.getTime();
       this._refreshFields();
-      this._updateOffset(true);
+      if (updateOffsetCallback) {
+        this._updateOffset(true);
+      }
       return this;
     }
     if (!this._isValid) {
@@ -1075,7 +1090,9 @@ export class Moment {
       }
       this._p.t = dt.getTime();
       this._refreshFields();
-      this._updateOffset(true);
+      if (updateOffsetCallback) {
+        this._updateOffset(true);
+      }
       return this;
     }
     if (!this._isValid) {
@@ -1104,7 +1121,9 @@ export class Moment {
       }
       this._p.t = dt.getTime();
       this._refreshFields();
-      this._updateOffset(true);
+      if (updateOffsetCallback) {
+        this._updateOffset(true);
+      }
       return this;
     }
     if (!this._isValid) {
@@ -1133,7 +1152,9 @@ export class Moment {
       }
       this._p.t = dt.getTime();
       this._refreshFields();
-      this._updateOffset(true);
+      if (updateOffsetCallback) {
+        this._updateOffset(true);
+      }
       return this;
     }
     if (!this._isValid) {
@@ -1690,7 +1711,7 @@ export class Moment {
   }
 
   startOf(unit: string): this {
-    const code = normalizeUnitCode(unit);
+    const code = fastNormalizeBoundaryUnit(unit);
     if (code < 0) {
       return this;
     }
@@ -1791,7 +1812,9 @@ export class Moment {
         this._p.ms = 0;
         break;
     }
-    this._updateOffset(true);
+    if (updateOffsetCallback) {
+      this._updateOffset(true);
+    }
   }
 
   _startOfLocal(code: UnitCode): void {
@@ -1854,11 +1877,13 @@ export class Moment {
         break;
     }
     this._p.offset = -d.getTimezoneOffset();
-    this._updateOffset(true);
+    if (updateOffsetCallback) {
+      this._updateOffset(true);
+    }
   }
 
   endOf(unit: string): this {
-    const code = normalizeUnitCode(unit);
+    const code = fastNormalizeBoundaryUnit(unit);
     if (code < 0) {
       return this;
     }
@@ -1866,6 +1891,39 @@ export class Moment {
       return this;
     }
     this._ensureFields();
+    if (!updateOffsetCallback && code === MONTH) {
+      if (this._p.isUTC) {
+        const endDay = daysInMonthFast(this._p.y, this._p.M);
+        if (
+          this._p.D === endDay &&
+          this._p.H === 23 &&
+          this._p.m === 59 &&
+          this._p.s === 59 &&
+          this._p.ms === 999
+        ) {
+          return this;
+        }
+      } else if (
+        this._p.D === 1 &&
+        this._p.H === 0 &&
+        this._p.m === 0 &&
+        this._p.s === 0 &&
+        this._p.ms === 0
+      ) {
+        const endDay = daysInMonthFast(this._p.y, this._p.M);
+        const d = new Date(this._p.y, this._p.M, endDay, 23, 59, 59, 999);
+        this._p.d = d;
+        this._p.t = d.getTime();
+        this._p.D = endDay;
+        this._p.H = 23;
+        this._p.m = 59;
+        this._p.s = 59;
+        this._p.ms = 999;
+        this._p.W = d.getDay();
+        this._p.offset = -d.getTimezoneOffset();
+        return this;
+      }
+    }
     if (this._p.isUTC) {
       this._endOfUTC(code);
     } else {
@@ -1926,7 +1984,9 @@ export class Moment {
         this._p.dirty = true;
         break;
     }
-    this._updateOffset(true);
+    if (updateOffsetCallback) {
+      this._updateOffset(true);
+    }
   }
 
   _endOfLocal(code: UnitCode): void {
@@ -1999,7 +2059,9 @@ export class Moment {
         break;
     }
     this._p.offset = -d.getTimezoneOffset();
-    this._updateOffset(true);
+    if (updateOffsetCallback) {
+      this._updateOffset(true);
+    }
   }
 
   local(keepLocalTime?: boolean): this {
@@ -2422,7 +2484,7 @@ export class Moment {
   }
 
   isSame(input: MomentInput, unit?: string): boolean {
-    const other = momentFromAnything(input);
+    const other = input instanceof Moment ? input : momentFromAnything(input);
     if (!this._isValid || !other._isValid) {
       return false;
     }
@@ -2435,7 +2497,7 @@ export class Moment {
   }
 
   isSameOrBefore(input: MomentInput, unit?: string): boolean {
-    const other = momentFromAnything(input);
+    const other = input instanceof Moment ? input : momentFromAnything(input);
     if (!this._isValid || !other._isValid) {
       return false;
     }
@@ -2443,7 +2505,7 @@ export class Moment {
   }
 
   isSameOrAfter(input: MomentInput, unit?: string): boolean {
-    const other = momentFromAnything(input);
+    const other = input instanceof Moment ? input : momentFromAnything(input);
     if (!this._isValid || !other._isValid) {
       return false;
     }
@@ -2451,7 +2513,7 @@ export class Moment {
   }
 
   isBefore(input: MomentInput, unit?: string): boolean {
-    const other = momentFromAnything(input);
+    const other = input instanceof Moment ? input : momentFromAnything(input);
     if (!this._isValid || !other._isValid) {
       return false;
     }
@@ -2464,7 +2526,7 @@ export class Moment {
   }
 
   isAfter(input: MomentInput, unit?: string): boolean {
-    const other = momentFromAnything(input);
+    const other = input instanceof Moment ? input : momentFromAnything(input);
     if (!this._isValid || !other._isValid) {
       return false;
     }
@@ -2477,8 +2539,8 @@ export class Moment {
   }
 
   isBetween(from: MomentInput, to: MomentInput, unit?: string, inclusivity?: string): boolean {
-    const fromM = momentFromAnything(from);
-    const toM = momentFromAnything(to);
+    const fromM = from instanceof Moment ? from : momentFromAnything(from);
+    const toM = to instanceof Moment ? to : momentFromAnything(to);
 
     const fromStr = inclusivity ?? "()";
     const startOpen = fromStr[0] === "(";
@@ -2772,6 +2834,118 @@ export class Moment {
   }
 }
 
+function fastNormalizeBoundaryUnit(unit: string): UnitCode {
+  switch (unit) {
+    case "year":
+    case "years":
+      return YEAR;
+    case "month":
+    case "months":
+      return MONTH;
+    case "week":
+    case "weeks":
+      return WEEK;
+    case "isoWeek":
+      return ISO_WEEK;
+    case "day":
+    case "days":
+      return DAY;
+    case "date":
+    case "dates":
+      return DATE;
+    case "hour":
+    case "hours":
+      return HOUR;
+    case "minute":
+    case "minutes":
+      return MINUTE;
+    case "second":
+    case "seconds":
+      return SECOND;
+    case "quarter":
+    case "quarters":
+      return QUARTER;
+    default:
+      return normalizeUnitCode(unit);
+  }
+}
+
+function createMomentShell(
+  l: string | undefined,
+  isUTC: boolean,
+  offset: number,
+  isValid: boolean,
+): Moment {
+  const m = Object.create(Moment.prototype) as Moment;
+  m._isAMomentObject = true;
+  m._l = l;
+  m._p = {
+    t: 0,
+    d: undefined,
+    dirty: false,
+    isUTC,
+    offset,
+    locale: undefined,
+    y: 0,
+    M: 0,
+    D: 0,
+    W: 0,
+    H: 0,
+    m: 0,
+    s: 0,
+    ms: 0,
+  };
+  m._isValid = isValid;
+  return m;
+}
+
+function initMomentMeta(
+  m: Moment,
+  config: {
+    _i?: unknown;
+    _f?: string | string[];
+    _strict?: boolean;
+  },
+): void {
+  if (config._i !== undefined) {
+    m._i = config._i;
+  }
+  if (config._f !== undefined) {
+    m._f = config._f;
+  }
+  if (config._strict !== undefined) {
+    m._strict = config._strict;
+  }
+}
+
+export function createMomentFromDate(config: {
+  _d: Date;
+  _i?: unknown;
+  _f?: string | string[];
+  _l?: string;
+  _isUTC?: boolean;
+  _offset?: number;
+  _strict?: boolean;
+  _isValid?: boolean;
+  _dClone?: boolean;
+}): Moment {
+  const isUTC = !!config._isUTC;
+  const d = config._dClone === false ? config._d : new Date(config._d);
+  const t = d.getTime();
+  const isValid = config._isValid ?? !isNaN(t);
+  const m = createMomentShell(config._l ?? getCurrentLocale(), isUTC, config._offset ?? 0, isValid);
+  m._p.d = d;
+  m._p.t = t;
+  if (isValid) {
+    m._p.dirty = true;
+    if (!isUTC) {
+      m._p.offset = -d.getTimezoneOffset();
+    }
+  }
+  initMomentMeta(m, config);
+  return m;
+}
+
 export function createSimpleMoment(config: {
   _t: number;
   _i?: unknown;
@@ -2781,15 +2955,20 @@ export function createSimpleMoment(config: {
   _offset?: number;
   _isValid?: boolean;
 }): Moment {
-  return new Moment({
-    _t: config._t,
-    _i: config._i,
-    _f: config._f,
-    _l: config._l,
-    _isUTC: config._isUTC,
-    _offset: config._offset,
-    _isValid: config._isValid,
-  });
+  const isUTC = !!config._isUTC;
+  const t = config._t;
+  const isValid = config._isValid ?? !isNaN(t);
+  const m = createMomentShell(config._l ?? getCurrentLocale(), isUTC, config._offset ?? 0, isValid);
+  m._p.t = t;
+  if (isValid) {
+    m._p.dirty = true;
+    if (!isUTC) {
+      m._p.d = new Date(t);
+      m._p.offset = -m._p.d.getTimezoneOffset();
+    }
+  }
+  initMomentMeta(m, config);
+  return m;
 }
 
 for (const key of coldFieldKeys) {
@@ -2919,7 +3098,7 @@ export function momentFromAnything(input: unknown, isUTC?: boolean): Moment {
     return input;
   }
   if (isDate(input)) {
-    const m = createSimpleMoment({ _t: input.getTime() });
+    const m = createMomentFromDate({ _d: input });
     if (isUTC) {
       m.utc();
     }
@@ -2944,7 +3123,7 @@ export function momentFromAnything(input: unknown, isUTC?: boolean): Moment {
     );
     if (parsed && hasAnyValue(parsed)) {
       const hasOffset = parsed.offset !== undefined;
-      const m = new Moment({
+      const m = createMomentFromDate({
         _d: createDateSafe(
           parsed.year ?? 0,
           parsed.month ?? 0,
@@ -2966,7 +3145,7 @@ export function momentFromAnything(input: unknown, isUTC?: boolean): Moment {
       }
       return m;
     }
-    const m = new Moment({ _d: new Date(input), _i: input, _dClone: false });
+    const m = createMomentFromDate({ _d: new Date(input), _i: input, _dClone: false });
     if (isUTC) {
       m.utc();
     }
