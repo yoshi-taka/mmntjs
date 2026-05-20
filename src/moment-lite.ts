@@ -341,7 +341,12 @@ export class MomentLite {
       this._p.d = undefined;
     }
     this._isValid = c._isValid ?? !isNaN(this._p.t);
-    this._p.dirty = this._isValid;
+    if (this._isValid) {
+      this._p.dirty = false;
+      this._refreshFields();
+    } else {
+      this._p.dirty = false;
+    }
     if (c._i !== undefined) {
       this._i = c._i;
     }
