@@ -2883,7 +2883,10 @@ export function momentFromAnything(input: unknown, isUTC?: boolean): Moment {
     }
     return m;
   }
-  if (input === undefined || input === null) {
+  if (input === null) {
+    return new Moment({ _dClone: false, _d: new Date(NaN), _i: null, _isValid: false });
+  }
+  if (input === undefined) {
     const m = createSimpleMoment({ _t: nowFn ? nowFn() : Date.now() });
     if (isUTC) {
       m.utc();
@@ -2898,6 +2901,7 @@ export function momentFromAnything(input: unknown, isUTC?: boolean): Moment {
       getLocale(currentLocale) as unknown as ParseLocale,
     );
     if (parsed && hasAnyValue(parsed)) {
+      const hasOffset = parsed.offset !== undefined;
       const m = new Moment({
         _d: createDateSafe(
           parsed.year ?? 0,
@@ -2907,12 +2911,15 @@ export function momentFromAnything(input: unknown, isUTC?: boolean): Moment {
           parsed.minute ?? 0,
           parsed.second ?? 0,
           parsed.millisecond ?? 0,
-          false,
+          hasOffset || isUTC,
         ),
+        _isUTC: hasOffset || isUTC ? true : undefined,
+        _offset: hasOffset ? parsed.offset : undefined,
         _i: input,
         _dClone: false,
       });
-      if (isUTC) {
+      // When parsed has an offset, set it directly (don't call .utc() as it recomputes)
+      if (isUTC && !hasOffset) {
         m.utc();
       }
       return m;
@@ -2924,6 +2931,9 @@ export function momentFromAnything(input: unknown, isUTC?: boolean): Moment {
     return m;
   }
   if (typeof input === "number") {
+    if (!isFinite(input)) {
+      return new Moment({ _dClone: false, _d: new Date(NaN), _i: input, _isValid: false });
+    }
     const m = createSimpleMoment({ _t: input });
     if (isUTC) {
       m.utc();

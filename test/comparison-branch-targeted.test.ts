@@ -247,6 +247,41 @@ describe("isAfter family: invalid moments", () => {
     expect(valid.isBetween(valid, invalid)).toBe(false);
     expect(invalid.isBetween(invalid, invalid)).toBe(false);
   });
+
+  test("null input creates invalid moment", () => {
+    const m = moment(null);
+    expect(m.isValid()).toBe(false);
+    expect(m.valueOf()).toBe(NaN);
+  });
+
+  test("Infinity number input creates invalid moment", () => {
+    const m = moment(Infinity);
+    expect(m.isValid()).toBe(false);
+  });
+
+  test("-Infinity number input creates invalid moment", () => {
+    const m = moment(-Infinity);
+    expect(m.isValid()).toBe(false);
+  });
+
+  test("null input in comparisons returns false", () => {
+    const v = moment.utc("2024-06-15");
+    expect(v.isAfter(null)).toBe(false);
+    expect(v.isBefore(null)).toBe(false);
+    expect(v.isSame(null)).toBe(false);
+    expect(v.isSameOrAfter(null)).toBe(false);
+    expect(v.isSameOrBefore(null)).toBe(false);
+    expect(v.isBetween(null, moment.utc("2024-06-20"))).toBe(false);
+  });
+
+  test("Infinity input in comparisons returns false", () => {
+    const v = moment.utc("2024-06-15");
+    expect(v.isAfter(Infinity)).toBe(false);
+    expect(v.isBefore(Infinity)).toBe(false);
+    expect(v.isSame(Infinity)).toBe(false);
+    expect(v.isSameOrAfter(Infinity)).toBe(false);
+    expect(v.isSameOrBefore(Infinity)).toBe(false);
+  });
 });
 
 // ---------------------------------------------------------------------------
