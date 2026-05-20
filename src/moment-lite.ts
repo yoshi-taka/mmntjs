@@ -1154,6 +1154,7 @@ export class MomentLite {
           const dt = this._p.d ?? (this._p.d = new Date(this._p.t));
           dt.setFullYear(y, m, d_);
           this._p.t = dt.getTime();
+          this._p.offset = -dt.getTimezoneOffset();
         }
         this._p.y = y;
         this._p.M = m;

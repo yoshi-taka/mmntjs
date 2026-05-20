@@ -21,7 +21,7 @@
      - ユーザーが問題を報告しても、自分で「直してpush」するな。修正案を提示してから「commitしていいか」「tagを打っていいか」を**必ず**ユーザーに確認せよ
 11. **property-based testing / fuzzing に flaky は存在しない**: fast-check や jazzer が見つけた counterexample は必ず調査・修正すること。乱数シードを固定して再現し、コードのバグとして対処する。「flaky」「テスト間干渉」「pre-existing」で誤魔化さない
      - 違反した場合: 即刻応答停止 & ユーザーのお説教タイム。連続違反では罰走10km
-12. **lite-fns は lite と同じ実装を使うこと**: `src/lite-fns.ts` の各関数は `src/moment-lite.ts` / `src/display/format-basic.ts` と同じロジックをコピーして使う（delegate 禁止＝オブジェクト生成コスト回避）。lite に修正が入ったら lite-fns にも同じ修正を適用すること。逆もしかり。
+12. **lite-fns は lite と同じ実装を使うこと**: `src/lite-fns.ts` の各関数は `src/moment-lite.ts` / `src/display/format-basic.ts` と同じロジックをコピーして使う（delegate 禁止＝オブジェクト生成コスト回避）。**full（`moment-class.ts`）・lite（`moment-lite.ts`）・lite-fns（`lite-fns.ts`）の3実装は常に同期すること。** いずれかに修正が入ったら残り2つにも同じ修正を適用する。逆もしかり。
 
 
 ---
