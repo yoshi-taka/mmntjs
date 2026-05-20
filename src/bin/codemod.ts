@@ -9,7 +9,7 @@ const IMPORT_PATTERNS = [
   { from: /import\s+(\w+)\s+from\s+['"]moment['"]/g, to: "import $1 from 'mmntjs'" },
   { from: /from\s+['"]moment-timezone['"]/g, to: "from 'mmntjs'" },
   { from: /require\(['"]moment-timezone['"]\)/g, to: "require('mmntjs')" },
-  { from: /import\s+['"]moment-timezone['"]/g, to: "import 'mmntjs/timezone'" },
+  { from: /import\s+['"]moment-timezone['"]/g, to: "import 'mmntjs-timezone'" },
   { from: /import\s+(\w+)\s+from\s+['"]moment-timezone['"]/g, to: "import $1 from 'mmntjs'" },
 ];
 
@@ -208,6 +208,11 @@ export function runCheck(dir = ".", showFns = false) {
         `  💡 ${fnsOnlyFiles.length}/${results.files} file(s) can use 'mmntjs/lite/fns' → ~1KB`,
       );
     }
+    if (needFull > 0 && needFull < results.files) {
+      console.log(`  ⚠  Mixed entries bundle both 'mmntjs' and 'mmntjs/lite'.`);
+      console.log(`  → Defaulting all files to 'mmntjs' (full) to avoid duplicate bundle.`);
+      console.log(`  → Use --fns to force 'mmntjs/lite/fns' (may break full-only APIs).`);
+    }
   }
 
   if (results.localeFiles.length > 0) {
@@ -223,7 +228,7 @@ export function runCheck(dir = ".", showFns = false) {
     for (const file of results.tzFiles) {
       console.log(`  ${file}`);
     }
-    console.log("  moment-timezone imports will be rewritten to mmntjs + mmntjs/timezone.\n");
+    console.log("  moment-timezone imports will be rewritten to mmntjs + mmntjs-timezone.\n");
   }
   const dynKeys = Object.keys(results.dynamicLocaleFiles);
   if (dynKeys.length > 0) {
@@ -242,7 +247,7 @@ export function runCheck(dir = ".", showFns = false) {
   console.log(`    → lite-compatible files: 'mmntjs/lite' (42KB)`);
   console.log(`    → full-only files:       'mmntjs' (141KB)`);
   if (results.tzFiles.length > 0) {
-    console.log(`    → timezone files:        plus 'mmntjs/timezone' side-effect import`);
+    console.log(`    → timezone files:        plus 'mmntjs-timezone' side-effect import`);
   }
 }
 
@@ -254,11 +259,16 @@ const IMPORT_TARGETS: Record<string, string> = {
 
 export function runApply(dir = ".", target = "auto", dry = false) {
   const results = scanFiles(dir) as unknown as ApiUsage;
+  const hasFullOnly = Object.keys(results.fullOnly).length > 0;
   let modified = 0;
   for (const file of results.modifiedFiles) {
     let pkg: string;
     if (target === "fns") {
       pkg = IMPORT_TARGETS.fns;
+    } else if (target === "lite") {
+      pkg = IMPORT_TARGETS.lite;
+    } else if (target === "full" || hasFullOnly) {
+      pkg = IMPORT_TARGETS.full;
     } else {
       const fo = results.fullOnly[file] ?? {};
       pkg = Object.keys(fo).length === 0 ? IMPORT_TARGETS.lite : IMPORT_TARGETS.full;
@@ -269,7 +279,7 @@ export function runApply(dir = ".", target = "auto", dry = false) {
       { from: /from\s+['"]moment\/locale\//g, to: "from 'mmntjs/locale/" },
       { from: /require\(['"]moment\/locale\//g, to: "require('mmntjs/locale/" },
       { from: /import\s+(\w+)\s+from\s+['"]moment['"]/g, to: `import $1 from '${pkg}'` },
-      { from: /import\s+['"]moment-timezone['"]/g, to: "import 'mmntjs/timezone'" },
+      { from: /import\s+['"]moment-timezone['"]/g, to: "import 'mmntjs-timezone'" },
       { from: /from\s+['"]moment-timezone['"]/g, to: `from '${pkg}'` },
       { from: /require\(['"]moment-timezone['"]\)/g, to: `require('${pkg}')` },
       { from: /import\s+(\w+)\s+from\s+['"]moment-timezone['"]/g, to: `import $1 from '${pkg}'` },
@@ -285,7 +295,7 @@ export function runApply(dir = ".", target = "auto", dry = false) {
     if (isTimezoneFile && !/['"]mmntjs\/timezone['"]/.test(content)) {
       const lines = content.split("\n");
       const isEsm = /^import\s/m.test(content);
-      const tzImport = isEsm ? `import 'mmntjs/timezone';` : `require('mmntjs/timezone');`;
+      const tzImport = isEsm ? `import 'mmntjs-timezone';` : `require('mmntjs-timezone');`;
       const insertAt = lines.findIndex(
         (l) => /import\s+moment\s+from\s+['"]mmntjs/.test(l) || /const\s+moment\s*=/.test(l),
       );
@@ -321,12 +331,20 @@ export function runApply(dir = ".", target = "auto", dry = false) {
     if (content !== original) {
       const rel = file.replace(dir, "").replace(/^\//, "");
       const newPath = content.match(/from '([^']+)'/)?.[1] ?? "?";
-      console.log(`  ${dry ? "DRY" : "✓"} ${rel}: → ${newPath}`);
+      const fo = results.fullOnly[file] ?? {};
+      const apis = Object.keys(fo);
+      const apiNote = apis.length > 0 ? ` (full-only: ${apis.join(", ")})` : "";
+      console.log(`  ${dry ? "DRY" : "✓"} ${rel}: → ${newPath}${apiNote}`);
       if (!dry) {
         fs.writeFileSync(file, content, "utf-8");
       }
       modified++;
     }
+  }
+  if (hasFullOnly) {
+    console.log(
+      `\nℹ  Some files use full-only APIs. All files defaulted to 'mmntjs' to avoid bundling both 'mmntjs' and 'mmntjs/lite'.`,
+    );
   }
   if (dry) {
     console.log(`\nWould update ${modified} file(s). Run without --dry to apply.`);
@@ -338,7 +356,7 @@ export function runApply(dir = ".", target = "auto", dry = false) {
   }
 }
 
-function scanFiles(dir: string): ApiUsage {
+export function scanFiles(dir: string): ApiUsage {
   const results: ApiUsage = {
     total: 0,
     files: 0,
