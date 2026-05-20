@@ -1,6 +1,11 @@
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect, beforeEach } from "bun:test";
 import moment from "../src/index.ts";
 import originalMoment from "../moment/moment.js";
+
+beforeEach(() => {
+  moment.locale("en");
+  originalMoment.locale("en");
+});
 
 // Equivalence class testing for locale functionality
 

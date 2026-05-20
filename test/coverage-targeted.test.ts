@@ -318,6 +318,7 @@ describe("locale-specific uncovered paths", () => {
       expect(() => m.format("LL")).not.toThrow();
       expect(m.format("LL").length).toBeGreaterThan(0);
     }
+    moment.locale("en");
   });
 });
 
