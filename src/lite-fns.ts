@@ -298,7 +298,7 @@ export function diff(a: Date, b: Date, unit: string): number {
   if (isNaN(diffMs)) {
     return NaN;
   }
-  const u = unit === "date" ? "day" : unit;
+  const u = (unit === "date" ? "day" : unit).replace(/s$/, "");
   switch (u) {
     case "millisecond": {
       const t = diffMs < 0 ? -Math.floor(-diffMs) : Math.floor(diffMs);
@@ -355,7 +355,8 @@ export function diff(a: Date, b: Date, unit: string): number {
 
 // copied from moment-lite.ts isBefore/isAfter/isSame LOCAL path + _compareCalendarValues
 function compareCalendarValues(a: Date, b: Date, unit: string): number {
-  switch (unit) {
+  const u = unit.replace(/s$/, "");
+  switch (u) {
     case "millisecond":
       return a.getTime() - b.getTime();
     case "second":
