@@ -45,8 +45,7 @@ export function startOfExtraMoment(m: BoundaryAwareMoment, code: UnitCode): void
   switch (code) {
     case QUARTER:
       if (utc) {
-        d.setUTCMonth(Math.floor(m._p.M / 3) * 3);
-        d.setUTCDate(1);
+        d.setUTCMonth(Math.floor(m._p.M / 3) * 3, 1);
         d.setUTCHours(0, 0, 0, 0);
       } else {
         d.setDate(1);

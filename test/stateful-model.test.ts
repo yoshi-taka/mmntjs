@@ -364,6 +364,33 @@ describe("Stateful Model-Based Testing", () => {
     return { m2: moment(date), mOrig: originalMoment(date) };
   }
 
+  test("mixed command sequences match moment.js at every step (seed -1142841884 repro)", () => {
+    const commandArbs: fc.Arbitrary<fc.Command<MomentModel, MomentPair>>[] = [
+      fc.tuple(addAmount, addUnit).map(([a, u]) => new AddCommand(a, u)),
+      fc.tuple(addAmount, addUnit).map(([a, u]) => new SubtractCommand(a, u)),
+      boundaryUnit.map((u) => new StartOfCommand(u)),
+      boundaryUnit.map((u) => new EndOfCommand(u)),
+      genKeepLocalTime.map((k) => new UtcCommand(k)),
+      genKeepLocalTime.map((k) => new LocalCommand(k)),
+      fc.tuple(offsetMinutes, genKeepLocalTime).map(([o, k]) => new UtcOffsetCommand(o, k)),
+      fc.constant(new CloneCommand()),
+      localeNames.map((l) => new LocaleCommand(l)),
+    ];
+
+    fc.assert(
+      fc.property(
+        fc.tuple(initialDate, fc.commands(commandArbs, { maxCommands })),
+        ([date, cmds]) => {
+          fc.modelRun(
+            () => ({ model: { isValid: true } as MomentModel, real: makePair(date) }),
+            cmds,
+          );
+        },
+      ),
+      { seed: -1142841884, numRuns: 200 },
+    );
+  });
+
   test("mixed command sequences match moment.js at every step", () => {
     const commandArbs: fc.Arbitrary<fc.Command<MomentModel, MomentPair>>[] = [
       fc.tuple(addAmount, addUnit).map(([a, u]) => new AddCommand(a, u)),
