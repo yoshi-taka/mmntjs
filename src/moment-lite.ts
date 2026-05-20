@@ -473,32 +473,37 @@ export class MomentLite {
 
   clone(): this {
     this._ensureFields();
-    const m = new MomentLite({
-      _t: this._p.t,
-      _isValid: this._isValid,
-      _isUTC: this._p.isUTC,
-      _offset: this._p.offset,
-      _l: this._l,
-      _i: this._i,
-      _f: this._f,
-      _strict: this._strict,
-    });
+    const m = Object.create(MomentLite.prototype) as this;
+    m._isAMomentObject = true;
+    m._l = this._l;
+    m._p = {
+      t: this._p.t,
+      d: undefined,
+      dirty: false,
+      isUTC: this._p.isUTC,
+      offset: this._p.offset,
+      locale: this._p.locale,
+      y: this._p.y,
+      M: this._p.M,
+      D: this._p.D,
+      W: this._p.W,
+      H: this._p.H,
+      m: this._p.m,
+      s: this._p.s,
+      ms: this._p.ms,
+    };
+    m._isValid = this._isValid;
+    if (this._i !== undefined) {
+      m._i = this._i;
+    }
+    if (this._f !== undefined) {
+      m._f = this._f;
+    }
+    m._strict = this._strict;
     if (this._cold) {
       m._cold = { ...this._cold };
     }
-    if (this._p.locale) {
-      m._p.locale = this._p.locale;
-    }
-    m._p.y = this._p.y;
-    m._p.M = this._p.M;
-    m._p.D = this._p.D;
-    m._p.W = this._p.W;
-    m._p.H = this._p.H;
-    m._p.m = this._p.m;
-    m._p.s = this._p.s;
-    m._p.ms = this._p.ms;
-    m._p.dirty = false;
-    return m as this;
+    return m;
   }
 
   valueOf(): number {
