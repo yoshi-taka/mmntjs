@@ -2571,7 +2571,7 @@ export class Moment {
     const otherM =
       other !== undefined
         ? momentFromAnything(other)
-        : new Moment({ _d: new Date(NaN), _dClone: false });
+        : createSimpleMoment({ _t: nowFn ? nowFn() : Date.now() });
     if (!otherM._isValid) {
       return otherM;
     }
@@ -2588,7 +2588,7 @@ export class Moment {
     const otherM =
       other !== undefined
         ? momentFromAnything(other)
-        : new Moment({ _d: new Date(NaN), _dClone: false });
+        : createSimpleMoment({ _t: nowFn ? nowFn() : Date.now() });
     if (!otherM._isValid) {
       return otherM;
     }
