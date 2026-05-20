@@ -1,5 +1,6 @@
 import { describe, test, beforeEach } from "bun:test";
 import fc from "fast-check";
+import { assertProp } from "./properties/helpers";
 import _moment from "../src/index.ts";
 import type { Moment, MomentInput } from "../src/moment-class";
 import type { Duration } from "../src/duration";
@@ -377,7 +378,7 @@ describe("Stateful Model-Based Testing", () => {
       localeNames.map((l) => new LocaleCommand(l)),
     ];
 
-    fc.assert(
+    assertProp(
       fc.property(
         fc.tuple(initialDate, fc.commands(commandArbs, { maxCommands })),
         ([date, cmds]) => {
@@ -404,7 +405,7 @@ describe("Stateful Model-Based Testing", () => {
       localeNames.map((l) => new LocaleCommand(l)),
     ];
 
-    fc.assert(
+    assertProp(
       fc.property(
         fc.tuple(initialDate, fc.commands(commandArbs, { maxCommands })),
         ([date, cmds]) => {
@@ -429,7 +430,7 @@ describe("Stateful Model-Based Testing", () => {
       fc.tuple(addAmount, utcTimeUnit).map(([a, u]) => new AddCommand(a, u)),
     ];
 
-    fc.assert(
+    assertProp(
       fc.property(
         fc.tuple(initialDate, fc.commands(commandArbs, { maxCommands: 10 })),
         ([date, cmds]) => {
@@ -444,7 +445,7 @@ describe("Stateful Model-Based Testing", () => {
   });
 
   test("clone independence across sequence mutations", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.tuple(
           initialDate,

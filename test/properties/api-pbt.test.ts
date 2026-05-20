@@ -1,5 +1,6 @@
 import { test, expect } from "bun:test";
 import fc from "fast-check";
+import { assertProp } from "./helpers";
 import moment from "../../src/index.ts";
 import originalMoment from "../../moment/moment.js";
 
@@ -28,7 +29,7 @@ test("[PBT] defaultFormat get/set round-trip preserves oracle equality", () => {
   const origLocale = moment.locale();
   try {
     moment.locale("en");
-    fc.assert(
+    assertProp(
       fc.property(knownFormats, fc.date({ noInvalidDate: true }), (fmt, d) => {
         moment.defaultFormat = fmt;
         moment.defaultFormatUtc = fmt;
@@ -58,7 +59,7 @@ test("[PBT] defaultFormat get/set round-trip preserves oracle equality", () => {
 // localeData().monthsParse — PBT
 // -----------------------------------------------------------------------
 test("[PBT] monthsParse non-strict matches oracle", () => {
-  fc.assert(
+  assertProp(
     fc.property(
       fc.constantFrom(
         "January",
@@ -105,7 +106,7 @@ test("[PBT] monthsParse non-strict matches oracle", () => {
 // localeData().weekdaysParse — PBT (allowing sentinel diffs)
 // -----------------------------------------------------------------------
 test("[PBT] weekdaysParse matches oracle when oracle returns number", () => {
-  fc.assert(
+  assertProp(
     fc.property(
       fc.constantFrom(
         "Monday",
@@ -159,7 +160,7 @@ const diffCases = fc.tuple(
 );
 
 test("[PBT] pastFuture matches oracle", () => {
-  fc.assert(
+  assertProp(
     fc.property(diffCases, ([diff, rel]) => {
       const loc = moment.localeData("en");
       const oloc = originalMoment.localeData("en");
@@ -182,7 +183,7 @@ const calKeys = fc.constantFrom(
 );
 
 test("[PBT] calendar keys return strings matching oracle", () => {
-  fc.assert(
+  assertProp(
     fc.property(calKeys, (key) => {
       const loc = moment.localeData("en");
       const oloc = originalMoment.localeData("en");
@@ -201,7 +202,7 @@ test("[PBT] calendar keys return strings matching oracle", () => {
 // isDSTShifted — PBT
 // -----------------------------------------------------------------------
 test("[PBT] isDSTShifted returns boolean consistently", () => {
-  fc.assert(
+  assertProp(
     fc.property(fc.date({ noInvalidDate: true }), (d) => {
       const m = moment(d.toISOString());
       expect(typeof m.isDSTShifted()).toBe("boolean");

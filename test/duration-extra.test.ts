@@ -1,5 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import fc from "fast-check";
+import { assertProp } from "./properties/helpers";
 import moment from "../src/index.ts";
 
 describe("Duration constructor edge cases", () => {
@@ -266,7 +267,7 @@ describe("property-based duration patterns", () => {
   );
 
   test("duration from object getters", () => {
-    fc.assert(
+    assertProp(
       fc.property(durUnits, durAmounts, (unit, amount) => {
         const d = moment.duration(amount, unit as moment.unitOfTime.DurationConstructor);
         expect(d.isValid()).toBe(true);
@@ -280,7 +281,7 @@ describe("property-based duration patterns", () => {
   });
 
   test("duration as(unit) returns finite number", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeMsec, durUnits, (ms, unit) => {
         const d = moment.duration(ms);
         const as = d.as(unit as moment.unitOfTime.DurationConstructor);
@@ -292,7 +293,7 @@ describe("property-based duration patterns", () => {
   });
 
   test("duration round-trip: adding fixed-unit duration preserves ms", () => {
-    fc.assert(
+    assertProp(
       fc.property(durAmounts, fixedDurUnits, (amount, unit) => {
         const d = moment.duration(amount, unit as moment.unitOfTime.DurationConstructor);
         const ms = d.asMilliseconds();
@@ -304,7 +305,7 @@ describe("property-based duration patterns", () => {
   });
 
   test("duration humanize is a string", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeMsec, (ms) => {
         const d = moment.duration(ms);
         const h = d.humanize();
@@ -315,7 +316,7 @@ describe("property-based duration patterns", () => {
   });
 
   test("duration round with various units", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeMsec, roundUnits, roundModes, (ms, unit, mode) => {
         const d = moment.duration(ms);
         d.round({ smallestUnit: unit as "s", roundingMode: mode as "halfExpand" });

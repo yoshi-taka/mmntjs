@@ -1,6 +1,8 @@
 import { test, expect, describe } from "bun:test";
 import fc from "fast-check";
 import originalMoment from "../moment/moment.js";
+
+import { assertProp } from "./properties/helpers";
 import {
   format,
   startOf,
@@ -39,7 +41,7 @@ const allUnits = fc.constantFrom(
 
 describe("lite-fns property-based vs moment.js", () => {
   test("add matches moment.js for all units", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, anyInt, allUnits, (date, amount, unit) => {
         const mmUnit = unit === "day" ? "days" : unit === "date" ? "days" : `${unit}s`;
         const expected = originalMoment(new Date(date)).add(amount, mmUnit).toDate();
@@ -51,7 +53,7 @@ describe("lite-fns property-based vs moment.js", () => {
   });
 
   test("subtract matches moment.js for all units", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, smallInt, allUnits, (date, amount, unit) => {
         const mmUnit = unit === "day" ? "days" : unit === "date" ? "days" : `${unit}s`;
         const expected = originalMoment(new Date(date)).subtract(amount, mmUnit).toDate();
@@ -65,7 +67,7 @@ describe("lite-fns property-based vs moment.js", () => {
   const diffUnits = fc.constantFrom("week", "day", "hour", "minute", "second", "millisecond");
 
   test("diff matches moment.js for non-calendar units", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, diffUnits, (a, b, unit) => {
         const mmUnit = unit === "day" ? "days" : `${unit}s`;
         const aM = new Date(a);
@@ -87,7 +89,7 @@ describe("lite-fns property-based vs moment.js", () => {
   });
 
   test("diff with float matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, (a, b) => {
         const aM = new Date(a);
         const bM = new Date(b);
@@ -102,7 +104,7 @@ describe("lite-fns property-based vs moment.js", () => {
 
   test("startOf matches moment.js for all units", () => {
     const startUnits = fc.constantFrom("year", "month", "day", "hour", "minute", "second");
-    fc.assert(
+    assertProp(
       fc.property(safeDates, startUnits, (date, unit) => {
         const mmUnit = unit === "day" ? "days" : `${unit}s`;
         const expected = originalMoment(new Date(date)).startOf(mmUnit).toDate();
@@ -115,7 +117,7 @@ describe("lite-fns property-based vs moment.js", () => {
 
   test("endOf matches moment.js for all units", () => {
     const endUnits = fc.constantFrom("year", "month", "day", "hour", "minute", "second");
-    fc.assert(
+    assertProp(
       fc.property(safeDates, endUnits, (date, unit) => {
         const mmUnit = unit === "day" ? "days" : `${unit}s`;
         const expected = originalMoment(new Date(date)).endOf(mmUnit).toDate();
@@ -137,7 +139,7 @@ describe("lite-fns property-based vs moment.js", () => {
       "DD",
       "HH:mm",
     );
-    fc.assert(
+    assertProp(
       fc.property(safeDates, formats, (date, fmt) => {
         const d = new Date(date);
         const expected = originalMoment(d).format(fmt);
@@ -149,7 +151,7 @@ describe("lite-fns property-based vs moment.js", () => {
   });
 
   test("isBefore matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, (a, b) => {
         const aM = new Date(a);
         const bM = new Date(b);
@@ -160,7 +162,7 @@ describe("lite-fns property-based vs moment.js", () => {
   });
 
   test("isAfter matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, (a, b) => {
         const aM = new Date(a);
         const bM = new Date(b);
@@ -171,7 +173,7 @@ describe("lite-fns property-based vs moment.js", () => {
   });
 
   test("isSame matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, (a, b) => {
         const aM = new Date(a);
         const bM = new Date(b);
@@ -183,7 +185,7 @@ describe("lite-fns property-based vs moment.js", () => {
 
   test("isBefore with unit matches moment.js", () => {
     const compUnits = fc.constantFrom("year", "month", "day");
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, compUnits, (a, b, unit) => {
         const aM = new Date(a);
         const bM = new Date(b);

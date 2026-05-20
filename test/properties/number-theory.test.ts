@@ -1,5 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import fc from "fast-check";
+import { assertProp } from "./helpers";
 import {
   euclideanModulo,
   normalizeMonth,
@@ -22,7 +23,7 @@ const SECOND_MS = 1000;
 
 describe("euclideanModulo", () => {
   test("result is always 0 <= r < mod for positive mod", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.integer({ min: -10000, max: 10000 }),
         fc.integer({ min: 1, max: 100 }),
@@ -37,7 +38,7 @@ describe("euclideanModulo", () => {
   });
 
   test("matches ((a % mod) + mod) % mod for all integers", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.integer({ min: -10000, max: 10000 }),
         fc.integer({ min: 1, max: 100 }),
@@ -52,7 +53,7 @@ describe("euclideanModulo", () => {
   });
 
   test("mod 1 always returns 0", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.integer({ min: -10000, max: 10000 }), (a) => {
         expect(euclideanModulo(a, 1) === 0).toBe(true);
       }),
@@ -73,7 +74,7 @@ describe("euclideanModulo", () => {
 
 describe("normalizeMonth", () => {
   test("always returns 0..11", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.integer({ min: -10000, max: 10000 }), (m) => {
         const r = normalizeMonth(m);
         expect(r).toBeGreaterThanOrEqual(0);
@@ -84,7 +85,7 @@ describe("normalizeMonth", () => {
   });
 
   test("already-normalized months stay unchanged", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.integer({ min: 0, max: 11 }), (m) => {
         expect(normalizeMonth(m)).toBe(m);
       }),
@@ -118,7 +119,7 @@ describe("floorUnitEpoch / endOfUnitEpoch", () => {
 
   for (const [name, ms] of units) {
     test(`floorUnitEpoch(value, ${name}) <= value`, () => {
-      fc.assert(
+      assertProp(
         fc.property(fc.integer({ min: -1e12, max: 1e12 }), (v) => {
           const floored = floorUnitEpoch(v, ms);
           expect(floored).toBeLessThanOrEqual(v);
@@ -128,7 +129,7 @@ describe("floorUnitEpoch / endOfUnitEpoch", () => {
     });
 
     test(`endOfUnitEpoch(value, ${name}) >= value`, () => {
-      fc.assert(
+      assertProp(
         fc.property(fc.integer({ min: -1e12, max: 1e12 }), (v) => {
           const ended = endOfUnitEpoch(v, ms);
           expect(ended).toBeGreaterThanOrEqual(v);
@@ -138,7 +139,7 @@ describe("floorUnitEpoch / endOfUnitEpoch", () => {
     });
 
     test(`endOfUnitEpoch(value, ${name}) - floorUnitEpoch(value, ${name}) == ${ms} - 1`, () => {
-      fc.assert(
+      assertProp(
         fc.property(fc.integer({ min: -1e12, max: 1e12 }), (v) => {
           expect(endOfUnitEpoch(v, ms) - floorUnitEpoch(v, ms)).toBe(ms - 1);
         }),
@@ -199,7 +200,7 @@ describe("ymdToEpochDays", () => {
   });
 
   test("round-trip via Date.UTC: ymdToEpochDays -> Date for 1970 ± 10000 days", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.integer({ min: -100000, max: 100000 }), (z) => {
         const [y, m, d] = (() => {
           const t = new Date(z * 86400000);
@@ -214,7 +215,7 @@ describe("ymdToEpochDays", () => {
   });
 
   test("UTC startOf('year') with ymdToEpochDays matches Date.UTC result", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.integer({ min: -10000, max: 10000 }), (y) => {
         if (!isFinite(y)) {
           return;
@@ -228,7 +229,7 @@ describe("ymdToEpochDays", () => {
   });
 
   test("UTC startOf('month') with ymdToEpochDays matches Date.UTC result", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.integer({ min: -1000, max: 10000 }),
         fc.integer({ min: 0, max: 11 }),
@@ -246,7 +247,7 @@ describe("ymdToEpochDays", () => {
   });
 
   test("UTC endOf('month') with ymdToEpochDays matches Date.UTC result", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.integer({ min: -1000, max: 10000 }),
         fc.integer({ min: 0, max: 11 }),
@@ -272,7 +273,7 @@ describe("UTC startOf/endOf equivalence", () => {
   const startEndUnits = fc.constantFrom("year", "month", "day", "hour", "minute", "second");
 
   test("UTC startOf matches Date-based reference", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, startEndUnits, (d, unit) => {
         const m = moment.utc(d);
         const ref = moment.utc(d);
@@ -302,7 +303,7 @@ describe("UTC startOf/endOf equivalence", () => {
   });
 
   test("UTC endOf matches Date-based reference", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, startEndUnits, (d, unit) => {
         const m = moment.utc(d);
         const ref = moment.utc(d);
@@ -333,7 +334,7 @@ describe("UTC startOf/endOf equivalence", () => {
 
 describe("daysInMonthFast", () => {
   test("matches daysInMonth for already-normalized months", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.integer({ min: -5000, max: 5000 }),
         fc.integer({ min: 0, max: 11 }),
@@ -346,7 +347,7 @@ describe("daysInMonthFast", () => {
   });
 
   test("February is 29 in leap years, 28 otherwise", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.integer({ min: -5000, max: 5000 }), (y) => {
         const d = daysInMonthFast(y, 1);
         if (isLeapYear(y)) {

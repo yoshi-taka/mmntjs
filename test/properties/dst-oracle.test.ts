@@ -1,6 +1,7 @@
 /* oxlint-disable */
 import { describe, test, expect } from "bun:test";
 import fc from "fast-check";
+import { assertProp } from "./helpers";
 import _momentTimezone from "moment-timezone";
 import baseMoment from "../../src/index.ts";
 import { installTimezone } from "../../packages/timezone/src/install.ts";
@@ -43,7 +44,7 @@ function tsAround(center: number, days: number) {
 for (const [tz, { spring, fall }] of Object.entries(DST_BOUNDARIES)) {
   describe(`DST oracle: ${tz}`, () => {
     test("spring-forward (±3 days)", () => {
-      fc.assert(
+      assertProp(
         fc.property(tsAround(spring, 3), (ts) => {
           const m2 = moment(ts).tz(tz);
           const mo = originalMoment(ts).tz(tz);
@@ -61,7 +62,7 @@ for (const [tz, { spring, fall }] of Object.entries(DST_BOUNDARIES)) {
     });
 
     test("fall-back (±3 days)", () => {
-      fc.assert(
+      assertProp(
         fc.property(tsAround(fall, 3), (ts) => {
           const m2 = moment(ts).tz(tz);
           const mo = originalMoment(ts).tz(tz);
@@ -82,7 +83,7 @@ for (const [tz, { spring, fall }] of Object.entries(DST_BOUNDARIES)) {
 
 describe("DST oracle: UTC roundtrip near boundaries", () => {
   test("spring-forward: utc → local → utc preserves valueOf", () => {
-    fc.assert(
+    assertProp(
       fc.property(tsAround(DST_BOUNDARIES["America/New_York"].spring, 3), (ts) => {
         const m2 = moment.utc(ts).tz("America/New_York").utc();
         const mo = originalMoment.utc(ts).tz("America/New_York").utc();
@@ -94,7 +95,7 @@ describe("DST oracle: UTC roundtrip near boundaries", () => {
   });
 
   test("fall-back: utc → local → utc preserves valueOf", () => {
-    fc.assert(
+    assertProp(
       fc.property(tsAround(DST_BOUNDARIES["America/New_York"].fall, 3), (ts) => {
         const m2 = moment.utc(ts).tz("America/New_York").utc();
         const mo = originalMoment.utc(ts).tz("America/New_York").utc();

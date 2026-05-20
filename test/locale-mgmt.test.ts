@@ -1,5 +1,6 @@
 import { describe, test, expect, beforeEach } from "bun:test";
 import fc from "fast-check";
+import { assertProp } from "./properties/helpers";
 import moment from "../src/index.ts";
 import originalMoment from "../moment/moment.js";
 
@@ -295,7 +296,7 @@ describe("property-based locale management patterns", () => {
   const weekdayIndices = fc.integer({ min: 0, max: 6 });
 
   test("months() by index matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(monthIndices, (i) => {
         expect(moment.months(i)).toBe(originalMoment.months(i));
         expect(moment.monthsShort(i)).toBe(originalMoment.monthsShort(i));
@@ -305,7 +306,7 @@ describe("property-based locale management patterns", () => {
   });
 
   test("weekdays() by index matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(weekdayIndices, (i) => {
         expect(moment.weekdays(i)).toBe(originalMoment.weekdays(i));
         expect(moment.weekdaysShort(i)).toBe(originalMoment.weekdaysShort(i));
@@ -316,7 +317,7 @@ describe("property-based locale management patterns", () => {
   });
 
   test("localeData()._months matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(monthIndices, (i) => {
         const ld = moment.localeData("en");
         const old = originalMoment.localeData("en");
@@ -328,7 +329,7 @@ describe("property-based locale management patterns", () => {
   });
 
   test("localeData()._weekdays matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(weekdayIndices, (i) => {
         const ld = moment.localeData("en");
         const old = originalMoment.localeData("en");
@@ -340,7 +341,7 @@ describe("property-based locale management patterns", () => {
   });
 
   test("locale() with unknown locale keeps current locale (same as moment.js)", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.string({ minLength: 4, maxLength: 8 }), (name) => {
         const safeName = name.replaceAll(/[^a-z]/gi, "x").toLowerCase();
         if (safeName === "en" || safeName.length < 2) {

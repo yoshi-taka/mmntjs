@@ -1,5 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import fc from "fast-check";
+import { assertProp } from "./helpers";
 import _moment from "../../src/index.ts";
 import type { MomentStatic } from "../../src/entry/types";
 import type { Moment } from "../../src/moment-class";
@@ -89,7 +90,7 @@ describe("Metamorphic properties", () => {
     }));
 
   test("add/subtract roundtrip preserves the original instant for reversible units", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, reversibleAmounts, reversibleUnits, (date, amount, unit) => {
         const original = moment(date);
         const roundtrip = moment(date).add(amount, unit).subtract(amount, unit);
@@ -100,7 +101,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("diff is antisymmetric for the same unit", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, reversibleUnits, (a, b, unit) => {
         const left = normalizeZero(moment(a).diff(moment(b), unit));
         const right = normalizeZero(moment(b).diff(moment(a), unit));
@@ -111,7 +112,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("diff is invariant under shifting both operands by the same amount", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         safeDates,
         safeDates,
@@ -137,7 +138,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("isBefore/isAfter/isSame are mutually consistent", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, (a, b) => {
         const left = moment(a);
         const right = moment(b);
@@ -155,7 +156,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("comparison relations are preserved when both operands shift equally", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, shiftAmounts, shiftUnits, (a, b, shift, unit) => {
         const left = moment(a);
         const right = moment(b);
@@ -171,7 +172,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("UTC fixed-size add rewrites are permutation-safe", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         safeDates,
         reversibleAmounts,
@@ -190,7 +191,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("UTC same-unit metric comparisons are translation-invariant", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, shiftAmounts, utcMetricUnits, (a, b, shift, unit) => {
         const left = moment.utc(a);
         const right = moment.utc(b);
@@ -206,7 +207,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("clone remains independent after mutation", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, reversibleAmounts, reversibleUnits, (date, amount, unit) => {
         const source = moment(date);
         const cloned = source.clone();
@@ -218,7 +219,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("startOf is idempotent", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, boundaryUnits, (date, unit) => {
         const once = moment(date).startOf(unit);
         const twice = once.clone().startOf(unit);
@@ -229,7 +230,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("endOf is idempotent", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, boundaryUnits, (date, unit) => {
         const once = moment(date).endOf(unit);
         const twice = once.clone().endOf(unit);
@@ -240,7 +241,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("a moment stays between startOf and endOf for the same unit", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, boundaryUnits, (date, unit) => {
         const current = moment(date);
         const start = current.clone().startOf(unit);
@@ -253,7 +254,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("toDate roundtrip preserves the instant", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         const m = moment(date);
         expect(m.toDate().getTime()).toBe(m.valueOf());
@@ -264,7 +265,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("utc().local() preserves the instant", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         const original = moment(date);
         const roundtrip = original.clone().utc().local();
@@ -275,7 +276,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("utcOffset(offset, false) preserves the instant", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, offsetMinutes, (date, offset) => {
         const original = moment(date);
         const shifted = original.clone().utcOffset(formatOffset(offset), false);
@@ -287,7 +288,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("utcOffset(offset, true) preserves wall-clock fields", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, offsetMinutes, (date, offset) => {
         const original = moment(date);
         const before = original.format("YYYY-MM-DD HH:mm:ss.SSS");
@@ -300,7 +301,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("utcOffset(offset, true) changes the instant by exactly the offset delta", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, offsetMinutes, (date, offset) => {
         const original = moment(date);
         const localOffset = original.utcOffset();
@@ -314,7 +315,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("utcOffset(offset, false) matches moment while preserving the instant", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, offsetMinutes, (date, offset) => {
         const offsetText = formatOffset(offset);
         const m2 = moment(date).clone().utcOffset(offsetText, false);
@@ -331,7 +332,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("utcOffset(offset, true) matches moment while preserving wall-clock fields", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, offsetMinutes, (date, offset) => {
         const offsetText = formatOffset(offset);
         const base = moment(date).format("YYYY-MM-DD HH:mm:ss.SSS");
@@ -349,7 +350,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("utc() matches moment while preserving the instant", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         const m2 = moment(date).clone().utc();
         const orig = originalMoment(date).clone().utc();
@@ -365,7 +366,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("local() matches moment while preserving the instant", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, offsetMinutes, (date, offset) => {
         const offsetText = formatOffset(offset);
         const m2 = moment(date).clone().utcOffset(offsetText, false).local();
@@ -381,7 +382,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("utc(true) matches moment while preserving wall-clock fields", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         const base = moment(date).format("YYYY-MM-DD HH:mm:ss.SSS");
         const m2 = moment(date).clone().utc(true);
@@ -398,7 +399,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("local(true) matches moment while preserving wall-clock fields", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, offsetMinutes, (date, offset) => {
         const offsetText = formatOffset(offset);
         const base = moment(date)
@@ -419,7 +420,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("parseZone static matches moment for ISO strings with explicit offsets", () => {
-    fc.assert(
+    assertProp(
       fc.property(offsetIsoStrings, ({ text, offset }) => {
         const m2 = moment.parseZone(text);
         const orig = originalMoment.parseZone(text);
@@ -435,7 +436,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("instance parseZone matches static parseZone for ISO strings with explicit offsets", () => {
-    fc.assert(
+    assertProp(
       fc.property(offsetIsoStrings, ({ text, offset }) => {
         const inst = moment(text).parseZone();
         const stat = moment.parseZone(text);
@@ -451,7 +452,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("parseZone with format string matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(offsetIsoStrings, ({ text, offset }) => {
         const formatted = text.replace("T", " ").replace(/([+-]\d{2}):(\d{2})$/, " $1$2");
         const fmt = "YYYY-MM-DD HH:mm:ss.SSS ZZ";
@@ -469,7 +470,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("parseZone startOf(unit) matches moment and stays before the original instant", () => {
-    fc.assert(
+    assertProp(
       fc.property(offsetIsoStrings, zoneBoundaryUnits, ({ text }, unit) => {
         const m2Original = moment.parseZone(text);
         const m2 = moment.parseZone(text).startOf(unit);
@@ -489,7 +490,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("parseZone endOf(unit) matches moment and stays after the original instant", () => {
-    fc.assert(
+    assertProp(
       fc.property(offsetIsoStrings, zoneBoundaryUnits, ({ text }, unit) => {
         const m2Original = moment.parseZone(text);
         const m2 = moment.parseZone(text).endOf(unit);
@@ -509,7 +510,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("parseZone original instant stays between startOf(unit) and endOf(unit)", () => {
-    fc.assert(
+    assertProp(
       fc.property(offsetIsoStrings, zoneBoundaryUnits, ({ text }, unit) => {
         const current = moment.parseZone(text);
         const start = moment.parseZone(text).startOf(unit);
@@ -523,7 +524,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("parseZone comparisons with unit match moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         offsetIsoStrings,
         offsetIsoStrings,
@@ -546,7 +547,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("parseZone comparisons remain mutually consistent under unit truncation", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         offsetIsoStrings,
         offsetIsoStrings,
@@ -568,7 +569,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("duration add/subtract roundtrip preserves valueOf for reversible units", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         durationAmounts,
         durationUnits,
@@ -585,7 +586,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("adding a duration to a moment shifts it by the duration value", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, durationAmounts, durationUnits, (date, amount, unit) => {
         const duration = moment.duration(amount, unit);
         const shifted = moment(date).add(duration);
@@ -600,7 +601,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("moment plus duration matches moment.js for reversible duration units", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, durationAmounts, durationUnits, (date, amount, unit) => {
         const duration = moment.duration(amount, unit);
         const originalDuration = originalMoment.duration(amount, unit);
@@ -616,7 +617,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("diff equals added reversible duration amount in the same unit", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, durationAmounts, durationUnits, (date, amount, unit) => {
         const base = moment(date);
         const shifted = base.clone().add(amount, unit);
@@ -633,7 +634,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("duration({ from, to }) matches moment.js for valueOf and unit conversions", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, (fromDate, toDate) => {
         const from = moment(fromDate);
         const to = moment(toDate);
@@ -654,7 +655,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("duration({ from, to }) is antisymmetric by valueOf", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, (aDate, bDate) => {
         const ab = moment.duration({ from: moment(aDate), to: moment(bDate) }).valueOf();
         const ba = moment.duration({ from: moment(bDate), to: moment(aDate) }).valueOf();
@@ -665,7 +666,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("duration({ from, to }) sign matches the sign of the instant ordering", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, (fromDate, toDate) => {
         const from = moment(fromDate);
         const to = moment(toDate);
@@ -685,7 +686,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("normalizeUnits is idempotent for all unit aliases", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom(
           "year",
@@ -751,7 +752,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("normalizeUnits handles random invalid strings idempotently", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc
           .string()
@@ -778,7 +779,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("invalid moment stays invalid after startOf/endOf for all boundary units", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom("year", "quarter", "month", "week", "isoWeek", "day"), (unit) => {
         const base = moment.invalid();
         expect(base.isValid()).toBe(false);
@@ -790,7 +791,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("ISO format roundtrip preserves the instant", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         const original = moment(date);
         const formatted = original.format("YYYY-MM-DDTHH:mm:ss.SSSZ");
@@ -802,7 +803,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("add(0, unit) is identity for all boundary units", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, boundaryUnits, (date, unit) => {
         const m = moment(date);
         const before = m.valueOf();
@@ -814,7 +815,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("isAfter is transitive", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, safeDates, (a, b, c) => {
         const ma = moment(a),
           mb = moment(b),
@@ -828,7 +829,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("isBefore is transitive", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, safeDates, (a, b, c) => {
         const ma = moment(a),
           mb = moment(b),
@@ -842,7 +843,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("month-day addition commutes for safe dates (day ≤ 27)", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         const m = moment(date);
         // day must be ≤ 27 so that day+1 ≤ 28 fits any month without clamping
@@ -858,7 +859,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("endOf(day) UTC arithmetic matches Date-based result for negative timestamps", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.integer({ min: -86400000 * 1000, max: 86400000 * 1000 }), (ts) => {
         const m = moment.utc(ts);
         if (!m.isValid()) {
@@ -876,7 +877,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("UTC endOf preserves instant for UTC/local roundtrip", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         const utc = moment.utc(date).endOf("day");
         const local = utc.clone().local();
@@ -939,7 +940,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("diff(a, a, unit) = 0 for all linear epoch units", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         const m = moment(date);
         expect(m.diff(m, "millisecond")).toBe(0);
@@ -952,7 +953,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("diff(a, b, unit) is antisymmetric for linear epoch units", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, (a, b) => {
         const ma = moment(a),
           mb = moment(b);
@@ -966,7 +967,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("isAfter agrees with sign of diff for linear epoch units", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, (a, b) => {
         const ma = moment(a),
           mb = moment(b);
@@ -986,7 +987,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("UTC diff(day) equals exact epoch-day distance", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, (a, b) => {
         const ma = moment.utc(a),
           mb = moment.utc(b);
@@ -1014,7 +1015,7 @@ describe("Metamorphic properties", () => {
   );
 
   test("add(0, unit) is identity", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, allUnits, (date, unit) => {
         const m = moment(date);
         const before = m.valueOf();
@@ -1027,7 +1028,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("startOf(idempotent) = startOf", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, startEndUnits, (date, unit) => {
         const once = moment(date).startOf(unit);
         const twice = moment(date).startOf(unit).startOf(unit);
@@ -1039,7 +1040,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("utc is idempotent", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         const m = moment(date);
         const once = m.clone().utc();
@@ -1052,7 +1053,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("clone preserves valueOf", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         const m = moment(date);
         const c = m.clone();
@@ -1064,7 +1065,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("subtract(n, unit) = add(-n, unit) for linear units", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, fc.integer({ min: -1000, max: 1000 }), shiftUnits, (date, n, unit) => {
         const m1 = moment(date).subtract(n, unit);
         const m2 = moment(date).add(-n, unit);
@@ -1075,7 +1076,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("add composes for linear epoch units", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, fc.integer(), fc.integer(), (date, a, b) => {
         const sequential = moment(date).add(a, "millisecond").add(b, "millisecond");
         const combined = moment(date).add(a + b, "millisecond");
@@ -1096,7 +1097,7 @@ describe("Metamorphic properties", () => {
   });
 
   test("local is idempotent", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         const m = moment.utc(date);
         const once = m.clone().local();

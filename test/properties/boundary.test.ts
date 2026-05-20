@@ -1,5 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import fc from "fast-check";
+import { assertProp } from "./helpers";
 import _moment from "../../src/index.ts";
 import type { MomentStatic } from "../../src/entry/types";
 import type { Moment } from "../../src/moment-class";
@@ -34,7 +35,7 @@ describe("Property-based: boundary values", () => {
   });
 
   test("string inputs", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.oneof(
           fc.constantFrom(
@@ -66,7 +67,7 @@ describe("Property-based: boundary values", () => {
   });
 
   test("array inputs", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.array(fc.integer({ min: -10000, max: 10000 }), { maxLength: 10 }), (arr) => {
         const m2 = moment(arr);
         const mOrig = (originalMoment as Function)(arr);
@@ -80,7 +81,7 @@ describe("Property-based: boundary values", () => {
   });
 
   test("object inputs with year/month/day", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.record({
           year: fc.option(fc.integer()),
@@ -102,7 +103,7 @@ describe("Property-based: boundary values", () => {
   // ============================================================
 
   test("empty string and whitespace inputs", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.oneof(fc.constantFrom("", " ", "\t", "\n", "\r", "\r\n", "  ", "\t\t")),
         (input) => {
@@ -116,7 +117,7 @@ describe("Property-based: boundary values", () => {
   });
 
   test("null undefined NaN Infinity", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom(null, undefined, NaN, Infinity, -Infinity), (input) => {
         const m2 = moment(input as unknown);
         const mOrig = originalMoment(input as unknown);
@@ -127,7 +128,7 @@ describe("Property-based: boundary values", () => {
   });
 
   test("negative years", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom(-1, -100, -1000, -5000, -10000, -99999), (year) => {
         const m2 = moment([year, 1, 1]);
         const mOrig = originalMoment([year, 1, 1]);
@@ -142,7 +143,7 @@ describe("Property-based: boundary values", () => {
   });
 
   test("unix epoch boundaries", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom(0, -1, 1, 86400000, -86400000, 1000, -1000, 31536000000, -31536000000),
         (ts) => {
@@ -161,7 +162,7 @@ describe("Property-based: boundary values", () => {
   });
 
   test("negative UTC timestamps preserve startOf/endOf bucket semantics", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.integer({ min: -2208988800000, max: -1 }),
         fc.constantFrom("day", "hour", "minute", "second"),
@@ -179,7 +180,7 @@ describe("Property-based: boundary values", () => {
   });
 
   test("large month overflow via add(month) matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.integer({ min: 1900, max: 4000 }),
         fc.integer({ min: -240, max: 240 }),
@@ -196,7 +197,7 @@ describe("Property-based: boundary values", () => {
   });
 
   test("two digit year boundaries (68/69 split)", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom(
           "1/1/68",
@@ -228,7 +229,7 @@ describe("Property-based: boundary values", () => {
   });
 
   test("two digit year boundary range", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.integer({ min: 0, max: 99 }), (yy) => {
         const str = `01/01/${String(yy).padStart(2, "0")}`;
         const m2 = moment(str, "MM/DD/YY");
@@ -243,7 +244,7 @@ describe("Property-based: boundary values", () => {
   });
 
   test("month end boundaries (Jan 31 + 1 month)", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom(
           [2024, 0, 31],
@@ -273,7 +274,7 @@ describe("Property-based: boundary values", () => {
   });
 
   test("month end boundaries via property testing", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.integer({ min: 1, max: 12 }),
         fc.integer({ min: 1, max: 31 }),
@@ -290,7 +291,7 @@ describe("Property-based: boundary values", () => {
   });
 
   test("leap year dates", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom(2024, 2020, 2000, 2400, 2023, 2025, 2100, 1900), (year) => {
         const m2 = moment([year, 1, 29]);
         const mOrig = originalMoment([year, 1, 29]);
@@ -305,7 +306,7 @@ describe("Property-based: boundary values", () => {
   });
 
   test("leap year detection", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.integer({ min: 1800, max: 2200 }), (year) => {
         const m2 = moment([year, 0, 1]);
         const mOrig = originalMoment([year, 0, 1]);
@@ -316,7 +317,7 @@ describe("Property-based: boundary values", () => {
   });
 
   test("special year values", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom(0, 1, 99, 100, 999, 1900, 1901, 2000, 9999, 10000, 100000),
         (year) => {
@@ -334,7 +335,7 @@ describe("Property-based: boundary values", () => {
   });
 
   test("date value boundaries", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.integer({ min: -100000, max: 100000 }), (ts) => {
         const d = new Date(ts);
         const m2 = moment(d);
@@ -352,7 +353,7 @@ describe("Property-based: boundary values", () => {
   });
 
   test("string with offset formats", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom(
           "2024-01-01T00:00:00+00:00",
@@ -377,7 +378,7 @@ describe("Property-based: boundary values", () => {
   });
 
   test("minimum and maximum date values", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom(
           new Date(0),
@@ -404,7 +405,7 @@ describe("Property-based: boundary values", () => {
   // ============================================================
 
   test("month boundaries: -1, 0, 11, 12", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom(-1, 0, 11, 12), (m) => {
         const m2 = moment([2024, m, 15]);
         const mOrig = originalMoment([2024, m, 15]);
@@ -417,7 +418,7 @@ describe("Property-based: boundary values", () => {
   });
 
   test("day boundaries: 0, 1, 28, 29, 30, 31, 32 across January", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom(0, 1, 28, 29, 30, 31, 32), (d) => {
         const m2 = moment([2024, 0, d]);
         const mOrig = originalMoment([2024, 0, d]);
@@ -430,7 +431,7 @@ describe("Property-based: boundary values", () => {
   });
 
   test("day boundaries across February (non-leap)", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom(0, 1, 27, 28, 29, 30, 31, 32), (d) => {
         const m2 = moment([2023, 1, d]);
         const mOrig = originalMoment([2023, 1, d]);
@@ -442,7 +443,7 @@ describe("Property-based: boundary values", () => {
   });
 
   test("day boundaries across February (leap)", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom(0, 1, 28, 29, 30, 31, 32), (d) => {
         const m2 = moment([2024, 1, d]);
         const mOrig = originalMoment([2024, 1, d]);
@@ -454,7 +455,7 @@ describe("Property-based: boundary values", () => {
   });
 
   test("day boundaries across month with 30 days (April)", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom(0, 1, 29, 30, 31, 32), (d) => {
         const m2 = moment([2024, 3, d]);
         const mOrig = originalMoment([2024, 3, d]);
@@ -466,7 +467,7 @@ describe("Property-based: boundary values", () => {
   });
 
   test("hour boundaries: -1, 0, 23, 24", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom(-1, 0, 23, 24), (h) => {
         const m2 = moment([2024, 0, 15, h, 0, 0]);
         const mOrig = originalMoment([2024, 0, 15, h, 0, 0]);
@@ -481,7 +482,7 @@ describe("Property-based: boundary values", () => {
   });
 
   test("minute boundaries: -1, 0, 59, 60", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom(-1, 0, 59, 60), (min) => {
         const m2 = moment([2024, 0, 15, 12, min, 0]);
         const mOrig = originalMoment([2024, 0, 15, 12, min, 0]);
@@ -496,7 +497,7 @@ describe("Property-based: boundary values", () => {
   });
 
   test("second boundaries: -1, 0, 59, 60", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom(-1, 0, 59, 60), (s) => {
         const m2 = moment([2024, 0, 15, 12, 0, s]);
         const mOrig = originalMoment([2024, 0, 15, 12, 0, s]);
@@ -511,7 +512,7 @@ describe("Property-based: boundary values", () => {
   });
 
   test("millisecond boundaries: -1, 0, 999, 1000", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom(-1, 0, 999, 1000), (ms) => {
         const d = new Date(2024, 0, 15, 12, 0, 0, ms);
         const m2 = moment(d);
@@ -527,7 +528,7 @@ describe("Property-based: boundary values", () => {
   });
 
   test("year boundaries: 0, 1, 9999, 10000", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom(0, 1, 9999, 10000), (y) => {
         const m2 = moment([y, 0, 1]);
         const mOrig = originalMoment([y, 0, 1]);
@@ -542,7 +543,7 @@ describe("Property-based: boundary values", () => {
   });
 
   test("duration boundaries: MIN_SAFE_INTEGER, -1, 0, 1, MAX_SAFE_INTEGER", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom(Number.MIN_SAFE_INTEGER, -1, 0, 1, Number.MAX_SAFE_INTEGER),
         (n) => {
@@ -562,7 +563,7 @@ describe("Property-based: boundary values", () => {
   });
 
   test("unix timestamp integer boundaries around 0", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom(0, -1, 1, -86400000, 86400000, -31536000000, 31536000000),
         (ts) => {

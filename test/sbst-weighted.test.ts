@@ -1,5 +1,6 @@
 import { describe, test, expect, beforeEach } from "bun:test";
 import fc from "fast-check";
+import { assertProp } from "./properties/helpers";
 import _moment from "../src/index.ts";
 import type { MomentStatic } from "../src/entry/types";
 import type { Moment } from "../src/moment-class";
@@ -86,7 +87,7 @@ describe("SBST: coverage-guided weighted tests", () => {
   });
 
   test("weighted format token vs moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.integer({ min: 1900, max: 2100 }),
         fc.mapToConstant(
@@ -127,7 +128,7 @@ describe("SBST: coverage-guided weighted tests", () => {
   });
 
   test("weighted format with locale tokens vs moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.integer({ min: 1900, max: 2100 }), weightedLocaleTokens, (year, fmt) => {
         const dateStr = `${year}-06-15`;
         const m2 = moment(dateStr);
@@ -139,7 +140,7 @@ describe("SBST: coverage-guided weighted tests", () => {
   });
 
   test("weighted ISO variant parsing vs moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.integer({ min: 0, max: 9999 }),
         fc.mapToConstant(
@@ -165,7 +166,7 @@ describe("SBST: coverage-guided weighted tests", () => {
   });
 
   test("weighted duration creation vs moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         weightedDurationUnits,
         fc.oneof(
@@ -189,7 +190,7 @@ describe("SBST: coverage-guided weighted tests", () => {
   });
 
   test("weighted add/subtract with extreme amounts vs moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.date({ min: new Date("2000-01-01"), max: new Date("2025-12-31"), noInvalidDate: true }),
         weightedOpUnits,
@@ -221,7 +222,7 @@ describe("SBST: coverage-guided weighted tests", () => {
   });
 
   test("weighted escaped/edge format tokens vs moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.date({ min: new Date("2020-01-01"), max: new Date("2030-12-31"), noInvalidDate: true }),
         fc.oneof(
@@ -254,7 +255,7 @@ describe("SBST: coverage-guided weighted tests", () => {
   });
 
   test("weighted timezone offset format vs moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.integer({ min: 2000, max: 2030 }),
         fc.integer({ min: 1, max: 12 }),
@@ -274,7 +275,7 @@ describe("SBST: coverage-guided weighted tests", () => {
   });
 
   test("weighted ISO week/year tokens vs moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.integer({ min: 2000, max: 2030 }),
         fc.integer({ min: 1, max: 53 }),
@@ -295,7 +296,7 @@ describe("SBST: coverage-guided weighted tests", () => {
   });
 
   test("weighted quarter tokens vs moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.integer({ min: 2000, max: 2030 }),
         fc.integer({ min: 1, max: 4 }),
@@ -316,7 +317,7 @@ describe("SBST: coverage-guided weighted tests", () => {
   });
 
   test("weighted locale weekday/week getters match moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.integer({ min: 2000, max: 2030 }),
         fc.integer({ min: 1, max: 12 }),
@@ -352,7 +353,7 @@ describe("SBST: coverage-guided weighted tests", () => {
   });
 
   test("weighted locale ordinal vs moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.integer({ min: 1, max: 31 }), (day) => {
         const m2 = moment(`2024-01-${String(day).padStart(2, "0")}T12:00:00`);
         const mOrig = originalMoment(`2024-01-${String(day).padStart(2, "0")}T12:00:00`);
@@ -363,7 +364,7 @@ describe("SBST: coverage-guided weighted tests", () => {
   });
 
   test("weighted locale months with format vs moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.integer({ min: 2000, max: 2030 }),
         fc.integer({ min: 1, max: 12 }),

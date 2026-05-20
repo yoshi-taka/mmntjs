@@ -1,5 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import fc from "fast-check";
+import { assertProp } from "./properties/helpers";
 import moment from "../src/index.ts";
 import originalMoment from "../moment/moment.js";
 
@@ -127,7 +128,7 @@ describe("property-based display patterns", () => {
   );
 
   test("calendar with random date pairs matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(datePairs, ([d1, d2]) => {
         const m = moment(d1);
         const o = originalMoment(d1);
@@ -140,7 +141,7 @@ describe("property-based display patterns", () => {
   });
 
   test("format with random token matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, formatTokens, (d, fmt) => {
         const m = moment(d);
         const o = originalMoment(d);
@@ -151,7 +152,7 @@ describe("property-based display patterns", () => {
   });
 
   test("from with random pairs matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(datePairs, ([d1, d2]) => {
         const m1 = moment(d1);
         const o1 = originalMoment(d1);
@@ -164,7 +165,7 @@ describe("property-based display patterns", () => {
   });
 
   test("to with random pairs matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(datePairs, ([d1, d2]) => {
         const m1 = moment(d1);
         const o1 = originalMoment(d1);
@@ -177,7 +178,7 @@ describe("property-based display patterns", () => {
   });
 
   test("fromNow with random offset matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, relAmounts, relUnits, (d, amount, unit) => {
         const m = moment(d).add(amount, unit as moment.unitOfTime.DurationConstructor);
         const o = originalMoment(d).add(amount, unit as moment.unitOfTime.DurationConstructor);
@@ -188,7 +189,7 @@ describe("property-based display patterns", () => {
   });
 
   test("from(a,b) without suffix equals to(b,a) without suffix", () => {
-    fc.assert(
+    assertProp(
       fc.property(datePairs, ([d1, d2]) => {
         const m1 = moment(d1);
         const m2 = moment(d2);

@@ -1,5 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import fc from "fast-check";
+import { assertProp } from "./properties/helpers";
 import moment from "../src/index.ts";
 import originalMoment from "../moment/moment.js";
 
@@ -197,7 +198,7 @@ describe("property-based moment class patterns", () => {
   const inclusivityModes = fc.constantFrom("()", "[)", "(]", "[]");
 
   test("get() with random dates/units matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, getSetUnits, (d, unit) => {
         const m = moment(d);
         const o = originalMoment(d);
@@ -208,7 +209,7 @@ describe("property-based moment class patterns", () => {
   });
 
   test("set() random values then get() matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, getSetUnits, setValuesSafe, (d, unit, val) => {
         const m = moment(d);
         const o = originalMoment(d);
@@ -222,7 +223,7 @@ describe("property-based moment class patterns", () => {
   });
 
   test("isBetween with random inclusivity matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, safeDates, inclusivityModes, (d, a, b, mode) => {
         const m = moment(d);
         const o = originalMoment(d);
@@ -239,7 +240,7 @@ describe("property-based moment class patterns", () => {
   });
 
   test("set/get round-trip: set(unit, get(unit)) is idempotent", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, getSetUnits, (d, unit) => {
         const m = moment(d);
         const orig = m.get(unit);
@@ -251,7 +252,7 @@ describe("property-based moment class patterns", () => {
   });
 
   test("valueOf invariant: utc().local() preserves epoch", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (d) => {
         const m = moment(d);
         const epoch = m.valueOf();

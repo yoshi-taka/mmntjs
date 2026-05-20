@@ -1,5 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import fc from "fast-check";
+import { assertProp } from "./helpers";
 import _moment from "../../src/index.ts";
 import type { MomentStatic } from "../../src/entry/types";
 import _originalMoment from "../../moment/moment";
@@ -36,7 +37,7 @@ describe("EP: isSame unitless across timezones", () => {
   });
 
   test("same epoch, different offsets", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom(-720, -480, -240, -60, 60, 120, 420, 600, 840), (off) => {
         const a = moment.utc(EPOCH);
         const b = mOff(EPOCH, off);
@@ -79,7 +80,7 @@ describe("EP: isBefore / isAfter unitless across timezones", () => {
   });
 
   test("earlier < later, different offsets", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom(-720, -240, 60, 420, 840),
         fc.constantFrom(-480, -60, 120, 600),
@@ -112,7 +113,7 @@ describe("EP: isBefore / isAfter unitless across timezones", () => {
 // ============================================================
 describe("EP: isSameOrBefore / isSameOrAfter unitless across timezones", () => {
   test("same moment returns true", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom(-720, -240, 0, 60, 420, 840), (off) => {
         const a = mOff(EPOCH, off);
         const b = mOff(EPOCH, off);
@@ -150,7 +151,7 @@ describe("EP: isBetween across timezones", () => {
 
   const testInRange = (label: string, inclusivity: string) => {
     test(`in range, inclusivity "${inclusivity}"`, () => {
-      fc.assert(
+      assertProp(
         fc.property(
           fc.constantFrom(-240, 60, 420),
           fc.constantFrom(-120, 120, 600),
@@ -242,7 +243,7 @@ describe("EP: isSame with sub-day units across timezones", () => {
 
   for (const unit of units) {
     test(`same absolute time → isSame("${unit}") true across offsets`, () => {
-      fc.assert(
+      assertProp(
         fc.property(
           fc.constantFrom(-720, -240, 0, 60, 420, 840),
           fc.constantFrom(-480, -120, 120, 600),
@@ -316,7 +317,7 @@ describe("EP: isSame('day') across timezones", () => {
 // ============================================================
 describe("EP: isSame with month/year units across timezones", () => {
   test("same epoch → isSame('month') true across all offsets", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom(-720, -480, -240, -60, 0, 60, 120, 420, 600, 840),
         fc.constantFrom(-720, -480, -240, -60, 0, 60, 120, 420, 600, 840),
@@ -414,7 +415,7 @@ describe("BVA: diff with sub-day units across timezones", () => {
 
   for (const [ms, unit, _expected] of diffs) {
     test(`diff(${ms}ms, "${unit}") across offsets`, () => {
-      fc.assert(
+      assertProp(
         fc.property(
           fc.constantFrom(-720, -240, 0, 60, 420, 840),
           fc.constantFrom(-480, -120, 120, 600),
@@ -444,7 +445,7 @@ describe("EP: diff('days') across timezones", () => {
   });
 
   test("diff('days') same across offsets", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom(-720, -240, 0, 60, 420, 840),
         fc.constantFrom(-480, -120, 120, 600),
@@ -462,7 +463,7 @@ describe("EP: diff('days') across timezones", () => {
   });
 
   test("diff('weeks') same across offsets", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom(-720, -240, 0, 60, 420, 840),
         fc.constantFrom(-480, -120, 120, 600),
@@ -512,7 +513,7 @@ describe("BVA: diff boundary values", () => {
 
   for (const ms of boundaryMs) {
     test(`diff value = ${ms}ms across offsets`, () => {
-      fc.assert(
+      assertProp(
         fc.property(
           fc.constantFrom(-720, -240, 0, 60, 420, 840),
           fc.constantFrom(-480, -120, 120, 600),
@@ -554,7 +555,7 @@ describe("EP: comparisons after keepLocalTime", () => {
   });
 
   test("same wall clock after keepLocalTime → comparison matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom(-480, -240, 60, 120, 420),
         fc.constantFrom(-720, -60, 90, 330, 600),
@@ -624,7 +625,7 @@ describe("EP: all major units with offset", () => {
 
   for (const [unit] of unitChecks) {
     test(`isSame("${unit}") with different offsets — matches moment.js`, () => {
-      fc.assert(
+      assertProp(
         fc.property(
           fc.constantFrom(-720, -240, 60, 420),
           fc.constantFrom(-480, -120, 120, 600),
@@ -659,7 +660,7 @@ describe("EP: diff all major units across offsets", () => {
 
   for (const unit of diffUnits) {
     test(`diff("${unit}") consistent across offsets`, () => {
-      fc.assert(
+      assertProp(
         fc.property(
           fc.constantFrom(-720, -240, 0, 60, 420, 840),
           fc.constantFrom(-480, -120, 120, 600),
@@ -682,7 +683,7 @@ describe("EP: diff all major units across offsets", () => {
 // ============================================================
 describe("EP: isSameOrBefore/isSameOrAfter with units", () => {
   test("isSameOrAfter('month') at month boundary across offsets", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom(-720, -240, 60, 420),
         fc.constantFrom(-480, -120, 120, 600),
@@ -709,7 +710,7 @@ describe("BVA: epoch boundary comparisons", () => {
 
   for (const ts of epochs) {
     test(`comparisons near epoch ${ts}`, () => {
-      fc.assert(
+      assertProp(
         fc.property(fc.constantFrom(-240, 0, 60, 420), (off) => {
           const a = mOff(e0, off);
           const b = mOff(ts, off);

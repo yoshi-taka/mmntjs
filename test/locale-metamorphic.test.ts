@@ -1,5 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import fc from "fast-check";
+import { assertProp } from "./properties/helpers";
 import moment from "../src/index.ts";
 
 const safeMin = new Date("1900-01-01");
@@ -22,7 +23,7 @@ const datePairs = fc.tuple(safeDates, safeDates);
 
 describe("locale metamorphic: months invariants", () => {
   test("months() always returns 12 entries", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, () => {
         expect(moment.months().length).toBe(12);
         expect(moment.monthsShort().length).toBe(12);
@@ -32,7 +33,7 @@ describe("locale metamorphic: months invariants", () => {
   });
 
   test("months(index) returns a non-empty string for each index", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.integer({ min: 0, max: 11 }), (i) => {
         const name = moment.months(i);
         expect(typeof name).toBe("string");
@@ -48,7 +49,7 @@ describe("locale metamorphic: months invariants", () => {
 
 describe("locale metamorphic: weekdays invariants", () => {
   test("weekdays() always returns 7 entries", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, () => {
         expect(moment.weekdays().length).toBe(7);
         expect(moment.weekdaysShort().length).toBe(7);
@@ -59,7 +60,7 @@ describe("locale metamorphic: weekdays invariants", () => {
   });
 
   test("weekday(w) setter returns self for chaining", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, weekdayIndices, (d, wd) => {
         const m = moment(d);
         const result = m.weekday(wd);
@@ -70,7 +71,7 @@ describe("locale metamorphic: weekdays invariants", () => {
   });
 
   test("weekday setter is idempotent", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, weekdayIndices, (d, wd) => {
         const m = moment(d);
         m.weekday(wd);
@@ -85,7 +86,7 @@ describe("locale metamorphic: weekdays invariants", () => {
 
 describe("locale metamorphic: week invariants", () => {
   test("week(w) setter returns self for chaining", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, weekNumbers, (d, w) => {
         const m = moment(d);
         const result = m.week(w);
@@ -96,7 +97,7 @@ describe("locale metamorphic: week invariants", () => {
   });
 
   test("week(w) setter followed by getter returns set value (approx)", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, fc.integer({ min: 1, max: 52 }), (d, w) => {
         const m = moment(d);
         m.week(w);
@@ -111,7 +112,7 @@ describe("locale metamorphic: week invariants", () => {
 
 describe("locale metamorphic: valueOf invariant across locale changes", () => {
   test("changing instance locale does not change valueOf", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (d) => {
         const m = moment(d);
         const v1 = m.valueOf();
@@ -129,7 +130,7 @@ describe("locale metamorphic: valueOf invariant across locale changes", () => {
 
 describe("locale metamorphic: localeData invariants", () => {
   test("localeData()._months + _monthsShort length = 12", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom("en", "fr", "de", "ja", "zh-cn", "ru"), (name) => {
         const ld = moment.localeData(name);
         expect(ld._months.length).toBe(12);
@@ -140,7 +141,7 @@ describe("locale metamorphic: localeData invariants", () => {
   });
 
   test("localeData()._weekdays length = 7", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom("en", "fr", "de", "ja", "zh-cn", "ru"), (name) => {
         const ld = moment.localeData(name);
         expect(ld._weekdays.length).toBe(7);
@@ -152,7 +153,7 @@ describe("locale metamorphic: localeData invariants", () => {
 
 describe("locale metamorphic: relative time invariants", () => {
   test("from(a,b,true) === to(b,a,true) for any two dates", () => {
-    fc.assert(
+    assertProp(
       fc.property(datePairs, ([d1, d2]) => {
         const m1 = moment(d1);
         const m2 = moment(d2);
@@ -163,7 +164,7 @@ describe("locale metamorphic: relative time invariants", () => {
   });
 
   test("fromNow(false) includes suffix, fromNow(true) does not", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (d) => {
         const m = moment(d);
         const withSuffix = m.fromNow();
@@ -178,7 +179,7 @@ describe("locale metamorphic: relative time invariants", () => {
 
 describe("locale metamorphic: ordinal invariants", () => {
   test("ordinal parse round-trip preserves day", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (d) => {
         const m = moment(d);
         const formatted = m.format("Do");
@@ -194,7 +195,7 @@ describe("locale metamorphic: ordinal invariants", () => {
 
 describe("locale metamorphic: calendar invariants", () => {
   test("calendar(reference) returns a non-empty string", () => {
-    fc.assert(
+    assertProp(
       fc.property(datePairs, ([d1, d2]) => {
         const m = moment(d1);
         const cal = m.calendar(moment(d2));

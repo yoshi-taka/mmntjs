@@ -1,5 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import fc from "fast-check";
+import { assertProp } from "./properties/helpers";
 import moment from "../src/index.ts";
 import originalMoment from "../moment/moment.js";
 
@@ -134,7 +135,7 @@ describe("property-based locale extra patterns", () => {
   const weekYears = fc.integer({ min: 1950, max: 2050 });
 
   test("weekday getter matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (d) => {
         const m = moment(d);
         const o = originalMoment(d);
@@ -145,7 +146,7 @@ describe("property-based locale extra patterns", () => {
   });
 
   test("weekday setter matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, fc.integer({ min: 0, max: 6 }), (d, wd) => {
         const m = moment(d);
         const o = originalMoment(d);
@@ -159,7 +160,7 @@ describe("property-based locale extra patterns", () => {
   });
 
   test("week getter matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (d) => {
         const m = moment(d);
         const o = originalMoment(d);
@@ -170,7 +171,7 @@ describe("property-based locale extra patterns", () => {
   });
 
   test("week setter matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, weekNumbers, (d, w) => {
         const m = moment(d);
         const o = originalMoment(d);
@@ -184,7 +185,7 @@ describe("property-based locale extra patterns", () => {
   });
 
   test("weekYear getter matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (d) => {
         const m = moment(d);
         const o = originalMoment(d);
@@ -201,7 +202,7 @@ describe("property-based locale extra patterns", () => {
     const postEpochMin = new Date("1971-01-01");
     const postEpochMax = new Date("2100-01-01");
     const postEpochDates = fc.date({ min: postEpochMin, max: postEpochMax, noInvalidDate: true });
-    fc.assert(
+    assertProp(
       fc.property(postEpochDates, weekYears, (d, wy) => {
         const m = moment.utc(d);
         const o = originalMoment.utc(d);
@@ -215,7 +216,7 @@ describe("property-based locale extra patterns", () => {
   });
 
   test("weeksInYear matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(weekYears, (y) => {
         const m = moment().year(y);
         const o = originalMoment().year(y);
@@ -226,7 +227,7 @@ describe("property-based locale extra patterns", () => {
   });
 
   test("isoWeeksInYear matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(weekYears, (y) => {
         const m = moment().year(y);
         const o = originalMoment().year(y);

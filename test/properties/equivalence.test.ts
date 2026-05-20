@@ -1,5 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import fc from "fast-check";
+import { assertProp } from "./helpers";
 import _moment from "../../src/index.ts";
 import type { MomentStatic } from "../../src/entry/types";
 import type { Moment } from "../../src/moment-class";
@@ -22,7 +23,7 @@ describe("Equivalence partitioning: month", () => {
   const invalidHighMonths = fc.constantFrom(12, 13, 100);
 
   test("valid month (0-11) produces identical result", () => {
-    fc.assert(
+    assertProp(
       fc.property(validMonths, (m) => {
         const m2 = moment([2024, m, 15]);
         const mOrig = originalMoment([2024, m, 15]);
@@ -35,7 +36,7 @@ describe("Equivalence partitioning: month", () => {
   });
 
   test("invalid low month (< 0) matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(invalidLowMonths, (m) => {
         const m2 = moment([2024, m, 15]);
         const mOrig = originalMoment([2024, m, 15]);
@@ -47,7 +48,7 @@ describe("Equivalence partitioning: month", () => {
   });
 
   test("invalid high month (> 11) matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(invalidHighMonths, (m) => {
         const m2 = moment([2024, m, 15]);
         const mOrig = originalMoment([2024, m, 15]);
@@ -64,7 +65,7 @@ describe("Equivalence partitioning: day of month", () => {
   const feb29Days = fc.constantFrom(29, 30, 31);
 
   test("safe days (1-28) produce identical result across all months", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDays, fc.integer({ min: 0, max: 11 }), (d, m) => {
         const m2 = moment([2024, m, d]);
         const mOrig = originalMoment([2024, m, d]);
@@ -78,7 +79,7 @@ describe("Equivalence partitioning: day of month", () => {
   });
 
   test("month-edge days (29-31) match moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(feb29Days, fc.integer({ min: 0, max: 11 }), (d, m) => {
         const m2 = moment([2024, m, d]);
         const mOrig = originalMoment([2024, m, d]);
@@ -90,7 +91,7 @@ describe("Equivalence partitioning: day of month", () => {
   });
 
   test("day 0 and negative days match moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom(-1, 0, -31, -100), fc.integer({ min: 0, max: 11 }), (d, m) => {
         const m2 = moment([2024, m, d]);
         const mOrig = originalMoment([2024, m, d]);
@@ -102,7 +103,7 @@ describe("Equivalence partitioning: day of month", () => {
   });
 
   test("day > 31 matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom(32, 45, 100, 365), fc.integer({ min: 0, max: 11 }), (d, m) => {
         const m2 = moment([2024, m, d]);
         const mOrig = originalMoment([2024, m, d]);
@@ -116,7 +117,7 @@ describe("Equivalence partitioning: day of month", () => {
 
 describe("Equivalence partitioning: time components", () => {
   test("hour equivalence: valid (0-23), boundary (24), negative", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom(-1, 0, 12, 23, 24, 48, -24),
         fc.constantFrom(0, 30, 59),
@@ -135,7 +136,7 @@ describe("Equivalence partitioning: time components", () => {
   });
 
   test("minute equivalence: valid (0-59), range boundaries", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom(12),
         fc.constantFrom(-1, 0, 30, 59, 60, 120, -60),
@@ -154,7 +155,7 @@ describe("Equivalence partitioning: time components", () => {
   });
 
   test("second equivalence: valid (0-59), range boundaries", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom(12, 0),
         fc.constantFrom(0, 30),
@@ -173,7 +174,7 @@ describe("Equivalence partitioning: time components", () => {
   });
 
   test("millisecond equivalence: valid (0-999), range boundaries", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom(-1, 0, 500, 999, 1000, 10000, -100), (ms) => {
         const d = new Date(2024, 0, 15, 12, 0, 0, ms);
         const m2 = moment(d);
@@ -190,7 +191,7 @@ describe("Equivalence partitioning: time components", () => {
 
 describe("Equivalence partitioning: year ranges", () => {
   test("negative years match moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom(-1, -100, -1000, -5000, -9999, -100000), (y) => {
         const m2 = moment([y, 0, 1]);
         const mOrig = originalMoment([y, 0, 1]);
@@ -205,7 +206,7 @@ describe("Equivalence partitioning: year ranges", () => {
   });
 
   test("year 0 matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom(0, 1, 99, 100, 999, 1000, 9999, 10000, 100000), (y) => {
         const m2 = moment([y, 0, 1]);
         const mOrig = originalMoment([y, 0, 1]);
@@ -222,7 +223,7 @@ describe("Equivalence partitioning: year ranges", () => {
 
 describe("Equivalence partitioning: 2-digit year", () => {
   test("2-digit year default split (68/69) matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom("68", "69", "00", "01", "99", "50"), (yy) => {
         const m2 = moment(yy, "YY");
         const mOrig = originalMoment(yy, "YY");
@@ -236,7 +237,7 @@ describe("Equivalence partitioning: 2-digit year", () => {
   });
 
   test("2-digit year full range (0-99) matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.integer({ min: 0, max: 99 }), (yy) => {
         const str = String(yy).padStart(2, "0");
         const m2 = moment(str, "YY");
@@ -260,7 +261,7 @@ describe("Equivalence partitioning: leap year", () => {
   };
 
   test("divisible by 400 → leap year", () => {
-    fc.assert(
+    assertProp(
       fc.property(leapYearClasses.divisibleBy400, (y) => {
         const m2 = moment([y, 0, 1]);
         const mOrig = originalMoment([y, 0, 1]);
@@ -272,7 +273,7 @@ describe("Equivalence partitioning: leap year", () => {
   });
 
   test("divisible by 100 but not 400 → not leap year", () => {
-    fc.assert(
+    assertProp(
       fc.property(leapYearClasses.divisibleBy100Not400, (y) => {
         const m2 = moment([y, 0, 1]);
         const mOrig = originalMoment([y, 0, 1]);
@@ -284,7 +285,7 @@ describe("Equivalence partitioning: leap year", () => {
   });
 
   test("divisible by 4 but not 100 → leap year", () => {
-    fc.assert(
+    assertProp(
       fc.property(leapYearClasses.divisibleBy4Not100, (y) => {
         const m2 = moment([y, 0, 1]);
         const mOrig = originalMoment([y, 0, 1]);
@@ -296,7 +297,7 @@ describe("Equivalence partitioning: leap year", () => {
   });
 
   test("not divisible by 4 → not leap year", () => {
-    fc.assert(
+    assertProp(
       fc.property(leapYearClasses.notDivisibleBy4, (y) => {
         const m2 = moment([y, 0, 1]);
         const mOrig = originalMoment([y, 0, 1]);
@@ -339,7 +340,7 @@ describe("Equivalence partitioning: string parsing", () => {
   );
 
   test("ISO 8601 strings match moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(iso8601Strings, (s) => {
         const m2 = moment(s);
         const mOrig = originalMoment(s);
@@ -353,7 +354,7 @@ describe("Equivalence partitioning: string parsing", () => {
   });
 
   test("RFC 2822 strings match moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(rfc2822Strings, (s) => {
         const m2 = moment(s);
         const mOrig = originalMoment(s);
@@ -367,7 +368,7 @@ describe("Equivalence partitioning: string parsing", () => {
   });
 
   test("invalid strings match moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(invalidStrings, (s) => {
         const m2 = moment(s);
         const mOrig = originalMoment(s);
@@ -380,7 +381,7 @@ describe("Equivalence partitioning: string parsing", () => {
 
 describe("Equivalence partitioning: duration", () => {
   test("duration zero matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom(0, 0.0, -0), (n) => {
         const d2 = moment.duration(n);
         const dOrig = originalMoment.duration(n);
@@ -392,7 +393,7 @@ describe("Equivalence partitioning: duration", () => {
   });
 
   test("duration small positive matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom(1, 100, 1000, 60000), (n) => {
         const d2 = moment.duration(n);
         const dOrig = originalMoment.duration(n);
@@ -404,7 +405,7 @@ describe("Equivalence partitioning: duration", () => {
   });
 
   test("duration small negative matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom(-1, -100, -1000, -60000), (n) => {
         const d2 = moment.duration(n);
         const dOrig = originalMoment.duration(n);
@@ -416,7 +417,7 @@ describe("Equivalence partitioning: duration", () => {
   });
 
   test("duration large values match moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom(86400000, 31536000000, -86400000, -31536000000, 1e10, -1e10),
         (n) => {
@@ -439,7 +440,7 @@ describe("Equivalence partitioning: add/subtract by amount", () => {
   const largeNegative = fc.constantFrom(-100, -365, -1000, -10000);
 
   test("add zero matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(zeroAmount, (n) => {
         const d = new Date("2024-06-15");
         const m2 = moment(d).add(n, "days");
@@ -452,7 +453,7 @@ describe("Equivalence partitioning: add/subtract by amount", () => {
   });
 
   test("add small positive matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(smallPositive, (n) => {
         const d = new Date("2024-01-15");
         const m2 = moment(d).add(n, "days");
@@ -464,7 +465,7 @@ describe("Equivalence partitioning: add/subtract by amount", () => {
   });
 
   test("add small negative matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(smallNegative, (n) => {
         const d = new Date("2024-01-15");
         const m2 = moment(d).add(n, "days");
@@ -476,7 +477,7 @@ describe("Equivalence partitioning: add/subtract by amount", () => {
   });
 
   test("add large positive matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(largePositive, (n) => {
         const d = new Date("2024-01-15");
         const m2 = moment(d).add(n, "days");
@@ -488,7 +489,7 @@ describe("Equivalence partitioning: add/subtract by amount", () => {
   });
 
   test("add large negative matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(largeNegative, (n) => {
         const d = new Date("2024-06-15");
         const m2 = moment(d).add(n, "days");
@@ -500,7 +501,7 @@ describe("Equivalence partitioning: add/subtract by amount", () => {
   });
 
   test("subtract zero matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(zeroAmount, (n) => {
         const d = new Date("2024-06-15");
         const m2 = moment(d).subtract(n, "days");
@@ -512,7 +513,7 @@ describe("Equivalence partitioning: add/subtract by amount", () => {
   });
 
   test("subtract small positive matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(smallPositive, (n) => {
         const d = new Date("2024-06-15");
         const m2 = moment(d).subtract(n, "days");
@@ -544,7 +545,7 @@ describe("Equivalence partitioning: format tokens", () => {
   const invalidTokens = fc.constantFrom("AAAA", "BBBB", "", "YYYYY", "MMMMM");
 
   test("year format tokens match moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.date({ min: new Date("1900-01-01"), max: new Date("2100-01-01"), noInvalidDate: true }),
         yearTokens,
@@ -557,7 +558,7 @@ describe("Equivalence partitioning: format tokens", () => {
   });
 
   test("month format tokens match moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.date({ min: new Date("1900-01-01"), max: new Date("2100-01-01"), noInvalidDate: true }),
         monthTokens,
@@ -570,7 +571,7 @@ describe("Equivalence partitioning: format tokens", () => {
   });
 
   test("day format tokens match moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.date({ min: new Date("1900-01-01"), max: new Date("2100-01-01"), noInvalidDate: true }),
         dayTokens,
@@ -583,7 +584,7 @@ describe("Equivalence partitioning: format tokens", () => {
   });
 
   test("time format tokens match moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.date({ min: new Date("1900-01-01"), max: new Date("2100-01-01"), noInvalidDate: true }),
         timeTokens,
@@ -596,7 +597,7 @@ describe("Equivalence partitioning: format tokens", () => {
   });
 
   test("zone format tokens match moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.date({ min: new Date("1900-01-01"), max: new Date("2100-01-01"), noInvalidDate: true }),
         zoneTokens,
@@ -609,7 +610,7 @@ describe("Equivalence partitioning: format tokens", () => {
   });
 
   test("combined format patterns match moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.date({ min: new Date("1900-01-01"), max: new Date("2100-01-01"), noInvalidDate: true }),
         combinedTokens,
@@ -622,7 +623,7 @@ describe("Equivalence partitioning: format tokens", () => {
   });
 
   test("invalid/unknown format tokens match moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.date({ min: new Date("1900-01-01"), max: new Date("2100-01-01"), noInvalidDate: true }),
         invalidTokens,
@@ -644,7 +645,7 @@ describe("Equivalence partitioning: comparison methods", () => {
   );
 
   test("isBefore/isAfter/isSame match moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(datesCompare, ([a, b]) => {
         expect(moment(a).isBefore(moment(b))).toBe(originalMoment(a).isBefore(originalMoment(b)));
         expect(moment(a).isAfter(moment(b))).toBe(originalMoment(a).isAfter(originalMoment(b)));
@@ -655,7 +656,7 @@ describe("Equivalence partitioning: comparison methods", () => {
   });
 
   test("isSameOrBefore/isSameOrAfter match moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(datesCompare, ([a, b]) => {
         expect(moment(a).isSameOrBefore(moment(b))).toBe(
           originalMoment(a).isSameOrBefore(originalMoment(b)),
@@ -669,7 +670,7 @@ describe("Equivalence partitioning: comparison methods", () => {
   });
 
   test("comparison with unit matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(datesCompare, fc.constantFrom("year", "month", "day"), ([a, b], unit) => {
         expect(moment(a).isBefore(moment(b), unit)).toBe(
           originalMoment(a).isBefore(originalMoment(b), unit),
@@ -685,7 +686,7 @@ describe("Equivalence partitioning: comparison methods", () => {
 
 describe("Equivalence partitioning: display methods", () => {
   test("from/to/calendar match moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.date({ min: new Date("2024-01-01"), max: new Date("2024-12-31"), noInvalidDate: true }),
         fc.date({ min: new Date("2024-01-01"), max: new Date("2024-12-31"), noInvalidDate: true }),
@@ -702,7 +703,7 @@ describe("Equivalence partitioning: display methods", () => {
   });
 
   test("toISOString/toJSON/toString match moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.date({ min: new Date("1900-01-01"), max: new Date("2100-01-01"), noInvalidDate: true }),
         (d) => {
@@ -730,7 +731,7 @@ describe("Equivalence partitioning: units", () => {
   const invalidUnits = fc.constantFrom("decade", "century", "fortnight", "", "foo", "years!");
 
   test("normalizeUnits handles valid units same as moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(validUnits, (u) => {
         expect(moment.normalizeUnits(u)).toBe(originalMoment.normalizeUnits(u));
       }),
@@ -739,7 +740,7 @@ describe("Equivalence partitioning: units", () => {
   });
 
   test("normalizeUnits handles invalid units same as moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(invalidUnits, (u) => {
         expect(moment.normalizeUnits(u)).toBe(originalMoment.normalizeUnits(u));
       }),
@@ -750,7 +751,7 @@ describe("Equivalence partitioning: units", () => {
 
 describe("Equivalence partitioning: get/set", () => {
   test("get(unit) matches moment for valid units", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.date({ min: new Date("1900-01-01"), max: new Date("2100-01-01"), noInvalidDate: true }),
         fc.constantFrom("year", "month", "date", "day", "hour", "minute", "second", "millisecond"),
@@ -765,7 +766,7 @@ describe("Equivalence partitioning: get/set", () => {
 
 describe("Equivalence partitioning: moment() constructor with empty/undefined/null", () => {
   test("locale dow=0 (Sunday) startOf/endOf week matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.date({ min: new Date("1900-01-01"), max: new Date("2100-01-01"), noInvalidDate: true }),
         (d) => {
@@ -790,7 +791,7 @@ describe("Equivalence partitioning: moment() constructor with empty/undefined/nu
   });
 
   test("locale dow=3 (Wednesday) startOf/endOf week matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.date({ min: new Date("1900-01-01"), max: new Date("2100-01-01"), noInvalidDate: true }),
         (d) => {
@@ -822,7 +823,7 @@ describe("Equivalence partitioning: moment() constructor with empty/undefined/nu
   });
 
   test("locale dow=6 (Saturday) startOf/endOf week matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.date({ min: new Date("1900-01-01"), max: new Date("2100-01-01"), noInvalidDate: true }),
         (d) => {
@@ -877,7 +878,7 @@ describe("Equivalence partitioning: moment() constructor with empty/undefined/nu
   });
 
   test("empty array matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom([] as unknown[]), (input) => {
         const m2 = moment(input);
         const mOrig = originalMoment(input);
@@ -891,7 +892,7 @@ describe("Equivalence partitioning: moment() constructor with empty/undefined/nu
   });
 
   test("empty object matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom({} as Record<string, unknown>), (input) => {
         const m2 = moment(input);
         const mOrig = originalMoment(input);
@@ -905,7 +906,7 @@ describe("Equivalence partitioning: moment() constructor with empty/undefined/nu
   });
 
   test("undefined matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom(undefined as unknown), (input) => {
         const m2 = moment(input);
         const mOrig = originalMoment(input);

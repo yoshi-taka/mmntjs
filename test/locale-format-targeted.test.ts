@@ -1,5 +1,6 @@
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import fc from "fast-check";
+import { assertProp } from "./properties/helpers";
 import moment from "../src/index.ts";
 import originalMoment from "../moment/moment.js";
 
@@ -47,7 +48,7 @@ describe("localeMeridiem (locale-format.ts)", () => {
         return isLower ? "post meridiem" : "Post Meridiem";
       },
     });
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (d) => {
         const m = moment(d).locale("x-meridiem-custom");
         const o = originalMoment(d).locale("x-meridiem-custom");
@@ -63,7 +64,7 @@ describe("localeMeridiem (locale-format.ts)", () => {
   test("meridiem fallback to enLocale matches moment.js", () => {
     moment.defineLocale("x-meridiem-noop", {});
     originalMoment.defineLocale("x-meridiem-noop", {});
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (d) => {
         const m = moment(d).locale("x-meridiem-noop");
         const o = originalMoment(d).locale("x-meridiem-noop");
@@ -94,7 +95,7 @@ describe("localeMonths (locale-format.ts)", () => {
       months: (m: { month: () => number }) =>
         ["F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12"][m.month()],
     });
-    fc.assert(
+    assertProp(
       fc.property(safeDates, formatTokens, (d, fmt) => {
         const m = moment(d).locale("x-months-fn");
         const o = originalMoment(d).locale("x-months-fn");
@@ -131,7 +132,7 @@ describe("localeMonths (locale-format.ts)", () => {
         isFormat: /D[oD]?(\[[^[\]]*\]|\s)+MMMM?/,
       },
     });
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (d) => {
         const m = moment(d).locale("x-months-obj");
         const o = originalMoment(d).locale("x-months-obj");
@@ -165,7 +166,7 @@ describe("localeWeekdays (locale-format.ts)", () => {
         return fmt ? `${days[m.day()]}-${fmt}` : days[m.day()];
       },
     });
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (d) => {
         const m = moment(d).locale("x-wd-fn");
         const o = originalMoment(d).locale("x-wd-fn");
@@ -186,7 +187,7 @@ describe("localeWeekdays (locale-format.ts)", () => {
       weekdaysShort: (m: { day: () => number }) =>
         ["SD0", "SD1", "SD2", "SD3", "SD4", "SD5", "SD6"][m.day()],
     });
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (d) => {
         const m = moment(d).locale("x-wds-fn");
         const o = originalMoment(d).locale("x-wds-fn");
@@ -199,7 +200,7 @@ describe("localeWeekdays (locale-format.ts)", () => {
   });
 
   test("weekdays(true) returns reordered array matching moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (d) => {
         const m = moment(d);
         const o = originalMoment(d);
@@ -224,7 +225,7 @@ describe("localeOrdinal (locale-format.ts)", () => {
     originalMoment.defineLocale("x-ord-fn", {
       ordinal: (n: number) => `${n}th`,
     });
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (d) => {
         const m = moment(d).locale("x-ord-fn");
         const o = originalMoment(d).locale("x-ord-fn");
@@ -243,7 +244,7 @@ describe("localeOrdinal (locale-format.ts)", () => {
     originalMoment.defineLocale("x-ord-str", {
       ordinal: "%d.",
     });
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (d) => {
         const m = moment(d).locale("x-ord-str");
         const o = originalMoment(d).locale("x-ord-str");
@@ -258,7 +259,7 @@ describe("localeOrdinal (locale-format.ts)", () => {
   test("no ordinal defined defaults to number", () => {
     moment.defineLocale("x-ord-none", {});
     originalMoment.defineLocale("x-ord-none", {});
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (d) => {
         const m = moment(d).locale("x-ord-none");
         const o = originalMoment(d).locale("x-ord-none");
@@ -310,7 +311,7 @@ describe("localeRelativeTime (locale-runtime.ts)", () => {
         y: (n: number) => `${n} yr`,
       },
     });
-    fc.assert(
+    assertProp(
       fc.property(safeDates, relAmounts, relUnits, (d, amount, unit) => {
         const m = moment(d)
           .add(amount, unit as moment.unitOfTime.DurationConstructor)
@@ -353,7 +354,7 @@ describe("localeRelativeTime (locale-runtime.ts)", () => {
         y: "%d years",
       },
     });
-    fc.assert(
+    assertProp(
       fc.property(safeDates, relAmounts, relUnits, (d, amount, unit) => {
         const m = moment(d)
           .add(amount, unit as moment.unitOfTime.DurationConstructor)
@@ -389,7 +390,7 @@ describe("localeRelativeTime (locale-runtime.ts)", () => {
         return `custom ${n} ${key} ago`;
       },
     });
-    fc.assert(
+    assertProp(
       fc.property(safeDates, relAmounts, relUnits, (d, amount, unit) => {
         const m = moment(d)
           .add(amount, unit as moment.unitOfTime.DurationConstructor)
@@ -428,7 +429,7 @@ describe("localeRelativeTime (locale-runtime.ts)", () => {
         y: "%d years",
       },
     });
-    fc.assert(
+    assertProp(
       fc.property(safeDates, relAmounts, relUnits, (d, amount, unit) => {
         const m = moment(d)
           .add(amount, unit as moment.unitOfTime.DurationConstructor)
@@ -445,7 +446,7 @@ describe("localeRelativeTime (locale-runtime.ts)", () => {
   });
 
   test("fromNow without suffix matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, relAmounts, relUnits, (d, amount, unit) => {
         const m = moment(d).add(amount, unit as moment.unitOfTime.DurationConstructor);
         const o = originalMoment(d).add(amount, unit as moment.unitOfTime.DurationConstructor);
@@ -464,7 +465,7 @@ describe("localeLongDateFormat (locale-runtime.ts)", () => {
   });
 
   test("lowercase L/LL/LLL/LLLL matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (d) => {
         const m = moment(d);
         const o = originalMoment(d);
@@ -478,7 +479,7 @@ describe("localeLongDateFormat (locale-runtime.ts)", () => {
   });
 
   test("LT/LTS matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (d) => {
         const m = moment(d);
         const o = originalMoment(d);
@@ -510,7 +511,7 @@ describe("localeLongDateFormat (locale-runtime.ts)", () => {
         LTS: "HH:mm:ss",
       },
     });
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (d) => {
         const m = moment(d).locale("x-ldf");
         const o = originalMoment(d).locale("x-ldf");
@@ -543,7 +544,7 @@ describe("localePreparse / localePostformat", () => {
       preparse: (str: string) => str.replace(preparseRe, "."),
       postformat: (str: string) => str.replace(postformatRe, "-"),
     });
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (d) => {
         const m = moment(d).locale("x-pp");
         const o = originalMoment(d).locale("x-pp");

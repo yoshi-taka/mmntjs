@@ -4,6 +4,7 @@ import type { Duration } from "../src/duration";
 import fs from "node:fs";
 import path from "node:path";
 import fc from "fast-check";
+import { assertProp } from "./properties/helpers";
 import originalMoment from "../moment/moment";
 
 const ROOT = path.resolve(__dirname, "..");
@@ -69,7 +70,7 @@ function makeMutations(mutations: Mutation[]) {
         try {
           clearCache();
 
-          fc.assert(
+          assertProp(
             fc.property(mutation.inputs, (input) => {
               if (killedByOracle) {
                 return true;

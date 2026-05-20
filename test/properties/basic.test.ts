@@ -1,5 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import fc from "fast-check";
+import { assertProp } from "./helpers";
 import _moment from "../../src/index.ts";
 import type { MomentStatic } from "../../src/entry/types";
 import type { Moment } from "../../src/moment-class";
@@ -93,7 +94,7 @@ describe("Property-based: moment vs original moment", () => {
   // ============================================================
 
   test("add() matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, dayAmounts, dayUnits, (date, amount, unit) => {
         const m2 = moment(date).add(amount, unit);
         const mOrig = originalMoment(date).add(amount, unit);
@@ -104,7 +105,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("format() matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(validDates, formatStrings, (date, fmt) => {
         const m2 = moment(date);
         const mOrig = originalMoment(date);
@@ -115,7 +116,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("isValid() matches moment for boundary values", () => {
-    fc.assert(
+    assertProp(
       fc.property(anyDates, (date) => {
         const m2 = moment(date);
         const mOrig = originalMoment(date);
@@ -126,7 +127,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("diff() matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, dayUnits, (a, b, unit) => {
         const m2a = moment(a);
         const m2b = moment(b);
@@ -143,7 +144,7 @@ describe("Property-based: moment vs original moment", () => {
   // ============================================================
 
   test("format with full date patterns matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         const m2 = moment(date);
         const mOrig = originalMoment(date);
@@ -156,7 +157,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("format with locale strings matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         const m2 = moment(date);
         const mOrig = originalMoment(date);
@@ -172,7 +173,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("format with ordinal matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         const m2 = moment(date);
         const mOrig = originalMoment(date);
@@ -184,7 +185,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("format with short/ISO/12h patterns matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         const m2 = moment(date);
         const mOrig = originalMoment(date);
@@ -201,7 +202,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("format with timezone patterns matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         const m2 = moment(date);
         const mOrig = originalMoment(date);
@@ -213,7 +214,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("format with quarter and week matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         const m2 = moment(date);
         const mOrig = originalMoment(date);
@@ -225,7 +226,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("format with unix timestamp matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         const m2 = moment(date);
         const mOrig = originalMoment(date);
@@ -241,7 +242,7 @@ describe("Property-based: moment vs original moment", () => {
   // ============================================================
 
   test("add() with all unit types matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, addAmounts, allUnits, (date, amount, unit) => {
         const m2 = moment(date).add(amount, unit);
         const mOrig = originalMoment(date).add(amount, unit);
@@ -252,7 +253,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("subtract() with all unit types matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, addAmounts, allUnits, (date, amount, unit) => {
         const m2 = moment(date).subtract(amount, unit);
         const mOrig = originalMoment(date).subtract(amount, unit);
@@ -263,7 +264,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("startOf() matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, startEndUnits, (date, unit) => {
         const m2 = moment(date).startOf(unit);
         const mOrig = originalMoment(date).startOf(unit);
@@ -274,7 +275,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("endOf() matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, startEndUnits, (date, unit) => {
         const m2 = moment(date).endOf(unit);
         const mOrig = originalMoment(date).endOf(unit);
@@ -285,7 +286,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("chained add/subtract matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, addAmounts, addAmounts, allUnits, allUnits, (date, a1, a2, u1, u2) => {
         const m2 = moment(date).add(a1, u1).subtract(a2, u2).add(1, "day");
         const mOrig = originalMoment(date).add(a1, u1).subtract(a2, u2).add(1, "day");
@@ -300,7 +301,7 @@ describe("Property-based: moment vs original moment", () => {
   // ============================================================
 
   test("year getter/setter matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, fc.integer({ min: 1900, max: 2100 }), (date, newYear) => {
         const m2 = moment(date);
         const mOrig = originalMoment(date);
@@ -315,7 +316,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("month getter/setter matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, fc.integer({ min: 0, max: 11 }), (date, newMonth) => {
         const m2 = moment(date);
         const mOrig = originalMoment(date);
@@ -330,7 +331,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("date getter/setter matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, fc.integer({ min: 1, max: 28 }), (date, newDate) => {
         const m2 = moment(date);
         const mOrig = originalMoment(date);
@@ -344,7 +345,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("hour/minute/second/millisecond getter/setter matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         const m2 = moment(date);
         const mOrig = originalMoment(date);
@@ -370,7 +371,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("day getter matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         expect(moment(date).day()).toBe(originalMoment(date).day());
       }),
@@ -379,7 +380,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("weekday getter/setter matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, fc.integer({ min: 0, max: 6 }), (date, newWday) => {
         const m2 = moment(date);
         const mOrig = originalMoment(date);
@@ -393,7 +394,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("isoWeekday getter/setter matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, fc.integer({ min: 1, max: 7 }), (date, newIsoWday) => {
         const m2 = moment(date);
         const mOrig = originalMoment(date);
@@ -407,7 +408,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("week getter/setter matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, fc.integer({ min: 1, max: 53 }), (date, newWeek) => {
         const m2 = moment(date);
         const mOrig = originalMoment(date);
@@ -421,7 +422,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("isoWeek getter/setter matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, fc.integer({ min: 1, max: 53 }), (date, newIsoWeek) => {
         const m2 = moment(date);
         const mOrig = originalMoment(date);
@@ -435,7 +436,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("dayOfYear getter/setter matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, fc.integer({ min: 1, max: 365 }), (date, newDoy) => {
         const m2 = moment(date);
         const mOrig = originalMoment(date);
@@ -449,7 +450,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("quarter getter/setter matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, fc.integer({ min: 1, max: 4 }), (date, newQ) => {
         const m2 = moment(date);
         const mOrig = originalMoment(date);
@@ -467,7 +468,7 @@ describe("Property-based: moment vs original moment", () => {
   // ============================================================
 
   test("isBefore matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, (a, b) => {
         expect(moment(a).isBefore(moment(b))).toBe(originalMoment(a).isBefore(originalMoment(b)));
       }),
@@ -476,7 +477,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("isBefore with unit matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, compUnits, (a, b, unit) => {
         expect(moment(a).isBefore(moment(b), unit)).toBe(
           originalMoment(a).isBefore(originalMoment(b), unit),
@@ -487,7 +488,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("isAfter matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, (a, b) => {
         expect(moment(a).isAfter(moment(b))).toBe(originalMoment(a).isAfter(originalMoment(b)));
       }),
@@ -496,7 +497,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("isAfter with unit matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, compUnits, (a, b, unit) => {
         expect(moment(a).isAfter(moment(b), unit)).toBe(
           originalMoment(a).isAfter(originalMoment(b), unit),
@@ -507,7 +508,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("isSame matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, (a, b) => {
         expect(moment(a).isSame(moment(b))).toBe(originalMoment(a).isSame(originalMoment(b)));
       }),
@@ -516,7 +517,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("isSame with unit matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, compUnits, (a, b, unit) => {
         expect(moment(a).isSame(moment(b), unit)).toBe(
           originalMoment(a).isSame(originalMoment(b), unit),
@@ -527,7 +528,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("isSameOrBefore matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, (a, b) => {
         expect(moment(a).isSameOrBefore(moment(b))).toBe(
           originalMoment(a).isSameOrBefore(originalMoment(b)),
@@ -538,7 +539,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("isSameOrAfter matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, (a, b) => {
         expect(moment(a).isSameOrAfter(moment(b))).toBe(
           originalMoment(a).isSameOrAfter(originalMoment(b)),
@@ -549,7 +550,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("isBetween matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         safeDates,
         safeDates,
@@ -571,7 +572,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("diff with float matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, allUnits, (a, b, unit) => {
         const m2a = moment(a);
         const m2b = moment(b);
@@ -592,7 +593,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("diff for all unit types matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, allUnits, (a, b, unit) => {
         const m2a = moment(a);
         const m2b = moment(b);
@@ -609,7 +610,7 @@ describe("Property-based: moment vs original moment", () => {
   // ============================================================
 
   test("from() with reference matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, (date, ref) => {
         const m2 = moment(date);
         const mOrig = originalMoment(date);
@@ -622,7 +623,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("to() with reference matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, (date, ref) => {
         const m2 = moment(date);
         const mOrig = originalMoment(date);
@@ -635,7 +636,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("calendar() with reference matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, (date, ref) => {
         const m2 = moment(date);
         const mOrig = originalMoment(date);
@@ -648,7 +649,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("toISOString matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         expect(moment(date).toISOString()).toBe(originalMoment(date).toISOString());
       }),
@@ -657,7 +658,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("toJSON matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         expect(moment(date).toJSON()).toBe(originalMoment(date).toJSON());
       }),
@@ -666,7 +667,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("toDate matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         expect(moment(date).toDate().getTime()).toBe(originalMoment(date).toDate().getTime());
       }),
@@ -675,7 +676,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("toArray matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         expect(moment(date).toArray()).toEqual(originalMoment(date).toArray());
       }),
@@ -684,7 +685,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("toObject matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         expect(moment(date).toObject()).toEqual(originalMoment(date).toObject());
       }),
@@ -693,7 +694,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("toString matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         expect(moment(date).toString()).toBe(originalMoment(date).toString());
       }),
@@ -702,7 +703,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("valueOf matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         expect(moment(date).valueOf()).toBe(originalMoment(date).valueOf());
       }),
@@ -711,7 +712,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("unix matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         expect(moment(date).unix()).toBe(originalMoment(date).unix());
       }),
@@ -720,7 +721,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("daysInMonth matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         expect(moment(date).daysInMonth()).toBe(originalMoment(date).daysInMonth());
       }),
@@ -729,7 +730,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("isLeapYear matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         expect(moment(date).isLeapYear()).toBe(originalMoment(date).isLeapYear());
       }),
@@ -738,7 +739,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("isDST matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         expect(moment(date).isDST()).toBe(originalMoment(date).isDST());
       }),
@@ -751,7 +752,7 @@ describe("Property-based: moment vs original moment", () => {
   // ============================================================
 
   test("moment.utc() vs originalMoment.utc()", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         const m2 = moment.utc(date);
         const mOrig = originalMoment.utc(date);
@@ -765,7 +766,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("moment().utc() matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         const m2 = moment(date).utc();
         const mOrig = originalMoment(date).utc();
@@ -779,7 +780,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("utcOffset getter matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         expect(moment(date).utcOffset()).toBe(originalMoment(date).utcOffset());
       }),
@@ -788,7 +789,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("isUTC/isLocal/isUtcOffset matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         const m2 = moment(date);
         const mOrig = originalMoment(date);
@@ -801,7 +802,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("format output with UTC mode matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         const m2 = moment.utc(date);
         const mOrig = originalMoment.utc(date);
@@ -816,7 +817,7 @@ describe("Property-based: moment vs original moment", () => {
   // ============================================================
 
   test("moment.duration(n, unit) matches originalMoment.duration(n, unit)", () => {
-    fc.assert(
+    assertProp(
       fc.property(addAmounts, allUnits, (n, unit) => {
         const d2 = moment.duration(n, unit);
         const dOrig = originalMoment.duration(n, unit);
@@ -828,7 +829,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("moment.duration() with object matches original", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.record({
           years: fc.integer({ min: -10, max: 10 }),
@@ -850,7 +851,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("duration get matches original", () => {
-    fc.assert(
+    assertProp(
       fc.property(addAmounts, allUnits, durationGetUnits, (n, unit, getUnit) => {
         const d2 = moment.duration(n, unit);
         const dOrig = originalMoment.duration(n, unit);
@@ -861,7 +862,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("duration as(unit) matches original", () => {
-    fc.assert(
+    assertProp(
       fc.property(addAmounts, allUnits, allUnits, (n, unit, asUnit) => {
         const d2 = moment.duration(n, unit);
         const dOrig = originalMoment.duration(n, unit);
@@ -872,7 +873,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("duration valueOf matches original", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.integer({ min: -100000000, max: 100000000 }), (n) => {
         expect(moment.duration(n).valueOf()).toBe(originalMoment.duration(n).valueOf());
       }),
@@ -881,7 +882,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("duration arithmetic matches original", () => {
-    fc.assert(
+    assertProp(
       fc.property(addAmounts, addAmounts, allUnits, allUnits, (a1, a2, u1, u2) => {
         const d2 = moment.duration(a1, u1).add(a2, u2);
         const dOrig = originalMoment.duration(a1, u1).add(a2, u2);
@@ -892,7 +893,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("duration subtract matches original", () => {
-    fc.assert(
+    assertProp(
       fc.property(addAmounts, addAmounts, allUnits, allUnits, (a1, a2, u1, u2) => {
         const d2 = moment.duration(a1, u1).subtract(a2, u2);
         const dOrig = originalMoment.duration(a1, u1).subtract(a2, u2);
@@ -907,7 +908,7 @@ describe("Property-based: moment vs original moment", () => {
   // ============================================================
 
   test("parsingFlags matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.oneof(
           fc.constantFrom(
@@ -934,7 +935,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("parsingFlags with format string matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom("2024-01-01", "2024/01/01", "01-01-2024", "01/01/2024"),
         fc.constantFrom("YYYY-MM-DD", "MM/DD/YYYY"),
@@ -958,7 +959,7 @@ describe("Property-based: moment vs original moment", () => {
   // ============================================================
 
   test("weeksInYear matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         expect(moment(date).weeksInYear()).toBe(originalMoment(date).weeksInYear());
       }),
@@ -967,7 +968,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("isoWeeksInYear matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         expect(moment(date).isoWeeksInYear()).toBe(originalMoment(date).isoWeeksInYear());
       }),
@@ -976,7 +977,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("year length via daysInMonth matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         const m2 = moment(date);
         const mOrig = originalMoment(date);
@@ -993,7 +994,7 @@ describe("Property-based: moment vs original moment", () => {
   // ============================================================
 
   test("string inputs with various content", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.oneof(
           fc.constantFrom(
@@ -1020,7 +1021,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("bigInt inputs", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.bigInt({ min: -100000000000n, max: 100000000000n }), (n) => {
         const m2 = moment(Number(n));
         const mOrig = originalMoment(Number(n));
@@ -1034,7 +1035,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("duration with bigInt milliseconds", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.bigInt({ min: -10000000n, max: 10000000n }), (n) => {
         const d2 = moment.duration(Number(n));
         const dOrig = originalMoment.duration(Number(n));
@@ -1084,7 +1085,7 @@ describe("Property-based: moment vs original moment", () => {
   );
 
   test("format with individual tokens matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, tokenFormats, (date, token) => {
         const m2 = moment(date);
         const mOrig = originalMoment(date);
@@ -1095,7 +1096,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("format with combined tokens matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         const m2 = moment(date);
         const mOrig = originalMoment(date);
@@ -1122,7 +1123,7 @@ describe("Property-based: moment vs original moment", () => {
   // ============================================================
 
   test("zone switching matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         const m2 = moment(date);
         const mOrig = originalMoment(date);
@@ -1138,7 +1139,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("clone matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         const m2 = moment(date).clone();
         const mOrig = originalMoment(date).clone();
@@ -1154,7 +1155,7 @@ describe("Property-based: moment vs original moment", () => {
   // ============================================================
 
   test("ISO-like string inputs match moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom(
           "2024-01-01",
@@ -1188,7 +1189,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("string inputs with format string match moment validity", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom(
           "",
@@ -1257,7 +1258,7 @@ describe("Property-based: moment vs original moment", () => {
   );
 
   test("format with extended individual tokens matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, extendedTokens, (date, token) => {
         const m2 = moment(date);
         const mOrig = originalMoment(date);
@@ -1272,7 +1273,7 @@ describe("Property-based: moment vs original moment", () => {
   // ============================================================
 
   test("startOf for all units uses local-safe comparison", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, startEndUnits, (date, unit) => {
         const m2 = moment(date).startOf(unit);
         const mOrig = originalMoment(date).startOf(unit);
@@ -1284,7 +1285,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("endOf for all units uses local-safe comparison", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, startEndUnits, (date, unit) => {
         const m2 = moment(date).endOf(unit);
         const mOrig = originalMoment(date).endOf(unit);
@@ -1296,7 +1297,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("startOf with isoWeek matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         const m2 = moment(date).startOf("isoWeek");
         const mOrig = originalMoment(date).startOf("isoWeek");
@@ -1308,7 +1309,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("endOf with isoWeek matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (date) => {
         const m2 = moment(date).endOf("isoWeek");
         const mOrig = originalMoment(date).endOf("isoWeek");
@@ -1327,7 +1328,7 @@ describe("Property-based: moment vs original moment", () => {
   const thresholdLimits = fc.integer({ min: 1, max: 100 });
 
   test("relativeTimeThreshold get/set matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(thresholdKeys, thresholdLimits, (key, limit) => {
         const saved = moment.relativeTimeThreshold(key);
         const savedOrig = originalMoment.relativeTimeThreshold(key);
@@ -1357,7 +1358,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("relativeTimeRounding get/set matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.integer({ min: -1000, max: 1000 }), (n) => {
         const fn = () => Math.ceil(n);
         const result = moment.relativeTimeRounding(fn);
@@ -1439,7 +1440,7 @@ describe("Property-based: moment vs original moment", () => {
   );
 
   test("normalizeUnits matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(unitAliases, (alias) => {
         expect(moment.normalizeUnits(alias)).toBe(originalMoment.normalizeUnits(alias));
       }),
@@ -1448,7 +1449,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("normalizeUnits with empty/unknown input matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom("", "foo", "bar", "xyz", "123"), (input) => {
         expect(moment.normalizeUnits(input)).toBe(originalMoment.normalizeUnits(input));
       }),
@@ -1461,7 +1462,7 @@ describe("Property-based: moment vs original moment", () => {
   // ============================================================
 
   test("daysInMonth with negative/overflow month matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.integer({ min: -24, max: 24 }), (month) => {
         const d = moment({ year: 2024, month: 0 });
         const dOrig = originalMoment({ year: 2024, month: 0 });
@@ -1472,7 +1473,7 @@ describe("Property-based: moment vs original moment", () => {
   });
 
   test("isLeapYear with known years matches moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom(
           0,

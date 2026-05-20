@@ -1,5 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import fc from "fast-check";
+import { assertProp } from "./properties/helpers";
 import moment from "../src/index.ts";
 import originalMoment from "../moment/moment";
 
@@ -824,7 +825,7 @@ describe("PBT: isAfter family with string inputs (vs oracle)", () => {
     });
 
   test("isAfter with ISO strings matches moment.js oracle", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.date({ min: new Date("2000-01-01"), max: new Date("2030-12-31"), noInvalidDate: true }),
         isoStringArb,
@@ -839,7 +840,7 @@ describe("PBT: isAfter family with string inputs (vs oracle)", () => {
   });
 
   test("isBefore with ISO strings matches moment.js oracle", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.date({ min: new Date("2000-01-01"), max: new Date("2030-12-31"), noInvalidDate: true }),
         isoStringArb,
@@ -854,7 +855,7 @@ describe("PBT: isAfter family with string inputs (vs oracle)", () => {
   });
 
   test("isSame with ISO strings matches moment.js oracle", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.date({ min: new Date("2000-01-01"), max: new Date("2030-12-31"), noInvalidDate: true }),
         isoStringArb,
@@ -869,7 +870,7 @@ describe("PBT: isAfter family with string inputs (vs oracle)", () => {
   });
 
   test("isSameOrAfter with ISO strings matches moment.js oracle", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.date({ min: new Date("2000-01-01"), max: new Date("2030-12-31"), noInvalidDate: true }),
         isoStringArb,
@@ -884,7 +885,7 @@ describe("PBT: isAfter family with string inputs (vs oracle)", () => {
   });
 
   test("isSameOrBefore with ISO strings matches moment.js oracle", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.date({ min: new Date("2000-01-01"), max: new Date("2030-12-31"), noInvalidDate: true }),
         isoStringArb,
@@ -899,7 +900,7 @@ describe("PBT: isAfter family with string inputs (vs oracle)", () => {
   });
 
   test("isBetween with ISO strings matches moment.js oracle", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.date({ min: new Date("2000-01-01"), max: new Date("2030-12-31"), noInvalidDate: true }),
         isoStringArb,
@@ -915,7 +916,7 @@ describe("PBT: isAfter family with string inputs (vs oracle)", () => {
   });
 
   test("isBetween with ISO strings + inclusivity matches oracle", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.date({ min: new Date("2000-01-01"), max: new Date("2030-12-31"), noInvalidDate: true }),
         isoStringArb,

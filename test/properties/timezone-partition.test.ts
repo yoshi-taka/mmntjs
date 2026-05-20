@@ -1,5 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import fc from "fast-check";
+import { assertProp } from "./helpers";
 import _moment from "../../src/index.ts";
 import type { MomentStatic } from "../../src/entry/types";
 import _originalMoment from "../../moment/moment";
@@ -50,7 +51,7 @@ describe("EP: utcOffset() numeric input", () => {
   const eqZero = fc.constantFrom(0);
 
   test("|offset| < 16 → treated as hours (×60)", () => {
-    fc.assert(
+    assertProp(
       fc.property(eqSmall, (n) => {
         if (n === 0) {
           return;
@@ -65,7 +66,7 @@ describe("EP: utcOffset() numeric input", () => {
   });
 
   test("|offset| >= 16 → treated as minutes (passthrough)", () => {
-    fc.assert(
+    assertProp(
       fc.property(eqLarge, (n) => {
         const m = moment("2024-06-15T12:00:00").utcOffset(n);
         const o = originalMoment("2024-06-15T12:00:00").utcOffset(n);
@@ -77,7 +78,7 @@ describe("EP: utcOffset() numeric input", () => {
   });
 
   test("offset = 0 → UTC", () => {
-    fc.assert(
+    assertProp(
       fc.property(eqZero, (_n) => {
         const m = moment("2024-06-15T12:00:00").utcOffset(0);
         const o = originalMoment("2024-06-15T12:00:00").utcOffset(0);
@@ -148,7 +149,7 @@ describe("EP: utcOffset() string input", () => {
   );
 
   test("valid offset strings match moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(validOffsets, (s) => {
         const m = moment("2024-06-15T12:00:00").utcOffset(s);
         const o = originalMoment("2024-06-15T12:00:00").utcOffset(s);
@@ -160,7 +161,7 @@ describe("EP: utcOffset() string input", () => {
   });
 
   test("invalid offset strings → no-op (returns same moment)", () => {
-    fc.assert(
+    assertProp(
       fc.property(invalidOffsets, (s) => {
         const base = moment("2024-06-15T12:00:00");
         const v = base.valueOf();
@@ -210,7 +211,7 @@ describe("BVA: utcOffset() string boundaries", () => {
 // ============================================================
 describe("EP: zone() input", () => {
   test("zone() getter matches -utcOffset()", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom(-720, -480, -240, -60, 60, 120, 420, 600, 840), (off) => {
         const m = moment("2024-06-15T12:00:00").utcOffset(off);
         const o = originalMoment("2024-06-15T12:00:00").utcOffset(off);
@@ -330,7 +331,7 @@ describe("EP: keepLocalTime preserves wall clock", () => {
 
   for (const [label, fn] of wallTests) {
     test(`${label}: HH:mm:ss preserved`, () => {
-      fc.assert(
+      assertProp(
         fc.property(
           fc.constantFrom(
             "2024-06-15T12:30:45",
@@ -472,7 +473,7 @@ describe("EP: parseZone() input", () => {
   });
 
   test("parseZone roundtrip: original offset preserved after clone", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom(
           "2013-01-01T00:00:00-13:00",
@@ -543,7 +544,7 @@ describe("BVA: parseZone() offset extremes", () => {
 // ============================================================
 describe("EP: isDST()", () => {
   test("UTC moment → always false", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom("2024-01-15", "2024-06-15", "2024-03-10", "2024-11-03"),
         (date) => {
@@ -556,7 +557,7 @@ describe("EP: isDST()", () => {
   });
 
   test("fixed-offset moment → always false", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom("2024-01-15", "2024-06-15", "2024-03-10", "2024-11-03"),
         fc.constantFrom(-240, 60, 330),
@@ -570,7 +571,7 @@ describe("EP: isDST()", () => {
   });
 
   test("local moment matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom(
           "2024-01-15",
@@ -601,7 +602,7 @@ describe("EP: hasAlignedHourOffset()", () => {
   const nonAligned = fc.constantFrom(-450, -330, -90, 90, 330, 390, 765);
 
   test("aligned offsets → true with UTC", () => {
-    fc.assert(
+    assertProp(
       fc.property(aligned, (off) => {
         const m = moment("2024-06-15T12:00:00").utcOffset(off);
         const o = originalMoment("2024-06-15T12:00:00").utcOffset(off);
@@ -613,7 +614,7 @@ describe("EP: hasAlignedHourOffset()", () => {
   });
 
   test("non-aligned offsets → false with UTC", () => {
-    fc.assert(
+    assertProp(
       fc.property(nonAligned, (off) => {
         const m = moment("2024-06-15T12:00:00").utcOffset(off);
         const o = originalMoment("2024-06-15T12:00:00").utcOffset(off);
@@ -761,7 +762,7 @@ describe("EP: toDate() / toISOString() across offsets", () => {
   });
 
   test("toISOString() (no arg) always UTC", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom(60, -240, 330, 0, 90, -90), (off) => {
         const m = moment("2024-06-15T12:30:00").utcOffset(off);
         const o = originalMoment("2024-06-15T12:30:00").utcOffset(off);
@@ -920,7 +921,7 @@ describe("EP: zoneAbbr / zoneName", () => {
 // ============================================================
 describe("BVA: startOf/endOf with offset", () => {
   test("startOf day across offset range", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom(-720, -480, -240, 0, 60, 120, 420, 600, 840), (off) => {
         const ref = moment.utc([2010, 1, 2, 0, 0, 0]);
         const m = ref.clone().utcOffset(off).startOf("day");
@@ -933,7 +934,7 @@ describe("BVA: startOf/endOf with offset", () => {
   });
 
   test("endOf day across offset range", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom(-720, -480, -240, 0, 60, 120, 420, 600, 840), (off) => {
         const ref = moment.utc([2010, 1, 2, 0, 0, 0]);
         const m = ref.clone().utcOffset(off).endOf("day");

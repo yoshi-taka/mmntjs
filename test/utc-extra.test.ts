@@ -1,5 +1,6 @@
 import { describe, test, expect, beforeEach } from "bun:test";
 import fc from "fast-check";
+import { assertProp } from "./properties/helpers";
 import moment from "../src/index.ts";
 import originalMoment from "../moment/moment.js";
 
@@ -276,7 +277,7 @@ describe("property-based UTC/offset patterns", () => {
   const offsetMinutes = fc.integer({ min: -720, max: 840 });
 
   test("utcOffset setter matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, offsetMinutes, (d, offset) => {
         const m = moment.utc(d);
         const o = originalMoment.utc(d);
@@ -290,7 +291,7 @@ describe("property-based UTC/offset patterns", () => {
   });
 
   test("UTC->local->UTC round-trip preserves epoch", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (d) => {
         const m = moment.utc(d);
         const epoch = m.valueOf();
@@ -305,7 +306,7 @@ describe("property-based UTC/offset patterns", () => {
   });
 
   test("local->UTC->local round-trip preserves epoch", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (d) => {
         const m = moment(d);
         const epoch = m.valueOf();
@@ -320,7 +321,7 @@ describe("property-based UTC/offset patterns", () => {
   });
 
   test("utcOffset with keepLocalTime preserves wall clock", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, offsetMinutes, (d, offset) => {
         const m = moment(d);
         const wallStr = m.format("HH:mm:ss.SSS");
@@ -332,7 +333,7 @@ describe("property-based UTC/offset patterns", () => {
   });
 
   test("isDST returns boolean for any moment", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, (d) => {
         const m = moment(d);
         expect(typeof m.isDST()).toBe("boolean");

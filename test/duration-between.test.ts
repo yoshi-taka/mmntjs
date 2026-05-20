@@ -1,5 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import fc from "fast-check";
+import { assertProp } from "./properties/helpers";
 import { diffMomentsForDuration } from "../src/duration-between.ts";
 
 type MomentParts = {
@@ -144,7 +145,7 @@ describe("property-based diffMomentsForDuration", () => {
   const dateTriple = fc.tuple(yearRange, monthRange, dayRange);
 
   test("diff from same moment is zero", () => {
-    fc.assert(
+    assertProp(
       fc.property(dateTriple, ([y, m, d]) => {
         const a = makeMoment({ y, m, d });
         const result = diffMomentsForDuration(a, a);
@@ -157,7 +158,7 @@ describe("property-based diffMomentsForDuration", () => {
   // Flaky: month-boundary rounding (e.g. Jan 31 ↔ Mar 1) produces
   // ab.months ≠ -ba.months due to uneven month lengths. Accept ±1 month.
   test("diff opposite signs: diff(a,b) ≈ -diff(b,a)", () => {
-    fc.assert(
+    assertProp(
       fc.property(dateTriple, dateTriple, ([y1, m1, d1], [y2, m2, d2]) => {
         const a = makeMoment({ y: y1, m: m1, d: d1 });
         const b = makeMoment({ y: y2, m: m2, d: d2 });

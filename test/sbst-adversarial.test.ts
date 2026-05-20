@@ -1,5 +1,6 @@
 import { describe, test, expect, beforeEach } from "bun:test";
 import fc from "fast-check";
+import { assertProp } from "./properties/helpers";
 import _moment from "../src/index.ts";
 import type { Moment } from "../src/moment-class";
 import type { Duration } from "../src/duration";
@@ -24,7 +25,7 @@ describe("SBST: adversarial tests", () => {
     originalMoment.locale("en");
   });
   test("NaN/Infinity in all constructor argument positions", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom(NaN, Infinity, -Infinity),
         fc.constantFrom(NaN, Infinity, -Infinity),
@@ -49,7 +50,7 @@ describe("SBST: adversarial tests", () => {
   });
 
   test("extreme year values with format", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.oneof(fc.integer({ min: -100000, max: -1 }), fc.integer({ min: 10000, max: 100000 })),
         fc.constantFrom(
@@ -83,7 +84,7 @@ describe("SBST: adversarial tests", () => {
   });
 
   test("adversarial format strings", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.integer({ min: 2000, max: 2030 }),
         fc.oneof(
@@ -158,7 +159,7 @@ describe("SBST: adversarial tests", () => {
   });
 
   test("adversarial strict parsing", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.string({ maxLength: 20 }),
         fc.constantFrom(
@@ -183,7 +184,7 @@ describe("SBST: adversarial tests", () => {
   });
 
   test("adversarial chained operations on invalid moments", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom(NaN, Infinity, -Infinity, null, undefined, "", "invalid", "   "),
         fc.constantFrom("add", "subtract"),
@@ -202,7 +203,7 @@ describe("SBST: adversarial tests", () => {
   });
 
   test("duration from ISO string edge cases", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.oneof(
           fc.constantFrom(
@@ -245,7 +246,7 @@ describe("SBST: adversarial tests", () => {
   });
 
   test("duration humanize edge cases", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.oneof(
           fc.integer({ min: 0, max: 100 }),
@@ -270,7 +271,7 @@ describe("SBST: adversarial tests", () => {
   });
 
   test("moment with empty/null/undefined object", () => {
-    fc.assert(
+    assertProp(
       fc.property(fc.constantFrom({}, null), (input) => {
         const m2 = moment(input as unknown);
         const mOrig = originalMoment(input as unknown);
@@ -281,7 +282,7 @@ describe("SBST: adversarial tests", () => {
   });
 
   test("clone with various internal states", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.oneof(
           fc.integer({ min: -100000, max: 100000 }),
@@ -306,7 +307,7 @@ describe("SBST: adversarial tests", () => {
   });
 
   test("create from Date with extreme values", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.oneof(
           fc.constantFrom(
@@ -332,7 +333,7 @@ describe("SBST: adversarial tests", () => {
   });
 
   test("diff between extreme values", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom(
           new Date(0),
@@ -368,7 +369,7 @@ describe("SBST: adversarial tests", () => {
   });
 
   test("format with missing/invalid locale", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom("xx", "invalid", "", "undefined", "null"),
         fc.constantFrom(
@@ -399,7 +400,7 @@ describe("SBST: adversarial tests", () => {
   });
 
   test("isMoment/isDate/isDuration with non-moment values", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.constantFrom(
           null,

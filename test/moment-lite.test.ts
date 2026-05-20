@@ -456,6 +456,8 @@ describe("MomentLite edge cases: null/Infinity/NaN", () => {
 // ---------------------------------------------------------------------------
 import fc from "fast-check";
 
+import { assertProp } from "./properties/helpers";
+
 const safeMin = new Date("1900-01-01");
 const safeMax = new Date("2100-01-01");
 const safeDates = fc.date({ min: safeMin, max: safeMax, noInvalidDate: true });
@@ -477,7 +479,7 @@ describe("MomentLite property-based vs moment.js", () => {
   const om = (d: Date) => originalMoment(d);
 
   test("add matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, anyInt, allUnits, (date, amount, unit) => {
         const mmUnit = unit === "day" ? "days" : `${unit}s`;
         const a = mm(date).add(amount, mmUnit).valueOf();
@@ -490,7 +492,7 @@ describe("MomentLite property-based vs moment.js", () => {
 
   test("subtract matches moment.js", () => {
     const smallInt = fc.integer({ min: -50, max: 50 });
-    fc.assert(
+    assertProp(
       fc.property(safeDates, smallInt, allUnits, (date, amount, unit) => {
         const mmUnit = unit === "day" ? "days" : `${unit}s`;
         expect(mm(date).subtract(amount, mmUnit).valueOf()).toBe(
@@ -503,7 +505,7 @@ describe("MomentLite property-based vs moment.js", () => {
 
   const diffUnits = fc.constantFrom("week", "day", "hour", "minute", "second", "millisecond");
   test("diff matches moment.js", () => {
-    fc.assert(
+    assertProp(
       fc.property(safeDates, safeDates, diffUnits, (a, b, unit) => {
         const mmUnit = unit === "day" ? "days" : `${unit}s`;
         expect(mm(a).diff(mm(b), mmUnit)).toBe(om(a).diff(om(b), mmUnit));
@@ -519,7 +521,7 @@ describe("MomentLite property-based vs moment.js", () => {
       "YYYY-MM-DD HH:mm:ss.SSS",
       "MM/DD/YYYY",
     );
-    fc.assert(
+    assertProp(
       fc.property(safeDates, formats, (date, fmt) => {
         const d = mm(date);
         expect(d.format(fmt)).toBe(om(date).format(fmt));
@@ -530,7 +532,7 @@ describe("MomentLite property-based vs moment.js", () => {
 
   test("startOf matches moment.js", () => {
     const startUnits = fc.constantFrom("year", "month", "day", "hour", "minute", "second");
-    fc.assert(
+    assertProp(
       fc.property(safeDates, startUnits, (date, unit) => {
         expect(mm(date).startOf(unit).valueOf()).toBe(om(date).startOf(unit).valueOf());
       }),
@@ -540,7 +542,7 @@ describe("MomentLite property-based vs moment.js", () => {
 
   test("endOf matches moment.js", () => {
     const endUnits = fc.constantFrom("year", "month", "day", "hour", "minute", "second");
-    fc.assert(
+    assertProp(
       fc.property(safeDates, endUnits, (date, unit) => {
         expect(mm(date).endOf(unit).valueOf()).toBe(om(date).endOf(unit).valueOf());
       }),

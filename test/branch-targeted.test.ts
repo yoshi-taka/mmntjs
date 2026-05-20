@@ -1,5 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import fc from "fast-check";
+import { assertProp } from "./properties/helpers";
 import _moment from "../src/index.ts";
 import type { Moment } from "../src/moment-class";
 import type { Duration } from "../src/duration";
@@ -199,7 +200,7 @@ describe("Branch-targeted: signed years", () => {
   });
 
   test("property: signed years round-trip through parse", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.integer({ min: -999999, max: 999999 }).filter((y) => y < 0 || y > 9999),
         fc.integer({ min: 1, max: 12 }),
@@ -222,7 +223,7 @@ describe("Branch-targeted: signed years", () => {
 
 describe("Branch-targeted: strict mode", () => {
   test("strict mode with random round-tripped formats", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.date({
           min: new Date("2000-01-01"),
@@ -330,7 +331,7 @@ describe("Branch-targeted: timezone offset boundaries", () => {
   });
 
   test("property: timezone offset round-trips", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.date({
           min: new Date("2000-01-01"),
@@ -479,7 +480,7 @@ describe("Branch-targeted: duration partial objects", () => {
   });
 
   test("property: random partial duration objects", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc
           .tuple(
@@ -605,7 +606,7 @@ describe("Branch-targeted: locale week boundaries", () => {
   });
 
   test("startOf/endOf week with random locale dow (property)", () => {
-    fc.assert(
+    assertProp(
       fc.property(
         fc.date({ min: new Date("1900-01-01"), max: new Date("2100-01-01"), noInvalidDate: true }),
         fc.integer({ min: 0, max: 6 }),
