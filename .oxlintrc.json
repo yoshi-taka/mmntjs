@@ -68,6 +68,6 @@
   "ignorePatterns": [
     "moment/",
     "test/moment/",
-    "src/index.ts.new.js"
+    "dist/"
   ]
 }

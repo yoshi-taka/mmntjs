@@ -710,10 +710,6 @@ describe("BVA: epoch boundary comparisons", () => {
 // EP: isBetween with unit across offsets
 // ============================================================
 describe("EP: isBetween with units across offsets", () => {
-  const t = EPOCH;
-  const from = t - 86400000;
-  const to = t + 86400000;
-
   // KNOWN DIFF: isBetween('day') with fixed-offset moments disagrees
   // due to isSame('day') / isBefore('day') implementation differences.
   test.todo("isBetween('day') with offsets — matches moment.js");
