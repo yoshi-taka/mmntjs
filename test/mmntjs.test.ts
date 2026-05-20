@@ -111,13 +111,13 @@ describe("mmntjs specific", () => {
 
   test("ISO string with timezone uses UTC internally", () => {
     const utc = moment("2024-03-09T12:00:00Z");
-    expect(utc._isUTC).toBe(true);
+    expect(utc._p.isUTC).toBe(true);
     // mmntjs keeps _isUTC=true for Z strings, so hour() is UTC hour
     expect(utc.hour()).toBe(12);
 
     const withOffset = moment("2024-03-09T12:00:00+05:00");
-    expect(withOffset._isUTC).toBe(true);
-    expect(withOffset._offset).toBe(300);
+    expect(withOffset._p.isUTC).toBe(true);
+    expect(withOffset._p.offset).toBe(300);
     expect(withOffset.valueOf()).toBe(new Date("2024-03-09T07:00:00Z").getTime());
   });
 
@@ -149,7 +149,7 @@ describe("mmntjs specific", () => {
     const MomentCtor = Object.getPrototypeOf(moment()).constructor;
     const d = new Date("2024-06-15T12:00:00Z");
     const m = new MomentCtor({ _d: d, _dClone: false }) as Moment;
-    expect(m._d).toBe(d); // 同じ参照 → cloneされていない
+    expect(m._p.d).toBe(d); // 同じ参照 → cloneされていない
     m.add(1, "day");
     expect(d.getDate()).toBe(16); // 外部Dateも変わってしまう
   });

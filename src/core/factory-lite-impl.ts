@@ -311,28 +311,28 @@ export function momentUTC(
   }
   const m = moment(input, format, localeOrStrict, fourthArg);
   if (!m._isValid) {
-    m._isUTC = true;
-    m._offset = 0;
+    m._p.isUTC = true;
+    m._p.offset = 0;
     return m;
   }
   const absTime = m.valueOf();
   if (isNaN(absTime)) {
-    m._isUTC = true;
-    m._offset = 0;
+    m._p.isUTC = true;
+    m._p.offset = 0;
     return m;
   }
-  if (!m._isUTC && isString(input)) {
+  if (!m._p.isUTC && isString(input)) {
     const utcDate = new Date(`${input} UTC`);
     if (!isNaN(utcDate.getTime())) {
-      m._d = utcDate;
+      m._p.d = utcDate;
     } else {
-      m._d = new Date(absTime - (m._d ?? new Date(absTime)).getTimezoneOffset() * 60000);
+      m._p.d = new Date(absTime - (m._p.d ?? new Date(absTime)).getTimezoneOffset() * 60000);
     }
   } else {
-    m._d = new Date(absTime);
+    m._p.d = new Date(absTime);
   }
-  m._t = m._d.getTime();
-  m._isUTC = true;
-  m._offset = 0;
+  m._p.t = m._p.d.getTime();
+  m._p.isUTC = true;
+  m._p.offset = 0;
   return m;
 }

@@ -11,20 +11,22 @@ import type { Locale } from "./locale-runtime";
 import type { Moment } from "./moment-class";
 
 export type BoundaryAwareMoment = Moment & {
-  _isUTC: boolean;
-  _t: number;
+  _p: {
+    isUTC: boolean;
+    t: number;
+    y: number;
+    M: number;
+    D: number;
+    W: number;
+    H: number;
+    m: number;
+    s: number;
+    ms: number;
+  };
   _ensureFields: () => void;
   _updateOffset: (keepTime?: boolean) => void;
   _getD: () => Date;
   _getLocale: () => Locale;
-  $y: number;
-  $M: number;
-  $D: number;
-  $W: number;
-  $H: number;
-  $m: number;
-  $s: number;
-  $ms: number;
 };
 
 function dayOfWeek(y: number, m: number, d: number): number {
@@ -38,26 +40,26 @@ function dayOfWeek(y: number, m: number, d: number): number {
 
 export function startOfExtraMoment(m: BoundaryAwareMoment, code: UnitCode): void {
   const d = m._getD();
-  const utc = m._isUTC;
+  const utc = m._p.isUTC;
   switch (code) {
     case QUARTER:
       if (utc) {
-        d.setUTCMonth(Math.floor(m.$M / 3) * 3);
+        d.setUTCMonth(Math.floor(m._p.M / 3) * 3);
         d.setUTCDate(1);
         d.setUTCHours(0, 0, 0, 0);
       } else {
         d.setDate(1);
-        d.setMonth(Math.floor(m.$M / 3) * 3);
+        d.setMonth(Math.floor(m._p.M / 3) * 3);
         d.setHours(0, 0, 0, 0);
       }
-      m.$M = Math.floor(m.$M / 3) * 3;
-      m.$D = 1;
-      m.$H = 0;
-      m.$m = 0;
-      m.$s = 0;
-      m.$ms = 0;
-      m.$W = dayOfWeek(m.$y, m.$M, m.$D);
-      m._t = d.getTime();
+      m._p.M = Math.floor(m._p.M / 3) * 3;
+      m._p.D = 1;
+      m._p.H = 0;
+      m._p.m = 0;
+      m._p.s = 0;
+      m._p.ms = 0;
+      m._p.W = dayOfWeek(m._p.y, m._p.M, m._p.D);
+      m._p.t = d.getTime();
       break;
     case WEEK: {
       const weekCfg = ((m._getLocale()._config as Record<string, unknown>).week as
@@ -73,15 +75,15 @@ export function startOfExtraMoment(m: BoundaryAwareMoment, code: UnitCode): void
         d.setDate(d.getDate() - diff);
         d.setHours(0, 0, 0, 0);
       }
-      m.$D = utc ? d.getUTCDate() : d.getDate();
-      m.$M = utc ? d.getUTCMonth() : d.getMonth();
-      m.$y = utc ? d.getUTCFullYear() : d.getFullYear();
-      m.$H = 0;
-      m.$m = 0;
-      m.$s = 0;
-      m.$ms = 0;
-      m.$W = utc ? d.getUTCDay() : d.getDay();
-      m._t = d.getTime();
+      m._p.D = utc ? d.getUTCDate() : d.getDate();
+      m._p.M = utc ? d.getUTCMonth() : d.getMonth();
+      m._p.y = utc ? d.getUTCFullYear() : d.getFullYear();
+      m._p.H = 0;
+      m._p.m = 0;
+      m._p.s = 0;
+      m._p.ms = 0;
+      m._p.W = utc ? d.getUTCDay() : d.getDay();
+      m._p.t = d.getTime();
       break;
     }
     case ISO_WEEK: {
@@ -94,15 +96,15 @@ export function startOfExtraMoment(m: BoundaryAwareMoment, code: UnitCode): void
         d.setDate(d.getDate() + diff);
         d.setHours(0, 0, 0, 0);
       }
-      m.$D = utc ? d.getUTCDate() : d.getDate();
-      m.$M = utc ? d.getUTCMonth() : d.getMonth();
-      m.$y = utc ? d.getUTCFullYear() : d.getFullYear();
-      m.$H = 0;
-      m.$m = 0;
-      m.$s = 0;
-      m.$ms = 0;
-      m.$W = utc ? d.getUTCDay() : d.getDay();
-      m._t = d.getTime();
+      m._p.D = utc ? d.getUTCDate() : d.getDate();
+      m._p.M = utc ? d.getUTCMonth() : d.getMonth();
+      m._p.y = utc ? d.getUTCFullYear() : d.getFullYear();
+      m._p.H = 0;
+      m._p.m = 0;
+      m._p.s = 0;
+      m._p.ms = 0;
+      m._p.W = utc ? d.getUTCDay() : d.getDay();
+      m._p.t = d.getTime();
       break;
     }
   }
@@ -110,25 +112,25 @@ export function startOfExtraMoment(m: BoundaryAwareMoment, code: UnitCode): void
 
 export function endOfExtraMoment(m: BoundaryAwareMoment, code: UnitCode): void {
   const d = m._getD();
-  const utc = m._isUTC;
+  const utc = m._p.isUTC;
   switch (code) {
     case QUARTER: {
-      const endMonth = Math.floor(m.$M / 3) * 3 + 2;
-      const endDay = daysInMonth(m.$y, endMonth);
+      const endMonth = Math.floor(m._p.M / 3) * 3 + 2;
+      const endDay = daysInMonth(m._p.y, endMonth);
       if (utc) {
-        d.setTime(Date.UTC(m.$y, endMonth, endDay, 23, 59, 59, 999));
+        d.setTime(Date.UTC(m._p.y, endMonth, endDay, 23, 59, 59, 999));
       } else {
-        d.setFullYear(m.$y, endMonth, endDay);
+        d.setFullYear(m._p.y, endMonth, endDay);
         d.setHours(23, 59, 59, 999);
       }
-      m.$M = endMonth;
-      m.$D = endDay;
-      m.$H = 23;
-      m.$m = 59;
-      m.$s = 59;
-      m.$ms = 999;
-      m.$W = dayOfWeek(m.$y, endMonth, endDay);
-      m._t = d.getTime();
+      m._p.M = endMonth;
+      m._p.D = endDay;
+      m._p.H = 23;
+      m._p.m = 59;
+      m._p.s = 59;
+      m._p.ms = 999;
+      m._p.W = dayOfWeek(m._p.y, endMonth, endDay);
+      m._p.t = d.getTime();
       break;
     }
     case WEEK: {
@@ -145,15 +147,15 @@ export function endOfExtraMoment(m: BoundaryAwareMoment, code: UnitCode): void {
         d.setDate(d.getDate() - diff + 6);
         d.setHours(23, 59, 59, 999);
       }
-      m.$D = utc ? d.getUTCDate() : d.getDate();
-      m.$M = utc ? d.getUTCMonth() : d.getMonth();
-      m.$y = utc ? d.getUTCFullYear() : d.getFullYear();
-      m.$H = 23;
-      m.$m = 59;
-      m.$s = 59;
-      m.$ms = 999;
-      m.$W = utc ? d.getUTCDay() : d.getDay();
-      m._t = d.getTime();
+      m._p.D = utc ? d.getUTCDate() : d.getDate();
+      m._p.M = utc ? d.getUTCMonth() : d.getMonth();
+      m._p.y = utc ? d.getUTCFullYear() : d.getFullYear();
+      m._p.H = 23;
+      m._p.m = 59;
+      m._p.s = 59;
+      m._p.ms = 999;
+      m._p.W = utc ? d.getUTCDay() : d.getDay();
+      m._p.t = d.getTime();
       break;
     }
     case ISO_WEEK: {
@@ -166,15 +168,15 @@ export function endOfExtraMoment(m: BoundaryAwareMoment, code: UnitCode): void {
         d.setDate(d.getDate() + diff + 6);
         d.setHours(23, 59, 59, 999);
       }
-      m.$D = utc ? d.getUTCDate() : d.getDate();
-      m.$M = utc ? d.getUTCMonth() : d.getMonth();
-      m.$y = utc ? d.getUTCFullYear() : d.getFullYear();
-      m.$H = 23;
-      m.$m = 59;
-      m.$s = 59;
-      m.$ms = 999;
-      m.$W = utc ? d.getUTCDay() : d.getDay();
-      m._t = d.getTime();
+      m._p.D = utc ? d.getUTCDate() : d.getDate();
+      m._p.M = utc ? d.getUTCMonth() : d.getMonth();
+      m._p.y = utc ? d.getUTCFullYear() : d.getFullYear();
+      m._p.H = 23;
+      m._p.m = 59;
+      m._p.s = 59;
+      m._p.ms = 999;
+      m._p.W = utc ? d.getUTCDay() : d.getDay();
+      m._p.t = d.getTime();
       break;
     }
   }

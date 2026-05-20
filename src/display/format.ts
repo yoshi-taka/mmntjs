@@ -190,82 +190,85 @@ function ordinalSuffix(d: number): string {
 function formatCommonEn(m: FormattableMoment, format: string): string | undefined {
   const raw = m as unknown as {
     _l: string;
-    $y: number;
-    $M: number;
-    $D: number;
-    $W: number;
-    $H: number;
-    $m: number;
-    $s: number;
-    $ms: number;
     _isValid: boolean;
+    _p: {
+      y: number;
+      M: number;
+      D: number;
+      W: number;
+      H: number;
+      m: number;
+      s: number;
+      ms: number;
+      dirty: boolean;
+    };
   };
   if (raw._l !== "en" || !raw._isValid) {
     return undefined;
   }
-  if (m._dirty) {
+  if (raw._p.dirty) {
     (m as unknown as { _ensureFields: () => void })._ensureFields();
   }
-  const y = raw.$y;
+  const y = raw._p.y;
   if (y < 0 || y > 9999) {
     return undefined;
   }
-  const datePart = `${padYear(y)}-${PAD2[raw.$M + 1]}-${PAD2[raw.$D]}`;
+  const datePart = `${padYear(y)}-${PAD2[raw._p.M + 1]}-${PAD2[raw._p.D]}`;
   switch (format) {
     case "YYYY-MM-DD":
       return datePart;
     case "HH:mm:ss":
-      return `${PAD2[raw.$H]}:${PAD2[raw.$m]}:${PAD2[raw.$s]}`;
+      return `${PAD2[raw._p.H]}:${PAD2[raw._p.m]}:${PAD2[raw._p.s]}`;
     case "HH:mm:ss.SSS":
-      return `${PAD2[raw.$H]}:${PAD2[raw.$m]}:${PAD2[raw.$s]}.${pad3(raw.$ms)}`;
+      return `${PAD2[raw._p.H]}:${PAD2[raw._p.m]}:${PAD2[raw._p.s]}.${pad3(raw._p.ms)}`;
     case "YYYY-MM-DD HH:mm:ss":
-      return `${datePart} ${PAD2[raw.$H]}:${PAD2[raw.$m]}:${PAD2[raw.$s]}`;
+      return `${datePart} ${PAD2[raw._p.H]}:${PAD2[raw._p.m]}:${PAD2[raw._p.s]}`;
     case "YYYY-MM-DD HH:mm:ss.SSS":
-      return `${datePart} ${PAD2[raw.$H]}:${PAD2[raw.$m]}:${PAD2[raw.$s]}.${pad3(raw.$ms)}`;
+      return `${datePart} ${PAD2[raw._p.H]}:${PAD2[raw._p.m]}:${PAD2[raw._p.s]}.${pad3(raw._p.ms)}`;
     case "YYYY-MM-DDTHH:mm:ss.SSSZ":
-      return `${datePart}T${PAD2[raw.$H]}:${PAD2[raw.$m]}:${PAD2[raw.$s]}.${pad3(raw.$ms)}${formatOffset(m.utcOffset())}`;
+      return `${datePart}T${PAD2[raw._p.H]}:${PAD2[raw._p.m]}:${PAD2[raw._p.s]}.${pad3(raw._p.ms)}${formatOffset(m.utcOffset())}`;
     case "LT":
-      return `${fmt12H(raw.$H)}:${PAD2[raw.$m]} ${fmtAmPm(raw.$H)}`;
+      return `${fmt12H(raw._p.H)}:${PAD2[raw._p.m]} ${fmtAmPm(raw._p.H)}`;
     case "LTS":
-      return `${fmt12H(raw.$H)}:${PAD2[raw.$m]}:${PAD2[raw.$s]} ${fmtAmPm(raw.$H)}`;
+      return `${fmt12H(raw._p.H)}:${PAD2[raw._p.m]}:${PAD2[raw._p.s]} ${fmtAmPm(raw._p.H)}`;
     case "L":
-      return `${PAD2[raw.$M + 1]}/${PAD2[raw.$D]}/${padYear(y)}`;
+      return `${PAD2[raw._p.M + 1]}/${PAD2[raw._p.D]}/${padYear(y)}`;
     case "l":
-      return `${raw.$M + 1}/${raw.$D}/${padYear(y)}`;
+      return `${raw._p.M + 1}/${raw._p.D}/${padYear(y)}`;
     case "LL":
-      return `${enMonths[raw.$M]} ${raw.$D}, ${padYear(y)}`;
+      return `${enMonths[raw._p.M]} ${raw._p.D}, ${padYear(y)}`;
     case "ll":
-      return `${enMonthsShort[raw.$M]} ${raw.$D}, ${padYear(y)}`;
+      return `${enMonthsShort[raw._p.M]} ${raw._p.D}, ${padYear(y)}`;
     case "LLL":
-      return `${enMonths[raw.$M]} ${raw.$D}, ${padYear(y)} ${fmt12H(raw.$H)}:${PAD2[raw.$m]} ${fmtAmPm(raw.$H)}`;
+      return `${enMonths[raw._p.M]} ${raw._p.D}, ${padYear(y)} ${fmt12H(raw._p.H)}:${PAD2[raw._p.m]} ${fmtAmPm(raw._p.H)}`;
     case "lll":
-      return `${enMonthsShort[raw.$M]} ${raw.$D}, ${padYear(y)} ${fmt12H(raw.$H)}:${PAD2[raw.$m]} ${fmtAmPm(raw.$H)}`;
+      return `${enMonthsShort[raw._p.M]} ${raw._p.D}, ${padYear(y)} ${fmt12H(raw._p.H)}:${PAD2[raw._p.m]} ${fmtAmPm(raw._p.H)}`;
     case "LLLL":
-      return `${enWeekdays[raw.$W]}, ${enMonths[raw.$M]} ${raw.$D}, ${padYear(y)} ${fmt12H(raw.$H)}:${PAD2[raw.$m]} ${fmtAmPm(raw.$H)}`;
+      return `${enWeekdays[raw._p.W]}, ${enMonths[raw._p.M]} ${raw._p.D}, ${padYear(y)} ${fmt12H(raw._p.H)}:${PAD2[raw._p.m]} ${fmtAmPm(raw._p.H)}`;
     case "llll":
-      return `${enWeekdaysShort[raw.$W]}, ${enMonthsShort[raw.$M]} ${raw.$D}, ${padYear(y)} ${fmt12H(raw.$H)}:${PAD2[raw.$m]} ${fmtAmPm(raw.$H)}`;
+      return `${enWeekdaysShort[raw._p.W]}, ${enMonthsShort[raw._p.M]} ${raw._p.D}, ${padYear(y)} ${fmt12H(raw._p.H)}:${PAD2[raw._p.m]} ${fmtAmPm(raw._p.H)}`;
     case "dddd":
-      return enWeekdays[raw.$W];
+      return enWeekdays[raw._p.W];
     case "ddd":
-      return enWeekdaysShort[raw.$W];
+      return enWeekdaysShort[raw._p.W];
     case "dd":
-      return enWeekdaysMin[raw.$W];
+      return enWeekdaysMin[raw._p.W];
     case "Do":
-      return `${raw.$D}${ordinalSuffix(raw.$D)}`;
+      return `${raw._p.D}${ordinalSuffix(raw._p.D)}`;
     case "MMMM":
-      return enMonths[raw.$M];
+      return enMonths[raw._p.M];
     case "MMM":
-      return enMonthsShort[raw.$M];
+      return enMonthsShort[raw._p.M];
     case "A":
-      return fmtAmPm(raw.$H);
+      return fmtAmPm(raw._p.H);
     case "a":
-      return fmtAmPm(raw.$H).toLowerCase();
+      return fmtAmPm(raw._p.H).toLowerCase();
     case "h":
-      return String(fmt12H(raw.$H));
+      return String(fmt12H(raw._p.H));
     case "h:mm:ss a":
-      return `${fmt12H(raw.$H)}:${PAD2[raw.$m]}:${PAD2[raw.$s]} ${fmtAmPm(raw.$H).toLowerCase()}`;
+      return `${fmt12H(raw._p.H)}:${PAD2[raw._p.m]}:${PAD2[raw._p.s]} ${fmtAmPm(raw._p.H).toLowerCase()}`;
     case "dddd, MMMM Do YYYY, h:mm:ss a":
-      return `${enWeekdays[raw.$W]}, ${enMonths[raw.$M]} ${raw.$D}${ordinalSuffix(raw.$D)} ${padYear(y)}, ${fmt12H(raw.$H)}:${PAD2[raw.$m]}:${PAD2[raw.$s]} ${fmtAmPm(raw.$H).toLowerCase()}`;
+      return `${enWeekdays[raw._p.W]}, ${enMonths[raw._p.M]} ${raw._p.D}${ordinalSuffix(raw._p.D)} ${padYear(y)}, ${fmt12H(raw._p.H)}:${PAD2[raw._p.m]}:${PAD2[raw._p.s]} ${fmtAmPm(raw._p.H).toLowerCase()}`;
   }
   return undefined;
 }

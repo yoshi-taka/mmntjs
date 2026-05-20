@@ -2,16 +2,11 @@ import type { Moment } from "./moment-class";
 import { isLeapYear } from "./units";
 
 export type CalendarAwareMoment = Moment & {
-  _isUTC: boolean;
-  _t: number;
+  _p: { isUTC: boolean; t: number; y: number; M: number; D: number; W: number };
   _ensureFields: () => void;
   _refreshFields: () => void;
   _updateOffset: (keepTime?: boolean) => void;
   _getD: () => Date;
-  $y: number;
-  $M: number;
-  $D: number;
-  $W: number;
 };
 
 function firstWeekOffset(year: number, dow: number, doy: number, _utc: boolean): number {
@@ -98,34 +93,34 @@ export function isoWeekdayMoment(m: CalendarAwareMoment, d?: unknown): number | 
       }
       target = map[lower];
     }
-    const currentIso = m.$W === 0 ? 7 : m.$W;
+    const currentIso = m._p.W === 0 ? 7 : m._p.W;
     const diff = Number(target) - currentIso;
     const dt = m._getD();
-    if (m._isUTC) {
+    if (m._p.isUTC) {
       dt.setUTCDate(dt.getUTCDate() + diff);
     } else {
       dt.setDate(dt.getDate() + diff);
     }
-    m._t = dt.getTime();
+    m._p.t = dt.getTime();
     m._refreshFields();
     m._updateOffset(true);
     return m;
   }
-  return m.$W === 0 ? 7 : m.$W;
+  return m._p.W === 0 ? 7 : m._p.W;
 }
 
 export function dayOfYearMoment(m: CalendarAwareMoment, d?: number): number | Moment {
   if (d !== undefined) {
     m._ensureFields();
-    const year = m.$y;
+    const year = m._p.y;
     const day = Number(d);
     const dt = m._getD();
-    if (m._isUTC) {
+    if (m._p.isUTC) {
       dt.setUTCFullYear(year, 0, day);
     } else {
       dt.setFullYear(year, 0, day);
     }
-    m._t = dt.getTime();
+    m._p.t = dt.getTime();
     m._refreshFields();
     m._updateOffset(true);
     return m;
@@ -133,59 +128,61 @@ export function dayOfYearMoment(m: CalendarAwareMoment, d?: number): number | Mo
   m._ensureFields();
   const nonLeap = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
   const leap = [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
-  return m.$D + (isLeapYear(m.$y) ? leap : nonLeap)[m.$M];
+  return m._p.D + (isLeapYear(m._p.y) ? leap : nonLeap)[m._p.M];
 }
 
 export function isoWeekMoment(m: CalendarAwareMoment, w?: number): number | Moment {
   if (w !== undefined) {
-    const current = getISOWeekNumber(m._getD(), m._isUTC);
+    const current = getISOWeekNumber(m._getD(), m._p.isUTC);
     const diff = w - current;
     const dt = m._getD();
-    if (m._isUTC) {
+    if (m._p.isUTC) {
       dt.setUTCDate(dt.getUTCDate() + diff * 7);
     } else {
       dt.setDate(dt.getDate() + diff * 7);
     }
-    m._t = dt.getTime();
+    m._p.t = dt.getTime();
     m._refreshFields();
     return m;
   }
-  return getISOWeekNumber(m._getD(), m._isUTC);
+  return getISOWeekNumber(m._getD(), m._p.isUTC);
 }
 
 export function isoWeekYearMoment(m: CalendarAwareMoment, y?: number): number | Moment {
   if (y !== undefined) {
-    let currentWeek = getISOWeekNumber(m._getD(), m._isUTC);
+    let currentWeek = getISOWeekNumber(m._getD(), m._p.isUTC);
     const currentDay = isoWeekdayMoment(m) as number;
-    const maxWeek = weeksInYear(y, 1, 4, m._isUTC);
+    const maxWeek = weeksInYear(y, 1, 4, m._p.isUTC);
     if (currentWeek > maxWeek) {
       currentWeek = maxWeek;
     }
-    const jan4 = m._isUTC ? new Date(Date.UTC(y, 0, 4)) : new Date(y, 0, 4);
-    const jan4Day = m._isUTC ? jan4.getUTCDay() || 7 : jan4.getDay() || 7;
-    const mondayOfWeek1 = m._isUTC
+    const jan4 = m._p.isUTC ? new Date(Date.UTC(y, 0, 4)) : new Date(y, 0, 4);
+    const jan4Day = m._p.isUTC ? jan4.getUTCDay() || 7 : jan4.getDay() || 7;
+    const mondayOfWeek1 = m._p.isUTC
       ? new Date(Date.UTC(y, 0, 4 - (jan4Day - 1)))
       : new Date(y, 0, 4 - (jan4Day - 1));
     const origDt = m._getD();
     const origMs = origDt.getTime();
     const targetMs =
       mondayOfWeek1.getTime() + ((currentWeek - 1) * 7 + (currentDay - 1)) * 86400000;
-    const timeOfDay = m._isUTC ? origMs % 86400000 : origMs - new Date(origMs).setHours(0, 0, 0, 0);
-    m._t = targetMs + timeOfDay;
-    m._d = undefined;
+    const timeOfDay = m._p.isUTC
+      ? origMs % 86400000
+      : origMs - new Date(origMs).setHours(0, 0, 0, 0);
+    m._p.t = targetMs + timeOfDay;
+    m._p.d = undefined;
     m._refreshFields();
     return m;
   }
-  return getISOWeekYear(m._getD(), m._isUTC);
+  return getISOWeekYear(m._getD(), m._p.isUTC);
 }
 
 export function isoWeeksInYearMoment(m: CalendarAwareMoment): number {
   m._ensureFields();
-  return weeksInYear(m.$y, 1, 4, m._isUTC);
+  return weeksInYear(m._p.y, 1, 4, m._p.isUTC);
 }
 
 export function isoWeeksInISOWeekYearMoment(m: CalendarAwareMoment): number {
-  return weeksInYear(getISOWeekYear(m._getD(), m._isUTC), 1, 4, m._isUTC);
+  return weeksInYear(getISOWeekYear(m._getD(), m._p.isUTC), 1, 4, m._p.isUTC);
 }
 
 export function calendarCompareMoment(

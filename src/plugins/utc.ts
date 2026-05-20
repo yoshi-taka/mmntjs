@@ -64,40 +64,40 @@ export function registerUtcApi(target: UtcMomentTarget, deps: UtcApiDeps): void 
     const m = target(input, format, localeOrStrict, fourthArg);
     const absTime = m.valueOf();
     if (isNaN(absTime)) {
-      m._isUTC = true;
-      m._offset = 0;
+      m._p.isUTC = true;
+      m._p.offset = 0;
       return m;
     }
-    if (!m._isUTC && isString(input)) {
+    if (!m._p.isUTC && isString(input)) {
       if (!m._isValid) {
         const utcDate = new Date(`${input} UTC`);
         if (!isNaN(utcDate.getTime())) {
-          m._d = utcDate;
+          m._p.d = utcDate;
         } else {
-          m._d = new Date(absTime - m._d!.getTimezoneOffset() * 60000);
+          m._p.d = new Date(absTime - m._p.d!.getTimezoneOffset() * 60000);
         }
       } else if (m._cold !== undefined) {
         const origHour = m._cold._parsedDateParts?.[3];
         if (origHour !== undefined) {
-          const d = m._d!;
+          const d = m._p.d!;
           const gap = d.getHours() - origHour;
-          m._d = new Date(absTime - d.getTimezoneOffset() * 60000 - gap * 3600000);
+          m._p.d = new Date(absTime - d.getTimezoneOffset() * 60000 - gap * 3600000);
         } else {
-          m._d = new Date(absTime - m._d!.getTimezoneOffset() * 60000);
+          m._p.d = new Date(absTime - m._p.d!.getTimezoneOffset() * 60000);
         }
       } else {
         const utcDate = new Date(`${input} UTC`);
         if (!isNaN(utcDate.getTime())) {
-          m._d = utcDate;
+          m._p.d = utcDate;
         }
       }
     } else {
-      m._d = new Date(absTime);
+      m._p.d = new Date(absTime);
     }
-    m._d ??= new Date(NaN);
-    m._t = m._d.getTime();
-    m._isUTC = true;
-    m._offset = 0;
+    m._p.d ??= new Date(NaN);
+    m._p.t = m._p.d.getTime();
+    m._p.isUTC = true;
+    m._p.offset = 0;
     (m as unknown as { _refreshFields: () => void })._refreshFields();
     return m;
   };

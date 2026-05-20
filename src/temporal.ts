@@ -62,7 +62,8 @@ export function toTemporal(m: Moment): unknown {
   };
 
   const hasTime = m.hour() !== 0 || m.minute() !== 0 || m.second() !== 0 || m.millisecond() !== 0;
-  const hasExplicitTz = m._isUTC || Boolean((m as unknown as Record<string, unknown>)._isParseZone);
+  const hasExplicitTz =
+    m._p.isUTC || Boolean((m as unknown as Record<string, unknown>)._isParseZone);
 
   if (!hasTime && !hasExplicitTz) {
     return new T.PlainDate(year, month, day);

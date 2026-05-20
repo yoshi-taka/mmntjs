@@ -7,20 +7,20 @@ const jaWeekdays = "日曜日_月曜日_火曜日_水曜日_木曜日_金曜日_
 const jaWeekdaysShort = "日_月_火_水_木_金_土".split("_");
 
 function _jaFormatFastPath(m: Moment, format: string): string | undefined {
-  const raw = m as unknown as Record<string, number | boolean>;
+  const raw = m as unknown as { _isValid: boolean | number; _p: Record<string, number | boolean> };
   if (!raw._isValid) {
     return undefined;
   }
-  const y = raw.$y as number;
+  const y = raw._p.y as number;
   if (y < 0 || y > 9999) {
     return undefined;
   }
   const Y = y < 10 ? `000${y}` : y < 100 ? `00${y}` : y < 1000 ? `0${y}` : `${y}`;
-  const M = (raw.$M as number) + 1;
-  const D = raw.$D as number;
-  const H = raw.$H as number;
-  const min = raw.$m as number;
-  const s = raw.$s as number;
+  const M = (raw._p.M as number) + 1;
+  const D = raw._p.D as number;
+  const H = raw._p.H as number;
+  const min = raw._p.m as number;
+  const s = raw._p.s as number;
   switch (format) {
     case "YYYY/MM/DD":
       return `${Y}/${M < 10 ? `0${M}` : `${M}`}/${D < 10 ? `0${D}` : `${D}`}`;
@@ -29,9 +29,9 @@ function _jaFormatFastPath(m: Moment, format: string): string | undefined {
     case "YYYY年M月D日 HH:mm":
       return `${Y}年${M}月${D}日 ${H < 10 ? `0${H}` : `${H}`}:${min < 10 ? `0${min}` : `${min}`}`;
     case "YYYY年M月D日 dddd HH:mm":
-      return `${Y}年${M}月${D}日 ${jaWeekdays[raw.$W as number]} ${H < 10 ? `0${H}` : `${H}`}:${min < 10 ? `0${min}` : `${min}`}`;
+      return `${Y}年${M}月${D}日 ${jaWeekdays[raw._p.W as number]} ${H < 10 ? `0${H}` : `${H}`}:${min < 10 ? `0${min}` : `${min}`}`;
     case "YYYY年M月D日(ddd) HH:mm":
-      return `${Y}年${M}月${D}日(${jaWeekdaysShort[raw.$W as number]}) ${H < 10 ? `0${H}` : `${H}`}:${min < 10 ? `0${min}` : `${min}`}`;
+      return `${Y}年${M}月${D}日(${jaWeekdaysShort[raw._p.W as number]}) ${H < 10 ? `0${H}` : `${H}`}:${min < 10 ? `0${min}` : `${min}`}`;
     case "HH:mm":
       return `${H < 10 ? `0${H}` : `${H}`}:${min < 10 ? `0${min}` : `${min}`}`;
     case "HH:mm:ss":

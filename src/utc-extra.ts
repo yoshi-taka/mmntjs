@@ -12,60 +12,62 @@ export type MomentFactory = (
 ) => Moment;
 
 export type UtcMoment = Moment & {
-  _d?: Date;
-  _t: number;
-  _isUTC: boolean;
-  _offset: number;
   _i?: unknown;
   _f?: string | string[];
   _isParseZone?: boolean;
   _refreshFields: () => void;
   _getD: () => Date;
   _getLocale: () => unknown;
-  $y: number;
-  $M: number;
-  $D: number;
-  $H: number;
-  $m: number;
-  $s: number;
-  $ms: number;
+  _p: {
+    d?: Date;
+    t: number;
+    isUTC: boolean;
+    offset: number;
+    y: number;
+    M: number;
+    D: number;
+    H: number;
+    m: number;
+    s: number;
+    ms: number;
+  };
   valueOf: () => number;
   clone: () => Moment;
 };
 
 export function localMoment(m: UtcMoment, keepLocalTime?: boolean): Moment {
-  if (m._isUTC) {
+  if (m._p.isUTC) {
     if (keepLocalTime) {
       (m as unknown as { _ensureFields: () => void })._ensureFields();
-      m._d = new Date(m.$y, m.$M, m.$D, m.$H, m.$m, m.$s, m.$ms);
+      m._p.d = new Date(m._p.y, m._p.M, m._p.D, m._p.H, m._p.m, m._p.s, m._p.ms);
     } else {
-      m._d = new Date(m.valueOf());
+      m._p.d = new Date(m.valueOf());
     }
-    m._t = m._d.getTime();
+    m._p.t = m._p.d.getTime();
   }
-  m._isUTC = false;
+  m._p.isUTC = false;
   m._refreshFields();
-  m._offset = -m._getD().getTimezoneOffset();
+  m._p.offset = -m._getD().getTimezoneOffset();
   return m;
 }
 
 export function utcMoment(m: UtcMoment, keepLocalTime?: boolean): Moment {
-  if (m._isUTC && m._offset !== 0) {
+  if (m._p.isUTC && m._p.offset !== 0) {
     if (!keepLocalTime) {
-      m._d = new Date(m.valueOf());
-      m._t = m._d.getTime();
+      m._p.d = new Date(m.valueOf());
+      m._p.t = m._p.d.getTime();
     }
-  } else if (!m._isUTC) {
+  } else if (!m._p.isUTC) {
     if (keepLocalTime) {
       (m as unknown as { _ensureFields: () => void })._ensureFields();
-      m._d = new Date(Date.UTC(m.$y, m.$M, m.$D, m.$H, m.$m, m.$s, m.$ms));
+      m._p.d = new Date(Date.UTC(m._p.y, m._p.M, m._p.D, m._p.H, m._p.m, m._p.s, m._p.ms));
     } else {
-      m._d = new Date(m.valueOf());
+      m._p.d = new Date(m.valueOf());
     }
-    m._t = m._d.getTime();
+    m._p.t = m._p.d.getTime();
   }
-  m._isUTC = true;
-  m._offset = 0;
+  m._p.isUTC = true;
+  m._p.offset = 0;
   m._refreshFields();
   return m;
 }
@@ -108,7 +110,7 @@ export function utcOffsetMoment(
 ): number | Moment {
   if (offset === undefined) {
     (m as unknown as { _ensureFields: () => void })._ensureFields();
-    return m._offset;
+    return m._p.offset;
   }
   let numOffset: number;
   if (typeof offset === "string") {
@@ -121,18 +123,18 @@ export function utcOffsetMoment(
   }
   if (keepLocalTime) {
     (m as unknown as { _ensureFields: () => void })._ensureFields();
-    if (!m._isUTC) {
-      m._d = new Date(Date.UTC(m.$y, m.$M, m.$D, m.$H, m.$m, m.$s, m.$ms));
-      m._t = m._d.getTime();
+    if (!m._p.isUTC) {
+      m._p.d = new Date(Date.UTC(m._p.y, m._p.M, m._p.D, m._p.H, m._p.m, m._p.s, m._p.ms));
+      m._p.t = m._p.d.getTime();
     }
-    m._offset = numOffset;
-    m._isUTC = true;
+    m._p.offset = numOffset;
+    m._p.isUTC = true;
   } else {
     const oldAbsTime = m.valueOf();
-    m._d = new Date(oldAbsTime + numOffset * MINUTE_MS);
-    m._t = m._d.getTime();
-    m._offset = numOffset;
-    m._isUTC = true;
+    m._p.d = new Date(oldAbsTime + numOffset * MINUTE_MS);
+    m._p.t = m._p.d.getTime();
+    m._p.offset = numOffset;
+    m._p.isUTC = true;
   }
   m._refreshFields();
   return m;
@@ -160,10 +162,10 @@ export function parseZoneMoment(
           : parseString(m._i, undefined, m._getLocale() as unknown as ParseLocale);
       if (parsed?.offset !== undefined) {
         (clone as unknown as { _ensureFields: () => void })._ensureFields();
-        clone._d = new Date(clone.valueOf() + parsed.offset * MINUTE_MS);
-        clone._t = clone._d.getTime();
-        clone._offset = parsed.offset;
-        clone._isUTC = true;
+        clone._p.d = new Date(clone.valueOf() + parsed.offset * MINUTE_MS);
+        clone._p.t = clone._p.d.getTime();
+        clone._p.offset = parsed.offset;
+        clone._p.isUTC = true;
         clone._refreshFields();
       } else {
         const unusedInput =
@@ -174,17 +176,25 @@ export function parseZoneMoment(
           const sign = tzMatch[1][0] === "+" ? 1 : -1;
           const hours = parseInt(tzMatch[1].substring(1), 10);
           const minutes = parseInt(tzMatch[2], 10);
-          clone._offset = sign * (hours * 60 + minutes);
-          clone._isUTC = true;
+          clone._p.offset = sign * (hours * 60 + minutes);
+          clone._p.isUTC = true;
         } else {
           // No offset found — treat wall-clock as UTC (+00:00)
           (clone as unknown as { _ensureFields: () => void })._ensureFields();
-          clone._d = new Date(
-            Date.UTC(clone.$y, clone.$M, clone.$D, clone.$H, clone.$m, clone.$s, clone.$ms),
+          clone._p.d = new Date(
+            Date.UTC(
+              clone._p.y,
+              clone._p.M,
+              clone._p.D,
+              clone._p.H,
+              clone._p.m,
+              clone._p.s,
+              clone._p.ms,
+            ),
           );
-          clone._t = clone._d.getTime();
-          clone._offset = 0;
-          clone._isUTC = true;
+          clone._p.t = clone._p.d.getTime();
+          clone._p.offset = 0;
+          clone._p.isUTC = true;
           clone._refreshFields();
         }
       }
@@ -213,10 +223,10 @@ export function parseZoneMoment(
         parsed.millisecond ?? 0,
         true,
       );
-      next._d = d;
-      next._t = d.getTime();
-      next._offset = parsed.offset;
-      next._isUTC = true;
+      next._p.d = d;
+      next._p.t = d.getTime();
+      next._p.offset = parsed.offset;
+      next._p.isUTC = true;
       next._refreshFields();
     } else {
       const allInput = `${input} ${parsed?._unusedInput.join("") ?? ""}`;
@@ -225,35 +235,44 @@ export function parseZoneMoment(
         const sign = tzMatch[1][0] === "+" ? 1 : -1;
         const hours = parseInt(tzMatch[1].substring(1), 10);
         const minutes = parseInt(tzMatch[2], 10);
-        next._offset = sign * (hours * 60 + minutes);
-        next._isUTC = true;
-      } else if (!next._isUTC) {
+        next._p.offset = sign * (hours * 60 + minutes);
+        next._p.isUTC = true;
+      } else if (!next._p.isUTC) {
         (next as unknown as { _ensureFields: () => void })._ensureFields();
         const d = createDateSafe(
-          next.$y,
-          next.$M,
-          next.$D,
-          next.$H,
-          next.$m,
-          next.$s,
-          next.$ms,
+          next._p.y,
+          next._p.M,
+          next._p.D,
+          next._p.H,
+          next._p.m,
+          next._p.s,
+          next._p.ms,
           true,
         );
-        next._d = d;
-        next._t = d.getTime();
-        next._offset = 0;
-        next._isUTC = true;
+        next._p.d = d;
+        next._p.t = d.getTime();
+        next._p.offset = 0;
+        next._p.isUTC = true;
         next._refreshFields();
       }
     }
-  } else if (!next._isUTC && isString(input)) {
+  } else if (!next._p.isUTC && isString(input)) {
     // No format, no offset — treat wall-clock as UTC (+00:00)
     (next as unknown as { _ensureFields: () => void })._ensureFields();
-    const d = createDateSafe(next.$y, next.$M, next.$D, next.$H, next.$m, next.$s, next.$ms, true);
-    next._d = d;
-    next._t = d.getTime();
-    next._offset = 0;
-    next._isUTC = true;
+    const d = createDateSafe(
+      next._p.y,
+      next._p.M,
+      next._p.D,
+      next._p.H,
+      next._p.m,
+      next._p.s,
+      next._p.ms,
+      true,
+    );
+    next._p.d = d;
+    next._p.t = d.getTime();
+    next._p.offset = 0;
+    next._p.isUTC = true;
     next._refreshFields();
   }
   return next;
@@ -295,7 +314,7 @@ export function zoneAbbrMoment(m: UtcMoment): string {
       m.valueOf(),
     );
   }
-  if (m._isUTC) {
+  if (m._p.isUTC) {
     return "UTC";
   }
   return "";
@@ -305,26 +324,26 @@ export function zoneNameMoment(m: UtcMoment): string {
   if ((m as unknown as Record<string, unknown>)._z) {
     return ((m as unknown as Record<string, unknown>)._z as { name: string }).name;
   }
-  if (m._isUTC) {
+  if (m._p.isUTC) {
     return "Coordinated Universal Time";
   }
   return "";
 }
 
 export function isLocalMoment(m: UtcMoment): boolean {
-  return !m._isUTC;
+  return !m._p.isUTC;
 }
 
 export function isUtcMoment(m: UtcMoment): boolean {
-  return m._isUTC && m._offset === 0;
+  return m._p.isUTC && m._p.offset === 0;
 }
 
 export function isUtcOffsetMoment(m: UtcMoment): boolean {
-  return m._isUTC;
+  return m._p.isUTC;
 }
 
 export function isDSTMoment(m: UtcMoment): boolean {
-  if (m._isUTC) {
+  if (m._p.isUTC) {
     return false;
   }
   const dt = m._getD();

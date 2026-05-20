@@ -5,12 +5,9 @@ export type LocaleAwareMoment = Moment & {
   _getLocale: () => Locale;
   _trySetLocale: (locale: string) => boolean;
   _l?: string;
-  _locale?: Locale;
-  _isUTC: boolean;
+  _p: { locale?: Locale; isUTC: boolean; W: number; t: number };
   _getD: () => Date;
   _ensureFields: () => void;
-  $W: number;
-  _t: number;
   _refreshFields: () => void;
   weekday: (d?: number) => number | Moment;
   year: () => number;
@@ -80,21 +77,21 @@ export function localeWeekday(m: LocaleAwareMoment, d?: number): number | Moment
     | undefined) ?? { dow: 0 };
   const dow = weekConfig.dow;
   if (d !== undefined) {
-    const current = m.$W;
+    const current = m._p.W;
     const weekday = (current - dow + 7) % 7;
     const diff = d - weekday;
     const dt = m._getD();
-    if (m._isUTC) {
+    if (m._p.isUTC) {
       dt.setUTCDate(dt.getUTCDate() + diff);
     } else {
       dt.setDate(dt.getDate() + diff);
     }
-    m._d = dt;
-    m._t = dt.getTime();
+    m._p.d = dt;
+    m._p.t = dt.getTime();
     m._refreshFields();
     return m;
   }
-  return (m.$W - dow + 7) % 7;
+  return (m._p.W - dow + 7) % 7;
 }
 
 export function localeWeek(m: LocaleAwareMoment, w?: number): number | Moment {
@@ -103,20 +100,20 @@ export function localeWeek(m: LocaleAwareMoment, w?: number): number | Moment {
     | undefined) ?? { dow: 0, doy: 6 };
   const { dow, doy } = weekConfig;
   if (w !== undefined) {
-    const current = getLocaleWeek(m._getD(), m._isUTC, dow, doy);
+    const current = getLocaleWeek(m._getD(), m._p.isUTC, dow, doy);
     const diff = w - current;
     const d = m._getD();
-    if (m._isUTC) {
+    if (m._p.isUTC) {
       d.setUTCDate(d.getUTCDate() + diff * 7);
     } else {
       d.setDate(d.getDate() + diff * 7);
     }
-    m._d = d;
-    m._t = d.getTime();
+    m._p.d = d;
+    m._p.t = d.getTime();
     m._refreshFields();
     return m;
   }
-  return getLocaleWeek(m._getD(), m._isUTC, dow, doy);
+  return getLocaleWeek(m._getD(), m._p.isUTC, dow, doy);
 }
 
 export function localeWeekYear(m: LocaleAwareMoment, y?: number): number | Moment {
@@ -125,40 +122,42 @@ export function localeWeekYear(m: LocaleAwareMoment, y?: number): number | Momen
     | undefined) ?? { dow: 0, doy: 6 };
   const { dow, doy } = weekConfig;
   if (y !== undefined) {
-    let currentWeek = getLocaleWeek(m._getD(), m._isUTC, dow, doy);
+    let currentWeek = getLocaleWeek(m._getD(), m._p.isUTC, dow, doy);
     const currentDay = m.weekday();
-    const maxWeek = weeksInYear(y, dow, doy, m._isUTC);
+    const maxWeek = weeksInYear(y, dow, doy, m._p.isUTC);
     if (currentWeek > maxWeek) {
       currentWeek = maxWeek;
     }
-    const jan1 = m._isUTC ? new Date(Date.UTC(y, 0, 1)) : new Date(y, 0, 1);
+    const jan1 = m._p.isUTC ? new Date(Date.UTC(y, 0, 1)) : new Date(y, 0, 1);
     const fwd = 7 + dow - doy;
-    const fwdDate = m._isUTC ? new Date(Date.UTC(y, 0, fwd)) : new Date(y, 0, fwd);
-    const fwdDay = m._isUTC ? fwdDate.getUTCDay() : fwdDate.getDay();
+    const fwdDate = m._p.isUTC ? new Date(Date.UTC(y, 0, fwd)) : new Date(y, 0, fwd);
+    const fwdDay = m._p.isUTC ? fwdDate.getUTCDay() : fwdDate.getDay();
     const fwdlw = (7 + fwdDay - dow) % 7;
     const offset = -fwdlw + fwd - 1;
     const week1Start = new Date(jan1.getTime() + offset * 86400000);
     const origDt = m._getD();
     const origMs = origDt.getTime();
-    const timeOfDay = m._isUTC ? origMs % 86400000 : origMs - new Date(origMs).setHours(0, 0, 0, 0);
+    const timeOfDay = m._p.isUTC
+      ? origMs % 86400000
+      : origMs - new Date(origMs).setHours(0, 0, 0, 0);
     const targetMs = week1Start.getTime() + ((currentWeek - 1) * 7 + currentDay) * 86400000;
-    m._t = targetMs + timeOfDay;
-    m._d = undefined;
+    m._p.t = targetMs + timeOfDay;
+    m._p.d = undefined;
     m._refreshFields();
     return m;
   }
-  return getLocaleWeekYear(m._getD(), m._isUTC, dow, doy);
+  return getLocaleWeekYear(m._getD(), m._p.isUTC, dow, doy);
 }
 
 export function localeWeeksInYear(m: LocaleAwareMoment): number {
   const weekConfig = m._getLocale()._config.week ?? { dow: 0, doy: 6 };
-  return weeksInYear(m.year(), weekConfig.dow, weekConfig.doy, m._isUTC);
+  return weeksInYear(m.year(), weekConfig.dow, weekConfig.doy, m._p.isUTC);
 }
 
 export function localeWeeksInWeekYear(m: LocaleAwareMoment): number {
   const weekConfig = m._getLocale()._config.week ?? { dow: 0, doy: 6 };
-  const weekYear = getLocaleWeekYear(m._getD(), m._isUTC, weekConfig.dow, weekConfig.doy);
-  return weeksInYear(weekYear, weekConfig.dow, weekConfig.doy, m._isUTC);
+  const weekYear = getLocaleWeekYear(m._getD(), m._p.isUTC, weekConfig.dow, weekConfig.doy);
+  return weeksInYear(weekYear, weekConfig.dow, weekConfig.doy, m._p.isUTC);
 }
 
 export function localeData(m: LocaleAwareMoment): Locale {
@@ -175,7 +174,7 @@ export function lang(
   }
   if (locale === false) {
     m._l = undefined;
-    m._locale = undefined;
+    m._p.locale = undefined;
     return m;
   }
   if (Array.isArray(locale)) {
@@ -200,7 +199,7 @@ export function localeMethod(
   }
   if (locale === false) {
     m._l = undefined;
-    m._locale = undefined;
+    m._p.locale = undefined;
     return m;
   }
   if (Array.isArray(locale)) {

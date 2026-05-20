@@ -75,29 +75,23 @@ function pad3(n: number): string {
 
 function getTokenValue(m: FormattableMoment, token: (typeof TOKENS)[number]): string {
   const raw = m as unknown as {
-    $y: number;
-    $M: number;
-    $D: number;
-    $H: number;
-    $m: number;
-    $s: number;
-    $ms: number;
+    _p: { y: number; M: number; D: number; H: number; m: number; s: number; ms: number };
   };
   switch (token) {
     case "YYYY":
-      return padYear(raw.$y);
+      return padYear(raw._p.y);
     case "MM":
-      return PAD2[raw.$M + 1];
+      return PAD2[raw._p.M + 1];
     case "DD":
-      return PAD2[raw.$D];
+      return PAD2[raw._p.D];
     case "HH":
-      return PAD2[raw.$H];
+      return PAD2[raw._p.H];
     case "mm":
-      return PAD2[raw.$m];
+      return PAD2[raw._p.m];
     case "ss":
-      return PAD2[raw.$s];
+      return PAD2[raw._p.s];
     case "SSS":
-      return pad3(raw.$ms);
+      return pad3(raw._p.ms);
   }
 }
 
@@ -106,11 +100,22 @@ export function formatMomentBasic(m: FormattableMoment, format: string): string 
     _isValid: boolean;
     _dirty: boolean;
     _ensureFields: () => void;
+    _p: {
+      y: number;
+      M: number;
+      D: number;
+      W: number;
+      H: number;
+      m: number;
+      s: number;
+      ms: number;
+      dirty: boolean;
+    };
   };
   if (!raw._isValid) {
     return "Invalid date";
   }
-  if (raw._dirty) {
+  if (raw._p.dirty) {
     raw._ensureFields();
   }
 

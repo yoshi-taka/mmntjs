@@ -5,8 +5,6 @@ type DebugMoment = Moment & {
   _cold?: Record<string, unknown>;
   _i?: unknown;
   _f?: unknown;
-  _isUTC: boolean;
-  _offset: number;
   _strict?: boolean;
   _overflow?: number;
   _unusedTokens?: string[];
@@ -27,7 +25,7 @@ type DebugMoment = Moment & {
   _invalidEra?: number;
   _tooBusyWith?: string;
   _isValid: boolean;
-  _t: number;
+  _p: { isUTC: boolean; offset: number; t: number };
   _getD: () => Date;
   _getLocale: () => Locale;
   year: () => number;
@@ -37,10 +35,6 @@ type DebugMoment = Moment & {
   minute: () => number;
   second: () => number;
   millisecond: () => number;
-  isLocal: () => boolean;
-  utcOffset: () => number;
-  format: (format: string) => string;
-  valueOf: () => number;
 };
 
 function toArrayDebugMoment(m: DebugMoment): number[] {
@@ -105,7 +99,7 @@ function creationDataDebugMoment(m: DebugMoment): Record<string, unknown> {
     input: m._i,
     format: m._f,
     locale: m._getLocale(),
-    isUTC: m._isUTC,
+    isUTC: m._p.isUTC,
     strict: m._strict,
   };
 }

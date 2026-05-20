@@ -376,7 +376,7 @@ export function fnz(m: Moment): string {
   if (z) {
     return z.abbr(m.valueOf());
   }
-  if (m._isUTC) {
+  if (m._p.isUTC) {
     return "UTC";
   }
   return "";
@@ -388,7 +388,7 @@ export function fnzz(m: Moment): string {
   if (z) {
     return z.abbr(m.valueOf());
   }
-  if (m._isUTC) {
+  if (m._p.isUTC) {
     return "Coordinated Universal Time";
   }
   return "";

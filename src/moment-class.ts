@@ -353,7 +353,7 @@ function _cast<T>(m: Moment): T {
 export class Moment {
   static calendarFormat: ((m: Moment, now: Moment) => string) | undefined;
 
-  readonly #s = {
+  _p = {
     t: 0,
     d: undefined as Date | undefined,
     dirty: false,
@@ -369,91 +369,6 @@ export class Moment {
     s: 0,
     ms: 0,
   };
-
-  get _t(): number {
-    return this.#s.t;
-  }
-  set _t(v: number) {
-    this.#s.t = v;
-  }
-  get _d(): Date | undefined {
-    return this.#s.d;
-  }
-  set _d(v: Date | undefined) {
-    this.#s.d = v;
-  }
-  get _dirty(): boolean {
-    return this.#s.dirty;
-  }
-  set _dirty(v: boolean) {
-    this.#s.dirty = v;
-  }
-  get _isUTC(): boolean {
-    return this.#s.isUTC;
-  }
-  set _isUTC(v: boolean) {
-    this.#s.isUTC = v;
-  }
-  get _offset(): number {
-    return this.#s.offset;
-  }
-  set _offset(v: number) {
-    this.#s.offset = v;
-  }
-  get _locale(): Locale | undefined {
-    return this.#s.locale;
-  }
-  set _locale(v: Locale | undefined) {
-    this.#s.locale = v;
-  }
-  get $y(): number {
-    return this.#s.y;
-  }
-  set $y(v: number) {
-    this.#s.y = v;
-  }
-  get $M(): number {
-    return this.#s.M;
-  }
-  set $M(v: number) {
-    this.#s.M = v;
-  }
-  get $D(): number {
-    return this.#s.D;
-  }
-  set $D(v: number) {
-    this.#s.D = v;
-  }
-  get $W(): number {
-    return this.#s.W;
-  }
-  set $W(v: number) {
-    this.#s.W = v;
-  }
-  get $H(): number {
-    return this.#s.H;
-  }
-  set $H(v: number) {
-    this.#s.H = v;
-  }
-  get $m(): number {
-    return this.#s.m;
-  }
-  set $m(v: number) {
-    this.#s.m = v;
-  }
-  get $s(): number {
-    return this.#s.s;
-  }
-  set $s(v: number) {
-    this.#s.s = v;
-  }
-  get $ms(): number {
-    return this.#s.ms;
-  }
-  set $ms(v: number) {
-    this.#s.ms = v;
-  }
 
   _isValid: boolean;
   _l: string | undefined;
@@ -499,66 +414,66 @@ export class Moment {
 
   /** hot path: called before every property read to ensure cached fields are fresh */
   _ensureFields(): void {
-    if (this._dirty) {
-      this._dirty = false;
+    if (this._p.dirty) {
+      this._p.dirty = false;
       this._refreshFields();
     }
   }
 
   _getD(): Date {
     this._ensureFields();
-    if (this._d) {
-      return this._d;
+    if (this._p.d) {
+      return this._p.d;
     }
-    this._d = new Date(this._t);
-    return this._d;
+    this._p.d = new Date(this._p.t);
+    return this._p.d;
   }
 
   /** hot path: get Date without ensure (caller must have called _ensureFields first) */
   _getDNoEnsure(): Date {
-    if (this._d) {
-      return this._d;
+    if (this._p.d) {
+      return this._p.d;
     }
-    this._d = new Date(this._t);
-    return this._d;
+    this._p.d = new Date(this._p.t);
+    return this._p.d;
   }
 
   _refreshFields(): void {
-    if (this._isUTC) {
-      if (this._d) {
-        this.$y = this._d.getUTCFullYear();
-        this.$M = this._d.getUTCMonth();
-        this.$D = this._d.getUTCDate();
-        this.$W = this._d.getUTCDay();
-        this.$H = this._d.getUTCHours();
-        this.$m = this._d.getUTCMinutes();
-        this.$s = this._d.getUTCSeconds();
-        this.$ms = this._d.getUTCMilliseconds();
+    if (this._p.isUTC) {
+      if (this._p.d) {
+        this._p.y = this._p.d.getUTCFullYear();
+        this._p.M = this._p.d.getUTCMonth();
+        this._p.D = this._p.d.getUTCDate();
+        this._p.W = this._p.d.getUTCDay();
+        this._p.H = this._p.d.getUTCHours();
+        this._p.m = this._p.d.getUTCMinutes();
+        this._p.s = this._p.d.getUTCSeconds();
+        this._p.ms = this._p.d.getUTCMilliseconds();
       } else {
-        const t = this._t;
+        const t = this._p.t;
         const totalDays = Math.floor(t / DAY_MS);
         const totalSec = Math.floor(t / SECOND_MS);
-        this.$W = euclideanModulo(totalDays + 4, 7);
+        this._p.W = euclideanModulo(totalDays + 4, 7);
         const [y, M, D] = Moment._epochDaysToYMD(totalDays);
-        this.$y = y;
-        this.$M = M;
-        this.$D = D;
-        this.$H = euclideanModulo(Math.floor(totalSec / 3600), 24);
-        this.$m = euclideanModulo(Math.floor(totalSec / 60), 60);
-        this.$s = euclideanModulo(totalSec, 60);
-        this.$ms = euclideanModulo(t, SECOND_MS);
+        this._p.y = y;
+        this._p.M = M;
+        this._p.D = D;
+        this._p.H = euclideanModulo(Math.floor(totalSec / 3600), 24);
+        this._p.m = euclideanModulo(Math.floor(totalSec / 60), 60);
+        this._p.s = euclideanModulo(totalSec, 60);
+        this._p.ms = euclideanModulo(t, SECOND_MS);
       }
     } else {
       const d = this._getD();
-      this.$y = d.getFullYear();
-      this.$M = d.getMonth();
-      this.$D = d.getDate();
-      this.$W = d.getDay();
-      this.$H = d.getHours();
-      this.$m = d.getMinutes();
-      this.$s = d.getSeconds();
-      this.$ms = d.getMilliseconds();
-      this._offset = -d.getTimezoneOffset();
+      this._p.y = d.getFullYear();
+      this._p.M = d.getMonth();
+      this._p.D = d.getDate();
+      this._p.W = d.getDay();
+      this._p.H = d.getHours();
+      this._p.m = d.getMinutes();
+      this._p.s = d.getSeconds();
+      this._p.ms = d.getMilliseconds();
+      this._p.offset = -d.getTimezoneOffset();
     }
   }
 
@@ -566,20 +481,20 @@ export class Moment {
     const c = config;
     this._isAMomentObject = true;
     this._l = c._l ?? getCurrentLocale();
-    this._isUTC = c._isUTC ?? false;
-    this._offset = c._offset ?? 0;
+    this._p.isUTC = c._isUTC ?? false;
+    this._p.offset = c._offset ?? 0;
     if (c._d) {
-      this._d = c._dClone === false ? c._d : new Date(c._d);
-      this._t = this._d.getTime();
+      this._p.d = c._dClone === false ? c._d : new Date(c._d);
+      this._p.t = this._p.d.getTime();
     } else if (c._t !== undefined) {
-      this._t = c._t;
-      this._d = undefined;
+      this._p.t = c._t;
+      this._p.d = undefined;
     } else {
-      this._t = Date.now();
-      this._d = undefined;
+      this._p.t = Date.now();
+      this._p.d = undefined;
     }
-    this._isValid = c._isValid ?? !isNaN(this._t);
-    this._dirty = this._isValid;
+    this._isValid = c._isValid ?? !isNaN(this._p.t);
+    this._p.dirty = this._isValid;
     if (c._i !== undefined) {
       this._i = c._i;
     }
@@ -695,19 +610,19 @@ export class Moment {
       }
       this._cold = cold;
       if (hasErrorCold) {
-        this._dirty = false;
+        this._p.dirty = false;
       }
     }
   }
 
   _getLocale(): Locale {
-    this._locale ??= getLocale(this._l);
-    return this._locale;
+    this._p.locale ??= getLocale(this._l);
+    return this._p.locale;
   }
 
   _gdt(method: DMethod): number {
     const d = this._getD();
-    if (this._isUTC) {
+    if (this._p.isUTC) {
       switch (method) {
         case DMethod.FullYear:
           return d.getUTCFullYear();
@@ -751,7 +666,7 @@ export class Moment {
 
   _sdt(method: DMethod, value: number): void {
     const d = this._getD();
-    if (this._isUTC) {
+    if (this._p.isUTC) {
       switch (method) {
         case DMethod.FullYear:
           d.setUTCFullYear(value);
@@ -800,7 +715,7 @@ export class Moment {
           break;
       }
     }
-    this._t = d.getTime();
+    this._p.t = d.getTime();
     this._refreshFields();
   }
 
@@ -842,29 +757,29 @@ export class Moment {
   clone(): this {
     this._ensureFields();
     const m = new Moment({
-      _t: this._t,
+      _t: this._p.t,
       _isValid: this._isValid,
-      _isUTC: this._isUTC,
-      _offset: this._offset,
+      _isUTC: this._p.isUTC,
+      _offset: this._p.offset,
       _l: this._l,
       _i: this._i,
       _f: this._f,
       _strict: this._strict,
     });
-    m.$y = this.$y;
-    m.$M = this.$M;
-    m.$D = this.$D;
-    m.$W = this.$W;
-    m.$H = this.$H;
-    m.$m = this.$m;
-    m.$s = this.$s;
-    m.$ms = this.$ms;
-    m._dirty = false;
+    m._p.y = this._p.y;
+    m._p.M = this._p.M;
+    m._p.D = this._p.D;
+    m._p.W = this._p.W;
+    m._p.H = this._p.H;
+    m._p.m = this._p.m;
+    m._p.s = this._p.s;
+    m._p.ms = this._p.ms;
+    m._p.dirty = false;
     if (this._cold) {
       m._cold = { ...this._cold } as MomentCold;
     }
-    if (this._locale) {
-      m._locale = this._locale;
+    if (this._p.locale) {
+      m._p.locale = this._p.locale;
     }
     return m as this;
   }
@@ -881,27 +796,27 @@ export class Moment {
         return this;
       }
       this._ensureFields();
-      if (this._isUTC) {
-        const maxDay = daysInMonth(num, this.$M);
-        const d_ = this.$D > maxDay ? maxDay : this.$D;
-        this._t = Date.UTC(num, this.$M, d_, this.$H, this.$m, this.$s, this.$ms);
-        this._d = undefined;
-        this._dirty = true;
-        this.$y = num;
-        this.$D = d_;
-        this.$W = _dayOfWeek(num, this.$M, d_);
+      if (this._p.isUTC) {
+        const maxDay = daysInMonth(num, this._p.M);
+        const d_ = this._p.D > maxDay ? maxDay : this._p.D;
+        this._p.t = Date.UTC(num, this._p.M, d_, this._p.H, this._p.m, this._p.s, this._p.ms);
+        this._p.d = undefined;
+        this._p.dirty = true;
+        this._p.y = num;
+        this._p.D = d_;
+        this._p.W = _dayOfWeek(num, this._p.M, d_);
       } else {
         const dt = this._getD();
-        const date = this.$D;
+        const date = this._p.D;
         dt.setFullYear(num);
         if (dt.getDate() !== date) {
           dt.setDate(0);
         }
-        this.$y = dt.getFullYear();
-        this.$M = dt.getMonth();
-        this.$D = dt.getDate();
-        this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
-        this._t = dt.getTime();
+        this._p.y = dt.getFullYear();
+        this._p.M = dt.getMonth();
+        this._p.D = dt.getDate();
+        this._p.W = _dayOfWeek(this._p.y, this._p.M, this._p.D);
+        this._p.t = dt.getTime();
       }
       // $H, $m, $s, $ms unchanged
       this._updateOffset(true);
@@ -911,7 +826,7 @@ export class Moment {
       return NaN;
     }
     this._ensureFields();
-    return this.$y;
+    return this._p.y;
   }
 
   month(): number;
@@ -946,8 +861,8 @@ export class Moment {
         return this;
       }
       const d = this._getD();
-      const utc = this._isUTC;
-      const date = this.$D;
+      const utc = this._p.isUTC;
+      const date = this._p.D;
       if (utc) {
         d.setUTCMonth(num);
       } else {
@@ -960,18 +875,18 @@ export class Moment {
           d.setDate(0);
         }
       }
-      this.$y = utc ? d.getUTCFullYear() : d.getFullYear();
-      this.$M = utc ? d.getUTCMonth() : d.getMonth();
-      this.$D = utc ? d.getUTCDate() : d.getDate();
-      this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
-      this._t = d.getTime();
+      this._p.y = utc ? d.getUTCFullYear() : d.getFullYear();
+      this._p.M = utc ? d.getUTCMonth() : d.getMonth();
+      this._p.D = utc ? d.getUTCDate() : d.getDate();
+      this._p.W = _dayOfWeek(this._p.y, this._p.M, this._p.D);
+      this._p.t = d.getTime();
       this._updateOffset(true);
       return this;
     }
     if (!this._isValid) {
       return NaN;
     }
-    return this.$M;
+    return this._p.M;
   }
 
   date(): number;
@@ -988,15 +903,15 @@ export class Moment {
       if (num <= 0) {
         return this;
       }
-      if (this._isUTC) {
+      if (this._p.isUTC) {
         this._getD().setUTCDate(num);
       } else {
         this._getD().setDate(num);
       }
-      this.$D = this._isUTC ? this._getD().getUTCDate() : this._getD().getDate();
-      this.$M = this._isUTC ? this._getD().getUTCMonth() : this._getD().getMonth();
-      this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
-      this._t = this._getD().getTime();
+      this._p.D = this._p.isUTC ? this._getD().getUTCDate() : this._getD().getDate();
+      this._p.M = this._p.isUTC ? this._getD().getUTCMonth() : this._getD().getMonth();
+      this._p.W = _dayOfWeek(this._p.y, this._p.M, this._p.D);
+      this._p.t = this._getD().getTime();
       this._updateOffset(true);
       return this;
     }
@@ -1004,7 +919,7 @@ export class Moment {
       return NaN;
     }
     this._ensureFields();
-    return this.$D;
+    return this._p.D;
   }
 
   day(): number;
@@ -1051,18 +966,18 @@ export class Moment {
       if (isNaN(dayNum)) {
         return this;
       }
-      const currentDay = this.$W;
+      const currentDay = this._p.W;
       const diff = dayNum - currentDay;
       const dt = this._getD();
-      if (this._isUTC) {
+      if (this._p.isUTC) {
         dt.setUTCDate(dt.getUTCDate() + diff);
       } else {
         dt.setDate(dt.getDate() + diff);
       }
-      this.$D = this._isUTC ? dt.getUTCDate() : dt.getDate();
-      this.$M = this._isUTC ? dt.getUTCMonth() : dt.getMonth();
-      this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
-      this._t = dt.getTime();
+      this._p.D = this._p.isUTC ? dt.getUTCDate() : dt.getDate();
+      this._p.M = this._p.isUTC ? dt.getUTCMonth() : dt.getMonth();
+      this._p.W = _dayOfWeek(this._p.y, this._p.M, this._p.D);
+      this._p.t = dt.getTime();
       this._updateOffset(true);
       return this;
     }
@@ -1070,7 +985,7 @@ export class Moment {
       return NaN;
     }
     this._ensureFields();
-    return this.$W;
+    return this._p.W;
   }
 
   weekday(): number;
@@ -1115,13 +1030,13 @@ export class Moment {
       if (isNaN(num)) {
         return this;
       }
-      if (this._isUTC) {
+      if (this._p.isUTC) {
         this._getD().setUTCHours(num);
       } else {
         this._getD().setHours(num);
       }
-      this.$H = this._isUTC ? this._getD().getUTCHours() : this._getD().getHours();
-      this._t = this._getD().getTime();
+      this._p.H = this._p.isUTC ? this._getD().getUTCHours() : this._getD().getHours();
+      this._p.t = this._getD().getTime();
       this._updateOffset(true);
       return this;
     }
@@ -1129,7 +1044,7 @@ export class Moment {
       return NaN;
     }
     this._ensureFields();
-    return this.$H;
+    return this._p.H;
   }
 
   minute(): number;
@@ -1143,13 +1058,13 @@ export class Moment {
       if (isNaN(num)) {
         return this;
       }
-      if (this._isUTC) {
+      if (this._p.isUTC) {
         this._getD().setUTCMinutes(num);
       } else {
         this._getD().setMinutes(num);
       }
-      this.$m = this._isUTC ? this._getD().getUTCMinutes() : this._getD().getMinutes();
-      this._t = this._getD().getTime();
+      this._p.m = this._p.isUTC ? this._getD().getUTCMinutes() : this._getD().getMinutes();
+      this._p.t = this._getD().getTime();
       this._updateOffset(true);
       return this;
     }
@@ -1157,7 +1072,7 @@ export class Moment {
       return NaN;
     }
     this._ensureFields();
-    return this.$m;
+    return this._p.m;
   }
 
   second(): number;
@@ -1171,13 +1086,13 @@ export class Moment {
       if (isNaN(num)) {
         return this;
       }
-      if (this._isUTC) {
+      if (this._p.isUTC) {
         this._getD().setUTCSeconds(num);
       } else {
         this._getD().setSeconds(num);
       }
-      this.$s = this._isUTC ? this._getD().getUTCSeconds() : this._getD().getSeconds();
-      this._t = this._getD().getTime();
+      this._p.s = this._p.isUTC ? this._getD().getUTCSeconds() : this._getD().getSeconds();
+      this._p.t = this._getD().getTime();
       this._updateOffset(true);
       return this;
     }
@@ -1185,7 +1100,7 @@ export class Moment {
       return NaN;
     }
     this._ensureFields();
-    return this.$s;
+    return this._p.s;
   }
 
   millisecond(): number;
@@ -1199,13 +1114,15 @@ export class Moment {
       if (isNaN(num)) {
         return this;
       }
-      if (this._isUTC) {
+      if (this._p.isUTC) {
         this._getD().setUTCMilliseconds(num);
       } else {
         this._getD().setMilliseconds(num);
       }
-      this.$ms = this._isUTC ? this._getD().getUTCMilliseconds() : this._getD().getMilliseconds();
-      this._t = this._getD().getTime();
+      this._p.ms = this._p.isUTC
+        ? this._getD().getUTCMilliseconds()
+        : this._getD().getMilliseconds();
+      this._p.t = this._getD().getTime();
       this._updateOffset(true);
       return this;
     }
@@ -1213,7 +1130,7 @@ export class Moment {
       return NaN;
     }
     this._ensureFields();
-    return this.$ms;
+    return this._p.ms;
   }
 
   get(unit: string): number;
@@ -1336,13 +1253,13 @@ export class Moment {
         msVal !== undefined;
 
       if (hasDate) {
-        const curYear = this.$y;
-        const curMonth = this.$M;
-        const curDate = this.$D;
-        const curHour = this.$H;
-        const curMinute = this.$m;
-        const curSecond = this.$s;
-        const curMs = this.$ms;
+        const curYear = this._p.y;
+        const curMonth = this._p.M;
+        const curDate = this._p.D;
+        const curHour = this._p.H;
+        const curMinute = this._p.m;
+        const curSecond = this._p.s;
+        const curMs = this._p.ms;
 
         const newYear = yearVal ?? curYear;
         const newMonth = monthVal ?? curMonth;
@@ -1352,36 +1269,36 @@ export class Moment {
         const newSecond = secondVal ?? curSecond;
         const newMs = msVal ?? curMs;
 
-        if (this._isUTC) {
+        if (this._p.isUTC) {
           const tmp = new Date(
             Date.UTC(newYear, newMonth, 1, newHour, newMinute, newSecond, newMs),
           );
           const maxDays = new Date(Date.UTC(newYear, newMonth + 1, 0)).getUTCDate();
           tmp.setUTCDate(Math.min(newDate, maxDays));
-          this._d = tmp;
-          this._t = this._d.getTime();
-          this.$y = tmp.getUTCFullYear();
-          this.$M = tmp.getUTCMonth();
-          this.$D = tmp.getUTCDate();
-          this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
-          this.$H = tmp.getUTCHours();
-          this.$m = tmp.getUTCMinutes();
-          this.$s = tmp.getUTCSeconds();
-          this.$ms = tmp.getUTCMilliseconds();
+          this._p.d = tmp;
+          this._p.t = this._p.d.getTime();
+          this._p.y = tmp.getUTCFullYear();
+          this._p.M = tmp.getUTCMonth();
+          this._p.D = tmp.getUTCDate();
+          this._p.W = _dayOfWeek(this._p.y, this._p.M, this._p.D);
+          this._p.H = tmp.getUTCHours();
+          this._p.m = tmp.getUTCMinutes();
+          this._p.s = tmp.getUTCSeconds();
+          this._p.ms = tmp.getUTCMilliseconds();
         } else {
           const tmp = new Date(newYear, newMonth, 1, newHour, newMinute, newSecond, newMs);
           const maxDays = new Date(newYear, newMonth + 1, 0).getDate();
           tmp.setDate(Math.min(newDate, maxDays));
-          this._d = tmp;
-          this._t = this._d.getTime();
-          this.$y = tmp.getFullYear();
-          this.$M = tmp.getMonth();
-          this.$D = tmp.getDate();
-          this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
-          this.$H = tmp.getHours();
-          this.$m = tmp.getMinutes();
-          this.$s = tmp.getSeconds();
-          this.$ms = tmp.getMilliseconds();
+          this._p.d = tmp;
+          this._p.t = this._p.d.getTime();
+          this._p.y = tmp.getFullYear();
+          this._p.M = tmp.getMonth();
+          this._p.D = tmp.getDate();
+          this._p.W = _dayOfWeek(this._p.y, this._p.M, this._p.D);
+          this._p.H = tmp.getHours();
+          this._p.m = tmp.getMinutes();
+          this._p.s = tmp.getSeconds();
+          this._p.ms = tmp.getMilliseconds();
         }
       }
 
@@ -1474,7 +1391,7 @@ export class Moment {
 
   _addSimple(amount: number, unit: number): void {
     let changedDays = false;
-    const utc = this._isUTC;
+    const utc = this._p.isUTC;
 
     switch (unit) {
       case YEAR:
@@ -1488,10 +1405,10 @@ export class Moment {
           : rawMonths < 0
             ? Math.round(rawMonths * -1) * -1
             : Math.round(rawMonths);
-        const tm = this.$y * 12 + this.$M + totalMonths;
+        const tm = this._p.y * 12 + this._p.M + totalMonths;
         const y = Math.floor(tm / 12);
         const m = normalizeMonth(tm);
-        let d_ = this.$D;
+        let d_ = this._p.D;
         if (d_ > 28) {
           const _md = daysInMonthFast(y, m);
           if (d_ > _md) {
@@ -1499,25 +1416,25 @@ export class Moment {
           }
         }
         if (utc) {
-          this._t =
+          this._p.t =
             ymdToEpochDays(y, m, d_) * 86400000 +
-            this.$H * 3600000 +
-            this.$m * 60000 +
-            this.$s * 1000 +
-            this.$ms;
-          this._d = undefined;
-          this._dirty = true;
+            this._p.H * 3600000 +
+            this._p.m * 60000 +
+            this._p.s * 1000 +
+            this._p.ms;
+          this._p.d = undefined;
+          this._p.dirty = true;
         } else {
-          const dt = this._d ?? (this._d = new Date(this._t));
+          const dt = this._p.d ?? (this._p.d = new Date(this._p.t));
           dt.setFullYear(y, m, d_);
-          this._t = dt.getTime();
+          this._p.t = dt.getTime();
         }
-        this.$y = y;
-        this.$M = m;
-        this.$D = d_;
-        this.$W = utc ? _dayOfWeek(y, m, d_) : this._d!.getDay();
+        this._p.y = y;
+        this._p.M = m;
+        this._p.D = d_;
+        this._p.W = utc ? _dayOfWeek(y, m, d_) : this._p.d!.getDay();
         if (!utc) {
-          this._offset = -this._d!.getTimezoneOffset();
+          this._p.offset = -this._p.d!.getTimezoneOffset();
         }
         break;
       }
@@ -1534,14 +1451,14 @@ export class Moment {
             : Math.round(raw);
         if (rounded !== 0) {
           if (utc) {
-            this._t += rounded * 86400000;
-            this._d = undefined;
+            this._p.t += rounded * 86400000;
+            this._p.d = undefined;
           } else {
-            const dt = this._d ?? (this._d = new Date(this._t));
+            const dt = this._p.d ?? (this._p.d = new Date(this._p.t));
             dt.setDate(dt.getDate() + rounded);
-            this._t = dt.getTime();
+            this._p.t = dt.getTime();
           }
-          this._dirty = true;
+          this._p.dirty = true;
         }
         break;
       }
@@ -1549,16 +1466,16 @@ export class Moment {
       case MINUTE:
       case SECOND:
       case MILLISECOND: {
-        this._t += Math.round(amount * TIME_UNIT_MS[unit]);
-        this._d = undefined;
-        this._dirty = true;
+        this._p.t += Math.round(amount * TIME_UNIT_MS[unit]);
+        this._p.d = undefined;
+        this._p.dirty = true;
         break;
       }
       default:
         return;
     }
     this._updateOffset(changedDays);
-    if (isNaN(this._t)) {
+    if (isNaN(this._p.t)) {
       this._isValid = false;
     }
   }
@@ -1584,10 +1501,10 @@ export class Moment {
   _applyDuration(ms: number, days: number, months: number, sign: 1 | -1): void {
     this._ensureFields();
     const d = this._getDNoEnsure();
-    const utc = this._isUTC;
+    const utc = this._p.isUTC;
     if (months) {
-      const curMonth = this.$M;
-      const day = this.$D;
+      const curMonth = this._p.M;
+      const day = this._p.D;
       if (utc) {
         d.setUTCMonth(curMonth + sign * months);
       } else {
@@ -1611,25 +1528,25 @@ export class Moment {
     if (ms) {
       d.setTime(d.getTime() + sign * ms);
     }
-    this._t = d.getTime();
+    this._p.t = d.getTime();
     if (months || ms) {
       this._refreshFields();
     } else if (days) {
       if (utc) {
-        this.$y = d.getUTCFullYear();
-        this.$M = d.getUTCMonth();
-        this.$D = d.getUTCDate();
-        this.$W = d.getUTCDay();
+        this._p.y = d.getUTCFullYear();
+        this._p.M = d.getUTCMonth();
+        this._p.D = d.getUTCDate();
+        this._p.W = d.getUTCDay();
       } else {
-        this.$y = d.getFullYear();
-        this.$M = d.getMonth();
-        this.$D = d.getDate();
-        this.$W = d.getDay();
-        this._offset = -d.getTimezoneOffset();
+        this._p.y = d.getFullYear();
+        this._p.M = d.getMonth();
+        this._p.D = d.getDate();
+        this._p.W = d.getDay();
+        this._p.offset = -d.getTimezoneOffset();
       }
     }
     this._updateOffset(!(!months && !days));
-    if (isNaN(this._t)) {
+    if (isNaN(this._p.t)) {
       this._isValid = false;
     }
   }
@@ -1647,15 +1564,15 @@ export class Moment {
         if (code >= 0) {
           switch (code) {
             case DAY: {
-              if (this._isUTC) {
-                this._t += Math.round(amount * 86400000);
-                this._d = undefined;
+              if (this._p.isUTC) {
+                this._p.t += Math.round(amount * 86400000);
+                this._p.d = undefined;
               } else {
-                const dt = this._d ?? (this._d = new Date(this._t));
+                const dt = this._p.d ?? (this._p.d = new Date(this._p.t));
                 dt.setDate(dt.getDate() + amount);
-                this._t = dt.getTime();
+                this._p.t = dt.getTime();
               }
-              this._dirty = true;
+              this._p.dirty = true;
               return this;
             }
             case MONTH: {
@@ -1665,38 +1582,38 @@ export class Moment {
                 : amount < 0
                   ? Math.round(-amount) * -1
                   : Math.round(amount);
-              const tm = this.$y * 12 + this.$M + totalMonths;
+              const tm = this._p.y * 12 + this._p.M + totalMonths;
               const y = Math.floor(tm / 12);
               const m = normalizeMonth(tm);
-              let d_ = this.$D;
+              let d_ = this._p.D;
               if (d_ > 28) {
                 const md = daysInMonthFast(y, m);
                 if (d_ > md) {
                   d_ = md;
                 }
               }
-              if (this._isUTC) {
-                this._t =
+              if (this._p.isUTC) {
+                this._p.t =
                   ymdToEpochDays(y, m, d_) * 86400000 +
-                  this.$H * 3600000 +
-                  this.$m * 60000 +
-                  this.$s * 1000 +
-                  this.$ms;
-                this._d = undefined;
-                this._dirty = true;
+                  this._p.H * 3600000 +
+                  this._p.m * 60000 +
+                  this._p.s * 1000 +
+                  this._p.ms;
+                this._p.d = undefined;
+                this._p.dirty = true;
               } else {
-                const dt = this._d ?? (this._d = new Date(this._t));
+                const dt = this._p.d ?? (this._p.d = new Date(this._p.t));
                 dt.setFullYear(y, m, d_);
-                this._t = dt.getTime();
+                this._p.t = dt.getTime();
               }
-              this.$y = y;
-              this.$M = m;
-              this.$D = d_;
-              this.$W = this._isUTC ? _dayOfWeek(y, m, d_) : this._d!.getDay();
-              if (!this._isUTC) {
-                this._offset = -this._d!.getTimezoneOffset();
+              this._p.y = y;
+              this._p.M = m;
+              this._p.D = d_;
+              this._p.W = this._p.isUTC ? _dayOfWeek(y, m, d_) : this._p.d!.getDay();
+              if (!this._p.isUTC) {
+                this._p.offset = -this._p.d!.getTimezoneOffset();
               }
-              if (isNaN(this._t)) {
+              if (isNaN(this._p.t)) {
                 this._isValid = false;
               }
               return this;
@@ -1706,17 +1623,17 @@ export class Moment {
             case SECOND:
             case MILLISECOND: {
               const ms = TIME_UNIT_MS[code];
-              this._t += Number.isInteger(amount) ? amount * ms : Math.round(amount * ms);
-              this._d = undefined;
-              this._dirty = true;
-              if (isNaN(this._t)) {
+              this._p.t += Number.isInteger(amount) ? amount * ms : Math.round(amount * ms);
+              this._p.d = undefined;
+              this._p.dirty = true;
+              if (isNaN(this._p.t)) {
                 this._isValid = false;
               }
               return this;
             }
             default:
               this._addSimple(amount, code);
-              if (isNaN(this._t)) {
+              if (isNaN(this._p.t)) {
                 this._isValid = false;
               }
               return this;
@@ -1724,7 +1641,7 @@ export class Moment {
         }
       } else {
         this._addSimple(amount, MILLISECOND);
-        if (isNaN(this._t)) {
+        if (isNaN(this._p.t)) {
           this._isValid = false;
         }
         return this;
@@ -1735,7 +1652,7 @@ export class Moment {
       return this;
     }
     this._applyDuration(parsed.ms, parsed.days, parsed.months, 1);
-    if (isNaN(this._t)) {
+    if (isNaN(this._p.t)) {
       this._isValid = false;
     }
     return this;
@@ -1756,7 +1673,7 @@ export class Moment {
       return this;
     }
     this._applyDuration(parsed.ms, parsed.days, parsed.months, -1);
-    if (isNaN(this._t)) {
+    if (isNaN(this._p.t)) {
       this._isValid = false;
     }
     return this;
@@ -1773,28 +1690,34 @@ export class Moment {
     this._ensureFields();
     if (!updateOffsetCallback) {
       if (code === MONTH) {
-        if (this.$D === 1 && this.$H === 0 && this.$m === 0 && this.$s === 0 && this.$ms === 0) {
+        if (
+          this._p.D === 1 &&
+          this._p.H === 0 &&
+          this._p.m === 0 &&
+          this._p.s === 0 &&
+          this._p.ms === 0
+        ) {
           return this;
         }
       } else if (code === DATE || code === DAY) {
-        if (this.$H === 0 && this.$m === 0 && this.$s === 0 && this.$ms === 0) {
+        if (this._p.H === 0 && this._p.m === 0 && this._p.s === 0 && this._p.ms === 0) {
           return this;
         }
       } else if (code === HOUR) {
-        if (this.$m === 0 && this.$s === 0 && this.$ms === 0) {
+        if (this._p.m === 0 && this._p.s === 0 && this._p.ms === 0) {
           return this;
         }
       } else if (code === MINUTE) {
-        if (this.$s === 0 && this.$ms === 0) {
+        if (this._p.s === 0 && this._p.ms === 0) {
           return this;
         }
       } else if (code === SECOND) {
-        if (this.$ms === 0) {
+        if (this._p.ms === 0) {
           return this;
         }
       }
     }
-    if (this._isUTC) {
+    if (this._p.isUTC) {
       this._startOfUTC(code);
     } else {
       this._startOfLocal(code);
@@ -1805,25 +1728,25 @@ export class Moment {
   _startOfUTC(code: UnitCode): void {
     switch (code) {
       case YEAR:
-        this._t = ymdToEpochDays(this.$y, 0, 1) * DAY_MS;
-        this._d = undefined;
-        this.$M = 0;
-        this.$D = 1;
-        this.$H = 0;
-        this.$m = 0;
-        this.$s = 0;
-        this.$ms = 0;
-        this.$W = _dayOfWeek(this.$y, 0, 1);
+        this._p.t = ymdToEpochDays(this._p.y, 0, 1) * DAY_MS;
+        this._p.d = undefined;
+        this._p.M = 0;
+        this._p.D = 1;
+        this._p.H = 0;
+        this._p.m = 0;
+        this._p.s = 0;
+        this._p.ms = 0;
+        this._p.W = _dayOfWeek(this._p.y, 0, 1);
         break;
       case MONTH:
-        this._t = ymdToEpochDays(this.$y, this.$M, 1) * DAY_MS;
-        this._d = undefined;
-        this.$D = 1;
-        this.$H = 0;
-        this.$m = 0;
-        this.$s = 0;
-        this.$ms = 0;
-        this.$W = _dayOfWeek(this.$y, this.$M, 1);
+        this._p.t = ymdToEpochDays(this._p.y, this._p.M, 1) * DAY_MS;
+        this._p.d = undefined;
+        this._p.D = 1;
+        this._p.H = 0;
+        this._p.m = 0;
+        this._p.s = 0;
+        this._p.ms = 0;
+        this._p.W = _dayOfWeek(this._p.y, this._p.M, 1);
         break;
       case QUARTER:
       case WEEK:
@@ -1832,30 +1755,30 @@ export class Moment {
         break;
       case DATE:
       case DAY:
-        this._t = floorUnitEpoch(this._t, DAY_MS);
-        this._d = undefined;
-        this.$H = 0;
-        this.$m = 0;
-        this.$s = 0;
-        this.$ms = 0;
+        this._p.t = floorUnitEpoch(this._p.t, DAY_MS);
+        this._p.d = undefined;
+        this._p.H = 0;
+        this._p.m = 0;
+        this._p.s = 0;
+        this._p.ms = 0;
         break;
       case HOUR:
-        this._t = floorUnitEpoch(this._t, HOUR_MS);
-        this._d = undefined;
-        this.$m = 0;
-        this.$s = 0;
-        this.$ms = 0;
+        this._p.t = floorUnitEpoch(this._p.t, HOUR_MS);
+        this._p.d = undefined;
+        this._p.m = 0;
+        this._p.s = 0;
+        this._p.ms = 0;
         break;
       case MINUTE:
-        this._t = floorUnitEpoch(this._t, MINUTE_MS);
-        this._d = undefined;
-        this.$s = 0;
-        this.$ms = 0;
+        this._p.t = floorUnitEpoch(this._p.t, MINUTE_MS);
+        this._p.d = undefined;
+        this._p.s = 0;
+        this._p.ms = 0;
         break;
       case SECOND:
-        this._t = floorUnitEpoch(this._t, SECOND_MS);
-        this._d = undefined;
-        this.$ms = 0;
+        this._p.t = floorUnitEpoch(this._p.t, SECOND_MS);
+        this._p.d = undefined;
+        this._p.ms = 0;
         break;
     }
     this._updateOffset(true);
@@ -1867,25 +1790,25 @@ export class Moment {
       case YEAR:
         d.setMonth(0, 1);
         d.setHours(0, 0, 0, 0);
-        this._t = d.getTime();
-        this.$M = 0;
-        this.$D = 1;
-        this.$H = 0;
-        this.$m = 0;
-        this.$s = 0;
-        this.$ms = 0;
-        this.$W = _dayOfWeek(this.$y, 0, 1);
+        this._p.t = d.getTime();
+        this._p.M = 0;
+        this._p.D = 1;
+        this._p.H = 0;
+        this._p.m = 0;
+        this._p.s = 0;
+        this._p.ms = 0;
+        this._p.W = _dayOfWeek(this._p.y, 0, 1);
         break;
       case MONTH:
         d.setDate(1);
         d.setHours(0, 0, 0, 0);
-        this._t = d.getTime();
-        this.$D = 1;
-        this.$H = 0;
-        this.$m = 0;
-        this.$s = 0;
-        this.$ms = 0;
-        this.$W = _dayOfWeek(this.$y, this.$M, 1);
+        this._p.t = d.getTime();
+        this._p.D = 1;
+        this._p.H = 0;
+        this._p.m = 0;
+        this._p.s = 0;
+        this._p.ms = 0;
+        this._p.W = _dayOfWeek(this._p.y, this._p.M, 1);
         break;
       case QUARTER:
       case WEEK:
@@ -1895,32 +1818,32 @@ export class Moment {
       case DATE:
       case DAY:
         d.setHours(0, 0, 0, 0);
-        this._t = d.getTime();
-        this.$H = 0;
-        this.$m = 0;
-        this.$s = 0;
-        this.$ms = 0;
+        this._p.t = d.getTime();
+        this._p.H = 0;
+        this._p.m = 0;
+        this._p.s = 0;
+        this._p.ms = 0;
         break;
       case HOUR:
         d.setMinutes(0, 0, 0);
-        this._t = d.getTime();
-        this.$m = 0;
-        this.$s = 0;
-        this.$ms = 0;
+        this._p.t = d.getTime();
+        this._p.m = 0;
+        this._p.s = 0;
+        this._p.ms = 0;
         break;
       case MINUTE:
         d.setSeconds(0, 0);
-        this._t = d.getTime();
-        this.$s = 0;
-        this.$ms = 0;
+        this._p.t = d.getTime();
+        this._p.s = 0;
+        this._p.ms = 0;
         break;
       case SECOND:
         d.setMilliseconds(0);
-        this._t = d.getTime();
-        this.$ms = 0;
+        this._p.t = d.getTime();
+        this._p.ms = 0;
         break;
     }
-    this._offset = -d.getTimezoneOffset();
+    this._p.offset = -d.getTimezoneOffset();
     this._updateOffset(true);
   }
 
@@ -1933,7 +1856,7 @@ export class Moment {
       return this;
     }
     this._ensureFields();
-    if (this._isUTC) {
+    if (this._p.isUTC) {
       this._endOfUTC(code);
     } else {
       this._endOfLocal(code);
@@ -1944,26 +1867,26 @@ export class Moment {
   _endOfUTC(code: UnitCode): void {
     switch (code) {
       case YEAR:
-        this._t = (ymdToEpochDays(this.$y, 11, 31) + 1) * DAY_MS - 1;
-        this._d = undefined;
-        this.$M = 11;
-        this.$D = 31;
-        this.$H = 23;
-        this.$m = 59;
-        this.$s = 59;
-        this.$ms = 999;
-        this.$W = _dayOfWeek(this.$y, 11, 31);
+        this._p.t = (ymdToEpochDays(this._p.y, 11, 31) + 1) * DAY_MS - 1;
+        this._p.d = undefined;
+        this._p.M = 11;
+        this._p.D = 31;
+        this._p.H = 23;
+        this._p.m = 59;
+        this._p.s = 59;
+        this._p.ms = 999;
+        this._p.W = _dayOfWeek(this._p.y, 11, 31);
         break;
       case MONTH: {
-        const _eomMaxDay = daysInMonthFast(this.$y, this.$M);
-        this._t = (ymdToEpochDays(this.$y, this.$M, _eomMaxDay) + 1) * DAY_MS - 1;
-        this._d = undefined;
-        this.$D = _eomMaxDay;
-        this.$H = 23;
-        this.$m = 59;
-        this.$s = 59;
-        this.$ms = 999;
-        this.$W = _dayOfWeek(this.$y, this.$M, _eomMaxDay);
+        const _eomMaxDay = daysInMonthFast(this._p.y, this._p.M);
+        this._p.t = (ymdToEpochDays(this._p.y, this._p.M, _eomMaxDay) + 1) * DAY_MS - 1;
+        this._p.d = undefined;
+        this._p.D = _eomMaxDay;
+        this._p.H = 23;
+        this._p.m = 59;
+        this._p.s = 59;
+        this._p.ms = 999;
+        this._p.W = _dayOfWeek(this._p.y, this._p.M, _eomMaxDay);
         break;
       }
       case QUARTER:
@@ -1973,24 +1896,24 @@ export class Moment {
         break;
       case DATE:
       case DAY:
-        this._t = endOfUnitEpoch(this._t, DAY_MS);
-        this._d = undefined;
-        this._dirty = true;
+        this._p.t = endOfUnitEpoch(this._p.t, DAY_MS);
+        this._p.d = undefined;
+        this._p.dirty = true;
         break;
       case HOUR:
-        this._t = endOfUnitEpoch(this._t, HOUR_MS);
-        this._d = undefined;
-        this._dirty = true;
+        this._p.t = endOfUnitEpoch(this._p.t, HOUR_MS);
+        this._p.d = undefined;
+        this._p.dirty = true;
         break;
       case MINUTE:
-        this._t = endOfUnitEpoch(this._t, MINUTE_MS);
-        this._d = undefined;
-        this._dirty = true;
+        this._p.t = endOfUnitEpoch(this._p.t, MINUTE_MS);
+        this._p.d = undefined;
+        this._p.dirty = true;
         break;
       case SECOND:
-        this._t = endOfUnitEpoch(this._t, SECOND_MS);
-        this._d = undefined;
-        this._dirty = true;
+        this._p.t = endOfUnitEpoch(this._p.t, SECOND_MS);
+        this._p.d = undefined;
+        this._p.dirty = true;
         break;
     }
     this._updateOffset(true);
@@ -2000,28 +1923,28 @@ export class Moment {
     const d = this._getDNoEnsure();
     switch (code) {
       case YEAR:
-        d.setFullYear(this.$y, 11, 31);
+        d.setFullYear(this._p.y, 11, 31);
         d.setHours(23, 59, 59, 999);
-        this._t = d.getTime();
-        this.$M = 11;
-        this.$D = 31;
-        this.$H = 23;
-        this.$m = 59;
-        this.$s = 59;
-        this.$ms = 999;
-        this.$W = _dayOfWeek(this.$y, 11, 31);
+        this._p.t = d.getTime();
+        this._p.M = 11;
+        this._p.D = 31;
+        this._p.H = 23;
+        this._p.m = 59;
+        this._p.s = 59;
+        this._p.ms = 999;
+        this._p.W = _dayOfWeek(this._p.y, 11, 31);
         break;
       case MONTH: {
-        const _eomMaxDay = daysInMonthFast(this.$y, this.$M);
-        d.setFullYear(this.$y, this.$M, _eomMaxDay);
+        const _eomMaxDay = daysInMonthFast(this._p.y, this._p.M);
+        d.setFullYear(this._p.y, this._p.M, _eomMaxDay);
         d.setHours(23, 59, 59, 999);
-        this._t = d.getTime();
-        this.$D = _eomMaxDay;
-        this.$H = 23;
-        this.$m = 59;
-        this.$s = 59;
-        this.$ms = 999;
-        this.$W = _dayOfWeek(this.$y, this.$M, _eomMaxDay);
+        this._p.t = d.getTime();
+        this._p.D = _eomMaxDay;
+        this._p.H = 23;
+        this._p.m = 59;
+        this._p.s = 59;
+        this._p.ms = 999;
+        this._p.W = _dayOfWeek(this._p.y, this._p.M, _eomMaxDay);
         break;
       }
       case QUARTER:
@@ -2034,39 +1957,39 @@ export class Moment {
         d.setHours(0, 0, 0, 0);
         d.setDate(d.getDate() + 1);
         d.setMilliseconds(-1);
-        this.$D = d.getDate();
-        this.$H = d.getHours();
-        this.$m = d.getMinutes();
-        this.$s = d.getSeconds();
-        this.$ms = d.getMilliseconds();
-        this.$W = _dayOfWeek(this.$y, this.$M, this.$D);
-        this._t = d.getTime();
+        this._p.D = d.getDate();
+        this._p.H = d.getHours();
+        this._p.m = d.getMinutes();
+        this._p.s = d.getSeconds();
+        this._p.ms = d.getMilliseconds();
+        this._p.W = _dayOfWeek(this._p.y, this._p.M, this._p.D);
+        this._p.t = d.getTime();
         break;
       case HOUR:
         d.setMinutes(0, 0, 0);
         d.setHours(d.getHours() + 1, 0, 0, -1);
-        this.$H = d.getHours();
-        this.$m = d.getMinutes();
-        this.$s = d.getSeconds();
-        this.$ms = d.getMilliseconds();
-        this._t = d.getTime();
+        this._p.H = d.getHours();
+        this._p.m = d.getMinutes();
+        this._p.s = d.getSeconds();
+        this._p.ms = d.getMilliseconds();
+        this._p.t = d.getTime();
         break;
       case MINUTE:
         d.setSeconds(0, 0);
         d.setMinutes(d.getMinutes() + 1, 0, -1);
-        this.$m = d.getMinutes();
-        this.$s = d.getSeconds();
-        this.$ms = d.getMilliseconds();
-        this._t = d.getTime();
+        this._p.m = d.getMinutes();
+        this._p.s = d.getSeconds();
+        this._p.ms = d.getMilliseconds();
+        this._p.t = d.getTime();
         break;
       case SECOND:
         d.setSeconds(d.getSeconds() + 1, -1);
-        this.$s = d.getSeconds();
-        this.$ms = d.getMilliseconds();
-        this._t = d.getTime();
+        this._p.s = d.getSeconds();
+        this._p.ms = d.getMilliseconds();
+        this._p.t = d.getTime();
         break;
     }
-    this._offset = -d.getTimezoneOffset();
+    this._p.offset = -d.getTimezoneOffset();
     this._updateOffset(true);
   }
 
@@ -2075,7 +1998,7 @@ export class Moment {
       return this;
     }
     // Already local, no keepLocalTime transform needed — skip callback entirely
-    if (!this._isUTC && !keepLocalTime) {
+    if (!this._p.isUTC && !keepLocalTime) {
       return this;
     }
     this._ensureFields();
@@ -2087,7 +2010,7 @@ export class Moment {
       return this;
     }
     // Already pure UTC (offset 0), no keepLocalTime transform needed — skip callback
-    if (this._isUTC && this._offset === 0 && !keepLocalTime) {
+    if (this._p.isUTC && this._p.offset === 0 && !keepLocalTime) {
       return this;
     }
     this._ensureFields();
@@ -2103,7 +2026,7 @@ export class Moment {
 
   format(format?: string): string {
     if (!format) {
-      if (this._isUTC && this._offset === 0) {
+      if (this._p.isUTC && this._p.offset === 0) {
         format = _defaultFormatUtc;
       } else {
         format = _defaultFormat;
@@ -2156,20 +2079,20 @@ export class Moment {
     if (!this._isValid || !other._isValid) {
       return NaN;
     }
-    const isUTC = this._isUTC;
-    const otherUTC = other._isUTC;
+    const isUTC = this._p.isUTC;
+    const otherUTC = other._p.isUTC;
     const code = unit ? normalizeUnitCode(unit) : (INVALID_UNIT as -1);
     if (code < 0) {
-      const a = isUTC ? this._t - this._offset * 60000 : this._t;
-      const b = otherUTC ? other._t - other._offset * 60000 : other._t;
+      const a = isUTC ? this._p.t - this._p.offset * 60000 : this._p.t;
+      const b = otherUTC ? other._p.t - other._p.offset * 60000 : other._p.t;
       return a - b || 0;
     }
 
     switch (code) {
       case DATE:
       case DAY: {
-        const a = isUTC ? this._t - this._offset * 60000 : this._t;
-        const b = otherUTC ? other._t - other._offset * 60000 : other._t;
+        const a = isUTC ? this._p.t - this._p.offset * 60000 : this._p.t;
+        const b = otherUTC ? other._p.t - other._p.offset * 60000 : other._p.t;
         if (isUTC && otherUTC) {
           if (float) {
             return (a - b) / 86400000;
@@ -2187,8 +2110,8 @@ export class Moment {
       case HOUR:
       case MINUTE:
       case SECOND: {
-        const a = isUTC ? this._t - this._offset * 60000 : this._t;
-        const b = otherUTC ? other._t - other._offset * 60000 : other._t;
+        const a = isUTC ? this._p.t - this._p.offset * 60000 : this._p.t;
+        const b = otherUTC ? other._p.t - other._p.offset * 60000 : other._p.t;
         const r = (a - b) / TIME_UNIT_MS[code];
         if (float) {
           return r;
@@ -2197,8 +2120,8 @@ export class Moment {
         return t || 0;
       }
       case MILLISECOND: {
-        const a = isUTC ? this._t - this._offset * 60000 : this._t;
-        const b = otherUTC ? other._t - other._offset * 60000 : other._t;
+        const a = isUTC ? this._p.t - this._p.offset * 60000 : this._p.t;
+        const b = otherUTC ? other._p.t - other._p.offset * 60000 : other._p.t;
         const diffMs = a - b || 0;
         if (float) {
           return diffMs;
@@ -2207,8 +2130,8 @@ export class Moment {
         return t || 0;
       }
       case WEEK: {
-        const a = isUTC ? this._t - this._offset * 60000 : this._t;
-        const b = otherUTC ? other._t - other._offset * 60000 : other._t;
+        const a = isUTC ? this._p.t - this._p.offset * 60000 : this._p.t;
+        const b = otherUTC ? other._p.t - other._p.offset * 60000 : other._p.t;
         if (isUTC && otherUTC) {
           const days = Math.floor(a / 86400000) - Math.floor(b / 86400000);
           const r = days / 7;
@@ -2227,17 +2150,17 @@ export class Moment {
         this._ensureFields();
         other._ensureFields();
 
-        const aDay = this.$D;
-        const bDay = other.$D;
+        const aDay = this._p.D;
+        const bDay = other._p.D;
         const swap = aDay < bDay;
         const a = swap ? other : this;
         const b = swap ? this : other;
 
-        const aYear = a.$y;
-        const aMonth = a.$M;
-        const aDayOf = a.$D;
-        const bYear = b.$y;
-        const bMonth = b.$M;
+        const aYear = a._p.y;
+        const aMonth = a._p.M;
+        const aDayOf = a._p.D;
+        const bYear = b._p.y;
+        const bMonth = b._p.M;
 
         const wholeMonthDiff = (bYear - aYear) * 12 + (bMonth - aMonth);
 
@@ -2245,11 +2168,11 @@ export class Moment {
           aYear,
           aMonth,
           aDayOf,
-          a.$H,
-          a.$m,
-          a.$s,
-          a.$ms,
-          a._isUTC,
+          a._p.H,
+          a._p.m,
+          a._p.s,
+          a._p.ms,
+          a._p.isUTC,
           wholeMonthDiff,
         );
         if (!float) {
@@ -2257,7 +2180,7 @@ export class Moment {
           if (swap) {
             wholeMonths = -wholeMonths;
           }
-          const bEpoch = b._isUTC ? b._t - b._offset * 60000 : b._t;
+          const bEpoch = b._p.isUTC ? b._p.t - b._p.offset * 60000 : b._p.t;
           const delta = swap ? anchorVal - bEpoch : bEpoch - anchorVal;
           if (wholeMonths > 0) {
             if (delta > 0) {
@@ -2275,7 +2198,7 @@ export class Moment {
           return Object.is(scaled, -0) ? 0 : scaled;
         }
 
-        const bEpoch = b._isUTC ? b._t - b._offset * 60000 : b._t;
+        const bEpoch = b._p.isUTC ? b._p.t - b._p.offset * 60000 : b._p.t;
         const sub = bEpoch - anchorVal;
 
         let adjust: number;
@@ -2287,11 +2210,11 @@ export class Moment {
                 aYear,
                 aMonth,
                 aDayOf,
-                a.$H,
-                a.$m,
-                a.$s,
-                a.$ms,
-                a._isUTC,
+                a._p.H,
+                a._p.m,
+                a._p.s,
+                a._p.ms,
+                a._p.isUTC,
                 wholeMonthDiff - 1,
               ));
         } else {
@@ -2301,11 +2224,11 @@ export class Moment {
               aYear,
               aMonth,
               aDayOf,
-              a.$H,
-              a.$m,
-              a.$s,
-              a.$ms,
-              a._isUTC,
+              a._p.H,
+              a._p.m,
+              a._p.s,
+              a._p.ms,
+              a._p.isUTC,
               wholeMonthDiff + 1,
             ) -
               anchorVal);
@@ -2324,8 +2247,8 @@ export class Moment {
         return result || 0;
       }
       default: {
-        const a = isUTC ? this._t - this._offset * 60000 : this._t;
-        const b = otherUTC ? other._t - other._offset * 60000 : other._t;
+        const a = isUTC ? this._p.t - this._p.offset * 60000 : this._p.t;
+        const b = otherUTC ? other._p.t - other._p.offset * 60000 : other._p.t;
         return a - b || 0;
       }
     }
@@ -2335,10 +2258,10 @@ export class Moment {
     if (!this._isValid) {
       return NaN;
     }
-    if (this._isUTC) {
-      return this._t - this._offset * 60000;
+    if (this._p.isUTC) {
+      return this._p.t - this._p.offset * 60000;
     }
-    return this._t;
+    return this._p.t;
   }
 
   unix(): number {
@@ -2363,16 +2286,16 @@ export class Moment {
     }
     if (keepOffset) {
       const d = this._getD();
-      const year = this._isUTC ? d.getUTCFullYear() : d.getFullYear();
-      const month = zeroFill((this._isUTC ? d.getUTCMonth() : d.getMonth()) + 1, 2);
-      const day = zeroFill(this._isUTC ? d.getUTCDate() : d.getDate(), 2);
-      const hour = zeroFill(this._isUTC ? d.getUTCHours() : d.getHours(), 2);
-      const min = zeroFill(this._isUTC ? d.getUTCMinutes() : d.getMinutes(), 2);
-      const sec = zeroFill(this._isUTC ? d.getUTCSeconds() : d.getSeconds(), 2);
-      const ms = zeroFill(this._isUTC ? d.getUTCMilliseconds() : d.getMilliseconds(), 3);
+      const year = this._p.isUTC ? d.getUTCFullYear() : d.getFullYear();
+      const month = zeroFill((this._p.isUTC ? d.getUTCMonth() : d.getMonth()) + 1, 2);
+      const day = zeroFill(this._p.isUTC ? d.getUTCDate() : d.getDate(), 2);
+      const hour = zeroFill(this._p.isUTC ? d.getUTCHours() : d.getHours(), 2);
+      const min = zeroFill(this._p.isUTC ? d.getUTCMinutes() : d.getMinutes(), 2);
+      const sec = zeroFill(this._p.isUTC ? d.getUTCSeconds() : d.getSeconds(), 2);
+      const ms = zeroFill(this._p.isUTC ? d.getUTCMilliseconds() : d.getMilliseconds(), 3);
       let offset: number;
-      if (this._isUTC) {
-        offset = this._offset;
+      if (this._p.isUTC) {
+        offset = this._p.offset;
       } else {
         offset = -d.getTimezoneOffset();
       }
@@ -2387,7 +2310,7 @@ export class Moment {
       }
       return `${yearStr}-${month}-${day}T${hour}:${min}:${sec}.${ms}${offsetStr}`;
     }
-    const utcMs = this._isUTC ? this._t - this._offset * 60000 : this._t;
+    const utcMs = this._p.isUTC ? this._p.t - this._p.offset * 60000 : this._p.t;
     const utcDate = new Date(utcMs);
     const year = utcDate.getUTCFullYear();
     const month = zeroFill(utcDate.getUTCMonth() + 1, 2);
@@ -2430,23 +2353,23 @@ export class Moment {
       return NaN;
     }
     if (u === "millisecond") {
-      const a = this._isUTC ? this._t - this._offset * 60000 : this._t;
-      const b = other._isUTC ? other._t - other._offset * 60000 : other._t;
+      const a = this._p.isUTC ? this._p.t - this._p.offset * 60000 : this._p.t;
+      const b = other._p.isUTC ? other._p.t - other._p.offset * 60000 : other._p.t;
       return a - b;
     }
     if (u === "second") {
-      const a = this._isUTC ? this._t - this._offset * 60000 : this._t;
-      const b = other._isUTC ? other._t - other._offset * 60000 : other._t;
+      const a = this._p.isUTC ? this._p.t - this._p.offset * 60000 : this._p.t;
+      const b = other._p.isUTC ? other._p.t - other._p.offset * 60000 : other._p.t;
       return Math.floor(a / 1000) - Math.floor(b / 1000);
     }
     if (u === "minute") {
-      const a = this._isUTC ? this._t - this._offset * 60000 : this._t;
-      const b = other._isUTC ? other._t - other._offset * 60000 : other._t;
+      const a = this._p.isUTC ? this._p.t - this._p.offset * 60000 : this._p.t;
+      const b = other._p.isUTC ? other._p.t - other._p.offset * 60000 : other._p.t;
       return Math.floor(a / 60000) - Math.floor(b / 60000);
     }
     if (u === "hour") {
-      const a = this._isUTC ? this._t - this._offset * 60000 : this._t;
-      const b = other._isUTC ? other._t - other._offset * 60000 : other._t;
+      const a = this._p.isUTC ? this._p.t - this._p.offset * 60000 : this._p.t;
+      const b = other._p.isUTC ? other._p.t - other._p.offset * 60000 : other._p.t;
       return Math.floor(a / 3600000) - Math.floor(b / 3600000);
     }
     switch (u) {
@@ -2469,9 +2392,9 @@ export class Moment {
       case "day":
       case "date":
       default: {
-        if (this._isUTC && other._isUTC) {
-          const thisDays = Math.floor((this._t - this._offset * 60000) / 86400000);
-          const otherDays = Math.floor((other._t - other._offset * 60000) / 86400000);
+        if (this._p.isUTC && other._p.isUTC) {
+          const thisDays = Math.floor((this._p.t - this._p.offset * 60000) / 86400000);
+          const otherDays = Math.floor((other._p.t - other._p.offset * 60000) / 86400000);
           if (thisDays !== otherDays) {
             return thisDays - otherDays;
           }
@@ -2497,8 +2420,8 @@ export class Moment {
     if (unit) {
       return this._compareCalendarValues(other, unit) === 0;
     }
-    const a = this._isUTC ? this._t - this._offset * 60000 : this._t;
-    const b = other._isUTC ? other._t - other._offset * 60000 : other._t;
+    const a = this._p.isUTC ? this._p.t - this._p.offset * 60000 : this._p.t;
+    const b = other._p.isUTC ? other._p.t - other._p.offset * 60000 : other._p.t;
     return a === b;
   }
 
@@ -2526,8 +2449,8 @@ export class Moment {
     if (unit) {
       return this._compareCalendarValues(other, unit) < 0;
     }
-    const a = this._isUTC ? this._t - this._offset * 60000 : this._t;
-    const b = other._isUTC ? other._t - other._offset * 60000 : other._t;
+    const a = this._p.isUTC ? this._p.t - this._p.offset * 60000 : this._p.t;
+    const b = other._p.isUTC ? other._p.t - other._p.offset * 60000 : other._p.t;
     return a < b;
   }
 
@@ -2539,8 +2462,8 @@ export class Moment {
     if (unit) {
       return this._compareCalendarValues(other, unit) > 0;
     }
-    const a = this._isUTC ? this._t - this._offset * 60000 : this._t;
-    const b = other._isUTC ? other._t - other._offset * 60000 : other._t;
+    const a = this._p.isUTC ? this._p.t - this._p.offset * 60000 : this._p.t;
+    const b = other._p.isUTC ? other._p.t - other._p.offset * 60000 : other._p.t;
     return a > b;
   }
 
@@ -2560,7 +2483,7 @@ export class Moment {
 
   isLeapYear(): boolean {
     this._ensureFields();
-    return !this._isValid ? false : isLeapYear(this.$y);
+    return !this._isValid ? false : isLeapYear(this._p.y);
   }
 
   isDST(): boolean {
@@ -2798,7 +2721,7 @@ export class Moment {
       const candidate = parts.slice(0, j).join("-");
       if (hasLocale(candidate) || hasLiteLocale(candidate)) {
         this._l = candidate;
-        this._locale = undefined;
+        this._p.locale = undefined;
         return true;
       }
     }
@@ -2979,7 +2902,7 @@ function hasAnyValue(parsed: Record<string, unknown> | ParsedData): boolean {
 
 export function momentFromAnything(input: unknown, isUTC?: boolean): Moment {
   if (input instanceof Moment) {
-    if (isUTC && !input._isUTC) {
+    if (isUTC && !input._p.isUTC) {
       const m = new Moment(input);
       m.utc();
       return m;
