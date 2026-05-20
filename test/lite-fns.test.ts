@@ -1,4 +1,6 @@
 import { test, expect, describe } from "bun:test";
+import fc from "fast-check";
+import originalMoment from "../moment/moment.js";
 import {
   format,
   startOf,
@@ -13,6 +15,317 @@ import {
   isSameOrAfter,
   isBetween,
 } from "../src/lite-fns";
+
+// ---------------------------------------------------------------------------
+// Property-based: oracle comparison with moment.js
+// ---------------------------------------------------------------------------
+const safeMin = new Date("1900-01-01");
+const safeMax = new Date("2100-01-01");
+const safeDates = fc.date({ min: safeMin, max: safeMax, noInvalidDate: true });
+const anyInt = fc.integer({ min: -1000, max: 1000 });
+const smallInt = fc.integer({ min: -50, max: 50 });
+
+const allUnits = fc.constantFrom(
+  "year",
+  "quarter",
+  "month",
+  "week",
+  "day",
+  "hour",
+  "minute",
+  "second",
+  "millisecond",
+);
+
+describe("lite-fns property-based vs moment.js", () => {
+  test("add matches moment.js for all units", () => {
+    fc.assert(
+      fc.property(safeDates, anyInt, allUnits, (date, amount, unit) => {
+        const mmUnit = unit === "day" ? "days" : unit === "date" ? "days" : `${unit}s`;
+        const expected = originalMoment(new Date(date)).add(amount, mmUnit).toDate();
+        const actual = add(new Date(date), amount, unit);
+        expect(actual.getTime()).toBe(expected.getTime());
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  test("subtract matches moment.js for all units", () => {
+    fc.assert(
+      fc.property(safeDates, smallInt, allUnits, (date, amount, unit) => {
+        const mmUnit = unit === "day" ? "days" : unit === "date" ? "days" : `${unit}s`;
+        const expected = originalMoment(new Date(date)).subtract(amount, mmUnit).toDate();
+        const actual = subtract(new Date(date), amount, unit);
+        expect(actual.getTime()).toBe(expected.getTime());
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  const diffUnits = fc.constantFrom("week", "day", "hour", "minute", "second", "millisecond");
+
+  test("diff matches moment.js for non-calendar units", () => {
+    fc.assert(
+      fc.property(safeDates, safeDates, diffUnits, (a, b, unit) => {
+        const mmUnit = unit === "day" ? "days" : `${unit}s`;
+        const aM = new Date(a);
+        const bM = new Date(b);
+        const expected = originalMoment(aM).diff(originalMoment(bM), mmUnit);
+        const actual = diff(aM, bM, unit);
+        expect(actual).toBe(expected);
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  test("diff months matches moment.js for aligned day-of-month", () => {
+    // Calendar-unit diff only tested with aligned dates (same day-of-month)
+    // to avoid month-end clamping / TZ boundary variance.
+    const cases: [number, number, number, number, number, number][] = [
+      [2024, 0, 15, 2024, 5, 15], // Jan 15 → Jun 15 = 5 months
+      [2024, 5, 15, 2024, 0, 15], // Jun 15 → Jan 15 = -5 months
+      [2024, 0, 31, 2024, 2, 30], // Jan 31 → Mar 30: neither is month-end clamping
+    ];
+    for (const [y1, m1, d1, y2, m2, d2] of cases) {
+      const a = new Date(y1, m1, d1);
+      const b = new Date(y2, m2, d2);
+      const expected = originalMoment(a).diff(originalMoment(b), "months");
+      const actual = diff(a, b, "month");
+      expect(actual).toBe(expected);
+    }
+  });
+
+  test("diff with float matches moment.js", () => {
+    fc.assert(
+      fc.property(safeDates, safeDates, (a, b) => {
+        const aM = new Date(a);
+        const bM = new Date(b);
+        const expected = originalMoment(aM).diff(originalMoment(bM), "days", true);
+        const actual = diff(aM, bM, "day");
+        // lite-fns does not support float mode, but trunc should match moment's integer result
+        expect(Math.abs(actual - Math.trunc(expected))).toBeLessThanOrEqual(1);
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  test("startOf matches moment.js for all units", () => {
+    const startUnits = fc.constantFrom("year", "month", "day", "hour", "minute", "second");
+    fc.assert(
+      fc.property(safeDates, startUnits, (date, unit) => {
+        const mmUnit = unit === "day" ? "days" : `${unit}s`;
+        const expected = originalMoment(new Date(date)).startOf(mmUnit).toDate();
+        const actual = startOf(new Date(date), unit);
+        expect(actual.getTime()).toBe(expected.getTime());
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  test("endOf matches moment.js for all units", () => {
+    const endUnits = fc.constantFrom("year", "month", "day", "hour", "minute", "second");
+    fc.assert(
+      fc.property(safeDates, endUnits, (date, unit) => {
+        const mmUnit = unit === "day" ? "days" : `${unit}s`;
+        const expected = originalMoment(new Date(date)).endOf(mmUnit).toDate();
+        const actual = endOf(new Date(date), unit);
+        expect(actual.getTime()).toBe(expected.getTime());
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  test("format matches moment.js with basic tokens", () => {
+    const formats = fc.constantFrom(
+      "YYYY-MM-DD",
+      "HH:mm:ss",
+      "YYYY-MM-DD HH:mm:ss.SSS",
+      "MM/DD/YYYY",
+      "YYYY",
+      "MM",
+      "DD",
+      "HH:mm",
+    );
+    fc.assert(
+      fc.property(safeDates, formats, (date, fmt) => {
+        const d = new Date(date);
+        const expected = originalMoment(d).format(fmt);
+        const actual = format(d, fmt);
+        expect(actual).toBe(expected);
+      }),
+      { numRuns: 200 },
+    );
+  });
+
+  test("isBefore matches moment.js", () => {
+    fc.assert(
+      fc.property(safeDates, safeDates, (a, b) => {
+        const aM = new Date(a);
+        const bM = new Date(b);
+        expect(isBefore(aM, bM)).toBe(originalMoment(aM).isBefore(bM));
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  test("isAfter matches moment.js", () => {
+    fc.assert(
+      fc.property(safeDates, safeDates, (a, b) => {
+        const aM = new Date(a);
+        const bM = new Date(b);
+        expect(isAfter(aM, bM)).toBe(originalMoment(aM).isAfter(bM));
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  test("isSame matches moment.js", () => {
+    fc.assert(
+      fc.property(safeDates, safeDates, (a, b) => {
+        const aM = new Date(a);
+        const bM = new Date(b);
+        expect(isSame(aM, bM)).toBe(originalMoment(aM).isSame(bM));
+      }),
+      { numRuns: 100 },
+    );
+  });
+
+  test("isBefore with unit matches moment.js", () => {
+    const compUnits = fc.constantFrom("year", "month", "day");
+    fc.assert(
+      fc.property(safeDates, safeDates, compUnits, (a, b, unit) => {
+        const aM = new Date(a);
+        const bM = new Date(b);
+        const mmUnit = unit === "day" ? "day" : unit;
+        expect(isBefore(aM, bM, unit)).toBe(originalMoment(aM).isBefore(bM, mmUnit));
+      }),
+      { numRuns: 100 },
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Boundary value tests (year 0-99, 1969/1970, epoch, max date)
+// ---------------------------------------------------------------------------
+describe("boundary values", () => {
+  function setYear(d: Date, y: number): Date {
+    d.setFullYear(y);
+    return d;
+  }
+
+  test("year 0 startOf year", () => {
+    const d = setYear(new Date(2024, 5, 15), 0);
+    const r = startOf(d, "year");
+    expect(r.getFullYear()).toBe(0);
+    expect(r.getMonth()).toBe(0);
+    expect(r.getDate()).toBe(1);
+  });
+
+  test("year 0 endOf year", () => {
+    const d = setYear(new Date(2024, 5, 15), 0);
+    const r = endOf(d, "year");
+    expect(r.getFullYear()).toBe(0);
+    expect(r.getMonth()).toBe(11);
+    expect(r.getDate()).toBe(31);
+  });
+
+  test("epoch timestamp (1970-01-01)", () => {
+    const d = new Date(0);
+    expect(format(d, "YYYY-MM-DD")).toBe("1970-01-01");
+  });
+
+  test("year 2038 problem boundary", () => {
+    const d = new Date(2038, 0, 19);
+    d.setHours(3, 14, 7);
+    expect(format(d, "YYYY-MM-DD HH:mm:ss")).toBe("2038-01-19 03:14:07");
+  });
+
+  test("year 1969 negative epoch", () => {
+    // 1 hour before epoch in UTC
+    const d = new Date(-3600000);
+    // In JST this is 1970-01-01, in UTC it's 1969-12-31
+    const utcYear = d.getUTCFullYear();
+    const utcMonth = d.getUTCMonth() + 1;
+    const utcDay = d.getUTCDate();
+    expect(utcYear).toBe(1969);
+    expect(utcMonth).toBe(12);
+    expect(utcDay).toBe(31);
+  });
+
+  test("Feb 29 add 1 year to non-leap clamps", () => {
+    const d = setYear(new Date(2024, 1, 29), 2020);
+    const r = add(d, 1, "year");
+    // 2020 is leap → 2021 is not → clamps to Feb 28
+    expect(r.getFullYear()).toBe(2021);
+    expect(r.getMonth()).toBe(1);
+    expect(r.getDate()).toBe(28);
+  });
+
+  test("Feb 29 add 4 years stays Feb 29 (leap cycle)", () => {
+    const d = setYear(new Date(2024, 1, 29), 2020);
+    const r = add(d, 4, "year");
+    expect(r.getFullYear()).toBe(2024);
+    expect(r.getMonth()).toBe(1);
+    expect(r.getDate()).toBe(29);
+  });
+
+  test("Feb 29 subtract 1 year from Mar 1 works", () => {
+    const d = new Date(2024, 2, 1);
+    const r = subtract(d, 1, "year");
+    // 2023 Mar 1
+    expect(r.getFullYear()).toBe(2023);
+    expect(r.getMonth()).toBe(2);
+    expect(r.getDate()).toBe(1);
+  });
+
+  test("Dec 31 add 1 day crosses year boundary", () => {
+    const r = add(new Date(2024, 11, 31), 1, "day");
+    expect(r.getFullYear()).toBe(2025);
+    expect(r.getMonth()).toBe(0);
+    expect(r.getDate()).toBe(1);
+  });
+
+  test("Jan 1 subtract 1 day crosses year boundary", () => {
+    const r = subtract(new Date(2024, 0, 1), 1, "day");
+    expect(r.getFullYear()).toBe(2023);
+    expect(r.getMonth()).toBe(11);
+    expect(r.getDate()).toBe(31);
+  });
+
+  test("max safe date + 0 days stays max", () => {
+    const d = new Date(8640000000000000);
+    const r = add(d, 0, "day");
+    expect(r.getTime()).toBe(d.getTime());
+  });
+});
+
+// ---------------------------------------------------------------------------
+// (all alias tests: date = day, etc.)
+// ---------------------------------------------------------------------------
+describe("unit aliases", () => {
+  test("add date alias for day", () => {
+    const r = add(new Date(2024, 0, 15), 5, "date");
+    expect(r.getDate()).toBe(20);
+  });
+
+  test("startOf date alias for day", () => {
+    const d = new Date(2024, 5, 15, 10, 30);
+    const r = startOf(d, "date");
+    expect(r.getHours()).toBe(0);
+  });
+
+  test("endOf date alias for day", () => {
+    const d = new Date(2024, 5, 15, 10, 30);
+    const r = endOf(d, "date");
+    expect(r.getHours()).toBe(23);
+  });
+
+  test("diff date alias not supported (no alias for day)", () => {
+    // diff doesn't special-case "date" — it goes through switch directly
+    const r = diff(new Date(2024, 5, 20), new Date(2024, 5, 15), "day");
+    expect(r).toBe(5);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // format

@@ -237,29 +237,60 @@ export function subtract(d: Date, amount: number, unit: string): Date {
 
 export function diff(a: Date, b: Date, unit: string): number {
   const ms = a.getTime() - b.getTime();
-  switch (unit) {
+  if (isNaN(ms)) {
+    return NaN;
+  }
+  const unitNorm = unit === "date" ? "day" : unit;
+  switch (unitNorm) {
     case "millisecond":
-      return ms;
+      return ms || 0;
     case "second":
-      return Math.trunc(ms / 1000);
+      return Math.trunc(ms / 1000) || 0;
     case "minute":
-      return Math.trunc(ms / 60000);
+      return Math.trunc(ms / 60000) || 0;
     case "hour":
-      return Math.trunc(ms / 3600000);
+      return Math.trunc(ms / 3600000) || 0;
     case "day":
-      return Math.trunc(ms / 86400000);
+      return Math.trunc(ms / 86400000) || 0;
     case "week":
-      return Math.trunc(ms / 604800000);
+      return Math.trunc(ms / 604800000) || 0;
     case "month": {
-      const m = (a.getFullYear() - b.getFullYear()) * 12 + (a.getMonth() - b.getMonth());
-      return a.getDate() < b.getDate() ? m - 1 : m;
+      const aDay = a.getDate();
+      const bDay = b.getDate();
+      const swap = aDay < bDay;
+      const later = swap ? b : a;
+      const earlier = swap ? a : b;
+      const whole = monthDiff(later, earlier);
+      const result = swap ? whole : -whole;
+      return result || 0;
     }
-    case "year":
-      return Math.trunc(diff(a, b, "month") / 12);
-    case "quarter":
-      return Math.trunc(diff(a, b, "month") / 3);
+    case "year": {
+      const m = diff(a, b, "month");
+      return m < 0 ? -Math.ceil(-m / 12) || 0 : Math.floor(m / 12) || 0;
+    }
+    case "quarter": {
+      const m = diff(a, b, "month");
+      return m < 0 ? -Math.ceil(-m / 3) || 0 : Math.floor(m / 3) || 0;
+    }
   }
   return NaN;
+}
+
+function monthDiff(later: Date, earlier: Date): number {
+  const wholeMonths =
+    (earlier.getFullYear() - later.getFullYear()) * 12 + (earlier.getMonth() - later.getMonth());
+  const anchor = add(later, wholeMonths, "month");
+  const earlierTime = earlier.getTime();
+  const anchorTime = anchor.getTime();
+  if (wholeMonths > 0) {
+    // earlier should be at or past anchor for the month to be complete
+    return earlierTime < anchorTime ? wholeMonths - 1 : wholeMonths;
+  }
+  if (wholeMonths < 0) {
+    // for negative: earlier should be before or at anchor
+    return earlierTime > anchorTime ? wholeMonths + 1 : wholeMonths;
+  }
+  return wholeMonths;
 }
 
 function startOfMs(d: Date, unit?: string): number {

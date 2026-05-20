@@ -66,7 +66,9 @@ const PAD2 = [
 const TOKENS = ["YYYY", "SSS", "MM", "DD", "HH", "mm", "ss"] as const;
 
 function padYear(y: number): string {
-  return y < 10 ? `000${y}` : y < 100 ? `00${y}` : y < 1000 ? `0${y}` : String(y);
+  const abs = Math.abs(y);
+  const s = abs < 10 ? `000${abs}` : abs < 100 ? `00${abs}` : abs < 1000 ? `0${abs}` : String(abs);
+  return y < 0 ? `-${s}` : y > 9999 ? `+${s}` : s;
 }
 
 function pad3(n: number): string {
