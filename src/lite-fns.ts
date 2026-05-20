@@ -157,6 +157,16 @@ export function startOf(d: Date, unit: string): Date {
   return r;
 }
 
+function daysInMonth(y: number, m: number): number {
+  if (m === 1) {
+    return (y & 3) === 0 && (y % 100 !== 0 || (y & 15) === 0) ? 29 : 28;
+  }
+  if (m === 3 || m === 5 || m === 8 || m === 10) {
+    return 30;
+  }
+  return 31;
+}
+
 // copied from moment-lite.ts endOf() LOCAL path
 export function endOf(d: Date, unit: string): Date {
   const r = new Date(d);
@@ -166,11 +176,12 @@ export function endOf(d: Date, unit: string): Date {
       r.setFullYear(r.getFullYear(), 11, 31);
       r.setHours(23, 59, 59, 999);
       break;
-    case "month":
-      r.setFullYear(r.getFullYear(), r.getMonth(), 1);
-      r.setMonth(r.getMonth() + 1, 0);
+    case "month": {
+      const maxDay = daysInMonth(r.getFullYear(), r.getMonth());
+      r.setFullYear(r.getFullYear(), r.getMonth(), maxDay);
       r.setHours(23, 59, 59, 999);
       break;
+    }
     case "day":
       r.setHours(0, 0, 0, 0);
       r.setDate(r.getDate() + 1);
@@ -195,31 +206,8 @@ export function endOf(d: Date, unit: string): Date {
 export function add(d: Date, amount: number, unit: string): Date {
   const r = new Date(d);
   switch (unit) {
-    case "year": {
-      const raw = Number.isInteger(amount)
-        ? amount
-        : amount < 0
-          ? Math.round(-amount) * -1
-          : Math.round(amount);
-      const ny = r.getFullYear() + raw;
-      const m = r.getMonth();
-      let d_ = r.getDate();
-      if (d_ > 28) {
-        const md =
-          m === 1
-            ? ny % 4 === 0 && (ny % 100 !== 0 || ny % 400 === 0)
-              ? 29
-              : 28
-            : m === 3 || m === 5 || m === 8 || m === 10
-              ? 30
-              : 31;
-        if (d_ > md) {
-          d_ = md;
-        }
-      }
-      r.setFullYear(ny, m, d_);
-      break;
-    }
+    case "year":
+      return add(r, Math.round(amount * 12), "month");
     case "month": {
       const raw = Number.isInteger(amount)
         ? amount
