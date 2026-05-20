@@ -377,12 +377,7 @@ export function fnz(m: Moment): string {
     return z.abbr(m.valueOf());
   }
   if (m._isUTC) {
-    if (m._offset === 0) {
-      return "UTC";
-    }
-    const offset = m._offset;
-    const sign = offset >= 0 ? "+" : "-";
-    return `GMT${sign}${String(Math.floor(Math.abs(offset) / 60)).padStart(2, "0")}${String(Math.abs(offset) % 60).padStart(2, "0")}`;
+    return "UTC";
   }
   return "";
 }
@@ -393,7 +388,7 @@ export function fnzz(m: Moment): string {
   if (z) {
     return z.abbr(m.valueOf());
   }
-  if (m._isUTC && m._offset === 0) {
+  if (m._isUTC) {
     return "Coordinated Universal Time";
   }
   return "";

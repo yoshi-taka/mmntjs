@@ -296,14 +296,7 @@ export function zoneAbbrMoment(m: UtcMoment): string {
     );
   }
   if (m._isUTC) {
-    if (m._offset === 0) {
-      return "UTC";
-    }
-    const offset = m._offset;
-    const hours = Math.floor(Math.abs(offset) / 60);
-    const minutes = Math.abs(offset) % 60;
-    const sign = offset >= 0 ? "+" : "-";
-    return `GMT${sign}${String(hours).padStart(2, "0")}${String(minutes).padStart(2, "0")}`;
+    return "UTC";
   }
   return "";
 }
@@ -312,7 +305,7 @@ export function zoneNameMoment(m: UtcMoment): string {
   if ((m as unknown as Record<string, unknown>)._z) {
     return ((m as unknown as Record<string, unknown>)._z as { name: string }).name;
   }
-  if (m._isUTC && m._offset === 0) {
+  if (m._isUTC) {
     return "Coordinated Universal Time";
   }
   return "";
