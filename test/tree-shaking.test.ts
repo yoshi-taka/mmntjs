@@ -57,6 +57,12 @@ describe("tree-shaking", () => {
 
   test("sideEffects only lists side-effect subpaths in package.json", () => {
     expect(pkg.sideEffects).toEqual([
+      "./dist/index.js",
+      "./dist/index.cjs",
+      "./dist/lite.js",
+      "./dist/lite.cjs",
+      "./dist/full.js",
+      "./dist/full.cjs",
       "./dist/locale-auto/*.js",
       "./dist/locale-auto/*.cjs",
       "./dist/plugin/*.js",

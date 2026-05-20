@@ -1,6 +1,7 @@
 import { test, expect, describe, mock } from "bun:test";
 import { mkdtempSync, writeFileSync, rmSync, readFileSync, mkdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { scanMomentUsages } from "../src/bin/moment-usage";
 import { runReport } from "../src/bin/report";
 import { runStats } from "../src/bin/stats";
@@ -344,6 +345,40 @@ describe("runAudit", () => {
   });
 });
 
+describe("migrate --mode=alias", () => {
+  test("analyzes and sets up npm alias", () => {
+    const dir = tmpDir();
+    addFiles(dir, {
+      "package.json": JSON.stringify({
+        dependencies: { moment: "^2.29.0" },
+        devDependencies: { "@types/moment": "^2.29.0" },
+      }),
+      "src/index.ts": `import moment from "moment";\nmoment().format("YYYY");`,
+    });
+
+    const output: string[] = [];
+    const origLog = console.log;
+    console.log = (msg: unknown) => output.push(String(msg));
+
+    // Simulate: node mmntjs migrate --mode=alias <dir>
+    process.argv = ["node", "cli.ts", "migrate", "--mode=alias", dir];
+    const mod = require("../src/bin/cli");
+
+    console.log = origLog;
+
+    // Should have printed analysis
+    const joined = output.join("\n");
+    expect(joined).toMatch(/Found \d+ moment import/);
+
+    // package.json should have npm alias
+    const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf-8"));
+    expect(pkg.dependencies.moment).toBe("npm:mmntjs@^1.0.0");
+    expect(pkg.devDependencies["@types/moment"]).toBeUndefined();
+
+    rmSync(dir, { recursive: true, force: true });
+  });
+});
+
 describe("runInit", () => {
   test("modifies package.json to add moment alias", () => {
     const d = tmpDir();
@@ -395,7 +430,7 @@ describe("runInit", () => {
   });
 
   test("exits with error when no package.json", () => {
-    const d = tmpDir();
+    const d = mkdtempSync(join(tmpdir(), "mmntjs-test-"));
     const origExit = process.exit;
     const exitMock = mock((code?: number) => {
       throw new Error(`process.exit(${code})`);

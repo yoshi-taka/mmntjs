@@ -62,6 +62,12 @@
     "mmntjs": "./dist/bin/cli.cjs"
   },
   "sideEffects": [
+    "./dist/index.js",
+    "./dist/index.cjs",
+    "./dist/lite.js",
+    "./dist/lite.cjs",
+    "./dist/full.js",
+    "./dist/full.cjs",
     "./dist/locale-auto/*.js",
     "./dist/locale-auto/*.cjs",
     "./dist/plugin/*.js",

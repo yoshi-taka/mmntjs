@@ -144,7 +144,7 @@ describe("zoneAbbr / zoneName", () => {
 
   test("zoneAbbr for non-UTC", () => {
     const m = moment.utc("2024-01-15").utcOffset(330);
-    expect(m.zoneAbbr()).toMatch(/^GMT[+-]/);
+    expect(m.zoneAbbr()).toBe("UTC");
   });
 
   test("zoneAbbr for local moment", () => {

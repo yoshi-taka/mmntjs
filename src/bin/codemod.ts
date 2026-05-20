@@ -249,6 +249,10 @@ export function runCheck(dir = ".", showFns = false) {
   if (results.tzFiles.length > 0) {
     console.log(`    → timezone files:        plus 'mmntjs-timezone' side-effect import`);
   }
+  console.log();
+  console.log("💡 Recommended next steps:");
+  console.log("   git checkout -b migrate-mmntjs");
+  console.log("   Run your test suite to verify the current state.");
 }
 
 const IMPORT_TARGETS: Record<string, string> = {

@@ -195,6 +195,12 @@ describe("bundle smoke: package.json contract", () => {
   test("sideEffects only lists side-effect entries", async () => {
     const pkg = await import("../package.json");
     expect(pkg.default.sideEffects).toEqual([
+      "./dist/index.js",
+      "./dist/index.cjs",
+      "./dist/lite.js",
+      "./dist/lite.cjs",
+      "./dist/full.js",
+      "./dist/full.cjs",
       "./dist/locale-auto/*.js",
       "./dist/locale-auto/*.cjs",
       "./dist/plugin/*.js",

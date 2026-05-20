@@ -47,7 +47,7 @@ function statusClass(status: string): string {
 
     <div class="hero-code-card" aria-label="Installation and usage examples">
       <div class="code-step">
-        <p class="eyebrow">Recommended — lite (42KB, moment-compatible)</p>
+        <p class="eyebrow">Recommended — lite (44KB, moment-compatible)</p>
         <CodeBlock code={`import moment from "mmntjs/lite";
 
 moment()
@@ -68,7 +68,7 @@ format(
 );`} lang="js" />
       </div>
       <div class="code-step">
-        <p class="eyebrow">Full — moment.js compat (141KB)</p>
+        <p class="eyebrow">Full — moment.js compat (150KB)</p>
         <CodeBlock code={`import moment from "mmntjs";
 
 moment
@@ -77,8 +77,12 @@ moment
       </div>
       <div class="code-step">
         <p class="eyebrow">Migration tool</p>
-        <CodeBlock code={`mmntjs migrate --check   # analyze usage
-mmntjs migrate --apply   # auto-choose best target
+        <CodeBlock code={`mmntjs migrate --check         # analyze usage
+
+mmntjs migrate --mode=alias   # npm alias, zero code change
+
+mmntjs migrate --apply        # auto-choose best target
+
 mmntjs migrate --apply --fns  # force lite/fns`} lang="sh" />
       </div>
     </div>
@@ -101,7 +105,7 @@ mmntjs migrate --apply --fns  # force lite/fns`} lang="sh" />
         Evaluate mmntjs in one module, run the tests you already trust, and expand only after
         checking compatibility-sensitive behavior.
       </p>
-      <CodeBlock code={`# recommended: lite (42KB, moment-compatible)
+      <CodeBlock code={`# recommended: lite (44KB, moment-compatible)
 npm install mmntjs
 import moment from "mmntjs/lite";
 
@@ -115,7 +119,7 @@ import {
   add,
 } from "mmntjs/lite/fns";
 
-# or full compat (141KB) for migration
+# or full compat (150KB) for migration
 import moment from "mmntjs";
 
 moment

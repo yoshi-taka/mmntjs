@@ -6,17 +6,17 @@ import { githubUrl } from "../../content/site";
 const keyTakeaways = [
   ["Main point", "The default `mmntjs` entry is not trying to win the smallest-core contest."],
   ["What it does win", "Locales and timezone data are separate, so apps do not pay for them unless they import them."],
-  ["Lite entry", "`mmntjs/lite` (42KB) exists for browser-sensitive paths that want method chaining without the full compat surface."],
+  ["Lite entry", "`mmntjs/lite` (44KB raw bundled) exists for browser-sensitive paths that want method chaining without the full compat surface."],
   ["fns entry", "`mmntjs/lite/fns` offers standalone functions with a small base. Tree-shaking scales with what you import."],
   ["Timezone surprise", "The packaged IANA timezone data is smaller than many readers expect once compressed and packed."],
 ];
 
 const entryRows = [
   ["`mmntjs`", "150 KB", "`moment` (62.1 KB raw)", "larger than moment", "Full compat entry for migration. Not tree-shakeable."],
-  ["`mmntjs/lite`", "43 KB", "`moment` (62.1 KB raw)", "smaller than moment", "Recommended default. Method chaining, 30% smaller than moment.js."],
+  ["`mmntjs/lite`", "44 KB", "`moment` (62.1 KB raw)", "smaller than moment", "Recommended default. Method chaining, 30% smaller than moment.js."],
   ["`mmntjs/lite/fns`", "1 KB base", "`moment` (62.1 KB raw)", "dramatically smaller for basic usage", "Standalone functions (`format`, `add`, `diff`). Scales with imports."],
   ["`dist/locale/ja.js`", "4.8 KB", "`moment + locale/ja` (64.5 KB raw bundled)", "single locale stays separate", "Single locale remains a tiny pure-data module instead of pushing toward all-locales builds."],
-  ["`mmntjs-timezone`", "316 KB raw dist", "`moment-timezone` (773.1 KB raw bundled)", "compare as separate package", "Timezone data stays outside core and should be judged on its own."],
+  ["`mmntjs-timezone`", "449 KB raw bundled", "`moment-timezone` (773.1 KB raw bundled)", "smaller", "Full IANA data. Has sub-entries: `/logic` (166 KB), `/1970-2030` (231 KB)."],
 ];
 
 const whyItMatters = [
@@ -116,9 +116,9 @@ const sizeTechniques = [
     <article class="panel section">
       <p class="eyebrow">How To Read It</p>
       <ul>
-        <li>Use <code>mmntjs/lite</code> (42KB) as the default for most apps: moment-compatible API, method chaining.</li>
+        <li>Use <code>mmntjs/lite</code> (44KB raw bundled) as the default for most apps: moment-compatible API, method chaining.</li>
         <li>Use <code>mmntjs/lite/fns</code> when you prefer standalone functions and know your format tokens are basic. Base is small, scales with imports.</li>
-        <li>Use <code>mmntjs</code> (141KB) for full moment.js compatibility during migration.</li>
+        <li>Use <code>mmntjs</code> (150KB raw bundled) for full moment.js compatibility during migration.</li>
         <li>Read locale size separately from core size. A single locale module is cheap; an all-locales browser build is where moment tends to bloat.</li>
         <li>Read timezone size separately from core size. Apps that do not need named IANA zones should not pay for timezone data at all.</li>
       </ul>

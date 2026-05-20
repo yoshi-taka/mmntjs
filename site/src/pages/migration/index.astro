@@ -7,6 +7,7 @@ import { withBase } from "../../lib/urls";
 
 const cliCommands = [
   ["mmntjs migrate --check [dir]", "Analyzes API usage, detects moment-timezone imports, and suggests the best entry point (full, lite, or lite/fns)."],
+  ["mmntjs migrate --mode=alias [dir]", "Analyzes + sets npm alias in package.json (zero code change — safe first step)."],
   ["mmntjs migrate --apply [dir]", "Auto-rewrites imports: moment → mmntjs (<code>/lite</code>/<code>/lite/fns</code>) and moment-timezone → mmntjs + <code>import 'mmntjs/timezone'</code>."],
   ["mmntjs migrate --apply --fns [dir]", "Force rewrites to 'mmntjs/lite/fns' (standalone functions)."],
   ["mmntjs migrate --apply --dry [dir]", "Preview changes without writing files."],
@@ -104,10 +105,15 @@ moment.locale("ja", jaLocale);`;
       files, rewriting import paths, and generating a report to make rollout decisions visible.
     </p>
     <CodeBlock code={`# Scan first, then apply
-mmntjs migrate --check
-mmntjs migrate --apply --dry   # preview
-mmntjs migrate --apply         # apply
-mmntjs migrate --apply --fns   # switch to lite/fns`} lang="sh" />
+ mmntjs migrate --check              # analyze
+
+ mmntjs migrate --mode=alias         # npm alias (zero code change)
+
+ mmntjs migrate --apply --dry        # preview rewrite
+
+ mmntjs migrate --apply              # apply rewrite
+
+ mmntjs migrate --apply --fns        # switch to lite/fns`} lang="sh" />
     <div class="meta-list">
       {cliCommands.map(([cmd, desc]) => (
         <div class="meta-row">

@@ -71,12 +71,12 @@ moment.duration(2, "hours").humanize();
 
 | Import | gzip (bundled) | gzip (dist) | Description |
 |--------|--------------:|------------:|-------------|
-| `mmntjs` | **39 KB** | 54 KB | Full compatibility (default) — core + display + utc + locale registry + format-parse |
-| `mmntjs/lite` | **12 KB** | 16 KB | ISO-centric, size-first — core-lite + strict parsing, no locale registry, no display extras |
-| `mmntjs/full` | **39 KB** | 54 KB | Same as default — explicit alias |
-| `mmntjs/temporal` | **47 KB** | 37 KB | Temporal bridge — `toTemporal(m)` / `fromTemporal(t)` |
+| `mmntjs` | **39 KB** | 55 KB | Full compatibility (default) — core + display + utc + locale registry + format-parse |
+| `mmntjs/lite` | **12 KB** | 17 KB | ISO-centric, size-first — core-lite + strict parsing, no locale registry, no display extras |
+| `mmntjs/full` | **39 KB** | 55 KB | Same as default — explicit alias |
+| `mmntjs/temporal` | **47 KB** | 94 KB | Temporal bridge — `toTemporal(m)` / `fromTemporal(t)` |
 | `mmntjs/plugin/*` | — | +separate | Optional plugins (utc, format-parse) — self-contained, add features to lite |
-| `mmntjs/locale/*` | — | +1-8 KB | Individual locales (136 total) — tree-shakeable, each <2 KB gzip |
+| `mmntjs/locale/*` | — | +1-5 KB | Individual locales (136 total) — tree-shakeable, each <2 KB gzip |
 | `mmntjs-timezone` | **75 KB** | — | Separate package — full IANA timezone data + `installTimezone(moment)` |
 
 > **bundled**: measured from source with `Bun.build({minify:true, target:"browser"})` — represents what consumer bundlers produce.
@@ -124,7 +124,7 @@ moment.locale("ja", jaLocale);
 - **Temporal is opt-in**: `mmntjs/temporal` is the only entry that exports `toTemporal`/`fromTemporal`. Neither `lite` nor `default` pulls `@js-temporal/polyfill`.
 - **Locales are tree-shakeable**: Each locale is a standalone module. Importing `mmntjs/locale/ja` gives you pure locale data; importing `mmntjs/locale-auto/ja` auto-registers that locale for migration convenience.
 - **CLI is separate**: The `mmntjs` CLI binary uses `dist/bin/cli.js`; none of the library entry points contain CLI code.
-- **Side effects**: `package.json` marks only `plugin/*` and `locale-auto/*` as side-effectful. Core entries and `locale/*` remain tree-shakeable.
+- **Side effects**: Core entry initialization (`moment()` setup) always runs on import. `plugin/*` and `locale-auto/*` submodules are marked as side-effectful for bundler safety. `locale/*` export pure data and are fully tree-shakeable.
 
 ### Platform Support
 
@@ -172,10 +172,10 @@ TypeScript types included — `import moment from "moment"` resolves to mmntjs's
 
 ### 2. Modular & Smaller Than moment.js
 
-| Entry | gzip | vs moment.js |
-|-------|-----:|--------------|
-| `mmntjs` (full) | ~55 KB | vs 77 KB (moment-with-locales.min.js) |
-| `mmntjs/lite` | **15.6 KB** | vs 18.9 KB (moment.min.js) |
+| Entry | gzip (bundled) | vs moment.js |
+|-------|---------------:|--------------|
+| `mmntjs` (full) | **39 KB** | vs 20.5 KB (moment from source) |
+| `mmntjs/lite` | **12 KB** | vs 20.5 KB (moment from source) |
 
 `lite` drops locale registry, Temporal bridge, custom format parse, and marginal APIs — add them back via plugins only when needed.
 
