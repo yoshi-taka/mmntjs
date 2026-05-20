@@ -684,3 +684,243 @@ describe("MomentLite equivalence", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Additional coverage: plural aliases, toIsoString, weekday, utc/local/utcOffset, object syntax
+// ---------------------------------------------------------------------------
+describe("MomentLite plural aliases", () => {
+  test("years alias", () => {
+    const m = moment("2024-06-15");
+    expect(m.years()).toBe(2024);
+    m.years(2025);
+    expect(m.year()).toBe(2025);
+  });
+
+  test("months alias", () => {
+    const m = moment("2024-06-15");
+    expect(m.months()).toBe(5);
+    m.months(0);
+    expect(m.month()).toBe(0);
+  });
+
+  test("dates alias", () => {
+    const m = moment("2024-06-15");
+    expect(m.dates()).toBe(15);
+    m.dates(20);
+    expect(m.date()).toBe(20);
+  });
+
+  test("days alias", () => {
+    const m = moment("2024-06-15");
+    expect(typeof m.days()).toBe("number");
+  });
+
+  test("hours alias", () => {
+    const m = moment("2024-06-15T10:00:00");
+    expect(m.hours()).toBe(10);
+    m.hours(12);
+    expect(m.hour()).toBe(12);
+  });
+
+  test("minutes alias", () => {
+    const m = moment("2024-06-15T10:30:00");
+    expect(m.minutes()).toBe(30);
+    m.minutes(45);
+    expect(m.minute()).toBe(45);
+  });
+
+  test("seconds alias", () => {
+    const m = moment("2024-06-15T10:30:45");
+    expect(m.seconds()).toBe(45);
+    m.seconds(50);
+    expect(m.second()).toBe(50);
+  });
+
+  test("milliseconds alias", () => {
+    const m = moment("2024-06-15T10:30:45.123");
+    expect(m.milliseconds()).toBe(123);
+    m.milliseconds(456);
+    expect(m.millisecond()).toBe(456);
+  });
+
+  test("quarters alias", () => {
+    const m = moment("2024-06-15");
+    expect(m.quarters()).toBe(2);
+    m.quarters(4);
+    expect(m.quarter()).toBe(4);
+  });
+});
+
+describe("MomentLite toIsoString", () => {
+  test("toIsoString returns same as toISOString", () => {
+    const m = moment("2024-06-15T10:30:00");
+    expect(m.toIsoString()).toBe(m.toISOString());
+  });
+});
+
+describe("MomentLite weekday / utc / local / utcOffset", () => {
+  test("weekday getter returns 0-6", () => {
+    const m = moment("2024-06-15"); // Saturday
+    expect(m.weekday()).toBe(6);
+  });
+
+  test("weekday setter changes day of week", () => {
+    const m = moment("2024-06-15");
+    m.weekday(0); // Sunday
+    expect(m.weekday()).toBe(0);
+  });
+
+  test("utc() converts to UTC mode", () => {
+    const m = moment("2024-06-15T10:30:00");
+    m.utc();
+    expect(m.utcOffset()).toBe(0);
+  });
+
+  test("utc() with keepLocalTime", () => {
+    const m = moment("2024-06-15T10:30:00");
+    m.utc(true);
+    expect(m.utcOffset()).toBe(0);
+  });
+
+  test("local() converts back to local mode", () => {
+    const m = moment.utc("2024-06-15T10:30:00");
+    expect(m.utcOffset()).toBe(0);
+    m.local();
+    expect(m.utcOffset()).not.toBe(0);
+  });
+
+  test("local() with keepLocalTime", () => {
+    const m = moment.utc("2024-06-15T10:30:00");
+    m.local(true);
+    expect(typeof m.utcOffset()).toBe("number");
+  });
+
+  test("utcOffset getter", () => {
+    const m = moment("2024-06-15");
+    expect(typeof m.utcOffset()).toBe("number");
+  });
+
+  test("utcOffset setter with number", () => {
+    const m = moment("2024-06-15T10:00:00");
+    m.utcOffset(120);
+    expect(m.utcOffset()).toBe(120);
+  });
+
+  test("utcOffset setter with string", () => {
+    const m = moment("2024-06-15T10:00:00");
+    m.utcOffset("+05:30");
+    expect(m.utcOffset()).toBe(330);
+  });
+
+  test("utcOffset setter with invalid string returns unchanged", () => {
+    const m = moment("2024-06-15T10:00:00");
+    const prev = m.utcOffset();
+    m.utcOffset("invalid" as never);
+    expect(m.utcOffset()).toBe(prev);
+  });
+});
+
+describe("MomentLite add/subtract with object syntax", () => {
+  test("add object with days", () => {
+    const m = moment("2024-06-15");
+    m.add({ days: 5 });
+    expect(m.date()).toBe(20);
+  });
+
+  test("add object with months", () => {
+    const m = moment("2024-06-15");
+    m.add({ months: 2 });
+    expect(m.month()).toBe(7);
+  });
+
+  test("add object with multiple units", () => {
+    const m = moment("2024-06-15");
+    m.add({ days: 10, hours: 5 });
+    expect(m.date()).toBe(25);
+    expect(m.hour()).toBe(5);
+  });
+
+  test("subtract object with days", () => {
+    const m = moment("2024-06-15");
+    m.subtract({ days: 5 });
+    expect(m.date()).toBe(10);
+  });
+
+  test("duration-like object (has _milliseconds) add", () => {
+    const m = moment("2024-06-15");
+    m.add({ _milliseconds: 86400000 });
+    expect(m.date()).toBe(16);
+  });
+});
+
+describe("MomentLite set with additional properties", () => {
+  test("set quarter via object", () => {
+    const m = moment("2024-01-15");
+    m.set({ quarter: 3 });
+    expect(m.month()).toBe(6);
+  });
+
+  test("set weekday via object", () => {
+    const m = moment("2024-06-15");
+    m.set({ weekday: 0 });
+    expect(m.weekday()).toBe(0);
+  });
+
+  test("set isoWeek via object", () => {
+    const m = moment("2024-01-15");
+    m.set({ isoWeek: 10 });
+    expect(m.isoWeek()).toBe(10);
+  });
+
+  test("set dayOfYear via object", () => {
+    const m = moment("2024-01-15");
+    m.set({ dayOfYear: 100 });
+    expect(m.dayOfYear()).toBe(100);
+  });
+
+  test("set isoWeekYear via object", () => {
+    const m = moment("2024-01-15");
+    m.set({ isoWeekYear: 2025 });
+    expect(m.isoWeekYear()).toBe(2025);
+  });
+});
+
+describe("MomentLite get additional units", () => {
+  test("get isoWeekday", () => {
+    const m = moment("2024-06-15");
+    expect(m.get("isoWeekday")).toBe(6);
+  });
+
+  test("get isoWeekYear", () => {
+    const m = moment("2024-01-01");
+    expect(m.get("isoWeekYear")).toBeGreaterThan(0);
+  });
+});
+
+describe("MomentLite month with locale string", () => {
+  test("month setter with english month name", () => {
+    const m = moment("2024-06-15");
+    m.month("January");
+    expect(m.month()).toBe(0);
+  });
+
+  test("month setter with english month short name", () => {
+    const m = moment("2024-06-15");
+    m.month("Feb");
+    expect(m.month()).toBe(1);
+  });
+
+  test("month setter with unknown month name returns unchanged", () => {
+    const m = moment("2024-06-15");
+    m.month("notamonth");
+    expect(m.month()).toBe(5);
+  });
+});
+
+describe("MomentLite day setter with locale string", () => {
+  test("day setter with english day name", () => {
+    const m = moment("2024-06-15"); // Saturday
+    m.day("Sunday");
+    expect(m.day()).toBe(0);
+  });
+});
