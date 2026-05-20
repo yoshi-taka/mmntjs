@@ -760,14 +760,13 @@ export class Moment {
   }
 
   clone(): this {
-    this._ensureFields();
     const m = Object.create(Moment.prototype) as this;
     m._isAMomentObject = true;
     m._l = this._l;
     m._p = {
       t: this._p.t,
       d: undefined,
-      dirty: false,
+      dirty: this._p.dirty,
       isUTC: this._p.isUTC,
       offset: this._p.offset,
       locale: this._p.locale,
@@ -835,8 +834,8 @@ export class Moment {
     if (!this._isValid) {
       return NaN;
     }
-    const d = this._getDNoEnsure();
-    return this._p.isUTC ? d.getUTCFullYear() : d.getFullYear();
+    this._ensureFields();
+    return this._p.y;
   }
 
   month(): number;
@@ -896,8 +895,8 @@ export class Moment {
     if (!this._isValid) {
       return NaN;
     }
-    const d = this._getDNoEnsure();
-    return this._p.isUTC ? d.getUTCMonth() : d.getMonth();
+    this._ensureFields();
+    return this._p.M;
   }
 
   date(): number;
@@ -915,22 +914,23 @@ export class Moment {
         return this;
       }
       if (this._p.isUTC) {
-        this._getD().setUTCDate(num);
+        const dt = this._getD();
+        dt.setUTCDate(num);
+        this._p.t = dt.getTime();
       } else {
-        this._getD().setDate(num);
+        const dt = this._getD();
+        dt.setDate(num);
+        this._p.t = dt.getTime();
       }
-      this._p.D = this._p.isUTC ? this._getD().getUTCDate() : this._getD().getDate();
-      this._p.M = this._p.isUTC ? this._getD().getUTCMonth() : this._getD().getMonth();
-      this._p.W = _dayOfWeek(this._p.y, this._p.M, this._p.D);
-      this._p.t = this._getD().getTime();
+      this._refreshFields();
       this._updateOffset(true);
       return this;
     }
     if (!this._isValid) {
       return NaN;
     }
-    const _dd = this._getDNoEnsure();
-    return this._p.isUTC ? _dd.getUTCDate() : _dd.getDate();
+    this._ensureFields();
+    return this._p.D;
   }
 
   day(): number;
@@ -985,18 +985,16 @@ export class Moment {
       } else {
         dt.setDate(dt.getDate() + diff);
       }
-      this._p.D = this._p.isUTC ? dt.getUTCDate() : dt.getDate();
-      this._p.M = this._p.isUTC ? dt.getUTCMonth() : dt.getMonth();
-      this._p.W = _dayOfWeek(this._p.y, this._p.M, this._p.D);
       this._p.t = dt.getTime();
+      this._refreshFields();
       this._updateOffset(true);
       return this;
     }
     if (!this._isValid) {
       return NaN;
     }
-    const _dd = this._getDNoEnsure();
-    return this._p.isUTC ? _dd.getUTCDay() : _dd.getDay();
+    this._ensureFields();
+    return this._p.W;
   }
 
   weekday(): number;
@@ -1040,21 +1038,22 @@ export class Moment {
       if (isNaN(num)) {
         return this;
       }
+      const dt = this._getD();
       if (this._p.isUTC) {
-        this._getD().setUTCHours(num);
+        dt.setUTCHours(num);
       } else {
-        this._getD().setHours(num);
+        dt.setHours(num);
       }
-      this._p.H = this._p.isUTC ? this._getD().getUTCHours() : this._getD().getHours();
-      this._p.t = this._getD().getTime();
+      this._p.t = dt.getTime();
+      this._refreshFields();
       this._updateOffset(true);
       return this;
     }
     if (!this._isValid) {
       return NaN;
     }
-    const d = this._getDNoEnsure();
-    return this._p.isUTC ? d.getUTCHours() : d.getHours();
+    this._ensureFields();
+    return this._p.H;
   }
 
   minute(): number;
@@ -1068,21 +1067,22 @@ export class Moment {
       if (isNaN(num)) {
         return this;
       }
+      const dt = this._getD();
       if (this._p.isUTC) {
-        this._getD().setUTCMinutes(num);
+        dt.setUTCMinutes(num);
       } else {
-        this._getD().setMinutes(num);
+        dt.setMinutes(num);
       }
-      this._p.m = this._p.isUTC ? this._getD().getUTCMinutes() : this._getD().getMinutes();
-      this._p.t = this._getD().getTime();
+      this._p.t = dt.getTime();
+      this._refreshFields();
       this._updateOffset(true);
       return this;
     }
     if (!this._isValid) {
       return NaN;
     }
-    const d = this._getDNoEnsure();
-    return this._p.isUTC ? d.getUTCMinutes() : d.getMinutes();
+    this._ensureFields();
+    return this._p.m;
   }
 
   second(): number;
@@ -1096,21 +1096,22 @@ export class Moment {
       if (isNaN(num)) {
         return this;
       }
+      const dt = this._getD();
       if (this._p.isUTC) {
-        this._getD().setUTCSeconds(num);
+        dt.setUTCSeconds(num);
       } else {
-        this._getD().setSeconds(num);
+        dt.setSeconds(num);
       }
-      this._p.s = this._p.isUTC ? this._getD().getUTCSeconds() : this._getD().getSeconds();
-      this._p.t = this._getD().getTime();
+      this._p.t = dt.getTime();
+      this._refreshFields();
       this._updateOffset(true);
       return this;
     }
     if (!this._isValid) {
       return NaN;
     }
-    const d = this._getDNoEnsure();
-    return this._p.isUTC ? d.getUTCSeconds() : d.getSeconds();
+    this._ensureFields();
+    return this._p.s;
   }
 
   millisecond(): number;
@@ -1124,23 +1125,22 @@ export class Moment {
       if (isNaN(num)) {
         return this;
       }
+      const dt = this._getD();
       if (this._p.isUTC) {
-        this._getD().setUTCMilliseconds(num);
+        dt.setUTCMilliseconds(num);
       } else {
-        this._getD().setMilliseconds(num);
+        dt.setMilliseconds(num);
       }
-      this._p.ms = this._p.isUTC
-        ? this._getD().getUTCMilliseconds()
-        : this._getD().getMilliseconds();
-      this._p.t = this._getD().getTime();
+      this._p.t = dt.getTime();
+      this._refreshFields();
       this._updateOffset(true);
       return this;
     }
     if (!this._isValid) {
       return NaN;
     }
-    const d = this._getDNoEnsure();
-    return this._p.isUTC ? d.getUTCMilliseconds() : d.getMilliseconds();
+    this._ensureFields();
+    return this._p.ms;
   }
 
   get(unit: string): number;
@@ -1807,7 +1807,7 @@ export class Moment {
         this._p.m = 0;
         this._p.s = 0;
         this._p.ms = 0;
-        this._p.W = _dayOfWeek(this._p.y, 0, 1);
+        this._p.W = d.getDay();
         break;
       case MONTH:
         d.setDate(1);
@@ -1818,7 +1818,7 @@ export class Moment {
         this._p.m = 0;
         this._p.s = 0;
         this._p.ms = 0;
-        this._p.W = _dayOfWeek(this._p.y, this._p.M, 1);
+        this._p.W = d.getDay();
         break;
       case QUARTER:
       case WEEK:
@@ -1942,19 +1942,18 @@ export class Moment {
         this._p.m = 59;
         this._p.s = 59;
         this._p.ms = 999;
-        this._p.W = _dayOfWeek(this._p.y, 11, 31);
+        this._p.W = d.getDay();
         break;
       case MONTH: {
-        const _eomMaxDay = daysInMonthFast(this._p.y, this._p.M);
-        d.setFullYear(this._p.y, this._p.M, _eomMaxDay);
+        d.setMonth(this._p.M + 1, 0);
         d.setHours(23, 59, 59, 999);
         this._p.t = d.getTime();
-        this._p.D = _eomMaxDay;
+        this._p.D = d.getDate();
         this._p.H = 23;
         this._p.m = 59;
         this._p.s = 59;
         this._p.ms = 999;
-        this._p.W = _dayOfWeek(this._p.y, this._p.M, _eomMaxDay);
+        this._p.W = d.getDay();
         break;
       }
       case QUARTER:
@@ -1972,7 +1971,7 @@ export class Moment {
         this._p.m = d.getMinutes();
         this._p.s = d.getSeconds();
         this._p.ms = d.getMilliseconds();
-        this._p.W = _dayOfWeek(this._p.y, this._p.M, this._p.D);
+        this._p.W = d.getDay();
         this._p.t = d.getTime();
         break;
       case HOUR:
