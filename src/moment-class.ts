@@ -2097,7 +2097,7 @@ export class Moment {
     return utcOffsetMoment(_cast<UtcMoment>(this), offset, keepLocalTime) as number | this;
   }
 
-  format(format?: string): string {
+  format(format?: string, locale?: string): string {
     if (!format) {
       if (this._p.isUTC && this._p.offset === 0) {
         format = _defaultFormatUtc;
@@ -2105,11 +2105,16 @@ export class Moment {
         format = _defaultFormat;
       }
     }
-    const formatter = formatMomentCallback;
-    if (!formatter) {
-      throw new Error("mmntjs formatter is not initialized");
+    if (locale && locale !== this._l) {
+      const prevL = this._l;
+      this._l = locale;
+      this._p.locale = undefined;
+      const r = formatMomentCallback!(this as unknown as FormattableMoment, format);
+      this._l = prevL;
+      this._p.locale = undefined;
+      return r;
     }
-    return formatter(this as unknown as FormattableMoment, format);
+    return formatMomentCallback!(this as unknown as FormattableMoment, format);
   }
 
   fromNow(pref?: boolean): string {
@@ -2809,7 +2814,9 @@ export class Moment {
   }
 
   locale(locale?: string | string[] | false): string | this {
-    this._ensureFields();
+    if (this._p.dirty) {
+      this._ensureFields();
+    }
     return localeMethod(_cast<LocaleAwareMoment>(this), locale, getCurrentLocale) as string | this;
   }
 

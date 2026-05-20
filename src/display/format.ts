@@ -187,6 +187,67 @@ function ordinalSuffix(d: number): string {
   return r === 1 ? "st" : r === 2 ? "nd" : r === 3 ? "rd" : "th";
 }
 
+function localeMeridiem(loc: Record<string, unknown>, h: number): string {
+  const cfg = loc._config as Record<string, unknown> | undefined;
+  const fn = cfg?.meridiem as ((h: number, m: number, isLower: boolean) => string) | undefined;
+  return fn ? fn(h, 0, false) : h < 12 ? "AM" : "PM";
+}
+
+function formatPureToken(
+  m: FormattableMoment,
+  format: string,
+  loc: Record<string, unknown>,
+): string | undefined {
+  const raw = m as unknown as {
+    _isValid: boolean;
+    _p: {
+      y: number;
+      M: number;
+      D: number;
+      H: number;
+      m: number;
+      s: number;
+      ms: number;
+      dirty: boolean;
+    };
+  };
+  if (!raw._isValid) {
+    return undefined;
+  }
+  if (raw._p.dirty) {
+    (m as unknown as { _ensureFields: () => void })._ensureFields();
+  }
+  const p = raw._p;
+  if (p.y < 0 || p.y > 9999) {
+    return undefined;
+  }
+  switch (format) {
+    case "HH:mm":
+      return `${PAD2[p.H]}:${PAD2[p.m]}`;
+    case "HH:mm:ss":
+      return `${PAD2[p.H]}:${PAD2[p.m]}:${PAD2[p.s]}`;
+    case "HH:mm:ss.SSS":
+      return `${PAD2[p.H]}:${PAD2[p.m]}:${PAD2[p.s]}.${pad3(p.ms)}`;
+    case "h:mm A":
+      return `${fmt12H(p.H)}:${PAD2[p.m]} ${localeMeridiem(loc, p.H)}`;
+    case "h:mm:ss A":
+      return `${fmt12H(p.H)}:${PAD2[p.m]}:${PAD2[p.s]} ${localeMeridiem(loc, p.H)}`;
+    case "DD/MM/YYYY":
+      return `${PAD2[p.D]}/${PAD2[p.M + 1]}/${padYear(p.y)}`;
+    case "MM/DD/YYYY":
+      return `${PAD2[p.M + 1]}/${PAD2[p.D]}/${padYear(p.y)}`;
+    case "YYYY-MM-DD":
+      return `${padYear(p.y)}-${PAD2[p.M + 1]}-${PAD2[p.D]}`;
+    case "YYYY-MM-DD HH:mm":
+      return `${padYear(p.y)}-${PAD2[p.M + 1]}-${PAD2[p.D]} ${PAD2[p.H]}:${PAD2[p.m]}`;
+    case "YYYY-MM-DD HH:mm:ss":
+      return `${padYear(p.y)}-${PAD2[p.M + 1]}-${PAD2[p.D]} ${PAD2[p.H]}:${PAD2[p.m]}:${PAD2[p.s]}`;
+    case "YYYY-MM-DD HH:mm:ss.SSS":
+      return `${padYear(p.y)}-${PAD2[p.M + 1]}-${PAD2[p.D]} ${PAD2[p.H]}:${PAD2[p.m]}:${PAD2[p.s]}.${pad3(p.ms)}`;
+  }
+  return undefined;
+}
+
 function formatCommonEn(m: FormattableMoment, format: string): string | undefined {
   const raw = m as unknown as {
     _l: string;
@@ -290,6 +351,12 @@ export function formatMoment(m: FormattableMoment, format: string): string {
   }
 
   format = expandLocaleTokens(m, format);
+
+  const fast = formatPureToken(m, format, loc as unknown as Record<string, unknown>);
+  if (fast !== undefined) {
+    setCurrentLocale(undefined);
+    return localePostformat(loc, fast);
+  }
 
   const localeRenderCache = (loc._config as Record<string, unknown>)._localeRenderFns as
     | Record<string, RenderFn[]>
