@@ -242,14 +242,12 @@ export function moment(
         _nullInput: true,
       });
     }
-    const m = Object.create(MomentLite.prototype) as MomentLite;
-    m._isAMomentObject = true;
-    m._isUTC = false;
-    m._offset = 0;
-    m._t = nowFn();
-    m._isValid = true;
-    m._dirty = true;
-    return m;
+    return new MomentLite({
+      _t: nowFn(),
+      _isUTC: false,
+      _offset: 0,
+      _isValid: true,
+    });
   }
   if (isMoment(input)) {
     return (input as MomentLite).clone();
@@ -304,14 +302,12 @@ export function momentUTC(
     });
   }
   if (input === undefined) {
-    const m = Object.create(MomentLite.prototype) as MomentLite;
-    m._isAMomentObject = true;
-    m._isUTC = true;
-    m._offset = 0;
-    m._t = nowFn();
-    m._isValid = true;
-    m._dirty = true;
-    return m;
+    return new MomentLite({
+      _t: nowFn(),
+      _isUTC: true,
+      _offset: 0,
+      _isValid: true,
+    });
   }
   const m = moment(input, format, localeOrStrict, fourthArg);
   if (!m._isValid) {

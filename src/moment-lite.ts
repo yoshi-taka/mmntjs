@@ -215,29 +215,115 @@ function isDurationLike(input: unknown): input is {
 }
 
 export class MomentLite {
-  _d?: Date;
-  _t: number;
+  readonly #s = {
+    t: 0,
+    d: undefined as Date | undefined,
+    dirty: false,
+    isUTC: false,
+    offset: 0,
+    locale: undefined as Locale | undefined,
+    y: 0,
+    M: 0,
+    D: 0,
+    W: 0,
+    H: 0,
+    m: 0,
+    s: 0,
+    ms: 0,
+  };
+
+  get _t(): number {
+    return this.#s.t;
+  }
+  set _t(v: number) {
+    this.#s.t = v;
+  }
+  get _d(): Date | undefined {
+    return this.#s.d;
+  }
+  set _d(v: Date | undefined) {
+    this.#s.d = v;
+  }
+  get _dirty(): boolean {
+    return this.#s.dirty;
+  }
+  set _dirty(v: boolean) {
+    this.#s.dirty = v;
+  }
+  get _isUTC(): boolean {
+    return this.#s.isUTC;
+  }
+  set _isUTC(v: boolean) {
+    this.#s.isUTC = v;
+  }
+  get _offset(): number {
+    return this.#s.offset;
+  }
+  set _offset(v: number) {
+    this.#s.offset = v;
+  }
+  get _locale(): Locale | undefined {
+    return this.#s.locale;
+  }
+  set _locale(v: Locale | undefined) {
+    this.#s.locale = v;
+  }
+  get $y(): number {
+    return this.#s.y;
+  }
+  set $y(v: number) {
+    this.#s.y = v;
+  }
+  get $M(): number {
+    return this.#s.M;
+  }
+  set $M(v: number) {
+    this.#s.M = v;
+  }
+  get $D(): number {
+    return this.#s.D;
+  }
+  set $D(v: number) {
+    this.#s.D = v;
+  }
+  get $W(): number {
+    return this.#s.W;
+  }
+  set $W(v: number) {
+    this.#s.W = v;
+  }
+  get $H(): number {
+    return this.#s.H;
+  }
+  set $H(v: number) {
+    this.#s.H = v;
+  }
+  get $m(): number {
+    return this.#s.m;
+  }
+  set $m(v: number) {
+    this.#s.m = v;
+  }
+  get $s(): number {
+    return this.#s.s;
+  }
+  set $s(v: number) {
+    this.#s.s = v;
+  }
+  get $ms(): number {
+    return this.#s.ms;
+  }
+  set $ms(v: number) {
+    this.#s.ms = v;
+  }
+
   _isValid: boolean;
-  _isUTC: boolean;
-  _offset: number;
   _l: string | undefined;
   _isAMomentObject = true;
   _cold?: Record<string, unknown>;
   _i: unknown;
   _f: string | string[] | undefined;
   _strict?: boolean;
-  _dirty: boolean;
-
-  $y = 0;
-  $M = 0;
-  $D = 0;
-  $W = 0;
-  $H = 0;
-  $m = 0;
-  $s = 0;
-  $ms = 0;
-
-  private _locale: Locale | undefined;
 
   private static _epochDaysToYMD(z: number): [number, number, number] {
     z += 719468;
@@ -472,21 +558,16 @@ export class MomentLite {
 
   clone(): this {
     this._ensureFields();
-    const m = Object.create(MomentLite.prototype) as MomentLite;
-    m._isAMomentObject = true;
-    m._t = this._t;
-    m._d = undefined;
-    m._isValid = this._isValid;
-    m._isUTC = this._isUTC;
-    m._offset = this._offset;
-    m._l = this._l;
-    if (this._i !== undefined) {
-      m._i = this._i;
-    }
-    if (this._f !== undefined) {
-      m._f = this._f;
-    }
-    m._strict = this._strict;
+    const m = new MomentLite({
+      _t: this._t,
+      _isValid: this._isValid,
+      _isUTC: this._isUTC,
+      _offset: this._offset,
+      _l: this._l,
+      _i: this._i,
+      _f: this._f,
+      _strict: this._strict,
+    });
     if (this._cold) {
       m._cold = { ...this._cold };
     }

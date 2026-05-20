@@ -378,14 +378,12 @@ export function createMomentFactory(deps: FactoryDeps) {
           _nullInput: true,
         });
       }
-      const m = Object.create(Moment.prototype) as Moment;
-      m._isAMomentObject = true;
-      m._isUTC = false;
-      m._offset = 0;
-      m._t = deps.nowFn();
-      m._isValid = true;
-      m._dirty = true;
-      return m;
+      return new Moment({
+        _t: deps.nowFn(),
+        _isUTC: false,
+        _offset: 0,
+        _isValid: true,
+      });
     }
     if (isMoment(input)) {
       return (input as unknown as Moment).clone();

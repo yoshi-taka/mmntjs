@@ -353,11 +353,109 @@ function _cast<T>(m: Moment): T {
 export class Moment {
   static calendarFormat: ((m: Moment, now: Moment) => string) | undefined;
 
-  _d?: Date;
-  _t: number;
+  readonly #s = {
+    t: 0,
+    d: undefined as Date | undefined,
+    dirty: false,
+    isUTC: false,
+    offset: 0,
+    locale: undefined as Locale | undefined,
+    y: 0,
+    M: 0,
+    D: 0,
+    W: 0,
+    H: 0,
+    m: 0,
+    s: 0,
+    ms: 0,
+  };
+
+  get _t(): number {
+    return this.#s.t;
+  }
+  set _t(v: number) {
+    this.#s.t = v;
+  }
+  get _d(): Date | undefined {
+    return this.#s.d;
+  }
+  set _d(v: Date | undefined) {
+    this.#s.d = v;
+  }
+  get _dirty(): boolean {
+    return this.#s.dirty;
+  }
+  set _dirty(v: boolean) {
+    this.#s.dirty = v;
+  }
+  get _isUTC(): boolean {
+    return this.#s.isUTC;
+  }
+  set _isUTC(v: boolean) {
+    this.#s.isUTC = v;
+  }
+  get _offset(): number {
+    return this.#s.offset;
+  }
+  set _offset(v: number) {
+    this.#s.offset = v;
+  }
+  get _locale(): Locale | undefined {
+    return this.#s.locale;
+  }
+  set _locale(v: Locale | undefined) {
+    this.#s.locale = v;
+  }
+  get $y(): number {
+    return this.#s.y;
+  }
+  set $y(v: number) {
+    this.#s.y = v;
+  }
+  get $M(): number {
+    return this.#s.M;
+  }
+  set $M(v: number) {
+    this.#s.M = v;
+  }
+  get $D(): number {
+    return this.#s.D;
+  }
+  set $D(v: number) {
+    this.#s.D = v;
+  }
+  get $W(): number {
+    return this.#s.W;
+  }
+  set $W(v: number) {
+    this.#s.W = v;
+  }
+  get $H(): number {
+    return this.#s.H;
+  }
+  set $H(v: number) {
+    this.#s.H = v;
+  }
+  get $m(): number {
+    return this.#s.m;
+  }
+  set $m(v: number) {
+    this.#s.m = v;
+  }
+  get $s(): number {
+    return this.#s.s;
+  }
+  set $s(v: number) {
+    this.#s.s = v;
+  }
+  get $ms(): number {
+    return this.#s.ms;
+  }
+  set $ms(v: number) {
+    this.#s.ms = v;
+  }
+
   _isValid: boolean;
-  _isUTC: boolean;
-  _offset: number;
   _l: string | undefined;
   _isAMomentObject = true;
   _cold?: MomentCold;
@@ -382,19 +480,6 @@ export class Moment {
   declare _isParseZone: boolean | undefined;
   declare _userInvalidated: boolean | undefined;
   declare _tooBusyWith: string | undefined;
-
-  _locale: Locale | undefined;
-  _dirty: boolean;
-
-  // Decomposed Date cache (Day.js style)
-  $y = 0;
-  $M = 0;
-  $D = 0;
-  $W = 0;
-  $H = 0;
-  $m = 0;
-  $s = 0;
-  $ms = 0;
 
   static _epochDaysToYMD(z: number): [number, number, number] {
     z += 719468;
@@ -756,27 +841,16 @@ export class Moment {
 
   clone(): this {
     this._ensureFields();
-    const m = Object.create(Moment.prototype) as Moment;
-    m._isAMomentObject = true;
-    m._t = this._t;
-    m._d = undefined;
-    m._isValid = this._isValid;
-    m._isUTC = this._isUTC;
-    m._offset = this._offset;
-    m._l = this._l;
-    if (this._i !== undefined) {
-      m._i = this._i;
-    }
-    if (this._f !== undefined) {
-      m._f = this._f;
-    }
-    m._strict = this._strict;
-    if (this._cold) {
-      m._cold = { ...this._cold } as MomentCold;
-    }
-    if (this._locale) {
-      m._locale = this._locale;
-    }
+    const m = new Moment({
+      _t: this._t,
+      _isValid: this._isValid,
+      _isUTC: this._isUTC,
+      _offset: this._offset,
+      _l: this._l,
+      _i: this._i,
+      _f: this._f,
+      _strict: this._strict,
+    });
     m.$y = this.$y;
     m.$M = this.$M;
     m.$D = this.$D;
@@ -786,6 +860,12 @@ export class Moment {
     m.$s = this.$s;
     m.$ms = this.$ms;
     m._dirty = false;
+    if (this._cold) {
+      m._cold = { ...this._cold } as MomentCold;
+    }
+    if (this._locale) {
+      m._locale = this._locale;
+    }
     return m as this;
   }
 
@@ -2091,8 +2171,11 @@ export class Moment {
         const a = isUTC ? this._t - this._offset * 60000 : this._t;
         const b = otherUTC ? other._t - other._offset * 60000 : other._t;
         if (isUTC && otherUTC) {
+          if (float) {
+            return (a - b) / 86400000;
+          }
           const days = Math.floor(a / 86400000) - Math.floor(b / 86400000);
-          return float ? days : days || 0;
+          return days || 0;
         }
         const r = (a - b) / 86400000;
         if (float) {
@@ -2766,22 +2849,15 @@ export function createSimpleMoment(config: {
   _offset?: number;
   _isValid?: boolean;
 }): Moment {
-  const m = Object.create(Moment.prototype) as Moment;
-  m._isAMomentObject = true;
-  m._l = config._l ?? getCurrentLocale();
-  m._isUTC = config._isUTC ?? false;
-  m._offset = config._offset ?? 0;
-  m._t = config._t;
-  m._d = undefined;
-  m._isValid = config._isValid ?? !isNaN(config._t);
-  m._dirty = m._isValid;
-  if (config._i !== undefined) {
-    m._i = config._i;
-  }
-  if (config._f !== undefined) {
-    m._f = config._f;
-  }
-  return m;
+  return new Moment({
+    _t: config._t,
+    _i: config._i,
+    _f: config._f,
+    _l: config._l,
+    _isUTC: config._isUTC,
+    _offset: config._offset,
+    _isValid: config._isValid,
+  });
 }
 
 for (const key of coldFieldKeys) {
