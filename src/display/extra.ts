@@ -33,7 +33,7 @@ export function formatFrom(m: Moment, input: MomentInput, pref?: boolean): strin
     return localeInvalidDate(m._getLocale());
   }
   let other: Moment;
-  if (input === undefined || input === null) {
+  if (input === undefined) {
     other = new Moment({ _d: new Date(), _dClone: false });
   } else {
     other = momentFromAnything(input);
