@@ -62,6 +62,36 @@ describe("moment.utc()", () => {
   });
 });
 
+describe("moment.utc() — historical dates with non-integer timezone offsets", () => {
+  const TZS = ["Asia/Tokyo", "America/New_York", "Europe/London", "Australia/Sydney"];
+
+  function testHistorical(desc: string, input: string) {
+    for (const tz of TZS) {
+      test(`${desc} in ${tz}`, () => {
+        const origTz = process.env.TZ;
+        process.env.TZ = tz;
+        try {
+          const mm = moment.utc(input);
+          const om = originalMoment.utc(input);
+          expect(mm.valueOf()).toBe(om.valueOf());
+          expect(mm.format("YYYY-MM-DD HH:mm:ss.SSS")).toBe(om.format("YYYY-MM-DD HH:mm:ss.SSS"));
+          expect(mm.toISOString()).toBe(om.toISOString());
+        } finally {
+          process.env.TZ = origTz;
+        }
+      });
+    }
+  }
+
+  testHistorical("4-digit year-only", "1111");
+  testHistorical("4-digit year-only 0001", "0001");
+  testHistorical("ISO date with time", "1111-01-01T12:00:00");
+  testHistorical("ISO date+time with no offset", "0001-01-01T00:00:00");
+  testHistorical("ISO date only", "1111-01-01");
+  testHistorical("ISO year-month only", "1111-01");
+  testHistorical("pre-Tokyo-standardized date", "1887-12-31");
+});
+
 describe("utcOffset() getter", () => {
   test("local moment offset matches", () => {
     expect(moment().utcOffset()).toBe(originalMoment().utcOffset());
