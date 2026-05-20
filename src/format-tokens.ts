@@ -463,22 +463,22 @@ export function fnx(m: Moment): string {
 
 // S... (sub-second, 4-9 digits)
 export function fnS4(m: Moment): string {
-  return `${String(Ms(m))}0`;
+  return `${zeroFill(Ms(m), 3)}0`;
 }
 export function fnS5(m: Moment): string {
-  return `${String(Ms(m))}00`;
+  return `${zeroFill(Ms(m), 3)}00`;
 }
 export function fnS6(m: Moment): string {
-  return `${String(Ms(m))}000`;
+  return `${zeroFill(Ms(m), 3)}000`;
 }
 export function fnS7(m: Moment): string {
-  return `${String(Ms(m))}0000`;
+  return `${zeroFill(Ms(m), 3)}0000`;
 }
 export function fnS8(m: Moment): string {
-  return `${String(Ms(m))}00000`;
+  return `${zeroFill(Ms(m), 3)}00000`;
 }
 export function fnS9(m: Moment): string {
-  return `${String(Ms(m))}000000`;
+  return `${zeroFill(Ms(m), 3)}000000`;
 }
 
 // Lookup from token name to RenderFn

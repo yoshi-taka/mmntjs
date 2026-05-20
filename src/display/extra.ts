@@ -75,10 +75,11 @@ export function formatCalendar(m: Moment, ref?: MomentInput, opts?: object): str
   let formatOpts: Record<string, unknown> | undefined;
 
   if (opts !== undefined) {
-    reference = !ref ? new Moment({ _d: new Date(), _dClone: false }) : momentFromAnything(ref);
+    reference =
+      ref == null ? new Moment({ _d: new Date(), _dClone: false }) : momentFromAnything(ref);
     formatOpts = opts as Record<string, unknown>;
   } else if (ref !== undefined) {
-    if (!ref) {
+    if (ref == null) {
       reference = new Moment({ _d: new Date(), _dClone: false });
     } else if (isObject(ref) && isCalendarFormatObject(ref)) {
       formatOpts = ref;

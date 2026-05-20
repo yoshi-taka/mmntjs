@@ -93,7 +93,7 @@ function packBase60(n: number): string {
     for (let i = 0; i < 8 && f > 1e-10; i++) {
       f *= 60;
       const digit = Math.floor(f);
-      fracStr += String.fromCharCode(48 + digit);
+      fracStr += intToChar(digit);
       f -= digit;
     }
     return sign + whole + fracStr;

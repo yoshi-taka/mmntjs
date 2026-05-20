@@ -708,3 +708,83 @@ describe("Branch-targeted: month/day lattice", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// 13. Regression: compact time tokens (hHmm, hhmm)
+// ---------------------------------------------------------------------------
+
+describe("Branch-targeted: compact time tokens", () => {
+  test("hHmm 3-digit (1-digit hour)", () => {
+    const m2 = moment("123", "Hmm");
+    const mOrig = originalMoment("123", "Hmm");
+    expect(m2.isValid()).toBe(mOrig.isValid());
+    if (m2.isValid() && mOrig.isValid()) {
+      expect(m2.hour()).toBe(mOrig.hour());
+      expect(m2.minute()).toBe(mOrig.minute());
+    }
+  });
+  test("hHmm 4-digit (2-digit hour)", () => {
+    const m2 = moment("1234", "Hmm");
+    const mOrig = originalMoment("1234", "Hmm");
+    expect(m2.isValid()).toBe(mOrig.isValid());
+    if (m2.isValid() && mOrig.isValid()) {
+      expect(m2.hour()).toBe(mOrig.hour());
+      expect(m2.minute()).toBe(mOrig.minute());
+    }
+  });
+  test("hhmm 3-digit (2-digit hour + 1-digit minute)", () => {
+    const m2 = moment("123", "HHmm");
+    const mOrig = originalMoment("123", "HHmm");
+    expect(m2.isValid()).toBe(mOrig.isValid());
+    if (m2.isValid() && mOrig.isValid()) {
+      expect(m2.hour()).toBe(mOrig.hour());
+      expect(m2.minute()).toBe(mOrig.minute());
+    }
+  });
+  test("hhmm 4-digit (2-digit hour + 2-digit minute)", () => {
+    const m2 = moment("1234", "HHmm");
+    const mOrig = originalMoment("1234", "HHmm");
+    expect(m2.isValid()).toBe(mOrig.isValid());
+    if (m2.isValid() && mOrig.isValid()) {
+      expect(m2.hour()).toBe(mOrig.hour());
+      expect(m2.minute()).toBe(mOrig.minute());
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 14. Regression: sub-second zero-padding (SSSS-SSSSSSSSS)
+// ---------------------------------------------------------------------------
+
+describe("Branch-targeted: sub-second zero-padding", () => {
+  for (const ms of [5, 50, 123, 500]) {
+    for (const n of [4, 5, 6]) {
+      const fmt = "S".repeat(n);
+      test(`${fmt} ms=${ms}`, () => {
+        const d = new Date("2024-06-15T12:30:45.000Z");
+        const m2 = moment(d).millisecond(ms);
+        const mOrig = originalMoment(d).millisecond(ms);
+        expect(m2.format(fmt)).toBe(mOrig.format(fmt));
+      });
+    }
+  }
+});
+
+// ---------------------------------------------------------------------------
+// 15. Regression: formatCalendar(ref=0)
+// ---------------------------------------------------------------------------
+
+describe("Branch-targeted: formatCalendar(ref=0)", () => {
+  test("calendar with ref=0 uses epoch, not current date", () => {
+    const m2 = moment("2024-06-15");
+    const mOrig = originalMoment("2024-06-15");
+    // Both should produce the same output for ref=0
+    expect(m2.calendar(0)).toBe(mOrig.calendar(0));
+  });
+  test("calendar with ref=null uses current date", () => {
+    const m2 = moment("2024-06-15");
+    const mOrig = originalMoment("2024-06-15");
+    // If both run at the same time, results should match
+    expect(m2.calendar(null)).toBe(mOrig.calendar(null));
+  });
+});

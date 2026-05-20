@@ -1429,10 +1429,9 @@ function hhmm(ctx: ParseCtx): void {
     return;
   }
   const c0 = s.charCodeAt(i),
-    c1 = s.charCodeAt(i + 1);
-  const c2 = s.charCodeAt(i + 2),
-    c3 = s.charCodeAt(i + 3);
-  if (c0 < 48 || c0 > 57 || c1 < 48 || c1 > 57 || c2 < 48 || c2 > 57 || c3 < 48 || c3 > 57) {
+    c1 = s.charCodeAt(i + 1),
+    c2 = s.charCodeAt(i + 2);
+  if (c0 < 48 || c0 > 57 || c1 < 48 || c1 > 57 || c2 < 48 || c2 > 57) {
     ctx.failed = true;
     return;
   }
@@ -1442,9 +1441,18 @@ function hhmm(ctx: ParseCtx): void {
   }
   ctx.result.hour = hVal;
   ctx.result._parsedDateParts[3] = hVal;
-  ctx.result.minute = (c2 - 48) * 10 + (c3 - 48);
+  if (i + 3 < s.length) {
+    const c3 = s.charCodeAt(i + 3);
+    if (c3 >= 48 && c3 <= 57) {
+      ctx.result.minute = (c2 - 48) * 10 + (c3 - 48);
+      ctx.strIdx += 4;
+      ctx.result._parsedDateParts[4] = ctx.result.minute;
+      return;
+    }
+  }
+  ctx.result.minute = c2 - 48;
   ctx.result._parsedDateParts[4] = ctx.result.minute;
-  ctx.strIdx += 4;
+  ctx.strIdx += 3;
 }
 
 function hhmmss(ctx: ParseCtx): void {
@@ -1496,14 +1504,10 @@ function hHmm(ctx: ParseCtx): void {
     return;
   }
   ctx.result.hour =
-    digits === 3
-      ? (s.charCodeAt(i) - 48) * 100 + (s.charCodeAt(i + 1) - 48) * 10 + (s.charCodeAt(i + 2) - 48)
-      : (s.charCodeAt(i) - 48) * 1000 +
-        (s.charCodeAt(i + 1) - 48) * 100 +
-        (s.charCodeAt(i + 2) - 48) * 10 +
-        (s.charCodeAt(i + 3) - 48);
+    digits === 3 ? s.charCodeAt(i) - 48 : (s.charCodeAt(i) - 48) * 10 + (s.charCodeAt(i + 1) - 48);
   ctx.result._parsedDateParts[3] = ctx.result.hour;
-  ctx.result.minute = (s.charCodeAt(digits - 2) - 48) * 10 + (s.charCodeAt(digits - 1) - 48);
+  ctx.result.minute =
+    (s.charCodeAt(i + digits - 2) - 48) * 10 + (s.charCodeAt(i + digits - 1) - 48);
   ctx.result._parsedDateParts[4] = ctx.result.minute;
   ctx.strIdx = pos;
 }
@@ -3560,7 +3564,7 @@ function getLocaleWeekdaysShort(loc: ParseLocale): string[] {
       ((cfg.weekdaysShort as Record<string, unknown>).format as string[] | undefined) ?? [];
     names = [...new Set([...standalone, ...format])];
   } else {
-    return getLocaleWeekdaysShort(loc);
+    return [];
   }
   const lower = names.map((m: string) => m.toLowerCase());
   (loc as CachedParseLocale)._weekdaysShortCache = lower;
@@ -3595,7 +3599,7 @@ function getLocaleWeekdaysMin(loc: ParseLocale): string[] {
       ((cfg.weekdaysMin as Record<string, unknown>).format as string[] | undefined) ?? [];
     names = [...new Set([...standalone, ...format])];
   } else {
-    return getLocaleWeekdaysShort(loc);
+    return [];
   }
   const lower = names.map((m: string) => m.toLowerCase());
   (loc as CachedParseLocale)._weekdaysMinCache = lower;
