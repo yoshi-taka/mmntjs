@@ -106,6 +106,11 @@ export function escapeRegex(str: string): string {
   return str.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+export function parseTwoDigitYear(str: string): number {
+  const num = parseInt(str, 10);
+  return num > 68 ? 1900 + num : 2000 + num;
+}
+
 export class LruMap<K, V> {
   private readonly max: number;
   private readonly map: Map<K, V>;

@@ -5,6 +5,8 @@ import { liteLocalePreparse } from "./locale-lite";
 import type { ParsedData } from "./parse";
 export type { ParsedData };
 
+export { parseTwoDigitYear } from "./utils";
+
 /** @public */
 export let parseTwoDigitYearFn: ((input: string) => number) | undefined;
 let customFormatParsingEnabled = false;
@@ -474,9 +476,4 @@ function parseOffset(str: string, idx: number): { offset: number; next: number }
   }
   const mm = parseDigits(str, idx + 3, 2);
   return mm === null ? null : { offset: sign * (hh * 60 + mm), next: idx + 5 };
-}
-
-export function parseTwoDigitYear(str: string): number {
-  const num = parseInt(str, 10);
-  return num > 68 ? 1900 + num : 2000 + num;
 }

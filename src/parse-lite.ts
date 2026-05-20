@@ -4,6 +4,8 @@ import type { InternalParsedData } from "./types";
 import { localePreparse } from "./locale-runtime";
 import type { ParsedData } from "./parse";
 
+export { parseTwoDigitYear } from "./utils";
+
 /** @public */
 export let parseTwoDigitYearFn: ((input: string) => number) | undefined;
 let customFormatParsingEnabled = false;
@@ -656,9 +658,4 @@ export function parseObject(obj: Record<string, unknown>): InternalParsedData {
     }
   }
   return result;
-}
-
-export function parseTwoDigitYear(str: string): number {
-  const num = parseInt(str, 10);
-  return num > 68 ? 1900 + num : 2000 + num;
 }

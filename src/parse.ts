@@ -8,6 +8,8 @@ import {
   localeMonthsShort,
 } from "./locale-runtime";
 
+export { parseTwoDigitYear } from "./utils";
+
 // PGO: path counters — enabled only when PGO=1 env var is set
 const _PCOUNT: Record<string, number> = {};
 const _PGOActive = !!process.env.PGO;
@@ -3746,11 +3748,6 @@ export function parseObject(obj: Record<string, unknown>): InternalParsedData {
   }
 
   return result;
-}
-
-export function parseTwoDigitYear(str: string): number {
-  const num = parseInt(str, 10);
-  return num > 68 ? 1900 + num : 2000 + num;
 }
 
 /** @public */
