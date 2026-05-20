@@ -662,12 +662,16 @@ test('diff with DST boundaries', function (assert) {
     assert.equal(springAfter.diff(springBefore, 'days'), 0, 'spring-forward day diff = 0 (23h floor)');
     // calendar day check via isSame('day') uses year/month/date fields
     assert.equal(springAfter.isSame(springBefore, 'day'), false, 'spring-forward: not same calendar day');
+    // zoneDelta-corrected week diff: (23h-1h)/168h = 0.131 → floor = 0
+    assert.equal(springAfter.diff(springBefore, 'weeks'), 0, 'spring-forward week diff = 0 (23h floor)');
 
     // Simulate fall-back using offset manipulation
     var fallBefore = moment('2019-11-03T00:00:00').utcOffset(-4, true); // EDT
     var fallAfter = moment('2019-11-04T00:00:00').utcOffset(-5, true);  // EST
     assert.equal(fallAfter.diff(fallBefore, 'hours'), 25, 'fall-back = 25 hours');
     assert.equal(fallAfter.diff(fallBefore, 'days'), 1, 'fall-back day diff = 1 (25h floor = 1)');
+    // zoneDelta-corrected week diff: (25h+1h)/168h = 0.155 → floor = 0
+    assert.equal(fallAfter.diff(fallBefore, 'weeks'), 0, 'fall-back week diff = 0');
 
     // Real TZ-dependent DST detection (follows existing test pattern)
     var dst = dstForYear(moment().year());

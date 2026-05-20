@@ -460,6 +460,24 @@ describe("EP: diff('days') across timezones", () => {
       { numRuns: 50 },
     );
   });
+
+  test("diff('weeks') same across offsets", () => {
+    fc.assert(
+      fc.property(
+        fc.constantFrom(-720, -240, 0, 60, 420, 840),
+        fc.constantFrom(-480, -120, 120, 600),
+        (off1, off2) => {
+          const a = mOff(EPOCH, off1);
+          const b = mOff(EPOCH + 604800000 * 3, off2);
+          const oa = oOff(EPOCH, off1);
+          const ob = oOff(EPOCH + 604800000 * 3, off2);
+          expect(a.diff(b, "weeks")).toBe(oa.diff(ob, "weeks"));
+          expect(a.diff(b, "weeks")).toBe(-3);
+        },
+      ),
+      { numRuns: 50 },
+    );
+  });
 });
 
 // ============================================================
@@ -634,6 +652,7 @@ describe("EP: diff all major units across offsets", () => {
     "minutes",
     "hours",
     "days",
+    "weeks",
     "months",
     "years",
   ];
