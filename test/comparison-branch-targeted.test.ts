@@ -282,6 +282,27 @@ describe("isAfter family: invalid moments", () => {
     expect(v.isSameOrAfter(Infinity)).toBe(false);
     expect(v.isSameOrBefore(Infinity)).toBe(false);
   });
+
+  test("diff(null/Infinity) returns NaN (invalid)", () => {
+    const v = moment.utc("2024-06-15");
+    expect(v.diff(null)).toBe(NaN);
+    expect(v.diff(Infinity)).toBe(NaN);
+    expect(v.diff(-Infinity)).toBe(NaN);
+  });
+
+  test("max(null/Infinity) returns invalid moment (matches moment.js)", () => {
+    const v = moment.utc("2024-06-15");
+    expect(v.max(null).isValid()).toBe(false);
+    expect(v.max(Infinity).isValid()).toBe(false);
+    expect(v.max(-Infinity).isValid()).toBe(false);
+  });
+
+  test("min(null/Infinity) returns invalid moment (matches moment.js)", () => {
+    const v = moment.utc("2024-06-15");
+    expect(v.min(null).isValid()).toBe(false);
+    expect(v.min(Infinity).isValid()).toBe(false);
+    expect(v.min(-Infinity).isValid()).toBe(false);
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -2067,6 +2067,9 @@ export class Moment {
 
   diff(input: MomentInput, unit?: string, float?: boolean): number {
     const other = momentFromAnything(input);
+    if (!this._isValid || !other._isValid) {
+      return NaN;
+    }
     const isUTC = this._isUTC;
     const otherUTC = other._isUTC;
     const code = unit ? normalizeUnitCode(unit) : (INVALID_UNIT as -1);
