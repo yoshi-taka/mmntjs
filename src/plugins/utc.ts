@@ -100,7 +100,7 @@ export function registerUtcApi(target: UtcMomentTarget, deps: UtcApiDeps): void 
         if (!isNaN(utcDate.getTime())) {
           m._p.d = utcDate;
         } else {
-          m._p.d = new Date(absTime - m._p.d!.getTimezoneOffset() * 60000);
+          m._p.d = new Date(absTime);
         }
       } else if (m._cold !== undefined) {
         const origHour = m._cold._parsedDateParts?.[3];
@@ -109,7 +109,20 @@ export function registerUtcApi(target: UtcMomentTarget, deps: UtcApiDeps): void 
           const gap = d.getHours() - origHour;
           m._p.d = new Date(absTime - d.getTimezoneOffset() * 60000 - gap * 3600000);
         } else {
-          m._p.d = new Date(absTime - m._p.d!.getTimezoneOffset() * 60000);
+          const parts = m._cold._parsedDateParts;
+          if (parts && parts.length > 0) {
+            m._p.d = createUTCDate(
+              parts[0],
+              parts[1] ?? 0,
+              parts[2] ?? 1,
+              parts[3] ?? 0,
+              parts[4] ?? 0,
+              parts[5] ?? 0,
+              parts[6] ?? 0,
+            );
+          } else {
+            m._p.d = new Date(absTime);
+          }
         }
       } else {
         const utcDate = new Date(`${input} UTC`);
