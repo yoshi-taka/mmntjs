@@ -831,7 +831,7 @@ export class Moment {
       // Banach fixed point: already at target year → no-op
       if (num === this._p.y) { return this; }
       // D ≤ 28: no clamping possible (all months have 28+ days)
-      const d_ = this._p.D <= 28 ? this._p.D : Math.min(this._p.D, daysInMonth(num, this._p.M));
+      const d_ = this._p.D <= 28 ? this._p.D : Math.min(this._p.D, daysInMonthFast(num, this._p.M));
       if (this._p.isUTC) {
         // Fast path: years >= 100 use Date.UTC directly (avoids setUTCFullYear + intermediate Date)
         if (num >= 100) {
@@ -941,7 +941,7 @@ export class Moment {
         const y = this._p.y + Math.floor(num / 12);
         const _m = normalizeMonth(num);
         // D ≤ 28: no clamping possible (all months have 28+ days)
-        const d_ = date <= 28 ? date : Math.min(date, daysInMonth(y, _m));
+        const d_ = date <= 28 ? date : Math.min(date, daysInMonthFast(y, _m));
         const d = new Date(y, _m, d_, this._p.H, this._p.m, this._p.s, this._p.ms);
         this._p.d = d;
         this._p.y = d.getFullYear();
