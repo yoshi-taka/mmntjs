@@ -1,3 +1,14 @@
+export function lowerVariant(fmt: string): string {
+  return fmt
+    .replaceAll("MMMM", "MMM")
+    .replaceAll("dddd", "ddd")
+    .replaceAll("MM", "M")
+    .replaceAll("DD", "D")
+    .replaceAll("mm", "m")
+    .replaceAll("ss", "s")
+    .replaceAll("hh", "h");
+}
+
 export function zeroFill(num: number, targetLength: number): string {
   const sign = num < 0 ? "-" : "";
   const abs = Math.abs(num).toString();

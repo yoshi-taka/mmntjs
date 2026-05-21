@@ -1455,7 +1455,6 @@ export class Moment {
       p.dirty = true;
     } else {
       if (p.dirty) {
-        // First call or t was directly modified: use setDate (avoids _refreshFields cost)
         let dt = p.d;
         if (dt == null) {
           dt = new Date(p.t);

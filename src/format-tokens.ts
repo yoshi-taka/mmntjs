@@ -656,15 +656,4 @@ export function buildRenderFns(format: string): RenderFn[] {
 
 export const formatToken = tokenFnMap;
 
-export function lowerVariant(fmt: string): string {
-  return fmt
-    .replaceAll("MMMM", "MMM")
-    .replaceAll("dddd", "ddd")
-    .replaceAll("MM", "M")
-    .replaceAll("DD", "D")
-    .replaceAll("mm", "m")
-    .replaceAll("ss", "s")
-    .replaceAll("hh", "h");
-}
-
 setBuildRenderFns(buildRenderFns);

@@ -143,7 +143,7 @@
   "homepage": "https://github.com/yoshi-taka/mmntjs#readme",
   "license": "MIT",
   "devDependencies": {
-    "@date-fns/tz": "^1.4.1",
+    "@date-fns/tz": "^1.5.0",
     "@date-fns/utc": "^2.1.1",
     "@jazzer.js/core": "^4.0.0",
     "@rspack/cli": "^2.0.4",

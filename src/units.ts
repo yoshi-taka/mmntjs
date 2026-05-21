@@ -1,4 +1,4 @@
-import type { NormalizedUnit, UnitAlias, UnitCode } from "./types";
+import type { NormalizedUnit, UnitCode } from "./types";
 
 // -------------------------------------------------------------------------
 // HOT PATH — numeric unit codes (used in add/subtract/startOf/endOf loops)
@@ -26,104 +26,57 @@ export const ISO_WEEK_YEAR: UnitCode = 14 as const;
 export const DAY: UnitCode = 15 as const;
 export const INVALID_UNIT: UnitCode = -1 as const;
 
-// -------------------------------------------------------------------------
-// TYPED INTERNAL API — alias→normalized-unit lookup (allocation-free)
-// -------------------------------------------------------------------------
-const _aliases: Record<UnitAlias, NormalizedUnit> = {
-  Y: "year",
-  y: "year",
-  years: "year",
+/** @public */
+export const units: Record<string, string> = {
   year: "year",
-  M: "month",
-  months: "month",
   month: "month",
-  Mo: "month",
-  D: "date",
-  d: "day",
-  days: "day",
-  day: "day",
   date: "date",
-  dates: "date",
-  h: "hour",
-  hours: "hour",
+  day: "day",
   hour: "hour",
-  m: "minute",
-  minutes: "minute",
   minute: "minute",
-  s: "second",
-  seconds: "second",
   second: "second",
-  ms: "millisecond",
-  milliseconds: "millisecond",
   millisecond: "millisecond",
-  w: "week",
-  W: "isoWeek",
-  weeks: "week",
   week: "week",
   weekday: "weekday",
-  weekdays: "weekday",
-  e: "weekday",
-  isoWeek: "isoWeek",
-  isoWeeks: "isoWeek",
-  isoWeekday: "isoWeekday",
-  isoWeekdays: "isoWeekday",
-  E: "isoWeekday",
-  quarter: "quarter",
-  quarters: "quarter",
-  Q: "quarter",
   dayOfYear: "dayOfYear",
-  dayOfYears: "dayOfYear",
-  doy: "dayOfYear",
-  DDD: "dayOfYear",
-  gg: "weekYear",
+  quarter: "quarter",
+  isoWeek: "isoWeek",
+  isoWeekday: "isoWeekday",
   weekYear: "weekYear",
-  weekYears: "weekYear",
-  GG: "isoWeekYear",
   isoWeekYear: "isoWeekYear",
-  isoWeekYears: "isoWeekYear",
 };
 
-const _nmap: Record<string, NormalizedUnit | undefined> = {};
-for (const key of Object.keys(_aliases)) {
-  _nmap[key.toLowerCase()] = _aliases[key as UnitAlias];
-}
-
-/** @public */
-export const units: Record<string, string> = _aliases as unknown as Record<string, string>;
-
-// Idempotence: normalizeUnits(normalizeUnits(x)) ≡ normalizeUnits(x)
-//   because every NormalizedUnit is a key in _aliases mapping to itself.
-// Retraction: normalizeUnits maps UnitAlias → NormalizedUnit (the canonical representative).
 export function normalizeUnits(unit: string): NormalizedUnit | undefined {
-  return unit
-    ? ((_aliases as Record<string, NormalizedUnit | undefined>)[unit] ?? _nmap[unit.toLowerCase()])
-    : undefined;
+  if (!unit) {
+    return undefined;
+  }
+  const code = normalizeUnitCode(unit);
+  return code >= 0 ? (_codeToUnit[code] as NormalizedUnit | undefined) : undefined;
 }
 
-const _unitCodes: Record<NormalizedUnit, UnitCode> = {
-  year: YEAR,
-  month: MONTH,
-  date: DATE,
-  hour: HOUR,
-  minute: MINUTE,
-  second: SECOND,
-  millisecond: MILLISECOND,
-  week: WEEK,
-  weekday: WEEKDAY,
-  dayOfYear: DAY_OF_YEAR,
-  quarter: QUARTER,
-  isoWeek: ISO_WEEK,
-  isoWeekday: ISO_WEEKDAY,
-  weekYear: WEEK_YEAR,
-  isoWeekYear: ISO_WEEK_YEAR,
-  day: DAY,
-};
-
-const _codeAliases: Record<string, UnitCode | undefined> = {};
-for (const key of Object.keys(_aliases)) {
-  const code = _unitCodes[_aliases[key as UnitAlias]];
-  _codeAliases[key] = code;
-  _codeAliases[key.toLowerCase()] = code;
+const _codeToUnit: string[] = [];
+{
+  const map: Record<string, UnitCode> = {
+    year: YEAR,
+    month: MONTH,
+    date: DATE,
+    day: DAY,
+    hour: HOUR,
+    minute: MINUTE,
+    second: SECOND,
+    millisecond: MILLISECOND,
+    week: WEEK,
+    weekday: WEEKDAY,
+    dayOfYear: DAY_OF_YEAR,
+    quarter: QUARTER,
+    isoWeek: ISO_WEEK,
+    isoWeekday: ISO_WEEKDAY,
+    weekYear: WEEK_YEAR,
+    isoWeekYear: ISO_WEEK_YEAR,
+  };
+  for (const [name, code] of Object.entries(map)) {
+    _codeToUnit[code] = name;
+  }
 }
 
 export function normalizeUnitCode(unit: string): UnitCode {
@@ -134,79 +87,103 @@ export function normalizeUnitCode(unit: string): UnitCode {
     switch (unit.charCodeAt(0)) {
       case 89:
       case 121:
-        return YEAR; // Y / y
+        return YEAR;
       case 77:
-        return MONTH; // M
+        return MONTH;
       case 68:
-        return DATE; // D
+        return DATE;
       case 100:
-        return DAY; // d
+        return DAY;
       case 72:
       case 104:
-        return HOUR; // H / h
+        return HOUR;
       case 109:
-        return MINUTE; // m
+        return MINUTE;
       case 115:
       case 83:
-        return SECOND; // S / s
+        return SECOND;
       case 119:
-        return WEEK; // w
+        return WEEK;
       case 87:
-        return ISO_WEEK; // W
+        return ISO_WEEK;
       case 69:
-        return ISO_WEEKDAY; // E
+        return ISO_WEEKDAY;
       case 101:
-        return WEEKDAY; // e
+        return WEEKDAY;
       case 81:
-        return QUARTER; // Q
+        return QUARTER;
     }
     return INVALID_UNIT;
   }
-  if (unit.length === 2 && unit === "ms") {
-    return MILLISECOND;
-  }
-  if (unit.length <= 5) {
-    switch (unit) {
-      case "day":
-      case "days":
-        return DAY;
-      case "date":
-      case "dates":
-        return DATE;
-      case "month":
-      case "months":
-        return MONTH;
-      case "year":
-      case "years":
-        return YEAR;
-      case "hour":
-      case "hours":
-        return HOUR;
-      case "minute":
-      case "minutes":
-        return MINUTE;
-      case "second":
-      case "seconds":
-        return SECOND;
-      case "millisecond":
-      case "milliseconds":
-        return MILLISECOND;
-      case "week":
-      case "weeks":
-        return WEEK;
-      case "quarter":
-      case "quarters":
-        return QUARTER;
-      case "isoweek":
-      case "isoweeks":
-        return ISO_WEEK;
-      case "isoweekday":
-        return ISO_WEEKDAY;
-      case "weekday":
-        return WEEKDAY;
+  if (unit.length === 2) {
+    if (unit === "ms") {
+      return MILLISECOND;
     }
+    if (unit === "gg") {
+      return WEEK_YEAR;
+    }
+    if (unit === "GG") {
+      return ISO_WEEK_YEAR;
+    }
+    if (unit === "Mo" || unit === "mo") {
+      return MONTH;
+    }
+    return INVALID_UNIT;
   }
-  return _codeAliases[unit] ?? INVALID_UNIT;
+  switch (unit.toLowerCase()) {
+    case "day":
+    case "days":
+      return DAY;
+    case "date":
+    case "dates":
+      return DATE;
+    case "month":
+    case "months":
+      return MONTH;
+    case "year":
+    case "years":
+      return YEAR;
+    case "hour":
+    case "hours":
+      return HOUR;
+    case "minute":
+    case "minutes":
+      return MINUTE;
+    case "second":
+    case "seconds":
+      return SECOND;
+    case "millisecond":
+    case "milliseconds":
+      return MILLISECOND;
+    case "week":
+    case "weeks":
+      return WEEK;
+    case "quarter":
+    case "quarters":
+      return QUARTER;
+    case "weekday":
+    case "weekdays":
+      return WEEKDAY;
+    case "isoweek":
+    case "isoweeks":
+      return ISO_WEEK;
+    case "isoweekday":
+    case "isoweekdays":
+      return ISO_WEEKDAY;
+    case "doy":
+    case "ddd":
+      return DAY_OF_YEAR;
+    case "dayofyear":
+    case "dayofyears":
+      return DAY_OF_YEAR;
+    case "weekyear":
+    case "weekyears":
+      return WEEK_YEAR;
+    case "isoweekyear":
+    case "isoweekyears":
+      return ISO_WEEK_YEAR;
+  }
+  return INVALID_UNIT;
 }
 
 export function euclideanModulo(value: number, mod: number): number {

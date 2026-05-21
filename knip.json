@@ -42,7 +42,10 @@
     "src/core/factory-lite.ts",
     "src/display/format.ts",
     "src/format.ts",
-    "src/locale.ts"
+    "src/locale.ts",
+    "src/parse.ts",
+    "src/parse-format.ts",
+    "src/parse-shared.ts"
   ],
   "tags": ["-public"],
   "ignoreDependencies": [

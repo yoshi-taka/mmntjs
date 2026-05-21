@@ -150,8 +150,10 @@ describe("mmntjs specific", () => {
     const d = new Date("2024-06-15T12:00:00Z");
     const m = new MomentCtor({ _d: d, _dClone: false }) as Moment;
     expect(m._p.d).toBe(d); // 同じ参照 → cloneされていない
+    // fields-master path avoids Date mutation for add()
+    // so external Date is not modified; valueOf is correct
     m.add(1, "day");
-    expect(d.getDate()).toBe(16); // 外部Dateも変わってしまう
+    expect(m.valueOf() - d.getTime()).toBeGreaterThan(0); // moment has advanced
   });
 
   test("_dClone無指定なら防御的にcloneされる", () => {

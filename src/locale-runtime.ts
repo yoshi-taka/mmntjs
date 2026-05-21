@@ -1,20 +1,9 @@
 import type { Moment } from "./moment-class";
-import { isFunction } from "./utils";
+import { isFunction, lowerVariant } from "./utils";
 import type { LocaleSpec } from "./locale/en";
 import { enLocale } from "./locale/en";
 
 type RenderFn = (m: Moment) => string;
-
-function lowerVariant(fmt: string): string {
-  return fmt
-    .replaceAll("MMMM", "MMM")
-    .replaceAll("dddd", "ddd")
-    .replaceAll("MM", "M")
-    .replaceAll("DD", "D")
-    .replaceAll("mm", "m")
-    .replaceAll("ss", "s")
-    .replaceAll("hh", "h");
-}
 
 let _buildRenderFns: ((fmt: string) => RenderFn[]) | null = null;
 

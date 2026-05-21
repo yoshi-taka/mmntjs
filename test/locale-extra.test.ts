@@ -118,11 +118,14 @@ describe("locale-extra week methods", () => {
     });
 
     test("locale(false) resets to global", () => {
+      const prev = moment.locale();
+      moment.locale("en");
       const m = moment("2024-01-15");
       m.locale("en");
       const r = m.locale(false as unknown as string[]);
       expect(r).toBe(m);
       expect(m.locale()).toBe("en");
+      moment.locale(prev);
     });
   });
 });
