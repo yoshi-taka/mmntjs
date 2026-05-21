@@ -1588,24 +1588,28 @@ export class Moment {
     if (!this._isValid) {
       return this;
     }
-    if (typeof amount === "number" && amount === 0) {
-      return this;
-    }
     if (typeof amount === "number") {
+      if (amount === 0) {
+        return this;
+      }
       if (unit !== undefined) {
         const code = normalizeUnitCode(unit);
         if (code >= 0) {
+          const p = this._p;
           switch (code) {
             case DAY: {
-              if (this._p.isUTC) {
-                this._p.t += Math.round(amount * 86400000);
-                this._p.d = undefined;
+              if (p.isUTC) {
+                p.t += Number.isInteger(amount) ? amount * 86400000 : Math.round(amount * 86400000);
+                p.d = undefined;
               } else {
-                const dt = this._p.d ?? (this._p.d = new Date(this._p.t));
-                dt.setDate(dt.getDate() + amount);
-                this._p.t = dt.getTime();
+                let dt = p.d;
+                if (dt == null) {
+                  dt = new Date(p.t);
+                  p.d = dt;
+                }
+                p.t = dt.setDate(dt.getDate() + amount);
               }
-              this._p.dirty = true;
+              p.dirty = true;
               return this;
             }
             case MONTH: {
@@ -1615,38 +1619,41 @@ export class Moment {
                 : amount < 0
                   ? Math.round(-amount) * -1
                   : Math.round(amount);
-              const tm = this._p.y * 12 + this._p.M + totalMonths;
+              const tm = p.y * 12 + p.M + totalMonths;
               const y = Math.floor(tm / 12);
               const m = normalizeMonth(tm);
-              let d_ = this._p.D;
+              let d_ = p.D;
               if (d_ > 28) {
                 const md = daysInMonthFast(y, m);
                 if (d_ > md) {
                   d_ = md;
                 }
               }
-              if (this._p.isUTC) {
-                this._p.t =
+              if (p.isUTC) {
+                p.t =
                   ymdToEpochDays(y, m, d_) * 86400000 +
-                  this._p.H * 3600000 +
-                  this._p.m * 60000 +
-                  this._p.s * 1000 +
-                  this._p.ms;
-                this._p.d = undefined;
-                this._p.dirty = true;
+                  p.H * 3600000 +
+                  p.m * 60000 +
+                  p.s * 1000 +
+                  p.ms;
+                p.d = undefined;
+                p.dirty = true;
               } else {
-                const dt = this._p.d ?? (this._p.d = new Date(this._p.t));
-                dt.setFullYear(y, m, d_);
-                this._p.t = dt.getTime();
+                let dt = p.d;
+                if (dt == null) {
+                  dt = new Date(p.t);
+                  p.d = dt;
+                }
+                p.t = dt.setFullYear(y, m, d_);
               }
-              this._p.y = y;
-              this._p.M = m;
-              this._p.D = d_;
-              this._p.W = this._p.isUTC ? _dayOfWeek(y, m, d_) : this._p.d!.getDay();
-              if (!this._p.isUTC) {
-                this._p.offset = -this._p.d!.getTimezoneOffset();
+              p.y = y;
+              p.M = m;
+              p.D = d_;
+              p.W = p.isUTC ? _dayOfWeek(y, m, d_) : p.d!.getDay();
+              if (!p.isUTC) {
+                p.offset = -p.d!.getTimezoneOffset();
               }
-              if (isNaN(this._p.t)) {
+              if (isNaN(p.t)) {
                 this._isValid = false;
               }
               return this;
@@ -1656,10 +1663,10 @@ export class Moment {
             case SECOND:
             case MILLISECOND: {
               const ms = TIME_UNIT_MS[code];
-              this._p.t += Number.isInteger(amount) ? amount * ms : Math.round(amount * ms);
-              this._p.d = undefined;
-              this._p.dirty = true;
-              if (isNaN(this._p.t)) {
+              p.t += Number.isInteger(amount) ? amount * ms : Math.round(amount * ms);
+              p.d = undefined;
+              p.dirty = true;
+              if (isNaN(p.t)) {
                 this._isValid = false;
               }
               return this;

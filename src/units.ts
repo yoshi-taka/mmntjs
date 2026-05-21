@@ -165,6 +165,47 @@ export function normalizeUnitCode(unit: string): UnitCode {
   if (unit.length === 2 && unit === "ms") {
     return MILLISECOND;
   }
+  if (unit.length <= 5) {
+    switch (unit) {
+      case "day":
+      case "days":
+        return DAY;
+      case "date":
+      case "dates":
+        return DATE;
+      case "month":
+      case "months":
+        return MONTH;
+      case "year":
+      case "years":
+        return YEAR;
+      case "hour":
+      case "hours":
+        return HOUR;
+      case "minute":
+      case "minutes":
+        return MINUTE;
+      case "second":
+      case "seconds":
+        return SECOND;
+      case "millisecond":
+      case "milliseconds":
+        return MILLISECOND;
+      case "week":
+      case "weeks":
+        return WEEK;
+      case "quarter":
+      case "quarters":
+        return QUARTER;
+      case "isoweek":
+      case "isoweeks":
+        return ISO_WEEK;
+      case "isoweekday":
+        return ISO_WEEKDAY;
+      case "weekday":
+        return WEEKDAY;
+    }
+  }
   return _codeAliases[unit] ?? INVALID_UNIT;
 }
 
