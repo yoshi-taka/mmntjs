@@ -264,7 +264,10 @@ export class MomentLite {
   }
 
   private _getD(): Date {
-    if (this._p.dirty) { this._p.dirty = false; this._refreshFields(); }
+    if (this._p.dirty) {
+      this._p.dirty = false;
+      this._refreshFields();
+    }
     if (this._p.d) {
       return this._p.d;
     }
