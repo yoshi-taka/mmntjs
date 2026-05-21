@@ -2,68 +2,9 @@
 // Same logic as MomentLite (mmntjs/lite), adapted for plain Date objects.
 // No MomentLite instance created — zero object overhead.
 
-const PAD2 = [
-  "00",
-  "01",
-  "02",
-  "03",
-  "04",
-  "05",
-  "06",
-  "07",
-  "08",
-  "09",
-  "10",
-  "11",
-  "12",
-  "13",
-  "14",
-  "15",
-  "16",
-  "17",
-  "18",
-  "19",
-  "20",
-  "21",
-  "22",
-  "23",
-  "24",
-  "25",
-  "26",
-  "27",
-  "28",
-  "29",
-  "30",
-  "31",
-  "32",
-  "33",
-  "34",
-  "35",
-  "36",
-  "37",
-  "38",
-  "39",
-  "40",
-  "41",
-  "42",
-  "43",
-  "44",
-  "45",
-  "46",
-  "47",
-  "48",
-  "49",
-  "50",
-  "51",
-  "52",
-  "53",
-  "54",
-  "55",
-  "56",
-  "57",
-  "58",
-  "59",
-];
+function p2(n: number): string {
+  return n < 10 ? `0${n}` : String(n);
+}
 
 function padYear(y: number): string {
   const abs = Math.abs(y);
@@ -98,31 +39,31 @@ export function format(d: Date, fmt: string): string {
         break;
       case "M":
         if (fmt.startsWith("MM", i)) {
-          out += PAD2[d.getMonth() + 1];
+          out += p2(d.getMonth() + 1);
           tokenLen = 2;
         }
         break;
       case "D":
         if (fmt.startsWith("DD", i)) {
-          out += PAD2[d.getDate()];
+          out += p2(d.getDate());
           tokenLen = 2;
         }
         break;
       case "H":
         if (fmt.startsWith("HH", i)) {
-          out += PAD2[d.getHours()];
+          out += p2(d.getHours());
           tokenLen = 2;
         }
         break;
       case "m":
         if (fmt.startsWith("mm", i)) {
-          out += PAD2[d.getMinutes()];
+          out += p2(d.getMinutes());
           tokenLen = 2;
         }
         break;
       case "s":
         if (fmt.startsWith("ss", i)) {
-          out += PAD2[d.getSeconds()];
+          out += p2(d.getSeconds());
           tokenLen = 2;
         }
         break;
