@@ -446,6 +446,10 @@ export class Moment {
     p.y = d.getFullYear();
     p.M = d.getMonth();
     p.D = d.getDate();
+    p.H = d.getHours();
+    p.m = d.getMinutes();
+    p.s = d.getSeconds();
+    p.ms = d.getMilliseconds();
     p.W = d.getDay();
     p.offset = -d.getTimezoneOffset();
     p.t = d.getTime();
@@ -1102,33 +1106,23 @@ export class Moment {
   hour(h: unknown): this;
   hour(h?: unknown): number | this {
     if (h !== undefined) {
-      if (h === null) {
-        return this;
-      }
+      if (h === null) { return this; }
       const num = Number(h);
-      if (isNaN(num)) {
-        return this;
-      }
-      const dt = this._getD();
-      const utc = this._p.isUTC;
-      if (utc) {
-        dt.setUTCHours(num);
+      if (isNaN(num)) { return this; }
+      this._ensureFields();
+      if (num === this._p.H) { return this; }
+      this._p.H = num;
+      if (this._p.isUTC) {
+        this._p.t = Date.UTC(this._p.y, this._p.M, this._p.D, num, this._p.m, this._p.s, this._p.ms);
+        this._p.d = undefined;
       } else {
-        dt.setHours(num);
+        this._p.d = undefined;
+        this._p._tStale = true;
       }
-      this._p.H = utc ? dt.getUTCHours() : dt.getHours();
-      this._p.t = dt.getTime();
-      if (!utc) {
-        this._p.offset = -dt.getTimezoneOffset();
-      }
-      if (updateOffsetCallback) {
-        this._updateOffset(true);
-      }
+      if (updateOffsetCallback) { this._updateOffset(true); }
       return this;
     }
-    if (!this._isValid) {
-      return NaN;
-    }
+    if (!this._isValid) { return NaN; }
     this._ensureFields();
     return this._p.H;
   }
@@ -1137,33 +1131,23 @@ export class Moment {
   minute(m: unknown): this;
   minute(m?: unknown): number | this {
     if (m !== undefined) {
-      if (m === null) {
-        return this;
-      }
+      if (m === null) { return this; }
       const num = Number(m);
-      if (isNaN(num)) {
-        return this;
-      }
-      const dt = this._getD();
-      const utc = this._p.isUTC;
-      if (utc) {
-        dt.setUTCMinutes(num);
+      if (isNaN(num)) { return this; }
+      this._ensureFields();
+      if (num === this._p.m) { return this; }
+      this._p.m = num;
+      if (this._p.isUTC) {
+        this._p.t = Date.UTC(this._p.y, this._p.M, this._p.D, this._p.H, num, this._p.s, this._p.ms);
+        this._p.d = undefined;
       } else {
-        dt.setMinutes(num);
+        this._p.d = undefined;
+        this._p._tStale = true;
       }
-      this._p.m = utc ? dt.getUTCMinutes() : dt.getMinutes();
-      this._p.t = dt.getTime();
-      if (!utc) {
-        this._p.offset = -dt.getTimezoneOffset();
-      }
-      if (updateOffsetCallback) {
-        this._updateOffset(true);
-      }
+      if (updateOffsetCallback) { this._updateOffset(true); }
       return this;
     }
-    if (!this._isValid) {
-      return NaN;
-    }
+    if (!this._isValid) { return NaN; }
     this._ensureFields();
     return this._p.m;
   }
@@ -1172,33 +1156,23 @@ export class Moment {
   second(s: unknown): this;
   second(s?: unknown): number | this {
     if (s !== undefined) {
-      if (s === null) {
-        return this;
-      }
+      if (s === null) { return this; }
       const num = Number(s);
-      if (isNaN(num)) {
-        return this;
-      }
-      const dt = this._getD();
-      const utc = this._p.isUTC;
-      if (utc) {
-        dt.setUTCSeconds(num);
+      if (isNaN(num)) { return this; }
+      this._ensureFields();
+      if (num === this._p.s) { return this; }
+      this._p.s = num;
+      if (this._p.isUTC) {
+        this._p.t = Date.UTC(this._p.y, this._p.M, this._p.D, this._p.H, this._p.m, num, this._p.ms);
+        this._p.d = undefined;
       } else {
-        dt.setSeconds(num);
+        this._p.d = undefined;
+        this._p._tStale = true;
       }
-      this._p.s = utc ? dt.getUTCSeconds() : dt.getSeconds();
-      this._p.t = dt.getTime();
-      if (!utc) {
-        this._p.offset = -dt.getTimezoneOffset();
-      }
-      if (updateOffsetCallback) {
-        this._updateOffset(true);
-      }
+      if (updateOffsetCallback) { this._updateOffset(true); }
       return this;
     }
-    if (!this._isValid) {
-      return NaN;
-    }
+    if (!this._isValid) { return NaN; }
     this._ensureFields();
     return this._p.s;
   }
@@ -1207,33 +1181,23 @@ export class Moment {
   millisecond(ms: unknown): this;
   millisecond(ms?: unknown): number | this {
     if (ms !== undefined) {
-      if (ms === null) {
-        return this;
-      }
+      if (ms === null) { return this; }
       const num = Number(ms);
-      if (isNaN(num)) {
-        return this;
-      }
-      const dt = this._getD();
-      const utc = this._p.isUTC;
-      if (utc) {
-        dt.setUTCMilliseconds(num);
+      if (isNaN(num)) { return this; }
+      this._ensureFields();
+      if (num === this._p.ms) { return this; }
+      this._p.ms = num;
+      if (this._p.isUTC) {
+        this._p.t = Date.UTC(this._p.y, this._p.M, this._p.D, this._p.H, this._p.m, this._p.s, num);
+        this._p.d = undefined;
       } else {
-        dt.setMilliseconds(num);
+        this._p.d = undefined;
+        this._p._tStale = true;
       }
-      this._p.ms = utc ? dt.getUTCMilliseconds() : dt.getMilliseconds();
-      this._p.t = dt.getTime();
-      if (!utc) {
-        this._p.offset = -dt.getTimezoneOffset();
-      }
-      if (updateOffsetCallback) {
-        this._updateOffset(true);
-      }
+      if (updateOffsetCallback) { this._updateOffset(true); }
       return this;
     }
-    if (!this._isValid) {
-      return NaN;
-    }
+    if (!this._isValid) { return NaN; }
     this._ensureFields();
     return this._p.ms;
   }
