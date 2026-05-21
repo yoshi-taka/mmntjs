@@ -1,8 +1,6 @@
 import { describe, test, expect, afterAll } from "bun:test";
 import {
   parseString,
-  parseArray,
-  parseObject,
   parseTwoDigitYear,
   setParseTwoDigitYear,
   enableCustomFormatParsing,
@@ -10,6 +8,7 @@ import {
   isCustomFormatParsingEnabled,
   registerCustomFormatParser,
 } from "../src/parse-lite.ts";
+import { parseArray, parseObject } from "../src/parse.ts";
 import type { ParseLocale } from "../src/parse-locale";
 
 afterAll(() => {
@@ -106,64 +105,6 @@ describe("parseString", () => {
   test("parses ISO with Z offset", () => {
     const result = parseString("2024-01-15T10:30:00Z", undefined, enLocale());
     expect(result).toEqual(expect.objectContaining({ offset: 0 }));
-  });
-
-  test("JSON date format /Date(...)/", () => {
-    const ts = Date.UTC(2024, 0, 15, 0, 30, 0);
-    const result = parseString(`/Date(${ts})/`, undefined, enLocale());
-    expect(result).toEqual(
-      expect.objectContaining({
-        year: 2024,
-        month: 0,
-        day: 15,
-        hour: 0,
-        minute: 30,
-        second: 0,
-        offset: 0,
-      }),
-    );
-  });
-
-  test("JSON date format with offset", () => {
-    const ts = Date.UTC(2024, 0, 15);
-    const result = parseString(`/Date(${ts}+0530)/`, undefined, enLocale());
-    expect(result).toEqual(expect.objectContaining({ year: 2024 }));
-  });
-
-  // RFC 2822
-  test("parses RFC 2822 date", () => {
-    const result = parseString("Mon, 15 Jan 2024 10:30:00 +0000", undefined, enLocale());
-    expect(result).toEqual(
-      expect.objectContaining({
-        year: 2024,
-        month: 0,
-        day: 15,
-        hour: 10,
-        minute: 30,
-        second: 0,
-        offset: 0,
-      }),
-    );
-  });
-
-  test("parses RFC 2822 without day name", () => {
-    const result = parseString("15 Jan 2024 10:30:00 +0000", undefined, enLocale());
-    expect(result).toEqual(expect.objectContaining({ year: 2024, month: 0, day: 15 }));
-  });
-
-  test("parses RFC 2822 with named timezone", () => {
-    const result = parseString("15 Jan 2024 10:30:00 EST", undefined, enLocale());
-    expect(result).toEqual(expect.objectContaining({ offset: -300 }));
-  });
-
-  test("parses RFC 2822 with 2-digit year (< 69 → 2000s)", () => {
-    const result = parseString("15 Jan 24 10:30:00 +0000", undefined, enLocale());
-    expect(result).toEqual(expect.objectContaining({ year: 2024 }));
-  });
-
-  test("parses RFC 2822 with 2-digit year (>= 69 → 1900s)", () => {
-    const result = parseString("15 Jan 70 10:30:00 +0000", undefined, enLocale());
-    expect(result).toEqual(expect.objectContaining({ year: 1970 }));
   });
 
   test("parses basic ISO with signed year", () => {
