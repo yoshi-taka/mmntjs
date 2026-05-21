@@ -105,31 +105,19 @@ const unitAliasToKey: Record<string, string> = {
   W: "weeks",
 };
 
+const _unitMs: Record<string, number> = {
+  years: 31536000000,
+  months: 2592000000,
+  weeks: 604800000,
+  days: 86400000,
+  hours: 3600000,
+  minutes: 60000,
+  seconds: 1000,
+  milliseconds: 1,
+};
+
 function unitToMs(unit: string): number {
-  const key = unitAliasToKey[unit];
-  if (!key) {
-    return 0;
-  }
-  switch (key) {
-    case "years":
-      return 31536000000;
-    case "months":
-      return 2592000000;
-    case "weeks":
-      return 604800000;
-    case "days":
-      return 86400000;
-    case "hours":
-      return 3600000;
-    case "minutes":
-      return 60000;
-    case "seconds":
-      return 1000;
-    case "milliseconds":
-      return 1;
-    default:
-      return 0;
-  }
+  return _unitMs[unitAliasToKey[unit] ?? ""] ?? 0;
 }
 
 function bubbleMillisecondsOnly(d: Duration, milliseconds: number): Duration {
