@@ -583,7 +583,8 @@ export class MomentLite {
       } else {
         dt.setFullYear(num);
       }
-      if ((utc ? dt.getUTCDate() : dt.getDate()) !== date) {
+      // D ≤ 28: no clamping possible (all months have 28+ days)
+      if (date > 28 && (utc ? dt.getUTCDate() : dt.getDate()) !== date) {
         if (utc) {
           dt.setUTCDate(0);
         } else {
@@ -946,10 +947,9 @@ export class MomentLite {
         const newMs = msVal ?? this._p.ms;
 
         if (this._p.isUTC) {
-          const tmp = new Date(
-            Date.UTC(newYear, newMonth, 1, newHour, newMinute, newSecond, newMs),
-          );
-          const maxDays = new Date(Date.UTC(newYear, newMonth + 1, 0)).getUTCDate();
+          const tmp = new Date(Date.UTC(2000, newMonth, 1, newHour, newMinute, newSecond, newMs));
+          tmp.setUTCFullYear(newYear);
+          const maxDays = daysInMonthFast(newYear, newMonth);
           tmp.setUTCDate(Math.min(newDate, maxDays));
           this._p.d = tmp;
           this._p.t = this._p.d.getTime();
@@ -962,8 +962,9 @@ export class MomentLite {
           this._p.s = tmp.getUTCSeconds();
           this._p.ms = tmp.getUTCMilliseconds();
         } else {
-          const tmp = new Date(newYear, newMonth, 1, newHour, newMinute, newSecond, newMs);
-          const maxDays = new Date(newYear, newMonth + 1, 0).getDate();
+          const tmp = new Date(2000, newMonth, 1, newHour, newMinute, newSecond, newMs);
+          tmp.setFullYear(newYear);
+          const maxDays = daysInMonthFast(newYear, newMonth);
           tmp.setDate(Math.min(newDate, maxDays));
           this._p.d = tmp;
           this._p.t = this._p.d.getTime();
@@ -1100,6 +1101,42 @@ export class MomentLite {
   /** Hot-path helper — inlined by V8 for add(number, "day"/"week"/"date") */
   private _addDay(amount: number): void {
     const p = this._p;
+    if (p.isUTC) {
+      p.t += Number.isInteger(amount) ? amount * 86400000 : Math.round(amount * 86400000);
+      p.dirty = true;
+      return;
+    }
+    if (!p.dirty && Number.isInteger(amount)) {
+      // Fields-master path: avoid Date allocation for clean state
+      p.D = Math.trunc(p.D + amount);
+      if (p.D > 28 || p.D < 1) {
+        let dm;
+        while (p.D > (dm = daysInMonthFast(p.y, p.M))) {
+          p.D -= dm;
+          if (++p.M > 11) {
+            p.M = 0;
+            p.y++;
+          }
+        }
+        while (p.D < 1) {
+          if (--p.M < 0) {
+            p.M = 11;
+            p.y--;
+          }
+          p.D += daysInMonthFast(p.y, p.M);
+        }
+        p.W = _dayOfWeek(p.y, p.M, p.D);
+      } else {
+        // D ∈ [1,28]: no overflow possible
+        p.W = (((p.W + amount) % 7) + 7) % 7;
+      }
+      // Single Date allocation for epoch reconstruction
+      p.t = new Date(p.y, p.M, p.D, p.H, p.m, p.s, p.ms).getTime();
+      p.d = undefined;
+      p.dirty = true;
+      return;
+    }
+    // Dirty or non-integer path: use Date for DST correctness
     const newT =
       p.t + (Number.isInteger(amount) ? amount * 86400000 : Math.round(amount * 86400000));
     const temp = new Date(newT);
@@ -1726,99 +1763,132 @@ export class MomentLite {
       return this;
     }
     this._ensureFields();
-    const utc = this._p.isUTC;
-    let d: Date | undefined;
+    const p = this._p;
+    const utc = p.isUTC;
 
     switch (code) {
       case YEAR:
         if (utc) {
-          this._p.t = ymdToEpochDays(this._p.y, 0, 1) * DAY_MS;
-          this._p.d = undefined;
+          p.t = ymdToEpochDays(p.y, 0, 1) * DAY_MS;
+          p.d = undefined;
         } else {
-          d = this._getDNoEnsure();
-          d.setMonth(0, 1);
-          d.setHours(0, 0, 0, 0);
-          this._p.t = d.getTime();
+          let d: Date;
+          if (p.d != null) {
+            d = p.d;
+            d.setMonth(0, 1);
+            d.setHours(0, 0, 0, 0);
+          } else {
+            d = p.d = new Date(p.y, 0, 1);
+          }
+          p.t = d.getTime();
+          p.offset = -d.getTimezoneOffset();
         }
-        this._p.M = 0;
-        this._p.D = 1;
-        this._p.H = 0;
-        this._p.m = 0;
-        this._p.s = 0;
-        this._p.ms = 0;
-        this._p.W = _dayOfWeek(this._p.y, this._p.M, this._p.D);
+        p.M = 0;
+        p.D = 1;
+        p.H = 0;
+        p.m = 0;
+        p.s = 0;
+        p.ms = 0;
+        p.W = _dayOfWeek(p.y, 0, 1);
         break;
       case MONTH:
         if (utc) {
-          this._p.t = ymdToEpochDays(this._p.y, this._p.M, 1) * DAY_MS;
-          this._p.d = undefined;
+          p.t = ymdToEpochDays(p.y, p.M, 1) * DAY_MS;
+          p.d = undefined;
         } else {
-          d = this._getDNoEnsure();
-          d.setDate(1);
-          d.setHours(0, 0, 0, 0);
-          this._p.t = d.getTime();
+          let d: Date;
+          if (p.d != null) {
+            d = p.d;
+            d.setDate(1);
+            d.setHours(0, 0, 0, 0);
+          } else {
+            d = p.d = new Date(p.y, p.M, 1);
+          }
+          p.t = d.getTime();
+          p.offset = -d.getTimezoneOffset();
         }
-        this._p.D = 1;
-        this._p.H = 0;
-        this._p.m = 0;
-        this._p.s = 0;
-        this._p.ms = 0;
-        this._p.W = _dayOfWeek(this._p.y, this._p.M, this._p.D);
+        p.D = 1;
+        p.H = 0;
+        p.m = 0;
+        p.s = 0;
+        p.ms = 0;
+        p.W = _dayOfWeek(p.y, p.M, 1);
         break;
       case DATE:
       case DAY:
         if (utc) {
-          this._p.t = floorUnitEpoch(this._p.t, DAY_MS);
-          this._p.d = undefined;
+          p.t = floorUnitEpoch(p.t, DAY_MS);
+          p.d = undefined;
         } else {
-          d = this._getDNoEnsure();
-          d.setHours(0, 0, 0, 0);
-          this._p.t = d.getTime();
+          let d: Date;
+          if (p.d != null) {
+            d = p.d;
+            d.setHours(0, 0, 0, 0);
+          } else {
+            d = p.d = new Date(p.y, p.M, p.D);
+          }
+          p.t = d.getTime();
+          p.offset = -d.getTimezoneOffset();
         }
-        this._p.H = 0;
-        this._p.m = 0;
-        this._p.s = 0;
-        this._p.ms = 0;
+        p.H = 0;
+        p.m = 0;
+        p.s = 0;
+        p.ms = 0;
         break;
       case HOUR:
         if (utc) {
-          this._p.t = floorUnitEpoch(this._p.t, HOUR_MS);
-          this._p.d = undefined;
+          p.t = floorUnitEpoch(p.t, HOUR_MS);
+          p.d = undefined;
         } else {
-          d = this._getDNoEnsure();
-          d.setMinutes(0, 0, 0);
-          this._p.t = d.getTime();
+          let d: Date;
+          if (p.d != null) {
+            d = p.d;
+            d.setMinutes(0, 0, 0);
+          } else {
+            d = p.d = new Date(p.y, p.M, p.D, p.H);
+          }
+          p.t = d.getTime();
+          p.offset = -d.getTimezoneOffset();
         }
-        this._p.m = 0;
-        this._p.s = 0;
-        this._p.ms = 0;
+        p.m = 0;
+        p.s = 0;
+        p.ms = 0;
         break;
       case MINUTE:
         if (utc) {
-          this._p.t = floorUnitEpoch(this._p.t, MINUTE_MS);
-          this._p.d = undefined;
+          p.t = floorUnitEpoch(p.t, MINUTE_MS);
+          p.d = undefined;
         } else {
-          d = this._getDNoEnsure();
-          d.setSeconds(0, 0);
-          this._p.t = d.getTime();
+          let d: Date;
+          if (p.d != null) {
+            d = p.d;
+            d.setSeconds(0, 0);
+          } else {
+            d = p.d = new Date(p.y, p.M, p.D, p.H, p.m);
+          }
+          p.t = d.getTime();
+          p.offset = -d.getTimezoneOffset();
         }
-        this._p.s = 0;
-        this._p.ms = 0;
+        p.s = 0;
+        p.ms = 0;
         break;
       case SECOND:
         if (utc) {
-          this._p.t = floorUnitEpoch(this._p.t, SECOND_MS);
-          this._p.d = undefined;
+          p.t = floorUnitEpoch(p.t, SECOND_MS);
+          p.d = undefined;
         } else {
-          d = this._getDNoEnsure();
-          d.setMilliseconds(0);
-          this._p.t = d.getTime();
+          let d: Date;
+          if (p.d != null) {
+            d = p.d;
+            d.setMilliseconds(0);
+          } else {
+            d = p.d = new Date(p.y, p.M, p.D, p.H, p.m, p.s);
+          }
+          p.t = d.getTime();
+          p.offset = -d.getTimezoneOffset();
         }
-        this._p.ms = 0;
+        p.ms = 0;
         break;
-    }
-    if (!utc && d) {
-      this._p.offset = -d.getTimezoneOffset();
     }
     return this;
   }

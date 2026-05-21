@@ -79,5 +79,3 @@ export function getLiteLocale(_name?: string): LiteLocale {
 export function hasLiteLocale(name: string): boolean {
   return name === "en" || name === "en-us";
 }
-
-

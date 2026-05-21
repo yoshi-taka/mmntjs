@@ -483,5 +483,3 @@ function parseOffset(str: string, idx: number): { offset: number; next: number }
   const mm = parseDigits(str, idx + 3, 2);
   return mm === null ? null : { offset: sign * (hh * 60 + mm), next: idx + 5 };
 }
-
-
