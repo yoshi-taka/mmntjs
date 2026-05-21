@@ -429,16 +429,24 @@ export class Moment {
     return [year, m - 1, d];
   }
 
-  /** hot path: called before every property read to ensure cached fields are fresh */
-  /** Sync t from fields if stale (Adventure-style: lazy Date materialization) */
+  /** Tensor coupling step: combine Calendar⊗Time⊗Timezone → Cache.
+   *  Re-derive epoch(t), offset, Date cache(d), and Calendar fields(y,M,D,W)
+   *  from the Date constructor (handles auto-clamping and DST). */
   _syncT(): void {
     const p = this._p;
     if (!p._tStale) {
       return;
     }
     p._tStale = false;
-    p.W = _dayOfWeek(p.y, p.M, p.D);
     const d = new Date(p.y, p.M, p.D, p.H, p.m, p.s, p.ms);
+    // JS Date interprets years 0-99 as 1900-1999; correct via setFullYear
+    if (p.y >= 0 && p.y < 100) {
+      d.setFullYear(p.y);
+    }
+    p.y = d.getFullYear();
+    p.M = d.getMonth();
+    p.D = d.getDate();
+    p.W = d.getDay();
     p.offset = -d.getTimezoneOffset();
     p.t = d.getTime();
     p.d = d;
@@ -856,27 +864,13 @@ export class Moment {
           this._p.W = _dayOfWeek(num, this._p.M, d_);
         }
       } else {
-        // Fast path: years >= 100 use direct Date construction (avoids setFullYear)
-        if (num >= 100) {
-          const dt = new Date(num, this._p.M, d_, this._p.H, this._p.m, this._p.s, this._p.ms);
-          this._p.d = dt;
-          this._p.y = dt.getFullYear();
-          this._p.M = dt.getMonth();
-          this._p.D = dt.getDate();
-          this._p.W = dt.getDay();
-          this._p.t = dt.getTime();
-          this._p.offset = -dt.getTimezoneOffset();
-        } else {
-          const tmp = new Date(2000, this._p.M, d_, this._p.H, this._p.m, this._p.s, this._p.ms);
-          tmp.setFullYear(num);
-          this._p.d = tmp;
-          this._p.y = tmp.getFullYear();
-          this._p.M = tmp.getMonth();
-          this._p.D = tmp.getDate();
-          this._p.W = tmp.getDay();
-          this._p.t = tmp.getTime();
-          this._p.offset = -tmp.getTimezoneOffset();
-        }
+        // Tensor decomposition: Calendar factor changes (y←num), Time factor preserved.
+        // d_ already pre-clamped above (moment.js compat: clamp, not overflow).
+        // Defer epoch coupling to _syncT() — no Date allocation here.
+        this._p.y = num;
+        this._p.D = d_;
+        this._p.d = undefined;
+        this._p._tStale = true;
       }
       // $H, $m, $s, $ms unchanged
       if (updateOffsetCallback) {
@@ -940,17 +934,15 @@ export class Moment {
       } else {
         const y = this._p.y + Math.floor(num / 12);
         const _m = normalizeMonth(num);
-        // D ≤ 28: no clamping possible (all months have 28+ days)
-        const d_ = date <= 28 ? date : Math.min(date, daysInMonthFast(y, _m));
-        const d = new Date(y, _m, d_, this._p.H, this._p.m, this._p.s, this._p.ms);
-        this._p.d = d;
-        this._p.y = d.getFullYear();
-        this._p.M = d.getMonth();
-        this._p.D = d.getDate();
-        this._p.W = d.getDay();
-        // H, m, s, ms unchanged (month-only update)
-        this._p.t = d.getTime();
-        this._p.offset = -d.getTimezoneOffset();
+        // Pre-clamp D to daysInMonth of new month (moment.js compat: clamp, not overflow).
+        const d_ = this._p.D <= 28 ? this._p.D : Math.min(this._p.D, daysInMonthFast(y, _m));
+        // Tensor decomposition: Calendar factor (M, y) changes, Time factor preserved.
+        // Defer epoch coupling to _syncT() — no Date allocation here.
+        this._p.y = y;
+        this._p.M = _m;
+        this._p.D = d_;
+        this._p.d = undefined;
+        this._p._tStale = true;
       }
       if (updateOffsetCallback) {
         this._updateOffset(true);
@@ -991,15 +983,12 @@ export class Moment {
         this._p.y = dt.getUTCFullYear();
         this._p.W = dt.getUTCDay();
       } else {
-        const dt = new Date(this._p.y, this._p.M, num, this._p.H, this._p.m, this._p.s, this._p.ms);
-        this._p.d = dt;
-        this._p.y = dt.getFullYear();
-        this._p.M = dt.getMonth();
-        this._p.D = dt.getDate();
-        this._p.W = dt.getDay();
-        // H, m, s, ms unchanged (date-only update)
-        this._p.t = dt.getTime();
-        this._p.offset = -dt.getTimezoneOffset();
+        // Tensor decomposition: Calendar factor (D) changes, Time factor preserved.
+        // JS Date auto-clamps overflow (e.g., Apr 31 → May 1); _syncT() reads back.
+        // Defer epoch coupling to _syncT() — no Date allocation here.
+        this._p.D = num;
+        this._p.d = undefined;
+        this._p._tStale = true;
       }
       if (updateOffsetCallback) {
         this._updateOffset(true);
