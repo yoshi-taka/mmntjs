@@ -813,6 +813,8 @@ export class Moment {
         return this;
       }
       this._ensureFields();
+      // Banach fixed point: already at target year → no-op
+      if (num === this._p.y) { return this; }
       // D ≤ 28: no clamping possible (all months have 28+ days)
       const d_ = this._p.D <= 28 ? this._p.D : Math.min(this._p.D, daysInMonth(num, this._p.M));
       if (this._p.isUTC) {
@@ -826,7 +828,9 @@ export class Moment {
           this._p.D = d_;
           this._p.W = _dayOfWeek(num, this._p.M, d_);
         } else {
-          const tmp = new Date(Date.UTC(2000, this._p.M, d_, this._p.H, this._p.m, this._p.s, this._p.ms));
+          const tmp = new Date(
+            Date.UTC(2000, this._p.M, d_, this._p.H, this._p.m, this._p.s, this._p.ms),
+          );
           tmp.setUTCFullYear(num);
           this._p.t = tmp.getTime();
           this._p.d = undefined;
@@ -903,6 +907,8 @@ export class Moment {
       if (isNaN(num)) {
         return this;
       }
+      // Banach fixed point: already at target month → no-op
+      if (num === this._p.M) { return this; }
       const utc = this._p.isUTC;
       const date = this._p.D;
       if (utc) {
@@ -919,8 +925,8 @@ export class Moment {
       } else {
         const y = this._p.y + Math.floor(num / 12);
         const _m = normalizeMonth(num);
-        const maxDay = daysInMonth(y, _m);
-        const d_ = date > maxDay ? maxDay : date;
+        // D ≤ 28: no clamping possible (all months have 28+ days)
+        const d_ = date <= 28 ? date : Math.min(date, daysInMonth(y, _m));
         const d = new Date(y, _m, d_, this._p.H, this._p.m, this._p.s, this._p.ms);
         this._p.d = d;
         this._p.y = d.getFullYear();
@@ -958,6 +964,8 @@ export class Moment {
         return this;
       }
       this._ensureFields();
+      // Banach fixed point: already at target date → no-op
+      if (num === this._p.D) { return this; }
       if (this._p.isUTC) {
         const dt = this._getD();
         dt.setUTCDate(num);
@@ -1918,34 +1926,35 @@ export class Moment {
     if (!this._isValid) {
       return this;
     }
+    // Banach fixed-point: if already at boundary, return before _ensureFields
+    // (avoids Date allocation in _syncT). Only safe when !p.dirty (fields fresh).
+    if (!updateOffsetCallback && !this._p.dirty) {
+      const p = this._p;
+      if (code === MONTH) {
+        if (p.D === 1 && p.H === 0 && p.m === 0 && p.s === 0 && p.ms === 0) { return this; }
+      } else if (code === DATE || code === DAY) {
+        if (p.H === 0 && p.m === 0 && p.s === 0 && p.ms === 0) { return this; }
+      } else if (code === HOUR) {
+        if (p.m === 0 && p.s === 0 && p.ms === 0) { return this; }
+      } else if (code === MINUTE) {
+        if (p.s === 0 && p.ms === 0) { return this; }
+      } else if (code === SECOND) {
+        if (p.ms === 0) { return this; }
+      }
+    }
     this._ensureFields();
+    // Post-ensure catch for dirty cases (fields weren't fresh above)
     if (!updateOffsetCallback) {
       if (code === MONTH) {
-        if (
-          this._p.D === 1 &&
-          this._p.H === 0 &&
-          this._p.m === 0 &&
-          this._p.s === 0 &&
-          this._p.ms === 0
-        ) {
-          return this;
-        }
+        if (this._p.D === 1 && this._p.H === 0 && this._p.m === 0 && this._p.s === 0 && this._p.ms === 0) { return this; }
       } else if (code === DATE || code === DAY) {
-        if (this._p.H === 0 && this._p.m === 0 && this._p.s === 0 && this._p.ms === 0) {
-          return this;
-        }
+        if (this._p.H === 0 && this._p.m === 0 && this._p.s === 0 && this._p.ms === 0) { return this; }
       } else if (code === HOUR) {
-        if (this._p.m === 0 && this._p.s === 0 && this._p.ms === 0) {
-          return this;
-        }
+        if (this._p.m === 0 && this._p.s === 0 && this._p.ms === 0) { return this; }
       } else if (code === MINUTE) {
-        if (this._p.s === 0 && this._p.ms === 0) {
-          return this;
-        }
+        if (this._p.s === 0 && this._p.ms === 0) { return this; }
       } else if (code === SECOND) {
-        if (this._p.ms === 0) {
-          return this;
-        }
+        if (this._p.ms === 0) { return this; }
       }
     }
     if (this._p.isUTC) {
@@ -2118,7 +2127,14 @@ export class Moment {
           d = this._p.d;
           d.setMilliseconds(0);
         } else {
-          d = this._p.d = new Date(this._p.y, this._p.M, this._p.D, this._p.H, this._p.m, this._p.s);
+          d = this._p.d = new Date(
+            this._p.y,
+            this._p.M,
+            this._p.D,
+            this._p.H,
+            this._p.m,
+            this._p.s,
+          );
         }
         this._p.t = d.getTime();
         this._p.offset = -d.getTimezoneOffset();
