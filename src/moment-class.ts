@@ -1457,18 +1457,17 @@ export class Moment {
       if (p.dirty) {
         // First call or t was directly modified: use setDate (avoids _refreshFields cost)
         let dt = p.d;
-        if (dt == null) { dt = new Date(p.t); p.d = dt; }
+        if (dt == null) {
+          dt = new Date(p.t);
+          p.d = dt;
+        }
         p.t = dt.setDate(dt.getDate() + amount);
         p.dirty = true;
         p._tStale = false;
         return;
       }
       // Fields-master: update D directly, defer Date creation (Adventure-style)
-      const days = amount | 0;
-      if (days === 0) {
-        return;
-      }
-      p.D += days;
+      p.D = Math.trunc(p.D + amount);
       let dm;
       while (p.D > (dm = daysInMonthFast(p.y, p.M))) {
         p.D -= dm;
