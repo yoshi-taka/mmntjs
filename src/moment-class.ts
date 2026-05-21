@@ -354,6 +354,21 @@ function _cast<T>(m: Moment): T {
 export class Moment {
   static calendarFormat: ((m: Moment, now: Moment) => string) | undefined;
 
+  /**
+   * Internal state machine — type-only (compile-time) documentation:
+   *
+   * `dirty = false, _tStale = false` → **clean**: fields + t both fresh
+   * `dirty = false, _tStale = true`  → **t-stale**: fields fresh, t stale (fields-master path)
+   * `dirty = true,  _tStale = false` → **full-dirty**: Date mutated, fields stale
+   *
+   * `isUTC` → UTC mode: offset=0, fields={y,M,D,H,m,s,ms} represent UTC time.
+   *   t can be computed from fields via Date.UTC (no Date allocation).
+   *
+   * `!isUTC` → local mode: offset varies by DST. t computation requires Date.
+   *
+   * Safe-day range (D ≤ 28): all months have ≥28 days → no month-end clipping.
+   * Used by setYear, setMonth, setDate to skip daysInMonth checks.
+   */
   _p = {
     t: 0,
     d: undefined as Date | undefined,
@@ -1920,44 +1935,54 @@ export class Moment {
 
   startOf(unit: string): this {
     const code = fastNormalizeBoundaryUnit(unit);
-    if (code < 0) {
-      return this;
-    }
-    if (!this._isValid) {
-      return this;
-    }
-    // Banach fixed-point: if already at boundary, return before _ensureFields
-    // (avoids Date allocation in _syncT). Only safe when !p.dirty (fields fresh).
-    if (!updateOffsetCallback && !this._p.dirty) {
-      const p = this._p;
-      if (code === MONTH) {
-        if (p.D === 1 && p.H === 0 && p.m === 0 && p.s === 0 && p.ms === 0) { return this; }
-      } else if (code === DATE || code === DAY) {
-        if (p.H === 0 && p.m === 0 && p.s === 0 && p.ms === 0) { return this; }
-      } else if (code === HOUR) {
-        if (p.m === 0 && p.s === 0 && p.ms === 0) { return this; }
-      } else if (code === MINUTE) {
-        if (p.s === 0 && p.ms === 0) { return this; }
-      } else if (code === SECOND) {
-        if (p.ms === 0) { return this; }
+    if (code < 0) { return this; }
+    if (!this._isValid) { return this; }
+    const p = this._p;
+
+    // Clean-path branch: fields are fresh (!dirty), no _ensureFields needed.
+    // _startOfLocal creates its own Date for the boundary; _startOfUTC can
+    // recompute t from fields via Date.UTC if stale (no Date allocation).
+    if (!p.dirty) {
+      // Banach fixed-point: already at boundary → no-op
+      if (!updateOffsetCallback) {
+        if (code === MONTH) {
+          if (p.D === 1 && p.H === 0 && p.m === 0 && p.s === 0 && p.ms === 0) { return this; }
+        } else if (code === DATE || code === DAY) {
+          if (p.H === 0 && p.m === 0 && p.s === 0 && p.ms === 0) { return this; }
+        } else if (code === HOUR) {
+          if (p.m === 0 && p.s === 0 && p.ms === 0) { return this; }
+        } else if (code === MINUTE) {
+          if (p.s === 0 && p.ms === 0) { return this; }
+        } else if (code === SECOND) {
+          if (p.ms === 0) { return this; }
+        }
+      }
+      // _startOfUTC(DATE/HOUR/MINUTE/SECOND) needs fresh p.t for floorUnitEpoch.
+      // Recompute from fields without Date allocation using Date.UTC.
+      if (p._tStale && p.isUTC) {
+        p.t = Date.UTC(p.y, p.M, p.D, p.H, p.m, p.s, p.ms);
+        p._tStale = false;
+        p.d = undefined;
+      }
+    } else {
+      this._ensureFields();
+      // Post-ensure catch for dirty cases
+      if (!updateOffsetCallback) {
+        if (code === MONTH) {
+          if (this._p.D === 1 && this._p.H === 0 && this._p.m === 0 && this._p.s === 0 && this._p.ms === 0) { return this; }
+        } else if (code === DATE || code === DAY) {
+          if (this._p.H === 0 && this._p.m === 0 && this._p.s === 0 && this._p.ms === 0) { return this; }
+        } else if (code === HOUR) {
+          if (this._p.m === 0 && this._p.s === 0 && this._p.ms === 0) { return this; }
+        } else if (code === MINUTE) {
+          if (this._p.s === 0 && this._p.ms === 0) { return this; }
+        } else if (code === SECOND) {
+          if (this._p.ms === 0) { return this; }
+        }
       }
     }
-    this._ensureFields();
-    // Post-ensure catch for dirty cases (fields weren't fresh above)
-    if (!updateOffsetCallback) {
-      if (code === MONTH) {
-        if (this._p.D === 1 && this._p.H === 0 && this._p.m === 0 && this._p.s === 0 && this._p.ms === 0) { return this; }
-      } else if (code === DATE || code === DAY) {
-        if (this._p.H === 0 && this._p.m === 0 && this._p.s === 0 && this._p.ms === 0) { return this; }
-      } else if (code === HOUR) {
-        if (this._p.m === 0 && this._p.s === 0 && this._p.ms === 0) { return this; }
-      } else if (code === MINUTE) {
-        if (this._p.s === 0 && this._p.ms === 0) { return this; }
-      } else if (code === SECOND) {
-        if (this._p.ms === 0) { return this; }
-      }
-    }
-    if (this._p.isUTC) {
+
+    if (p.isUTC) {
       this._startOfUTC(code);
     } else {
       this._startOfLocal(code);
@@ -2021,6 +2046,8 @@ export class Moment {
         this._p.ms = 0;
         break;
     }
+    this._p._tStale = false;
+    this._p.dirty = false;
     if (updateOffsetCallback) {
       this._updateOffset(true);
     }
@@ -2207,6 +2234,8 @@ export class Moment {
         break;
       }
     }
+    this._p._tStale = false;
+    this._p.dirty = false;
     if (updateOffsetCallback) {
       this._updateOffset(true);
     }
