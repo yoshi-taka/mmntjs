@@ -838,7 +838,7 @@ export class Moment {
           this._p.t = Date.UTC(num, this._p.M, d_, this._p.H, this._p.m, this._p.s, this._p.ms);
           this._p.d = undefined;
           this._p._tStale = false;
-          this._p.dirty = true;
+          this._p.dirty = false;
           this._p.y = num;
           this._p.D = d_;
           this._p.W = _dayOfWeek(num, this._p.M, d_);
@@ -850,7 +850,7 @@ export class Moment {
           this._p.t = tmp.getTime();
           this._p.d = undefined;
           this._p._tStale = false;
-          this._p.dirty = true;
+          this._p.dirty = false;
           this._p.y = num;
           this._p.D = d_;
           this._p.W = _dayOfWeek(num, this._p.M, d_);
@@ -1601,7 +1601,7 @@ export class Moment {
       p.d = undefined;
       p._tStale = false;
 
-      p.dirty = true;
+      p.dirty = false;
     } else {
       let dt = p.d;
       if (dt == null) {
@@ -1659,7 +1659,7 @@ export class Moment {
           this._p.d = undefined;
           this._p._tStale = false;
 
-          this._p.dirty = true;
+          this._p.dirty = false;
         } else {
           const dt = this._p.d ?? (this._p.d = new Date(this._p.t));
           dt.setFullYear(y, m, d_);
