@@ -1139,13 +1139,19 @@ export class Moment {
       if (isNaN(num)) { return this; }
       this._ensureFields();
       if (num === this._p.H) { return this; }
-      this._p.H = num;
-      if (this._p.isUTC) {
-        this._p.t = Date.UTC(this._p.y, this._p.M, this._p.D, num, this._p.m, this._p.s, this._p.ms);
-        this._p.d = undefined;
+      const utc = this._p.isUTC;
+      const p = this._p;
+      p.H = num;
+      if (utc) {
+        p.t = Date.UTC(p.y, p.M, p.D, num, p.m, p.s, p.ms);
+        p.d = undefined;
+      } else if (p.d != null) {
+        p.d.setHours(num);
+        p.H = p.d.getHours();
+        p.t = p.d.getTime();
+        p.offset = -p.d.getTimezoneOffset();
       } else {
-        this._p.d = undefined;
-        this._p._tStale = true;
+        p._tStale = true;
       }
       if (updateOffsetCallback) { this._updateOffset(true); }
       return this;
@@ -1164,13 +1170,19 @@ export class Moment {
       if (isNaN(num)) { return this; }
       this._ensureFields();
       if (num === this._p.m) { return this; }
-      this._p.m = num;
-      if (this._p.isUTC) {
-        this._p.t = Date.UTC(this._p.y, this._p.M, this._p.D, this._p.H, num, this._p.s, this._p.ms);
-        this._p.d = undefined;
+      const utc = this._p.isUTC;
+      const p = this._p;
+      p.m = num;
+      if (utc) {
+        p.t = Date.UTC(p.y, p.M, p.D, p.H, num, p.s, p.ms);
+        p.d = undefined;
+      } else if (p.d != null) {
+        p.d.setMinutes(num);
+        p.m = p.d.getMinutes();
+        p.t = p.d.getTime();
+        p.offset = -p.d.getTimezoneOffset();
       } else {
-        this._p.d = undefined;
-        this._p._tStale = true;
+        p._tStale = true;
       }
       if (updateOffsetCallback) { this._updateOffset(true); }
       return this;
@@ -1189,13 +1201,19 @@ export class Moment {
       if (isNaN(num)) { return this; }
       this._ensureFields();
       if (num === this._p.s) { return this; }
-      this._p.s = num;
-      if (this._p.isUTC) {
-        this._p.t = Date.UTC(this._p.y, this._p.M, this._p.D, this._p.H, this._p.m, num, this._p.ms);
-        this._p.d = undefined;
+      const utc = this._p.isUTC;
+      const p = this._p;
+      p.s = num;
+      if (utc) {
+        p.t = Date.UTC(p.y, p.M, p.D, p.H, p.m, num, p.ms);
+        p.d = undefined;
+      } else if (p.d != null) {
+        p.d.setSeconds(num);
+        p.s = p.d.getSeconds();
+        p.t = p.d.getTime();
+        p.offset = -p.d.getTimezoneOffset();
       } else {
-        this._p.d = undefined;
-        this._p._tStale = true;
+        p._tStale = true;
       }
       if (updateOffsetCallback) { this._updateOffset(true); }
       return this;
@@ -1214,13 +1232,19 @@ export class Moment {
       if (isNaN(num)) { return this; }
       this._ensureFields();
       if (num === this._p.ms) { return this; }
-      this._p.ms = num;
-      if (this._p.isUTC) {
-        this._p.t = Date.UTC(this._p.y, this._p.M, this._p.D, this._p.H, this._p.m, this._p.s, num);
-        this._p.d = undefined;
+      const utc = this._p.isUTC;
+      const p = this._p;
+      p.ms = num;
+      if (utc) {
+        p.t = Date.UTC(p.y, p.M, p.D, p.H, p.m, p.s, num);
+        p.d = undefined;
+      } else if (p.d != null) {
+        p.d.setMilliseconds(num);
+        p.ms = p.d.getMilliseconds();
+        p.t = p.d.getTime();
+        p.offset = -p.d.getTimezoneOffset();
       } else {
-        this._p.d = undefined;
-        this._p._tStale = true;
+        p._tStale = true;
       }
       if (updateOffsetCallback) { this._updateOffset(true); }
       return this;
