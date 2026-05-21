@@ -1,5 +1,7 @@
 import { getLiteLocale, getLiteCurrentLocale } from "./locale-lite";
 import type { LiteLocale as Locale } from "./locale-lite";
+import type { DurationInput } from "./duration";
+import type { UnitCode } from "./types";
 import { isObject, isDate, isMoment, hasOwnProp, zeroFill, createDateSafe } from "./utils";
 import {
   DAY_MS,
@@ -1184,7 +1186,7 @@ export class MomentLite {
   }
 
   private _parseDurationInput(
-    amount: number | string | object,
+    amount: number | DurationInput | string,
     unit?: string,
   ): { ms: number; days: number; months: number } | null {
     if (typeof amount === "number") {
@@ -1324,100 +1326,160 @@ export class MomentLite {
     }
   }
 
-  add(amount: number | string | object, unit?: string): this {
+  add(amount: number, unit?: string): this;
+  add(amount: DurationInput): this;
+  add(amount: string, unit?: string): this;
+  add(amount: number | DurationInput | string, unit?: string): this {
     if (!this._isValid) {
       return this;
     }
-    if (typeof amount === "number") {
-      if (unit !== undefined) {
-        const code = normalizeUnitCode(unit);
-        if (code >= 0) {
-          switch (code) {
-            case DAY: {
-              const p = this._p;
-              let dt = p.d;
-              if (dt == null) {
-                dt = new Date(p.t);
-                p.d = dt;
-              }
-              p.t = dt.setDate(dt.getDate() + amount);
-              p.dirty = true;
-              return this;
-            }
-            case MONTH: {
-              this._ensureFields();
-              const p = this._p;
-              const totalMonths = Number.isInteger(amount)
-                ? amount
-                : amount < 0
-                  ? Math.round(-amount) * -1
-                  : Math.round(amount);
-              const tm = p.y * 12 + p.M + totalMonths;
-              const y = Math.floor(tm / 12);
-              const m = normalizeMonth(tm);
-              let d_ = p.D;
-              if (d_ > 28) {
-                const md =
-                  m === 1
-                    ? y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)
-                      ? 29
-                      : 28
-                    : m === 3 || m === 5 || m === 8 || m === 10
-                      ? 30
-                      : 31;
-                if (d_ > md) {
-                  d_ = md;
-                }
-              }
-              if (p.isUTC) {
-                p.t = Date.UTC(y, m, d_, p.H, p.m, p.s, p.ms);
-                p.d = undefined;
-                p.dirty = true;
-              } else {
-                let dt = p.d;
-                if (dt == null) {
-                  dt = new Date(p.t);
-                  p.d = dt;
-                }
-                p.t = dt.setFullYear(y, m, d_);
-              }
-              p.y = y;
-              p.M = m;
-              p.D = d_;
-              p.W = p.isUTC ? _dayOfWeek(y, m, d_) : p.d!.getDay();
-              if (!p.isUTC) {
-                p.offset = -p.d!.getTimezoneOffset();
-              }
-              if (isNaN(p.t)) {
-                this._isValid = false;
-              }
-              return this;
-            }
-            default:
-              this._addSimple(amount, code);
-              if (isNaN(this._p.t)) {
-                this._isValid = false;
-              }
-              return this;
+    if (typeof amount !== "number") {
+      const parsed = this._parseDurationInput(amount, unit);
+      if (!parsed) {
+        return this;
+      }
+      this._applyDuration(parsed.ms, parsed.days, parsed.months, 1);
+      if (isNaN(this._p.t)) {
+        this._isValid = false;
+      }
+      return this;
+    }
+    if (amount === 0) {
+      return this;
+    }
+    if (unit === undefined) {
+      this._addSimple(amount, MILLISECOND);
+      if (isNaN(this._p.t)) {
+        this._isValid = false;
+      }
+      return this;
+    }
+    let code: UnitCode;
+    if (unit.length <= 5) {
+      switch (unit) {
+        case "d":
+        case "day":
+        case "days":
+        case "date":
+          code = DAY;
+          break;
+        case "M":
+        case "month":
+        case "months":
+          code = MONTH;
+          break;
+        case "y":
+        case "year":
+        case "years":
+          code = YEAR;
+          break;
+        case "h":
+        case "hour":
+        case "hours":
+          code = HOUR;
+          break;
+        case "m":
+        case "minute":
+        case "minutes":
+          code = MINUTE;
+          break;
+        case "s":
+        case "second":
+        case "seconds":
+          code = SECOND;
+          break;
+        case "ms":
+        case "millisecond":
+        case "milliseconds":
+          code = MILLISECOND;
+          break;
+        case "w":
+        case "week":
+        case "weeks":
+          code = WEEK;
+          break;
+        case "Q":
+        case "quarter":
+        case "quarters":
+          code = QUARTER;
+          break;
+        default:
+          code = normalizeUnitCode(unit);
+          break;
+      }
+    } else {
+      code = normalizeUnitCode(unit);
+    }
+    if (code < 0) {
+      return this;
+    }
+    const p = this._p;
+    switch (code) {
+      case DAY: {
+        let dt = p.d;
+        if (dt == null) {
+          dt = new Date(p.t);
+          p.d = dt;
+        }
+        p.t = dt.setDate(dt.getDate() + amount);
+        p.dirty = true;
+        return this;
+      }
+      case MONTH: {
+        this._ensureFields();
+        const totalMonths = Number.isInteger(amount)
+          ? amount
+          : amount < 0
+            ? Math.round(-amount) * -1
+            : Math.round(amount);
+        const tm = p.y * 12 + p.M + totalMonths;
+        const y = Math.floor(tm / 12);
+        const m = normalizeMonth(tm);
+        let d_ = p.D;
+        if (d_ > 28) {
+          const md =
+            m === 1
+              ? y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)
+                ? 29
+                : 28
+              : m === 3 || m === 5 || m === 8 || m === 10
+                ? 30
+                : 31;
+          if (d_ > md) {
+            d_ = md;
           }
         }
-      } else {
-        this._addSimple(amount, MILLISECOND);
-        if (isNaN(this._p.t)) {
+        if (p.isUTC) {
+          p.t = Date.UTC(y, m, d_, p.H, p.m, p.s, p.ms);
+          p.d = undefined;
+          p.dirty = true;
+        } else {
+          let dt = p.d;
+          if (dt == null) {
+            dt = new Date(p.t);
+            p.d = dt;
+          }
+          p.t = dt.setFullYear(y, m, d_);
+        }
+        p.y = y;
+        p.M = m;
+        p.D = d_;
+        p.W = p.isUTC ? _dayOfWeek(y, m, d_) : p.d!.getDay();
+        if (!p.isUTC) {
+          p.offset = -p.d!.getTimezoneOffset();
+        }
+        if (isNaN(p.t)) {
           this._isValid = false;
         }
         return this;
       }
+      default:
+        this._addSimple(amount, code);
+        if (isNaN(this._p.t)) {
+          this._isValid = false;
+        }
+        return this;
     }
-    const parsed = this._parseDurationInput(amount, unit);
-    if (!parsed) {
-      return this;
-    }
-    this._applyDuration(parsed.ms, parsed.days, parsed.months, 1);
-    if (isNaN(this._p.t)) {
-      this._isValid = false;
-    }
-    return this;
   }
 
   subtract(amount: number | string | object, unit?: string): this {
