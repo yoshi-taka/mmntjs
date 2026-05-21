@@ -925,16 +925,30 @@ export class Moment {
       const utc = this._p.isUTC;
       const date = this._p.D;
       if (utc) {
-        const d = this._getD();
-        d.setUTCMonth(num);
-        if (d.getUTCDate() !== date) {
-          d.setUTCDate(0);
+        const y = this._p.y + Math.floor(num / 12);
+        const _m = normalizeMonth(num);
+        // D ≤ 28: smooth locus — no overflow possible, use arithmetic (no Date alloc)
+        if (date <= 28) {
+          this._p.y = y;
+          this._p.M = _m;
+          this._p.D = date;
+          this._p.W = _dayOfWeek(y, _m, date);
+          this._p.t = Date.UTC(y, _m, date, this._p.H, this._p.m, this._p.s, this._p.ms);
+          this._p.d = undefined;
+          this._p._tStale = false;
+          this._p.dirty = false;
+        } else {
+          const d = this._getD();
+          d.setUTCMonth(num);
+          if (d.getUTCDate() !== date) {
+            d.setUTCDate(0);
+          }
+          this._p.y = d.getUTCFullYear();
+          this._p.M = d.getUTCMonth();
+          this._p.D = d.getUTCDate();
+          this._p.W = _dayOfWeek(this._p.y, this._p.M, this._p.D);
+          this._p.t = d.getTime();
         }
-        this._p.y = d.getUTCFullYear();
-        this._p.M = d.getUTCMonth();
-        this._p.D = d.getUTCDate();
-        this._p.W = _dayOfWeek(this._p.y, this._p.M, this._p.D);
-        this._p.t = d.getTime();
       } else {
         const y = this._p.y + Math.floor(num / 12);
         const _m = normalizeMonth(num);
@@ -2130,71 +2144,6 @@ export class Moment {
             this._p.s,
           );
         }
-        this._p.t = d.getTime();
-        this._p.offset = -d.getTimezoneOffset();
-        this._p.ms = 0;
-        break;
-      }
-      case MONTH: {
-        const d = this._p.d ?? (this._p.d = new Date(this._p.y, this._p.M, 1));
-        d.setDate(1);
-        d.setHours(0, 0, 0, 0);
-        this._p.t = d.getTime();
-        this._p.offset = -d.getTimezoneOffset();
-        this._p.D = 1;
-        this._p.H = 0;
-        this._p.m = 0;
-        this._p.s = 0;
-        this._p.ms = 0;
-        this._p.W = d.getDay();
-        break;
-      }
-      case QUARTER:
-      case WEEK:
-      case ISO_WEEK:
-        startOfExtraMoment(this, code);
-        if (this._p.d) {
-          this._p.offset = -this._p.d.getTimezoneOffset();
-        }
-        break;
-      case DATE:
-      case DAY: {
-        const d = this._p.d ?? (this._p.d = new Date(this._p.y, this._p.M, this._p.D));
-        d.setHours(0, 0, 0, 0);
-        this._p.t = d.getTime();
-        this._p.offset = -d.getTimezoneOffset();
-        this._p.H = 0;
-        this._p.m = 0;
-        this._p.s = 0;
-        this._p.ms = 0;
-        break;
-      }
-      case HOUR: {
-        const d = this._p.d ?? (this._p.d = new Date(this._p.y, this._p.M, this._p.D, this._p.H));
-        d.setMinutes(0, 0, 0);
-        this._p.t = d.getTime();
-        this._p.offset = -d.getTimezoneOffset();
-        this._p.m = 0;
-        this._p.s = 0;
-        this._p.ms = 0;
-        break;
-      }
-      case MINUTE: {
-        const d =
-          this._p.d ??
-          (this._p.d = new Date(this._p.y, this._p.M, this._p.D, this._p.H, this._p.m));
-        d.setSeconds(0, 0);
-        this._p.t = d.getTime();
-        this._p.offset = -d.getTimezoneOffset();
-        this._p.s = 0;
-        this._p.ms = 0;
-        break;
-      }
-      case SECOND: {
-        const d =
-          this._p.d ??
-          (this._p.d = new Date(this._p.y, this._p.M, this._p.D, this._p.H, this._p.m, this._p.s));
-        d.setMilliseconds(0);
         this._p.t = d.getTime();
         this._p.offset = -d.getTimezoneOffset();
         this._p.ms = 0;
