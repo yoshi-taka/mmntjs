@@ -978,18 +978,32 @@ export class Moment {
       // Banach fixed point: already at target date → no-op
       if (num === this._p.D) { return this; }
       if (this._p.isUTC) {
-        const dt = this._getD();
-        dt.setUTCDate(num);
-        this._p.d = dt;
-        this._p.t = dt.getTime();
-        this._p.D = dt.getUTCDate();
-        this._p.M = dt.getUTCMonth();
-        this._p.y = dt.getUTCFullYear();
-        this._p.W = dt.getUTCDay();
+        // Phase decomposition: compute covering space epoch directly (allocation-free).
+        // Date.UTC handles overflow (e.g., Apr 31 → May 1 UTC).
+        this._p.t = Date.UTC(this._p.y, this._p.M, num, this._p.H, this._p.m, this._p.s, this._p.ms);
+        this._p.d = undefined;
+        this._p._tStale = false;
+        // D ≤ 28: no month overflow → y,M,W unchanged, D updated modulo.
+        if (num <= 28) {
+          this._p.W = ((this._p.W - this._p.D + num) % 7 + 7) % 7;
+          this._p.D = num;
+        } else {
+          // D > 28: may overflow → read back clamped fields from Date.
+          const dt = new Date(this._p.t);
+          this._p.y = dt.getUTCFullYear();
+          this._p.M = dt.getUTCMonth();
+          this._p.D = dt.getUTCDate();
+          this._p.W = dt.getUTCDay();
+          this._p.d = dt;
+        }
       } else {
-        // Tensor decomposition: Calendar factor (D) changes, Time factor preserved.
+        // Phase decomposition: Calendar factor (D) changes, Time factor preserved.
         // JS Date auto-clamps overflow (e.g., Apr 31 → May 1); _syncT() reads back.
         // Defer epoch coupling to _syncT() — no Date allocation here.
+        // D ≤ 28: update W cyclically (no overflow). D > 28: _syncT handles it.
+        if (num <= 28) {
+          this._p.W = ((this._p.W - this._p.D + num) % 7 + 7) % 7;
+        }
         this._p.D = num;
         this._p.d = undefined;
         this._p._tStale = true;
