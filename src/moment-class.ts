@@ -418,7 +418,9 @@ export class Moment {
   /** Sync t from fields if stale (Adventure-style: lazy Date materialization) */
   _syncT(): void {
     const p = this._p;
-    if (!p._tStale) { return; }
+    if (!p._tStale) {
+      return;
+    }
     p._tStale = false;
     p.W = _dayOfWeek(p.y, p.M, p.D);
     const d = new Date(p.y, p.M, p.D, p.H, p.m, p.s, p.ms);
@@ -1452,22 +1454,34 @@ export class Moment {
 
       p.dirty = true;
     } else {
-      // Fields-master: update D directly, defer Date creation (Adventure-style)
       if (p.dirty) {
-        // Extract fields from t first (one-time cost when t was directly modified)
-        p.dirty = false;
-        this._refreshFields();
+        // First call or t was directly modified: use setDate (avoids _refreshFields cost)
+        let dt = p.d;
+        if (dt == null) { dt = new Date(p.t); p.d = dt; }
+        p.t = dt.setDate(dt.getDate() + amount);
+        p.dirty = true;
+        p._tStale = false;
+        return;
       }
+      // Fields-master: update D directly, defer Date creation (Adventure-style)
       const days = amount | 0;
-      if (days === 0) { return; }
+      if (days === 0) {
+        return;
+      }
       p.D += days;
       let dm;
       while (p.D > (dm = daysInMonthFast(p.y, p.M))) {
         p.D -= dm;
-        if (++p.M > 11) { p.M = 0; p.y++; }
+        if (++p.M > 11) {
+          p.M = 0;
+          p.y++;
+        }
       }
       while (p.D < 1) {
-        if (--p.M < 0) { p.M = 11; p.y--; }
+        if (--p.M < 0) {
+          p.M = 11;
+          p.y--;
+        }
         p.D += daysInMonthFast(p.y, p.M);
       }
       p.W = _dayOfWeek(p.y, p.M, p.D);
