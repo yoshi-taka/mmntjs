@@ -1,7 +1,6 @@
 import { getLiteLocale, getLiteCurrentLocale } from "./locale-lite";
 import type { LiteLocale as Locale } from "./locale-lite";
 import type { DurationInput } from "./duration";
-import type { UnitCode } from "./types";
 import { isObject, isDate, isMoment, hasOwnProp, zeroFill, createDateSafe } from "./utils";
 import {
   DAY_MS,
@@ -1098,6 +1097,79 @@ export class MomentLite {
     return this;
   }
 
+  /** Hot-path helper — inlined by V8 for add(number, "day"/"week"/"date") */
+  private _addDay(amount: number): void {
+    const p = this._p;
+    let dt = p.d;
+    if (dt == null) {
+      dt = new Date(p.t);
+      p.d = dt;
+    }
+    p.t = dt.setDate(dt.getDate() + amount);
+    p.dirty = true;
+  }
+
+  /** Hot-path helper — inlined by V8 for add(number, "hour"/"minute"/"second"/"ms") */
+  private _addTime(amount: number, unitMs: number): void {
+    const p = this._p;
+    p.t += Number.isInteger(amount) ? amount * unitMs : Math.round(amount * unitMs);
+    p.d = undefined;
+    p.dirty = true;
+    if (isNaN(p.t)) {
+      this._isValid = false;
+    }
+  }
+
+  /** Hot-path helper — inlined by V8 for add(number, "month"/"year"/"quarter") */
+  private _addMonth(amount: number): void {
+    this._ensureFields();
+    const p = this._p;
+    const totalMonths = Number.isInteger(amount)
+      ? amount
+      : amount < 0
+        ? Math.round(-amount) * -1
+        : Math.round(amount);
+    const tm = p.y * 12 + p.M + totalMonths;
+    const y = Math.floor(tm / 12);
+    const m = normalizeMonth(tm);
+    let d_ = p.D;
+    if (d_ > 28) {
+      const md =
+        m === 1
+          ? y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)
+            ? 29
+            : 28
+          : m === 3 || m === 5 || m === 8 || m === 10
+            ? 30
+            : 31;
+      if (d_ > md) {
+        d_ = md;
+      }
+    }
+    if (p.isUTC) {
+      p.t = Date.UTC(y, m, d_, p.H, p.m, p.s, p.ms);
+      p.d = undefined;
+      p.dirty = true;
+    } else {
+      let dt = p.d;
+      if (dt == null) {
+        dt = new Date(p.t);
+        p.d = dt;
+      }
+      p.t = dt.setFullYear(y, m, d_);
+    }
+    p.y = y;
+    p.M = m;
+    p.D = d_;
+    p.W = p.isUTC ? _dayOfWeek(y, m, d_) : p.d!.getDay();
+    if (!p.isUTC) {
+      p.offset = -p.d!.getTimezoneOffset();
+    }
+    if (isNaN(p.t)) {
+      this._isValid = false;
+    }
+  }
+
   private _addSimple(amount: number, unit: number): void {
     switch (unit) {
       case YEAR:
@@ -1354,125 +1426,90 @@ export class MomentLite {
       }
       return this;
     }
-    let code: UnitCode;
+    // Hot path: inline dispatch for common units
     if (unit.length <= 5) {
       switch (unit) {
         case "d":
         case "day":
         case "days":
         case "date":
-          code = DAY;
-          break;
-        case "M":
-        case "month":
-        case "months":
-          code = MONTH;
-          break;
-        case "y":
-        case "year":
-        case "years":
-          code = YEAR;
-          break;
+          this._addDay(amount);
+          return this;
         case "h":
         case "hour":
         case "hours":
-          code = HOUR;
-          break;
+          this._addTime(amount, 3600000);
+          return this;
         case "m":
         case "minute":
         case "minutes":
-          code = MINUTE;
-          break;
+          this._addTime(amount, 60000);
+          return this;
         case "s":
         case "second":
         case "seconds":
-          code = SECOND;
-          break;
+          this._addTime(amount, 1000);
+          return this;
         case "ms":
         case "millisecond":
         case "milliseconds":
-          code = MILLISECOND;
-          break;
+          this._addTime(amount, 1);
+          return this;
+        case "M":
+        case "month":
+        case "months":
+          this._addMonth(amount);
+          return this;
+        case "y":
+        case "year":
+        case "years":
+          this._addMonth(amount * 12);
+          return this;
         case "w":
         case "week":
         case "weeks":
-          code = WEEK;
-          break;
+          this._addDay(amount * 7);
+          return this;
         case "Q":
         case "quarter":
         case "quarters":
-          code = QUARTER;
-          break;
-        default:
-          code = normalizeUnitCode(unit);
-          break;
+          this._addMonth(amount * 3);
+          return this;
       }
-    } else {
-      code = normalizeUnitCode(unit);
     }
+    // Uncommon or aliased unit → normalizeUnitCode + _addSimple
+    const code = normalizeUnitCode(unit);
     if (code < 0) {
       return this;
     }
-    const p = this._p;
     switch (code) {
-      case DAY: {
-        let dt = p.d;
-        if (dt == null) {
-          dt = new Date(p.t);
-          p.d = dt;
-        }
-        p.t = dt.setDate(dt.getDate() + amount);
-        p.dirty = true;
+      case DAY:
+        this._addDay(amount);
         return this;
-      }
-      case MONTH: {
-        this._ensureFields();
-        const totalMonths = Number.isInteger(amount)
-          ? amount
-          : amount < 0
-            ? Math.round(-amount) * -1
-            : Math.round(amount);
-        const tm = p.y * 12 + p.M + totalMonths;
-        const y = Math.floor(tm / 12);
-        const m = normalizeMonth(tm);
-        let d_ = p.D;
-        if (d_ > 28) {
-          const md =
-            m === 1
-              ? y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0)
-                ? 29
-                : 28
-              : m === 3 || m === 5 || m === 8 || m === 10
-                ? 30
-                : 31;
-          if (d_ > md) {
-            d_ = md;
-          }
-        }
-        if (p.isUTC) {
-          p.t = Date.UTC(y, m, d_, p.H, p.m, p.s, p.ms);
-          p.d = undefined;
-          p.dirty = true;
-        } else {
-          let dt = p.d;
-          if (dt == null) {
-            dt = new Date(p.t);
-            p.d = dt;
-          }
-          p.t = dt.setFullYear(y, m, d_);
-        }
-        p.y = y;
-        p.M = m;
-        p.D = d_;
-        p.W = p.isUTC ? _dayOfWeek(y, m, d_) : p.d!.getDay();
-        if (!p.isUTC) {
-          p.offset = -p.d!.getTimezoneOffset();
-        }
-        if (isNaN(p.t)) {
-          this._isValid = false;
-        }
+      case MONTH:
+        this._addMonth(amount);
         return this;
-      }
+      case YEAR:
+        this._addMonth(amount * 12);
+        return this;
+      case QUARTER:
+        this._addMonth(amount * 3);
+        return this;
+      case WEEK:
+        this._addDay(amount * 7);
+        return this;
+      case HOUR:
+        this._addTime(amount, 3600000);
+        return this;
+      case MINUTE:
+        this._addTime(amount, 60000);
+        return this;
+      case SECOND:
+        this._addTime(amount, 1000);
+        return this;
+      case MILLISECOND:
+        this._addTime(amount, 1);
+        return this;
       default:
         this._addSimple(amount, code);
         if (isNaN(this._p.t)) {
