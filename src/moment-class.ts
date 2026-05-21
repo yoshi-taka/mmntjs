@@ -1429,15 +1429,28 @@ export class Moment {
     if (p.isUTC) {
       p.t += Number.isInteger(amount) ? amount * 86400000 : Math.round(amount * 86400000);
       p.d = undefined;
+      p.dirty = true;
     } else {
-      let dt = p.d;
-      if (dt == null) {
-        dt = new Date(p.t);
-        p.d = dt;
+      // LOCAL: use arithmetic + offset check (avoids setDate C++ overhead)
+      const newT =
+        p.t + (Number.isInteger(amount) ? amount * 86400000 : Math.round(amount * 86400000));
+      const temp = new Date(newT);
+      const newOffset = -temp.getTimezoneOffset();
+      if (p.offset === newOffset) {
+        p.t = newT;
+        p.d = temp;
+      } else {
+        // DST transition: use setDate for correct wall-clock preservation
+        let dt = p.d;
+        if (dt == null) {
+          dt = new Date(p.t);
+          p.d = dt;
+        }
+        p.t = dt.setDate(dt.getDate() + amount);
+        p.dirty = true;
       }
-      p.t = dt.setDate(dt.getDate() + amount);
+      p.dirty = true;
     }
-    p.dirty = true;
   }
 
   /** Hot-path helper — inlined by V8 for add(number, "hour"/"minute"/"second"/"ms") */

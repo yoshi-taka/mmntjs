@@ -1100,12 +1100,20 @@ export class MomentLite {
   /** Hot-path helper — inlined by V8 for add(number, "day"/"week"/"date") */
   private _addDay(amount: number): void {
     const p = this._p;
-    let dt = p.d;
-    if (dt == null) {
-      dt = new Date(p.t);
-      p.d = dt;
+    const newT =
+      p.t + (Number.isInteger(amount) ? amount * 86400000 : Math.round(amount * 86400000));
+    const temp = new Date(newT);
+    if (p.offset === -temp.getTimezoneOffset()) {
+      p.t = newT;
+      p.d = temp;
+    } else {
+      let dt = p.d;
+      if (dt == null) {
+        dt = new Date(p.t);
+        p.d = dt;
+      }
+      p.t = dt.setDate(dt.getDate() + amount);
     }
-    p.t = dt.setDate(dt.getDate() + amount);
     p.dirty = true;
   }
 
