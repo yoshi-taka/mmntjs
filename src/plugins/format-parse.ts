@@ -1,10 +1,10 @@
 import { enableCustomFormatParsing } from "../parse";
 import { registerCustomFormatParser } from "../parse";
 import { parseWithFormatImpl, parseWithFormatsImpl } from "../parse-format";
-import { enableCustomFormatParsing as enableCustomFormatParsingLite } from "../parse-lite";
-import { registerCustomFormatParser as registerCustomFormatParserLite } from "../parse-lite";
-import { enableCustomFormatParsing as enableCustomFormatParsingLiteStrict } from "../parse-lite-strict";
-import { registerCustomFormatParser as registerCustomFormatParserLiteStrict } from "../parse-lite-strict";
+import {
+  enableCustomFormatParsing as enableCustomFormatParsingLite,
+  registerCustomFormatParser as registerCustomFormatParserLite,
+} from "../parse-lite";
 import {
   enableFormattedInput as enableFormattedInputLite,
   setFormattedStringInputHandler as setFormattedStringInputHandlerLite,
@@ -24,6 +24,4 @@ export function registerFormatParsePlugin(): void {
   registerCustomFormatParser(parseWithFormatImpl, parseWithFormatsImpl);
   enableCustomFormatParsingLite();
   registerCustomFormatParserLite(parseWithFormatImpl, parseWithFormatsImpl);
-  enableCustomFormatParsingLiteStrict();
-  registerCustomFormatParserLiteStrict(parseWithFormatImpl, parseWithFormatsImpl);
 }

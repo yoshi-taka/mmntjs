@@ -1,9 +1,9 @@
 import { isArray, hasOwnProp } from "./utils";
 import type { ParseLocale } from "./parse-locale";
 import type { InternalParsedData } from "./types";
-import { localePreparse } from "./locale-runtime";
 import type { ParsedData } from "./parse";
 
+export type { ParsedData };
 export { parseTwoDigitYear } from "./utils";
 
 /** @public */
@@ -111,14 +111,20 @@ export function parseString(
     if (!customFormatParsingEnabled) {
       return null;
     }
-    const preparsed = localePreparse(locale as never, str);
+    const fn = (locale as unknown as { _config?: { preparse?: (s: string) => string } })._config
+      ?.preparse;
+    const preparsed = fn ? fn(str) : str;
     if (isArray(format)) {
       return registeredFormatsParser?.(preparsed, format, locale, strict) ?? null;
     }
     return registeredFormatParser?.(preparsed, format, locale, strict) ?? null;
   }
 
-  str = localePreparse(locale as never, str);
+  {
+    const fn = (locale as unknown as { _config?: { preparse?: (s: string) => string } })._config
+      ?.preparse;
+    str = fn ? fn(str) : str;
+  }
   if (str.trim() === "") {
     return null;
   }

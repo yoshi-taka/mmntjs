@@ -80,7 +80,4 @@ export function hasLiteLocale(name: string): boolean {
   return name === "en" || name === "en-us";
 }
 
-export function liteLocalePreparse(locale: LiteLocale, str: string): string {
-  const fn = locale._config.preparse;
-  return fn ? fn(str) : str;
-}
+

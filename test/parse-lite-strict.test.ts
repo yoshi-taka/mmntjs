@@ -7,7 +7,7 @@ import {
   disableCustomFormatParsing,
   isCustomFormatParsingEnabled,
   registerCustomFormatParser,
-} from "../src/parse-lite-strict.ts";
+} from "../src/parse-lite.ts";
 import type { ParseLocale } from "../src/parse-locale";
 
 afterAll(() => {

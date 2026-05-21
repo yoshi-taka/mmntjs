@@ -18,7 +18,7 @@ export function initializeCoreEntry(target: CoreInitMoment = moment, deps?: Core
   setFormatMomentCallback(formatMoment);
   registerCoreApi(target, deps);
   registerDisplayApi(target);
-  registerUtcApi(target as unknown as Parameters<typeof registerUtcApi>[0], { nowFn });
+  registerUtcApi(target as never, { nowFn, ctor: Moment });
   setDurationMomentResolver((input: unknown) => {
     if (input instanceof Moment) {
       return input as unknown as DurationMomentLike;

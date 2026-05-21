@@ -8,7 +8,7 @@ import {
 import {
   parseTwoDigitYear as parseTwoDigitYearInternal,
   setParseTwoDigitYear,
-} from "../parse-lite-strict";
+} from "../parse-lite";
 import { registerLiteCoreApi } from "../plugins/core-lite";
 import type { LiteMomentStatic } from "./types";
 

@@ -28,7 +28,7 @@ import {
   WEEK,
   QUARTER,
 } from "./units";
-import { parseString, type ParsedData } from "./parse-lite-strict";
+import { parseString, type ParsedData } from "./parse-lite";
 import { formatMomentBasic } from "./display/format-basic";
 import type { ParseLocale } from "./parse-locale";
 import type { FormattableMoment } from "./display/types";

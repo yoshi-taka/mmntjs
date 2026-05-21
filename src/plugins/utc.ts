@@ -1,17 +1,26 @@
-import { createMomentFromDate, createSimpleMoment, Moment } from "../moment-class";
-import type { MomentInput } from "../moment-class";
 import { isString, isArray, createUTCDate } from "../utils";
 
-type UtcMomentTarget = ((
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type MomentCtor = new (config: Record<string, unknown>) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  _p: Record<string, any>;
+  _isValid: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  _cold?: Record<string, any>;
+  valueOf(): number;
+};
+
+type UtcMomentTarget<C extends MomentCtor> = ((
   input?: unknown,
   format?: unknown,
   localeOrStrict?: unknown,
   fourthArg?: unknown,
-) => Moment) &
+) => InstanceType<C>) &
   Record<string, unknown>;
 
-export type UtcApiDeps = {
+export type UtcApiDeps<C extends MomentCtor> = {
   nowFn: () => number;
+  ctor: C;
 };
 
 function parseFixedISOZ(str: string): Date | null {
@@ -62,16 +71,20 @@ function parseFixedISODate(str: string): Date | null {
   );
 }
 
-export function registerUtcApi(target: UtcMomentTarget, deps: UtcApiDeps): void {
+export function registerUtcApi<C extends MomentCtor>(
+  target: UtcMomentTarget<C>,
+  deps: UtcApiDeps<C>,
+): void {
+  const { ctor: C, nowFn } = deps;
   const momentRecord = target as unknown as Record<string, unknown>;
   momentRecord.utc = function (
     input?: unknown,
     format?: unknown,
     localeOrStrict?: unknown,
     fourthArg?: unknown,
-  ): Moment {
+  ): InstanceType<C> {
     if (input === null) {
-      return new Moment({
+      return new C({
         _dClone: false,
         _d: new Date(NaN),
         _isValid: false,
@@ -79,31 +92,31 @@ export function registerUtcApi(target: UtcMomentTarget, deps: UtcApiDeps): void 
         _offset: 0,
         _i: input,
         _nullInput: true,
-      });
+      }) as InstanceType<C>;
     }
     if (input === undefined) {
-      return createSimpleMoment({ _t: deps.nowFn(), _isUTC: true, _offset: 0, _i: input });
+      return new C({ _t: nowFn(), _isUTC: true, _offset: 0, _i: input }) as InstanceType<C>;
     }
     if (isString(input)) {
       const fixedIsoZ = parseFixedISOZ(input);
       if (fixedIsoZ) {
-        return createMomentFromDate({
+        return new C({
           _d: fixedIsoZ,
           _isUTC: true,
           _offset: 0,
           _i: input,
           _dClone: false,
-        });
+        }) as InstanceType<C>;
       }
       const fixedIsoDate = parseFixedISODate(input);
       if (fixedIsoDate) {
-        return createMomentFromDate({
+        return new C({
           _d: fixedIsoDate,
           _isUTC: true,
           _offset: 0,
           _i: input,
           _dClone: false,
-        });
+        }) as InstanceType<C>;
       }
     }
     if (isArray(input)) {
@@ -117,7 +130,13 @@ export function registerUtcApi(target: UtcMomentTarget, deps: UtcApiDeps): void 
         arr[5] != null ? Number(arr[5]) : 0,
         arr[6] != null ? Number(arr[6]) : 0,
       );
-      return createMomentFromDate({ _d: d, _dClone: false, _isUTC: true, _offset: 0, _i: input });
+      return new C({
+        _d: d,
+        _dClone: false,
+        _isUTC: true,
+        _offset: 0,
+        _i: input,
+      }) as InstanceType<C>;
     }
     const m = target(input, format, localeOrStrict, fourthArg);
     const absTime = m.valueOf();

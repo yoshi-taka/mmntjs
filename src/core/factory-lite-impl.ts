@@ -2,7 +2,7 @@ import { MomentLite } from "../moment-lite";
 import { isMoment, isDate, isString, isNumber, createDateSafe, createUTCDate } from "../utils";
 import { getLiteLocale, getLiteCurrentLocale } from "../locale-lite";
 import type { ParseLocale } from "../parse-locale";
-import { parseString, isCustomFormatParsingEnabled } from "../parse-lite-strict";
+import { parseString, isCustomFormatParsingEnabled } from "../parse-lite";
 import type { FactoryDeps } from "./factory-shared";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -1,6 +1,6 @@
 import { describe, test, expect, afterAll } from "bun:test";
 import moment from "../src/lite.ts";
-import { disableCustomFormatParsing } from "../src/parse-lite-strict.ts";
+import { disableCustomFormatParsing } from "../src/parse-lite.ts";
 import { disableFormattedInput } from "../src/core/factory-lite-impl.ts";
 
 afterAll(() => {
