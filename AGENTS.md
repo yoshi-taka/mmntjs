@@ -15,7 +15,7 @@
 5. **シェルスクリプトの冪等性**: 同じスクリプトを2回実行しても壊れないように書け（元の状態を確認してから変更する）
 6. **テストは両方のTZで**: 日付処理の変更後は `TZ=UTC bun test` と `TZ=Asia/Tokyo bun test`（またはAmerica/New_York）の両方でテストを通せ。さらにタイムゾーン関連の変更後は `bun run test:tz` も実行し、全6タイムゾーンでの互換性を確認せよ
 7. **比較方法**: `bash scripts/compare.sh {bench|test|moment-tests}` — benchは性能比較、testはプロパティ比較、moment-testsはmoment.jsのテストをmmntjsで実行（oracle.tsを一時的に差し替え）
- 8. **commit前にlint**: `bun run lint` を通してから commit せよ。`lint` は `oxfmt`（フォーマッタ）→ `oxlint` の順に実行するので、lint後に差分が出たらそれも含めて commit すること。pre-commit hook で落ちて手戻りが発生するのを防ぐ
+ 8. **commit前にlint → git add**: `lint` は `oxfmt`（フォーマッタ）→ `oxlint` の順に実行される。**先に `bun run lint` を通してから `git add` し、その後 `git commit` せよ。** この順序でやれば pre-commit hook 内の `oxfmt` が何も変更せず、hook 通過後のぶり返し差分が発生しない。lint 後に未ステージの差分が出たらそれも含めて commit すること。pre-commit hook で落ちて手戻りが発生するのを防ぐ。
  9. **テスト実行は `bun run test` が公式**: `bun run test` は curated subset + `TZ=UTC` で動く。`bun test` は全テストファイルを現在のTZで実行するため、JST等の非UTC環境ではoffset無しISO文字列パースや `Z`/`ZZ` フォーマットのテストが落ちる。全テストを通すには `TZ=UTC bun test` を使え。
 10. **push禁止**: `git push`, `git push --tags`, `git tag` + `git push origin <tag>` は**ユーザーから明示的に「pushして」「tag打って」等の指示があった場合のみ**実行すること。自分で判断して push するな。タグを何度も打ち直してワークフローを連射するのは絶対禁止
      - ユーザーが問題を報告しても、自分で「直してpush」するな。修正案を提示してから「commitしていいか」「tagを打っていいか」を**必ず**ユーザーに確認せよ
