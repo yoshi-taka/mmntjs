@@ -798,8 +798,9 @@ export class Moment {
       return;
     }
     // CleanLocal without p.d: arithmetic fallthrough
-    switch (op) {
-      case _OP_SY:
+    // YEAR/MONTH: leave _tStale=true for self-correction (DST offset may differ)
+    if (op === _OP_SY || op === _OP_SM) {
+      if (op === _OP_SY) {
         p.t = ymdToEpochDays(p.y, 0, 1) * DAY_MS - p.offset * MINUTE_MS;
         p.M = 0;
         p.D = 1;
@@ -808,8 +809,7 @@ export class Moment {
         p.s = 0;
         p.ms = 0;
         p.W = _dayOfWeek(p.y, 0, 1);
-        break;
-      case _OP_SM:
+      } else {
         p.t = ymdToEpochDays(p.y, p.M, 1) * DAY_MS - p.offset * MINUTE_MS;
         p.D = 1;
         p.H = 0;
@@ -817,27 +817,33 @@ export class Moment {
         p.s = 0;
         p.ms = 0;
         p.W = _dayOfWeek(p.y, p.M, 1);
-        break;
+      }
+      p.d = undefined;
+      p._tStale = true;
+      p.dirty = false;
+      return;
+    }
+    switch (op) {
       case _OP_SD:
-        p.t = floorUnitEpoch(p.t, DAY_MS);
+        p.t = p.t - euclideanModulo(p.t + p.offset * 60000, DAY_MS);
         p.H = 0;
         p.m = 0;
         p.s = 0;
         p.ms = 0;
         break;
       case _OP_SH:
-        p.t = floorUnitEpoch(p.t, HOUR_MS);
+        p.t = p.t - euclideanModulo(p.t + p.offset * 60000, HOUR_MS);
         p.m = 0;
         p.s = 0;
         p.ms = 0;
         break;
       case _OP_SN:
-        p.t = floorUnitEpoch(p.t, MINUTE_MS);
+        p.t = p.t - euclideanModulo(p.t + p.offset * 60000, MINUTE_MS);
         p.s = 0;
         p.ms = 0;
         break;
       case _OP_SS:
-        p.t = floorUnitEpoch(p.t, SECOND_MS);
+        p.t = p.t - euclideanModulo(p.t + p.offset * 60000, SECOND_MS);
         p.ms = 0;
         break;
     }
