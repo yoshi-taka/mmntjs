@@ -163,23 +163,40 @@ function addDayUTC(p: _P & CleanUTC, amount: number): void {
   p.d = undefined;
   (p as { dirty: boolean }).dirty = true;
 }
-/** add(1, "day") on CleanLocalFreshWithDate → clone Date + setDate. */
-function addDay_CLFD(p: _P & CleanLocalFreshWithDate, amount: number): void {
-  const nd = new Date(p.d);
-  nd.setDate(nd.getDate() + amount);
-  p.d = nd;
-  p.t = nd.getTime();
-  p.y = nd.getFullYear();
-  p.M = nd.getMonth();
-  p.D = nd.getDate();
-  p.W = nd.getDay();
-  p.offset = -nd.getTimezoneOffset();
+/** add(1, "day") on CleanLocalFreshWithDate, D+amount ∈ [1,28] → arithmetic-only, allocation-free. */
+function addDay_CLFD_safe(p: _P & CleanLocalFreshWithDate, amount: number): void {
+  p.D += amount;
+  p.t += amount * 86400000;
+  (p as { d: Date | undefined }).d = undefined;
+  (p as { _tStale: boolean })._tStale = true;
+}
+/** add(1, "day") on CleanLocalFreshWithDate, D+amount outside [1,28] → direct Date.setDate (no clone). */
+function addDay_CLFD_overflow(p: _P & CleanLocalFreshWithDate, amount: number): void {
+  p.d.setDate(p.d.getDate() + amount);
+  p.t = p.d.getTime();
+  p.y = p.d.getFullYear();
+  p.M = p.d.getMonth();
+  p.D = p.d.getDate();
+  p.W = p.d.getDay();
+  p.offset = -p.d.getTimezoneOffset();
 }
 /** add(1, "day") on CleanLocalFreshNoDate, D+amount safe in [1,28] → arithmetic. */
 function addDay_CLFN_safe(p: _P & CleanLocalFreshNoDate, amount: number): void {
   p.D += amount;
   p.t += amount * 86400000;
   (p as { _tStale: boolean })._tStale = true;
+}
+/** add(1, "day") on CleanLocalFreshNoDate, D+amount outside [1,28] → allocate Date + setDate. */
+function addDay_CLFN_overflow(p: _P & CleanLocalFreshNoDate, amount: number): void {
+  const d = new Date(p.t);
+  d.setDate(d.getDate() + amount);
+  (p as { d: Date | undefined }).d = d;
+  p.t = d.getTime();
+  p.y = d.getFullYear();
+  p.M = d.getMonth();
+  p.D = d.getDate();
+  p.W = d.getDay();
+  p.offset = -d.getTimezoneOffset();
 }
 
 // ---- Adventure-style state-machine op codes and helpers ----
@@ -2604,11 +2621,19 @@ export class Moment {
               return this;
             }
             if (isCleanLocalFreshWithDate(p)) {
-              addDay_CLFD(p, amount);
+              if (p.D + amount >= 1 && p.D + amount <= 28) {
+                addDay_CLFD_safe(p, amount);
+              } else {
+                addDay_CLFD_overflow(p, amount);
+              }
               return this;
             }
-            if (isCleanLocalFreshNoDate(p) && p.D + amount >= 1 && p.D + amount <= 28) {
-              addDay_CLFN_safe(p, amount);
+            if (isCleanLocalFreshNoDate(p)) {
+              if (p.D + amount >= 1 && p.D + amount <= 28) {
+                addDay_CLFN_safe(p, amount);
+              } else {
+                addDay_CLFN_overflow(p, amount);
+              }
               if (isNaN(p.t)) {
                 this._isValid = false;
               }
