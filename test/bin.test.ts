@@ -1,5 +1,5 @@
 import { test, expect, describe, mock } from "bun:test";
-import { mkdtempSync, writeFileSync, rmSync, readFileSync, mkdirSync, existsSync } from "node:fs";
+import { mkdtempSync, writeFileSync, rmSync, readFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { scanMomentUsages } from "../src/bin/moment-usage";
@@ -191,14 +191,12 @@ describe("runStats", () => {
 });
 
 describe("runReport", () => {
-  test("writes MIGRATION.md with usage breakdown", () => {
+  test("writes markdown report with usage breakdown", () => {
     const d = tmpDir();
     try {
       addFiles(d, { "a.ts": "moment('2024-01-01').format('YYYY')" });
-      runReport(d);
-      const p = join(d, "MIGRATION.md");
-      expect(existsSync(p)).toBe(true);
-      const content = readFileSync(p, "utf-8");
+      const out = capture(() => runReport("markdown", d));
+      const content = out.join("\n");
       expect(content).toContain("# moment → mmntjs Migration Report");
       expect(content).toContain("moment usages:");
       expect(content).toContain("Temporal-ready");
@@ -213,10 +211,8 @@ describe("runReport", () => {
     const d = tmpDir();
     try {
       addFiles(d, { "a.ts": "const x = 1;" });
-      runReport(d);
-      const p = join(d, "MIGRATION.md");
-      expect(existsSync(p)).toBe(true);
-      const content = readFileSync(p, "utf-8");
+      const out = capture(() => runReport("markdown", d));
+      const content = out.join("\n");
       expect(content).toContain("moment usages: 0");
     } finally {
       rmSync(d, { recursive: true, force: true });
@@ -308,7 +304,7 @@ describe("runAudit", () => {
     const d = tmpDir();
     try {
       addFiles(d, { "a.ts": "moment('2024-01-01').format('YYYY').add(1, 'day')" });
-      const out = capture(() => runAudit(d));
+      const out = capture(() => runAudit("text", d));
       const joined = out.join("\n");
       expect(joined).toMatch(/Total usages/);
       expect(joined).toMatch(/Recognized calls/);
@@ -323,7 +319,7 @@ describe("runAudit", () => {
     const d = tmpDir();
     try {
       addFiles(d, { "a.ts": "moment().someUnknownApi()" });
-      const out = capture(() => runAudit(d));
+      const out = capture(() => runAudit("text", d));
       const joined = out.join("\n");
       expect(joined).toContain("someUnknownApi");
     } finally {
@@ -335,7 +331,7 @@ describe("runAudit", () => {
     const d = tmpDir();
     try {
       addFiles(d, { "a.ts": "moment().map(x => x).filter(y => y)" });
-      const out = capture(() => runAudit(d));
+      const out = capture(() => runAudit("text", d));
       const joined = out.join("\n");
       expect(joined).not.toContain(".map");
       expect(joined).not.toContain(".filter");
