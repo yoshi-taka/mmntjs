@@ -732,21 +732,18 @@ export class Moment {
           p.ms = val;
           break;
         case _OP_DATE:
+          // gnulib-inspired: ordinary values use pure arithmetic, defer
+          // Date materialization.  val <= 28 is always safe — every month
+          // has ≥ 28 days, so no overflow risk and no DST calendar shift.
           if (val <= 28) {
             p.W = (((p.W - p.D + val) % 7) + 7) % 7;
             p.D = val;
-            if (p.d != null) {
-              // Keep Date alive — avoids allocation in future _getD
-              p.d.setDate(val);
-              p.t = p.d.getTime();
-              p._tStale = false;
-            } else {
-              p.d = undefined;
-              p._tStale = true;
-            }
-            return;
+            p.d = undefined;
+            break;
           }
-          // val > 28: use Date if available for auto-clamping
+          // val > 28: use Date if available for auto-clamping (JS Date
+          // overflow e.g. Apr 31 → May 1).  Revert to cold path when
+          // no Date object to avoid allocating one.
           if (p.d != null) {
             p.d.setDate(val);
             p.D = p.d.getDate();
