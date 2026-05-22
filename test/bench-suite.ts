@@ -125,35 +125,37 @@ runGroups([
   {
     name: "startof",
     benches: [
-      // no-op: already at day boundary (midnight)
-      (s) => {
-        const m = mmntjs(new Date(2024, 0, 15, 0, 0, 0, 0));
-        s.add("mmntjs#startOfDay (no-op)", () => m.startOf("day"));
-      },
-      // UTC mode: stable initial
+      // UTC path
       (s) => {
         const m = mmntjs.utc(date);
         s.add("mmntjs#startOfDay (UTC)", () => m.startOf("day"));
       },
-      // local mode: stable initial (same as original)
-      (s) => s.add("mmntjs#startOfDay (stable)", () => mmntjs(date).startOf("day")),
+      // local + p.d present (fresh construction from Date)
+      (s) => s.add("mmntjs#startOfDay (local+p.d)", () => mmntjs(date).startOf("day")),
       (s) => s.add("date-fns#startOfDay", () => startOfDay(date)),
-      // dirty: force _ensureFields before startOf
+      // local + p.d absent (created from string)
+      (s) =>
+        s.add("mmntjs#startOfDay (local+noD)", () => mmntjs("2024-06-15T10:30:00").startOf("day")),
+      // local + _tStale (after setter)
       (s) => {
         const m = mmntjs(date);
-        // access getter to leave clean, then force t mutation
+        s.add("mmntjs#startOfDay (local+_tStale)", () => {
+          m.hour(5);
+          return m.startOf("day");
+        });
+      },
+      // local + dirty
+      (s) => {
+        const m = mmntjs(date);
         s.add("mmntjs#startOfDay (dirty)", () => {
           m._p.dirty = true;
           return m.startOf("day");
         });
       },
-      // after setter chain: set hour then startOf day
+      // no-op (already at boundary)
       (s) => {
-        const m = mmntjs(date);
-        s.add("mmntjs#startOfDay (after hour(5))", () => {
-          m.hour(5);
-          return m.startOf("day");
-        });
+        const m = mmntjs(new Date(2024, 0, 15, 0, 0, 0, 0));
+        s.add("mmntjs#startOfDay (no-op)", () => m.startOf("day"));
       },
       (s) => s.add("mmntjs#startOfYear", () => mmntjs(date).startOf("year")),
       (s) => s.add("mmntjs#startOfMonth", () => mmntjs(date).startOf("month")),
