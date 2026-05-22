@@ -115,11 +115,41 @@ function setDate28_CLFN(p: _P & CleanLocalFreshNoDate, val: OrdinaryDate28): voi
   p.D = val;
   (p as { _tStale: boolean })._tStale = true;
 }
-/** date = d ∈ [1,28] on CleanUTC → arithmetic. */
+/** date = d ∈ [1,28] on CleanUTC → civil arithmetic, allocation-free, fields fresh. */
 function setDate28_UTC(p: _P & CleanUTC, val: OrdinaryDate28): void {
-  p.t = (Date.UTC(p.y, p.M, val, p.H, p.m, p.s, p.ms) + p.offset * 60000) >>> 0;
+  p.W = (((p.W - p.D + val) % 7) + 7) % 7;
+  p.t = ymdToEpochDays(p.y, p.M, val) * DAY_MS + _tod(p);
   p.D = val;
-  (p as { _tStale: boolean })._tStale = true;
+}
+/** date = any valid d on CleanUTC → civil arithmetic with month-boundary handling. */
+function setDateUTC(p: _P & CleanUTC, val: number): void {
+  p.t = ymdToEpochDays(p.y, p.M, val) * DAY_MS + _tod(p);
+  const totalDays = Math.floor(p.t / DAY_MS);
+  [p.y, p.M, p.D] = Moment._epochDaysToYMD(totalDays);
+  p.W = (((totalDays + 4) % 7) + 7) % 7;
+}
+/** startOf('year') on CleanUTC → civil arithmetic. */
+function startOfYearUTC(p: _P & CleanUTC): void {
+  p.t = ymdToEpochDays(p.y, 0, 1) * DAY_MS;
+  p.M = 0;
+  p.D = 1;
+  p.H = 0;
+  p.m = 0;
+  p.s = 0;
+  p.ms = 0;
+  p.W = _dayOfWeek(p.y, 0, 1);
+  p.d = undefined;
+}
+/** startOf('month') on CleanUTC → civil arithmetic. */
+function startOfMonthUTC(p: _P & CleanUTC): void {
+  p.t = ymdToEpochDays(p.y, p.M, 1) * DAY_MS;
+  p.D = 1;
+  p.H = 0;
+  p.m = 0;
+  p.s = 0;
+  p.ms = 0;
+  p.W = _dayOfWeek(p.y, p.M, 1);
+  p.d = undefined;
 }
 /** hour [0,23] → lazy field write on any clean state. */
 function setHourFast(p: { H: number; _tStale: boolean }, h: OrdinaryHour): void {
@@ -164,12 +194,12 @@ function addDayUTC(p: _P & CleanUTC, amount: number): void {
   if (p.D + amount >= 1 && p.D + amount <= 28) {
     // No month boundary → cheap arithmetic, fields stay fresh
     p.D += amount;
-    p.W = ((p.W + amount) % 7 + 7) % 7;
+    p.W = (((p.W + amount) % 7) + 7) % 7;
   } else {
     // May cross month/year boundary → defer to dirty
     (p as { dirty: boolean }).dirty = true;
   }
-  }
+}
 /** add(1, "day") on CleanLocalFreshWithDate, D+amount ∈ [1,28] → arithmetic-only, allocation-free. */
 function addDay_CLFD_safe(p: _P & CleanLocalFreshWithDate, amount: number): void {
   p.D += amount;
@@ -1707,12 +1737,23 @@ export class Moment {
       const refined = refineDate28(d);
       // ---- Fast paths: clean + no callback, dispatched by subcategory ----
       if (!p.dirty && !updateOffsetCallback) {
-        if (refined !== null) {
-          if (refined === p.D) {
+        if (isCleanUTC(p)) {
+          const num = refined ?? Number(d);
+          if (num <= 0 || isNaN(num)) {
             return this;
           }
-          if (isCleanUTC(p)) {
+          if (num === p.D) {
+            return this;
+          }
+          if (refined !== null) {
             setDate28_UTC(p, refined);
+          } else {
+            setDateUTC(p, num);
+          }
+          return this;
+        }
+        if (refined !== null) {
+          if (refined === p.D) {
             return this;
           }
           if (isCleanLocalFreshWithDate(p)) {
@@ -1724,7 +1765,6 @@ export class Moment {
             return this;
           }
         }
-        // val > 28 or _tStale → fall through
       }
       const num = refined ?? Number(d);
       if (num <= 0 || isNaN(num)) {
@@ -2306,7 +2346,7 @@ export class Moment {
       p.d = undefined;
       if (p.D + amount >= 1 && p.D + amount <= 28) {
         p.D += amount;
-        p.W = ((p.W + amount) % 7 + 7) % 7;
+        p.W = (((p.W + amount) % 7) + 7) % 7;
       } else {
         (p as { dirty: boolean }).dirty = true;
       }
@@ -2853,6 +2893,16 @@ export class Moment {
       return this;
     }
     if (startOp >= 0) {
+      if (!p.dirty && !updateOffsetCallback && isCleanUTC(p)) {
+        if (startOp === _OP_SY) {
+          startOfYearUTC(p);
+          return this;
+        }
+        if (startOp === _OP_SM) {
+          startOfMonthUTC(p);
+          return this;
+        }
+      }
       this._applyOp(startOp, 0);
     } else {
       // QUARTER / WEEK / ISO_WEEK — handled by extra module
