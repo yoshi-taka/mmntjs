@@ -15,8 +15,29 @@ export function assertProp<Ts>(property: fc.IProperty<Ts>, params?: fc.Parameter
           : 200;
       const nl = msg.endsWith("\n") ? "" : "\n";
       const hint = `→ SEED=${seed}  (re-run: assertProp(property, { seed: ${seed}, numRuns: ${numRuns} }))`;
-      console.error(hint);
-      err.message = `${msg}${nl}${hint}`;
+
+      // Extract counterexample for regression script
+      const cxMatch = msg.match(/Counterexample:\s*(\[.*?\])\s*(?:\n|$)/s);
+      let regCmd = "";
+      if (cxMatch) {
+        try {
+          const raw = cxMatch[1];
+          // Convert JS literals (new Date("...")) to JSON
+          const asJson = raw
+            .replaceAll(/new Date\("([^"]+)"\)/g, '"$1"')
+            .replaceAll("'", '"')
+            .replaceAll(/([{,])\s*([a-zA-Z_]\w*)\s*:/g, '$1"$2":');
+          const parsed = JSON.parse(asJson);
+          const valuesJson = JSON.stringify(parsed);
+          const desc = `PBT seed=${seed}`;
+          regCmd = `\n→ bun run scripts/pbt-regression.ts --seed ${seed} --values '${valuesJson}' --desc '${desc}'`;
+        } catch {
+          regCmd = `\n→ bun run scripts/pbt-regression.ts --seed ${seed} --values '[...]' --desc '...' (parse counterexample manually)`;
+        }
+      }
+
+      console.error(hint + regCmd);
+      err.message = `${msg}${nl}${hint}${regCmd}`;
     }
     throw err;
   }
