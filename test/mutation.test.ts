@@ -120,7 +120,7 @@ afterAll(() => {
   console.log(`Killed: ${mutKilled}/${mutTotal} (${rate}%)`);
   console.log(`Survived: ${mutSurvived}`);
   console.log(`Skipped: ${mutSkipped}`);
-  if (mutSurvived > 0) {
+  if (mutSurvived > 0 || mutSkipped > 0) {
     process.exit(1);
   }
 });
