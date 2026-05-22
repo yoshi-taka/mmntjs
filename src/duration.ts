@@ -188,7 +188,27 @@ export class Duration {
     }
     if (typeof input === "number") {
       if (!unit || isNaN(input)) {
-        this._initNumber(input);
+        this._locale = getCurrentLocale();
+        if (isNaN(input)) {
+          this._isValid = false;
+          this._milliseconds = NaN;
+        } else {
+          this._milliseconds = input;
+        }
+        this._bubble();
+        return;
+      }
+      // Fast paths for common numeric+unit
+      if (unit === "d" || unit === "day" || unit === "days") {
+        this._locale = getCurrentLocale();
+        this._days = input;
+        this._bubble();
+        return;
+      }
+      if (unit === "ms") {
+        this._locale = getCurrentLocale();
+        this._milliseconds = Math.round(input);
+        this._bubble();
         return;
       }
       this._initNumberWithUnit(input, unit);

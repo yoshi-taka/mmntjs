@@ -401,6 +401,167 @@ function startOfMonthStale(p: _P & CleanLocalStale): void {
   (p as { _tStale: boolean })._tStale = false;
 }
 
+// ── endOf month morphisms ──
+/** endOf('month') on CleanUTC → pure civil arithmetic. */
+function endOfMonthUTC(p: _P & CleanUTC): void {
+  const eom = daysInMonthFast(p.y, p.M);
+  p.t = (ymdToEpochDays(p.y, p.M, eom) + 1) * DAY_MS - 1;
+  p.D = eom;
+  p.H = 23;
+  p.m = 59;
+  p.s = 59;
+  p.ms = 999;
+  p.W = _dayOfWeek(p.y, p.M, eom);
+  p.d = undefined;
+}
+/** endOf('month') on CleanLocalFreshWithDate → Date.setMonth + setHours. */
+function endOfMonth_CLFD(p: _P & CleanLocalFreshWithDate): void {
+  const d = p.d;
+  d.setMonth(p.M + 1, 0);
+  d.setHours(23, 59, 59, 999);
+  p.t = d.getTime();
+  p.D = d.getDate();
+  p.H = 23;
+  p.m = 59;
+  p.s = 59;
+  p.ms = 999;
+  p.W = d.getDay();
+  p.offset = -d.getTimezoneOffset();
+}
+/** endOf('month') on CleanLocalFreshNoDate → allocate Date + set. */
+function endOfMonth_CLFN(p: _P & CleanLocalFreshNoDate): void {
+  const eom = daysInMonthFast(p.y, p.M);
+  const d = new Date(p.y, p.M, eom, 23, 59, 59, 999);
+  p.t = d.getTime();
+  (p as { d: Date | undefined }).d = d;
+  p.D = eom;
+  p.H = 23;
+  p.m = 59;
+  p.s = 59;
+  p.ms = 999;
+  p.W = d.getDay();
+  p.offset = -d.getTimezoneOffset();
+}
+/** endOf('month') on CleanLocalStale → materialise Date from fields. */
+function endOfMonthStale(p: _P & CleanLocalStale): void {
+  const eom = daysInMonthFast(p.y, p.M);
+  const d = new Date(p.y, p.M, eom, 23, 59, 59, 999);
+  p.t = d.getTime();
+  (p as { d: Date | undefined }).d = d;
+  p.D = eom;
+  p.H = 23;
+  p.m = 59;
+  p.s = 59;
+  p.ms = 999;
+  p.W = d.getDay();
+  p.offset = -d.getTimezoneOffset();
+  (p as { _tStale: boolean })._tStale = false;
+}
+
+// ── endOf year morphisms ──
+/** endOf('year') on CleanUTC → pure civil arithmetic. */
+function endOfYearUTC(p: _P & CleanUTC): void {
+  p.t = (ymdToEpochDays(p.y, 11, 31) + 1) * DAY_MS - 1;
+  p.M = 11;
+  p.D = 31;
+  p.H = 23;
+  p.m = 59;
+  p.s = 59;
+  p.ms = 999;
+  p.W = _dayOfWeek(p.y, 11, 31);
+  p.d = undefined;
+}
+/** endOf('year') on CleanLocalFreshWithDate → Date.setFullYear + setHours. */
+function endOfYear_CLFD(p: _P & CleanLocalFreshWithDate): void {
+  const d = p.d;
+  d.setFullYear(p.y, 11, 31);
+  d.setHours(23, 59, 59, 999);
+  p.t = d.getTime();
+  p.M = 11;
+  p.D = 31;
+  p.H = 23;
+  p.m = 59;
+  p.s = 59;
+  p.ms = 999;
+  p.W = d.getDay();
+  p.offset = -d.getTimezoneOffset();
+}
+/** endOf('year') on CleanLocalFreshNoDate → allocate Date + set. */
+function endOfYear_CLFN(p: _P & CleanLocalFreshNoDate): void {
+  const d = new Date(p.y, 11, 31, 23, 59, 59, 999);
+  p.t = d.getTime();
+  (p as { d: Date | undefined }).d = d;
+  p.M = 11;
+  p.D = 31;
+  p.H = 23;
+  p.m = 59;
+  p.s = 59;
+  p.ms = 999;
+  p.W = d.getDay();
+  p.offset = -d.getTimezoneOffset();
+}
+/** endOf('year') on CleanLocalStale → materialise Date from fields. */
+function endOfYearStale(p: _P & CleanLocalStale): void {
+  const d = new Date(p.y, 11, 31, 23, 59, 59, 999);
+  p.t = d.getTime();
+  (p as { d: Date | undefined }).d = d;
+  p.M = 11;
+  p.D = 31;
+  p.H = 23;
+  p.m = 59;
+  p.s = 59;
+  p.ms = 999;
+  p.W = d.getDay();
+  p.offset = -d.getTimezoneOffset();
+  (p as { _tStale: boolean })._tStale = false;
+}
+
+// ── startOf year morphisms (local paths) ──
+/** startOf('year') on CleanLocalFreshWithDate → Date.setMonth(0,1) + setHours. */
+function startOfYear_CLFD(p: _P & CleanLocalFreshWithDate): void {
+  const d = p.d;
+  d.setMonth(0, 1);
+  d.setHours(0, 0, 0, 0);
+  p.t = d.getTime();
+  p.M = 0;
+  p.D = 1;
+  p.H = 0;
+  p.m = 0;
+  p.s = 0;
+  p.ms = 0;
+  p.W = d.getDay();
+  p.offset = -d.getTimezoneOffset();
+}
+/** startOf('year') on CleanLocalFreshNoDate → allocate Date + set. */
+function startOfYear_CLFN(p: _P & CleanLocalFreshNoDate): void {
+  const d = new Date(p.y, 0, 1);
+  p.t = d.getTime();
+  (p as { d: Date | undefined }).d = d;
+  p.M = 0;
+  p.D = 1;
+  p.H = 0;
+  p.m = 0;
+  p.s = 0;
+  p.ms = 0;
+  p.W = d.getDay();
+  p.offset = -d.getTimezoneOffset();
+}
+/** startOf('year') on CleanLocalStale → materialise Date. */
+function startOfYearStale(p: _P & CleanLocalStale): void {
+  const d = new Date(p.y, 0, 1);
+  p.t = d.getTime();
+  (p as { d: Date | undefined }).d = d;
+  p.M = 0;
+  p.D = 1;
+  p.H = 0;
+  p.m = 0;
+  p.s = 0;
+  p.ms = 0;
+  p.W = d.getDay();
+  p.offset = -d.getTimezoneOffset();
+  (p as { _tStale: boolean })._tStale = false;
+}
+
 // ── diff morphisms (branded-state-pair → pure arithmetic) ──
 /** diff("days") between two clean UTC moments → pure epoch arithmetic. */
 function diffDaysUTC(a: _P & CleanUTC, b: _P & CleanUTC, float?: boolean): number {
@@ -1814,7 +1975,9 @@ export class Moment {
   }
 
   clone(): this {
-    this._syncT();
+    if (this._p._tStale) {
+      this._syncT();
+    }
     return this._cloneInto(
       createMomentShell(this._l, this._p.isUTC, this._p.offset, this._isValid) as this,
     );
@@ -3057,6 +3220,18 @@ export class Moment {
         startOfYearUTC(p);
         return this;
       }
+      if (isCleanLocalFreshWithDate(p)) {
+        startOfYear_CLFD(p);
+        return this;
+      }
+      if (isCleanLocalFreshNoDate(p)) {
+        startOfYear_CLFN(p);
+        return this;
+      }
+      if (isCleanLocalStale(p)) {
+        startOfYearStale(p);
+        return this;
+      }
     }
     return this._startOfSlow("year");
   }
@@ -3205,65 +3380,109 @@ export class Moment {
     if (!this._isValid) {
       return this;
     }
-    if (unit === "day" || unit === "days") {
-      return this._endOfDay();
+    const p = this._p;
+    // — day: charCodeAt fast entrance —
+    if (
+      unit.length === 3 &&
+      unit.charCodeAt(0) === 100 &&
+      unit.charCodeAt(1) === 97 &&
+      unit.charCodeAt(2) === 121
+    ) {
+      this._ensureFields();
+      if (p.isUTC) {
+        this._endOfUTC(DAY);
+      } else {
+        this._endOfLocal(DAY);
+      }
+      return this;
     }
-    if (unit === "month") {
-      return this._endOfMonth();
+    // — month: charCodeAt fast entrance, refined dispatch —
+    if (
+      unit.length === 5 &&
+      unit.charCodeAt(0) === 109 &&
+      unit.charCodeAt(1) === 111 &&
+      unit.charCodeAt(2) === 110 &&
+      unit.charCodeAt(3) === 116 &&
+      unit.charCodeAt(4) === 104
+    ) {
+      if (!updateOffsetCallback && !p.dirty) {
+        if (p.isUTC && p.H === 23 && p.m === 59 && p.s === 59 && p.ms === 999) {
+          const eom = daysInMonthFast(p.y, p.M);
+          if (p.D === eom) {
+            return this;
+          }
+        }
+        if (isCleanUTC(p)) {
+          endOfMonthUTC(p);
+          return this;
+        }
+        if (isCleanLocalFreshWithDate(p)) {
+          endOfMonth_CLFD(p);
+          return this;
+        }
+        if (isCleanLocalFreshNoDate(p)) {
+          endOfMonth_CLFN(p);
+          return this;
+        }
+        if (isCleanLocalStale(p)) {
+          endOfMonthStale(p);
+          return this;
+        }
+      }
+      this._ensureFields();
+      if (p.isUTC) {
+        this._endOfUTC(MONTH);
+      } else {
+        this._endOfLocal(MONTH);
+      }
+      return this;
     }
-    return this._endOfSlow(unit);
-  }
-
-  private _endOfFast(code: UnitCode): this {
-    this._ensureFields();
-    if (this._p.isUTC) {
-      this._endOfUTC(code);
-    } else {
-      this._endOfLocal(code);
-    }
-    return this;
-  }
-
-  private _endOfDay(): this {
-    return this._endOfFast(DAY);
-  }
-
-  private _endOfMonth(): this {
-    this._ensureFields();
-    if (!updateOffsetCallback) {
-      if (this._p.isUTC) {
-        const endDay = daysInMonthFast(this._p.y, this._p.M);
+    // — year: charCodeAt fast entrance, refined dispatch —
+    if (
+      unit.length === 4 &&
+      unit.charCodeAt(0) === 121 &&
+      unit.charCodeAt(1) === 101 &&
+      unit.charCodeAt(2) === 97 &&
+      unit.charCodeAt(3) === 114
+    ) {
+      if (!updateOffsetCallback && !p.dirty) {
         if (
-          this._p.D === endDay &&
-          this._p.H === 23 &&
-          this._p.m === 59 &&
-          this._p.s === 59 &&
-          this._p.ms === 999
+          p.isUTC &&
+          p.M === 11 &&
+          p.D === 31 &&
+          p.H === 23 &&
+          p.m === 59 &&
+          p.s === 59 &&
+          p.ms === 999
         ) {
           return this;
         }
-      } else if (
-        this._p.D === 1 &&
-        this._p.H === 0 &&
-        this._p.m === 0 &&
-        this._p.s === 0 &&
-        this._p.ms === 0
-      ) {
-        const endDay = daysInMonthFast(this._p.y, this._p.M);
-        const d = new Date(this._p.y, this._p.M, endDay, 23, 59, 59, 999);
-        this._p.d = d;
-        this._p.t = d.getTime();
-        this._p.D = endDay;
-        this._p.H = 23;
-        this._p.m = 59;
-        this._p.s = 59;
-        this._p.ms = 999;
-        this._p.W = d.getDay();
-        this._p.offset = -d.getTimezoneOffset();
-        return this;
+        if (isCleanUTC(p)) {
+          endOfYearUTC(p);
+          return this;
+        }
+        if (isCleanLocalFreshWithDate(p)) {
+          endOfYear_CLFD(p);
+          return this;
+        }
+        if (isCleanLocalFreshNoDate(p)) {
+          endOfYear_CLFN(p);
+          return this;
+        }
+        if (isCleanLocalStale(p)) {
+          endOfYearStale(p);
+          return this;
+        }
       }
+      this._ensureFields();
+      if (p.isUTC) {
+        this._endOfUTC(YEAR);
+      } else {
+        this._endOfLocal(YEAR);
+      }
+      return this;
     }
-    return this._endOfFast(MONTH);
+    return this._endOfSlow(unit);
   }
 
   private _endOfSlow(unit: string): this {
