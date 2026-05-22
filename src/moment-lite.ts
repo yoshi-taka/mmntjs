@@ -158,6 +158,19 @@ function _dayOfWeek(y: number, m: number, d: number): number {
   );
 }
 
+// Reusable probe Date for lightweight offset verification (no allocation)
+const _probeDate = new Date(0);
+const _probeCache = { t: NaN, offset: NaN };
+function _tzOffsetAt(t: number): number {
+  if (t === _probeCache.t) {
+    return _probeCache.offset;
+  }
+  _probeDate.setTime(t);
+  _probeCache.t = t;
+  _probeCache.offset = -_probeDate.getTimezoneOffset();
+  return _probeCache.offset;
+}
+
 function valueOfInput(input: unknown): number {
   if (input instanceof MomentLite) {
     return input.valueOf();
@@ -1839,16 +1852,29 @@ export class MomentLite {
         if (utc) {
           p.t = floorUnitEpoch(p.t, DAY_MS);
           p.d = undefined;
-        } else {
-          let d: Date;
-          if (p.d != null) {
-            d = p.d;
-            d.setHours(0, 0, 0, 0);
+        } else if (p.d != null) {
+          // musl-inspired arithmetic path with offset verify
+          const phase = euclideanModulo(p.t + p.offset * 60000, DAY_MS);
+          const candidateT = p.t - phase;
+          if (_tzOffsetAt(candidateT) === p.offset) {
+            p.t = candidateT;
+            p.d.setTime(candidateT);
           } else {
-            d = p.d = new Date(p.y, p.M, p.D);
+            p.d.setHours(0, 0, 0, 0);
+            p.t = p.d.getTime();
+            p.offset = -p.d.getTimezoneOffset();
           }
-          p.t = d.getTime();
-          p.offset = -d.getTimezoneOffset();
+        } else {
+          const phase = euclideanModulo(p.t + p.offset * 60000, DAY_MS);
+          const candidateT = p.t - phase;
+          const offAtTarget = _tzOffsetAt(candidateT);
+          if (offAtTarget === p.offset) {
+            p.t = candidateT;
+          } else {
+            p.d = new Date(candidateT);
+            p.t = p.d.getTime();
+            p.offset = offAtTarget;
+          }
         }
         p.H = 0;
         p.m = 0;
@@ -1859,16 +1885,28 @@ export class MomentLite {
         if (utc) {
           p.t = floorUnitEpoch(p.t, HOUR_MS);
           p.d = undefined;
-        } else {
-          let d: Date;
-          if (p.d != null) {
-            d = p.d;
-            d.setMinutes(0, 0, 0);
+        } else if (p.d != null) {
+          const phase = euclideanModulo(p.t + p.offset * 60000, HOUR_MS);
+          const candidateT = p.t - phase;
+          if (_tzOffsetAt(candidateT) === p.offset) {
+            p.t = candidateT;
+            p.d.setTime(candidateT);
           } else {
-            d = p.d = new Date(p.y, p.M, p.D, p.H);
+            p.d.setMinutes(0, 0, 0);
+            p.t = p.d.getTime();
+            p.offset = -p.d.getTimezoneOffset();
           }
-          p.t = d.getTime();
-          p.offset = -d.getTimezoneOffset();
+        } else {
+          const phase = euclideanModulo(p.t + p.offset * 60000, HOUR_MS);
+          const candidateT = p.t - phase;
+          const offAtTarget = _tzOffsetAt(candidateT);
+          if (offAtTarget === p.offset) {
+            p.t = candidateT;
+          } else {
+            p.d = new Date(candidateT);
+            p.t = p.d.getTime();
+            p.offset = offAtTarget;
+          }
         }
         p.m = 0;
         p.s = 0;
@@ -1878,16 +1916,28 @@ export class MomentLite {
         if (utc) {
           p.t = floorUnitEpoch(p.t, MINUTE_MS);
           p.d = undefined;
-        } else {
-          let d: Date;
-          if (p.d != null) {
-            d = p.d;
-            d.setSeconds(0, 0);
+        } else if (p.d != null) {
+          const phase = euclideanModulo(p.t + p.offset * 60000, MINUTE_MS);
+          const candidateT = p.t - phase;
+          if (_tzOffsetAt(candidateT) === p.offset) {
+            p.t = candidateT;
+            p.d.setTime(candidateT);
           } else {
-            d = p.d = new Date(p.y, p.M, p.D, p.H, p.m);
+            p.d.setSeconds(0, 0);
+            p.t = p.d.getTime();
+            p.offset = -p.d.getTimezoneOffset();
           }
-          p.t = d.getTime();
-          p.offset = -d.getTimezoneOffset();
+        } else {
+          const phase = euclideanModulo(p.t + p.offset * 60000, MINUTE_MS);
+          const candidateT = p.t - phase;
+          const offAtTarget = _tzOffsetAt(candidateT);
+          if (offAtTarget === p.offset) {
+            p.t = candidateT;
+          } else {
+            p.d = new Date(candidateT);
+            p.t = p.d.getTime();
+            p.offset = offAtTarget;
+          }
         }
         p.s = 0;
         p.ms = 0;
@@ -1896,16 +1946,28 @@ export class MomentLite {
         if (utc) {
           p.t = floorUnitEpoch(p.t, SECOND_MS);
           p.d = undefined;
-        } else {
-          let d: Date;
-          if (p.d != null) {
-            d = p.d;
-            d.setMilliseconds(0);
+        } else if (p.d != null) {
+          const phase = euclideanModulo(p.t + p.offset * 60000, SECOND_MS);
+          const candidateT = p.t - phase;
+          if (_tzOffsetAt(candidateT) === p.offset) {
+            p.t = candidateT;
+            p.d.setTime(candidateT);
           } else {
-            d = p.d = new Date(p.y, p.M, p.D, p.H, p.m, p.s);
+            p.d.setMilliseconds(0);
+            p.t = p.d.getTime();
+            p.offset = -p.d.getTimezoneOffset();
           }
-          p.t = d.getTime();
-          p.offset = -d.getTimezoneOffset();
+        } else {
+          const phase = euclideanModulo(p.t + p.offset * 60000, SECOND_MS);
+          const candidateT = p.t - phase;
+          const offAtTarget = _tzOffsetAt(candidateT);
+          if (offAtTarget === p.offset) {
+            p.t = candidateT;
+          } else {
+            p.d = new Date(candidateT);
+            p.t = p.d.getTime();
+            p.offset = offAtTarget;
+          }
         }
         p.ms = 0;
         break;
