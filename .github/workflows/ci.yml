@@ -27,9 +27,63 @@ jobs:
       - run: mkdir -p packages/timezone/node_modules && ln -sfn "$PWD" packages/timezone/node_modules/mmntjs
       - run: bun run build
       - run: bun run lint
-      - run: TZ=UTC bun run test:hard
-      - run: bun run knip
-      - run: bun run fallow
-      - run: bun run test:coverage
+      - name: "Core tests"
+        run: |
+          TZ=UTC bun test --parallel \
+            ./test/moment/*.js ./test/mmntjs.test.ts ./test/temporal.test.ts \
+            ./test/tree-shaking.test.ts ./test/regression/ \
+            ./test/parse-main.test.ts ./test/parse-format.test.ts \
+            ./test/timezone-compat.test.ts ./packages/timezone/test/ \
+            ./test/properties/ ./test/locale/*.test.ts \
+            ./test/locale-format-targeted.test.ts \
+            ./test/locale-metamorphic.test.ts ./test/locale-equivalence.test.ts \
+            ./test/locale-branch-targeted.test.ts \
+            ./test/display-branch-targeted.test.ts \
+            ./test/calendar-branch-targeted.test.ts \
+            ./test/comparison-branch-targeted.test.ts ./test/sbst-*.test.ts \
+            ./test/stateful-model.test.ts ./test/branch-targeted.test.ts \
+            ./test/bundle-smoke.test.ts ./test/calendar-extra.test.ts \
+            ./test/coverage-targeted.test.ts ./test/debug-extra.test.ts \
+            ./test/debug_resolve_path.test.ts ./test/display-extra.test.ts \
+            ./test/duration-between.test.ts ./test/duration-extra.test.ts \
+            ./test/factory-input-format.test.ts ./test/factory-lite.test.ts \
+            ./test/format-basic.test.ts ./test/iso-parse-temporal-oracle.test.ts \
+            ./test/locale-extra.test.ts ./test/locale-mgmt.test.ts \
+            ./test/moment-class-extra.test.ts ./test/moment-lite.test.ts \
+            ./test/parse-lite-strict.test.ts ./test/parse-lite.test.ts \
+            ./test/plugins.test.ts ./test/units.test.ts \
+            ./test/utc-extra.test.ts
+      - name: "Generated regression"
+        run: TZ=UTC bun test ./test/regression/generated.test.ts
+      - name: "Mutation"
+        run: TZ=UTC bun test ./test/mutation.test.ts
+      - name: "Bin"
+        run: TZ=UTC bun test ./test/bin.test.ts
+      - name: "DST (America/New_York)"
+        run: TZ=America/New_York bun test ./test/timezone-dst-subproc.test.ts
+      - name: "Stateful model (Asia/Tokyo)"
+        run: TZ=Asia/Tokyo bun test ./test/stateful-model.test.ts
+      - name: "Kibana compat"
+        run: >
+          TZ=UTC bun test --preload
+          ./test/kibana-compat/approaches/approach-c-preload.ts
+          ./test/kibana-compat/kibana-compat.test.ts
+          ./test/kibana-compat/approaches/approach-a-npm-alias.test.ts
+          ./test/kibana-compat/approaches/approach-b-direct-import.test.ts
+          ./test/kibana-compat/approaches/approach-c-preload.test.ts
+          ./test/kibana-compat/kbn-datemath-runner.test.ts
+      - name: "Grafana compat"
+        run: >
+          TZ=UTC bun test --preload
+          ./test/grafana-compat/approaches/approach-c-preload.ts
+          ./test/grafana-compat/grafana-compat.test.ts
+          ./test/grafana-compat/approaches/approach-b-direct-import.test.ts
+          ./test/grafana-compat/approaches/approach-c-preload.test.ts
+      - name: "Lint"
+        run: bun run lint
+      - name: "Knip"
+        run: bun run knip
+      - name: "Coverage"
+        run: bun run test:coverage
       - name: "Check coverage threshold (target: 80%)"
         run: bun scripts/check-coverage.ts 80

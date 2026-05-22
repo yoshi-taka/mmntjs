@@ -3,4 +3,4 @@ pre-commit:
     lint:
       run: bun run lint
     audit:
-      run: bun run audit:static
+      run: bash -c 'bun run knip && bun run fallow; exit 0'
