@@ -1,4 +1,5 @@
 import mmntjs from "mmntjs";
+import { createDurationFast, createDurationFromMsFast } from "../src/duration";
 import { _localeCache } from "../src/locale-runtime";
 import { setLocale } from "../src/locale";
 import { format } from "date-fns";
@@ -27,6 +28,8 @@ function run(fn: () => void, iter: number) {
 
 const date = new Date(2024, 5, 15, 10, 30, 45);
 const ITER = 2000;
+
+const m = mmntjs(new Date(2024, 5, 15, 10, 30, 45));
 
 const cases = [
   {
@@ -106,6 +109,71 @@ const cases = [
       mmntjs(date).format("LLL");
     },
     df: () => format(date, "PPp", { locale: enUS }),
+  },
+  // --- Cold-start fast-path targets ---
+  {
+    name: "clone",
+    setupWarm: () => {},
+    m2: () => {
+      m.clone();
+    },
+    df: () => {},
+  },
+  {
+    name: "valueOf",
+    setupWarm: () => {},
+    m2: () => {
+      m.valueOf();
+    },
+    df: () => date.getTime(),
+  },
+  {
+    name: "unix",
+    setupWarm: () => {},
+    m2: () => {
+      m.unix();
+    },
+    df: () => Math.floor(date.getTime() / 1000),
+  },
+  {
+    name: "startOf year",
+    setupWarm: () => {},
+    m2: () => {
+      m.startOf("year");
+    },
+    df: () => new Date(date.getFullYear(), 0, 1),
+  },
+  {
+    name: "endOf year",
+    setupWarm: () => {},
+    m2: () => {
+      m.endOf("year");
+    },
+    df: () => new Date(date.getFullYear(), 11, 31, 23, 59, 59, 999),
+  },
+  {
+    name: "duration(ms) fast",
+    setupWarm: () => {},
+    m2: () => {
+      createDurationFast(15000);
+    },
+    df: () => {},
+  },
+  {
+    name: "duration(ms) fastest",
+    setupWarm: () => {},
+    m2: () => {
+      createDurationFromMsFast(15000);
+    },
+    df: () => {},
+  },
+  {
+    name: "daysInMonth",
+    setupWarm: () => {},
+    m2: () => {
+      m.daysInMonth();
+    },
+    df: () => new Date(m.year(), m.month() + 1, 0).getDate(),
   },
 ];
 

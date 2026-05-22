@@ -1108,6 +1108,30 @@ export class Duration {
   }
 }
 
+/** Fastest Duration from raw milliseconds — no getCurrentLocale, no full _bubble.
+ *  Skips locale lookup and uses default locale "en".
+ *  Creates a shell Duration and computes breakdown directly without sign-check loop.
+ *  @public */
+export function createDurationFromMsFast(ms: number): Duration {
+  const d = Object.create(Duration.prototype) as Duration;
+  d._milliseconds = ms;
+  d._days = 0;
+  d._months = 0;
+  d._bdMilliseconds = ms % 1000;
+  const seconds = absFloor(ms / 1000);
+  d._bdSeconds = seconds % 60;
+  const minutes = absFloor(seconds / 60);
+  d._bdMinutes = minutes % 60;
+  const hours = absFloor(minutes / 60);
+  d._bdHours = hours % 24;
+  d._bdDays = absFloor(hours / 24);
+  d._bdMonths = 0;
+  d._bdYears = 0;
+  d._locale = "en";
+  d._isValid = !isNaN(ms);
+  return d;
+}
+
 export function createDurationFast(input?: DurationLike, unit?: string): Duration {
   if (input == null || input instanceof Duration || typeof input === "string" || isObject(input)) {
     return new Duration(input, unit);

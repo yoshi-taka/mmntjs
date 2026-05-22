@@ -570,6 +570,12 @@ export class MomentLite {
   }
 
   clone(): this {
+    return this._cloneFast();
+  }
+
+  /** Fast clone — no _cold copy, no _i/_f/_strict copy.
+   *  Safe when caller does not need _cold metadata. */
+  _cloneFast(): this {
     const m = Object.create(MomentLite.prototype) as this;
     m._isAMomentObject = true;
     m._l = this._l;
@@ -578,13 +584,15 @@ export class MomentLite {
     m._i = this._i;
     m._f = this._f;
     m._strict = this._strict;
-    if (this._cold) {
-      m._cold = { ...this._cold };
-    }
     return m;
   }
 
   valueOf(): number {
+    return this._valueOfFast();
+  }
+
+  /** Fast valueOf — skips _tStale check (lite has none always clean). */
+  _valueOfFast(): number {
     if (!this._isValid) {
       return NaN;
     }
@@ -1932,12 +1940,45 @@ export class MomentLite {
   }
 
   startOf(unit: string): this {
+    if (unit === "year" && !this._p.dirty) {
+      return this._startOfYearFast();
+    }
     const code = normalizeUnitCode(unit);
     if (code < 0) {
       return this;
     }
     this._ensureFields();
     return this._startOfByCode(code);
+  }
+
+  /** Fast startOf('year') — bypass normalizeUnitCode + switch + _ensureFields.
+   *  Caller must guarantee !p.dirty (fields are fresh). */
+  _startOfYearFast(): this {
+    const p = this._p;
+    if (p.M === 0 && p.D === 1 && p.H === 0 && p.m === 0 && p.s === 0 && p.ms === 0) {
+      return this;
+    }
+    if (p.isUTC) {
+      p.t = ymdToEpochDays(p.y, 0, 1) * DAY_MS;
+      p.d = undefined;
+    } else if (p.d != null) {
+      p.d.setMonth(0, 1);
+      p.d.setHours(0, 0, 0, 0);
+      p.t = p.d.getTime();
+      p.offset = -p.d.getTimezoneOffset();
+    } else {
+      p.d = new Date(p.y, 0, 1);
+      p.t = p.d.getTime();
+      p.offset = -p.d.getTimezoneOffset();
+    }
+    p.M = 0;
+    p.D = 1;
+    p.H = 0;
+    p.m = 0;
+    p.s = 0;
+    p.ms = 0;
+    p.W = _dayOfWeek(p.y, 0, 1);
+    return this;
   }
 
   private _startOfByCode(code: UnitCode): this {
@@ -2147,6 +2188,9 @@ export class MomentLite {
   }
 
   endOf(unit: string): this {
+    if (unit === "year" && !this._p.dirty) {
+      return this._endOfYearFast();
+    }
     const code = normalizeUnitCode(unit);
     if (code < 0) {
       return this;
@@ -2173,6 +2217,42 @@ export class MomentLite {
         this._endOfSecond();
         break;
     }
+    return this;
+  }
+
+  /** Fast endOf('year') — bypass normalizeUnitCode + switch + _ensureFields.
+   *  Caller must guarantee !p.dirty (fields are fresh). */
+  _endOfYearFast(): this {
+    const p = this._p;
+    if (
+      p.isUTC &&
+      p.M === 11 &&
+      p.D === 31 &&
+      p.H === 23 &&
+      p.m === 59 &&
+      p.s === 59 &&
+      p.ms === 999
+    ) {
+      return this;
+    }
+    if (p.isUTC) {
+      p.t = (ymdToEpochDays(p.y, 11, 31) + 1) * DAY_MS - 1;
+      p.d = undefined;
+    } else {
+      const d = p.d ?? new Date(p.t);
+      p.d = d;
+      d.setFullYear(p.y, 11, 31);
+      d.setHours(23, 59, 59, 999);
+      p.t = d.getTime();
+      p.offset = -d.getTimezoneOffset();
+    }
+    p.M = 11;
+    p.D = 31;
+    p.H = 23;
+    p.m = 59;
+    p.s = 59;
+    p.ms = 999;
+    p.W = _dayOfWeek(p.y, 11, 31);
     return this;
   }
 

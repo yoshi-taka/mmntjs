@@ -424,9 +424,7 @@ makeMutations([
   {
     name: "format: UTC+0 offset sign (> vs >=)",
     file: "src/format-tokens.ts",
-    patterns: [
-      [/const s = o >= 0 \? "\+" : "-";/g, 'const s = o > 0 ? "+" : "-";'],
-    ],
+    patterns: [[/const s = o >= 0 \? "\+" : "-";/g, 'const s = o > 0 ? "+" : "-";']],
     inputs: fc.constant(0),
     testFn: (_input: unknown) => {
       return mutatedMoment(new Date()).utcOffset(0).format("Z") === "+00:00";
