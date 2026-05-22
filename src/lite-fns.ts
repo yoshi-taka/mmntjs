@@ -203,15 +203,13 @@ export function add(d: Date, amount: number, unit: string): Date {
       break;
     }
     case "day":
-    case "date": {
-      const raw = Number.isInteger(amount)
-        ? amount
-        : amount < 0
-          ? Math.round(-amount) * -1
-          : Math.round(amount);
-      r.setDate(r.getDate() + raw);
+    case "date":
+      if (Number.isInteger(amount)) {
+        r.setTime(r.getTime() + amount * 86400000);
+      } else {
+        r.setDate(r.getDate() + Math.round(amount));
+      }
       break;
-    }
     case "hour":
       r.setTime(r.getTime() + Math.round(amount * 3600000));
       break;

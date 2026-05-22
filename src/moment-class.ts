@@ -590,177 +590,14 @@ export class Moment {
   // Flat design: inline all guard checks directly, no helper indirection.
   // TypeScript's control-flow analysis narrows p.d to Date after null guard.
 
-  /** tryFast setDate: UTC or local-D≤28 arithmetic, Date-clamp for D>28. */
-  private _tryFastSetDate(val: number): boolean {
-    const p = this._p;
-    if (p.dirty || updateOffsetCallback || val <= 0 || val === p.D) {
-      return false;
-    }
-    if (p.isUTC) {
-      p.D = val;
-      p._tStale = true;
-      return true;
-    }
-    if (val <= 28) {
-      p.D = val;
-      if (p.d != null) {
-        p.d.setDate(val);
-        p.t = p.d.getTime();
-      } else {
-        p._tStale = true;
-      }
-      return true;
-    }
-    if (p.d == null) {
-      return false;
-    }
-    p.d.setDate(val);
-    p.t = p.d.getTime();
-    p.D = p.d.getDate();
-    return true;
-  }
+  // ---- tryFast setDate is inlined directly in date() setter ----
 
-  /** tryFast setHour: local+p.d+clean+ordinary-hour → arithmetic or setHours. */
-  private _tryFastSetHour(num: number): boolean {
-    const p = this._p;
-    if (p.dirty || p._tStale || p.isUTC || p.d == null) {
-      return false;
-    }
-    if (!Number.isInteger(num) || num < 0 || num > 23 || num === p.H) {
-      return false;
-    }
-    const newT = p.t + (num - p.H) * HOUR_MS;
-    if (_tzOffsetAt(newT) === p.offset) {
-      p.t = newT;
-      p.d.setTime(newT);
-      p.H = num;
-    } else {
-      p.d.setHours(num, p.m, p.s, p.ms);
-      p.t = p.d.getTime();
-      p.offset = -p.d.getTimezoneOffset();
-      p.H = p.d.getHours();
-    }
-    p._tStale = false;
-    return true;
-  }
+  // ---- tryFast guards are inlined directly in each setter body for ----
+  // ---- maximum straight-line execution.  No function-call overhead. ----
 
-  /** tryFast setMinute: local+p.d+clean+0..59 → Date.setMinutes. */
-  private _tryFastSetMinute(num: number): boolean {
-    const p = this._p;
-    if (p.dirty || p._tStale || p.isUTC || p.d == null) {
-      return false;
-    }
-    if (!Number.isInteger(num) || num < 0 || num > 59 || num === p.m) {
-      return false;
-    }
-    p.d.setMinutes(num, p.s, p.ms);
-    p.m = num;
-    p.t = p.d.getTime();
-    p._tStale = false;
-    return true;
-  }
+  // ---- tryFast addDay is inlined directly in add() switch ----
 
-  /** tryFast setSecond: local+p.d+clean+0..59 → Date.setSeconds. */
-  private _tryFastSetSecond(num: number): boolean {
-    const p = this._p;
-    if (p.dirty || p._tStale || p.isUTC || p.d == null) {
-      return false;
-    }
-    if (!Number.isInteger(num) || num < 0 || num > 59 || num === p.s) {
-      return false;
-    }
-    p.d.setSeconds(num, p.ms);
-    p.s = num;
-    p.t = p.d.getTime();
-    p._tStale = false;
-    return true;
-  }
-
-  /** tryFast setMs: local+p.d+clean+0..999 → Date.setMilliseconds. */
-  private _tryFastSetMs(num: number): boolean {
-    const p = this._p;
-    if (p.dirty || p._tStale || p.isUTC || p.d == null) {
-      return false;
-    }
-    if (!Number.isInteger(num) || num < 0 || num > 999 || num === p.ms) {
-      return false;
-    }
-    p.d.setMilliseconds(num);
-    p.ms = num;
-    p.t = p.d.getTime();
-    p._tStale = false;
-    return true;
-  }
-
-  /** tryFast addDay: clean → UTC arithmetic or local D∈[1,28] arithmetic. */
-  private _tryFastAddDay(amount: number): boolean {
-    const p = this._p;
-    if (p.dirty || p._tStale || updateOffsetCallback || !Number.isInteger(amount)) {
-      return false;
-    }
-    if (p.isUTC) {
-      p.t += amount * DAY_MS;
-      p.d = undefined;
-      p._tStale = false;
-      p.dirty = true;
-      if (isNaN(p.t)) {
-        (this as Moment)._isValid = false;
-      }
-      return true;
-    }
-    const newD = p.D + amount;
-    if (newD < 1 || newD > 28) {
-      return false;
-    }
-    p.D = newD;
-    p.t += amount * DAY_MS;
-    p.d = undefined;
-    p._tStale = true;
-    if (isNaN(p.t)) {
-      (this as Moment)._isValid = false;
-    }
-    return true;
-  }
-
-  /** tryFast startOf('day'): flat dispatch on state — no helper indirection. */
-  private _tryFastStartOfDay(): boolean {
-    const p = this._p;
-    if (p.dirty || updateOffsetCallback) {
-      return false;
-    }
-    if (p.isUTC) {
-      p.t = floorUnitEpoch(p.t, DAY_MS);
-      p.d = undefined;
-    } else if (p.d != null) {
-      if (p._tStale) {
-        return false;
-      }
-      p.d.setHours(0, 0, 0, 0);
-      p.t = p.d.getTime();
-      p.offset = -p.d.getTimezoneOffset();
-    } else if (!p._tStale) {
-      const phase = euclideanModulo(p.t + p.offset * MINUTE_MS, DAY_MS);
-      const candidateT = p.t - phase;
-      const offAtTarget = _tzOffsetAt(candidateT);
-      if (offAtTarget === p.offset) {
-        p.t = candidateT;
-      } else {
-        p.t = candidateT + (offAtTarget - p.offset) * MINUTE_MS;
-        p.offset = offAtTarget;
-      }
-    } else {
-      const utcMidnight = ymdToEpochDays(p.y, p.M, p.D) * DAY_MS;
-      const offMidnight = _tzOffsetAt(utcMidnight);
-      p.t = utcMidnight - offMidnight * MINUTE_MS;
-      p.offset = offMidnight;
-    }
-    p.H = 0;
-    p.m = 0;
-    p.s = 0;
-    p.ms = 0;
-    p._tStale = false;
-    return true;
-  }
+  // ---- tryFast startOf('day') is inlined directly in startOf() ----
 
   // ---- Region dispatch for setters + startOf ----
 
@@ -1707,14 +1544,39 @@ export class Moment {
       if (num <= 0) {
         return this;
       }
-      if (this._tryFastSetDate(num)) {
-        return this;
+      const p = this._p;
+      // ---- Fast path: clean & no callback — UTC arithmetic, local D≤28, or Date clamp ----
+      if (!p.dirty && !updateOffsetCallback) {
+        if (num === p.D) {
+          return this;
+        }
+        if (p.isUTC) {
+          p.D = num;
+          p._tStale = true;
+          return this;
+        }
+        if (num <= 28) {
+          p.D = num;
+          if (p.d != null) {
+            p.d.setDate(num);
+            p.t = p.d.getTime();
+          } else {
+            p._tStale = true;
+          }
+          return this;
+        }
+        if (p.d != null) {
+          p.d.setDate(num);
+          p.t = p.d.getTime();
+          p.D = p.d.getDate();
+          return this;
+        }
       }
-      if (this._p.dirty) {
-        this._p.dirty = false;
+      if (p.dirty) {
+        p.dirty = false;
         this._refreshFields();
       }
-      if (num === this._p.D) {
+      if (num === p.D) {
         return this;
       }
       this._applyOp(_OP_DATE, num);
@@ -1840,22 +1702,45 @@ export class Moment {
       if (isNaN(num)) {
         return this;
       }
-      // VDSO fast path: handles clean + p.d present + ordinary range
-      if (this._tryFastSetHour(num)) {
-        return this;
+      const p = this._p;
+      // ---- Fast path: clean + local + p.d present + ordinary range ----
+      if (!p.dirty && !p._tStale && !p.isUTC && p.d != null) {
+        if (Number.isInteger(num) && num >= 0 && num <= 23) {
+          if (num === p.H) {
+            return this;
+          }
+          const newT = p.t + (num - p.H) * HOUR_MS;
+          if (_tzOffsetAt(newT) === p.offset) {
+            p.t = newT;
+            p.d.setTime(newT);
+            p.H = num;
+          } else {
+            p.d.setHours(num, p.m, p.s, p.ms);
+            p.t = p.d.getTime();
+            p.offset = -p.d.getTimezoneOffset();
+            p.H = p.d.getHours();
+          }
+          p._tStale = false;
+          return this;
+        }
+        if (num === p.H) {
+          return this;
+        }
       }
-      if (this._p.dirty) {
-        this._p.dirty = false;
+      // ---- Mid path: refresh dirty or fast field set ----
+      if (p.dirty) {
+        p.dirty = false;
         this._refreshFields();
-      }
-      if (num === this._p.H) {
-        return this;
+        if (num === p.H) {
+          return this;
+        }
       }
       if (!updateOffsetCallback) {
-        this._p.H = num;
-        this._p._tStale = true;
+        p.H = num;
+        p._tStale = true;
         return this;
       }
+      // ---- Slow path: updateOffset callback ----
       this._applyOp(_OP_HOUR, num);
       this._updateOffset(true);
       return this;
@@ -1878,19 +1763,32 @@ export class Moment {
       if (isNaN(num)) {
         return this;
       }
-      if (this._tryFastSetMinute(num)) {
-        return this;
+      const p = this._p;
+      // ---- Fast path: clean + local + p.d present + 0..59 ----
+      if (!p.dirty && !p._tStale && !p.isUTC && p.d != null) {
+        if (Number.isInteger(num) && num >= 0 && num <= 59) {
+          if (num === p.m) {
+            return this;
+          }
+          p.d.setMinutes(num, p.s, p.ms);
+          p.m = num;
+          p.t = p.d.getTime();
+          return this;
+        }
+        if (num === p.m) {
+          return this;
+        }
       }
-      if (this._p.dirty) {
-        this._p.dirty = false;
+      if (p.dirty) {
+        p.dirty = false;
         this._refreshFields();
-      }
-      if (num === this._p.m) {
-        return this;
+        if (num === p.m) {
+          return this;
+        }
       }
       if (!updateOffsetCallback) {
-        this._p.m = num;
-        this._p._tStale = true;
+        p.m = num;
+        p._tStale = true;
         return this;
       }
       this._applyOp(_OP_MIN, num);
@@ -1915,19 +1813,32 @@ export class Moment {
       if (isNaN(num)) {
         return this;
       }
-      if (this._tryFastSetSecond(num)) {
-        return this;
+      const p = this._p;
+      // ---- Fast path: clean + local + p.d present + 0..59 ----
+      if (!p.dirty && !p._tStale && !p.isUTC && p.d != null) {
+        if (Number.isInteger(num) && num >= 0 && num <= 59) {
+          if (num === p.s) {
+            return this;
+          }
+          p.d.setSeconds(num, p.ms);
+          p.s = num;
+          p.t = p.d.getTime();
+          return this;
+        }
+        if (num === p.s) {
+          return this;
+        }
       }
-      if (this._p.dirty) {
-        this._p.dirty = false;
+      if (p.dirty) {
+        p.dirty = false;
         this._refreshFields();
-      }
-      if (num === this._p.s) {
-        return this;
+        if (num === p.s) {
+          return this;
+        }
       }
       if (!updateOffsetCallback) {
-        this._p.s = num;
-        this._p._tStale = true;
+        p.s = num;
+        p._tStale = true;
         return this;
       }
       this._applyOp(_OP_SEC, num);
@@ -1952,19 +1863,32 @@ export class Moment {
       if (isNaN(num)) {
         return this;
       }
-      if (this._tryFastSetMs(num)) {
-        return this;
+      const p = this._p;
+      // ---- Fast path: clean + local + p.d present + 0..999 ----
+      if (!p.dirty && !p._tStale && !p.isUTC && p.d != null) {
+        if (Number.isInteger(num) && num >= 0 && num <= 999) {
+          if (num === p.ms) {
+            return this;
+          }
+          p.d.setMilliseconds(num);
+          p.ms = num;
+          p.t = p.d.getTime();
+          return this;
+        }
+        if (num === p.ms) {
+          return this;
+        }
       }
-      if (this._p.dirty) {
-        this._p.dirty = false;
+      if (p.dirty) {
+        p.dirty = false;
         this._refreshFields();
-      }
-      if (num === this._p.ms) {
-        return this;
+        if (num === p.ms) {
+          return this;
+        }
       }
       if (!updateOffsetCallback) {
-        this._p.ms = num;
-        this._p._tStale = true;
+        p.ms = num;
+        p._tStale = true;
         return this;
       }
       this._applyOp(_OP_MS, num);
@@ -2557,12 +2481,35 @@ export class Moment {
         case "d":
         case "day":
         case "days":
-        case "date":
-          if (this._tryFastAddDay(amount)) {
-            return this;
+        case "date": {
+          const p = this._p;
+          // Fast path: clean + integer amount — UTC arithmetic or local D∈[1,28]
+          if (!p.dirty && !p._tStale && !updateOffsetCallback && Number.isInteger(amount)) {
+            if (p.isUTC) {
+              p.t += amount * DAY_MS;
+              p.d = undefined;
+              p._tStale = false;
+              p.dirty = true;
+              if (isNaN(p.t)) {
+                this._isValid = false;
+              }
+              return this;
+            }
+            const newD = p.D + amount;
+            if (newD >= 1 && newD <= 28) {
+              p.D = newD;
+              p.t += amount * DAY_MS;
+              p.d = undefined;
+              p._tStale = true;
+              if (isNaN(p.t)) {
+                this._isValid = false;
+              }
+              return this;
+            }
           }
           this._addDay(amount);
           return this;
+        }
         case "h":
         case "hour":
         case "hours":
@@ -2713,8 +2660,36 @@ export class Moment {
                   ? _OP_SS
                   : -1;
 
-    // VDSO fast path: try startOf('day') for clean local+p.d or UTC
-    if (startOp === _OP_SD && this._tryFastStartOfDay()) {
+    // startOf('day') fast path: clean & no callback — direct arithmetic or Date.setHours
+    if (startOp === _OP_SD && !p.dirty && !updateOffsetCallback) {
+      if (p.isUTC) {
+        p.t = floorUnitEpoch(p.t, DAY_MS);
+        p.d = undefined;
+      } else if (p.d != null && !p._tStale) {
+        p.d.setHours(0, 0, 0, 0);
+        p.t = p.d.getTime();
+        p.offset = -p.d.getTimezoneOffset();
+      } else if (!p._tStale) {
+        const phase = euclideanModulo(p.t + p.offset * 60000, DAY_MS);
+        const candidateT = p.t - phase;
+        const offAtTarget = _tzOffsetAt(candidateT);
+        if (offAtTarget === p.offset) {
+          p.t = candidateT;
+        } else {
+          p.t = candidateT + (offAtTarget - p.offset) * 60000;
+          p.offset = offAtTarget;
+        }
+      } else {
+        const utcMidnight = ymdToEpochDays(p.y, p.M, p.D) * DAY_MS;
+        const offMidnight = _tzOffsetAt(utcMidnight);
+        p.t = utcMidnight - offMidnight * 60000;
+        p.offset = offMidnight;
+      }
+      p.H = 0;
+      p.m = 0;
+      p.s = 0;
+      p.ms = 0;
+      p._tStale = false;
       return this;
     }
     if (startOp >= 0) {
