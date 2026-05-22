@@ -586,6 +586,31 @@ export class Moment {
     }
   }
 
+  // ---- Internal branded/refined types ----
+  // Module-level type aliases — zero runtime cost, purely TS narrowing.
+  private _isCleanLocalCached(
+    p: this["_p"],
+  ): p is this["_p"] & { dirty: false; _tStale: false; isUTC: false; d: Date } {
+    return !p.dirty && !p._tStale && !p.isUTC && p.d != null;
+  }
+
+  /** n is an integer in [0, 23]. */
+  private _isHour(n: number): n is number & { __h: never } {
+    return Number.isInteger(n) && n >= 0 && n <= 23;
+  }
+  /** n is an integer in [0, 59]. */
+  private _isMinSec(n: number): n is number & { __ms: never } {
+    return Number.isInteger(n) && n >= 0 && n <= 59;
+  }
+  /** n is an integer in [0, 999]. */
+  private _isMs(n: number): n is number & { __M: never } {
+    return Number.isInteger(n) && n >= 0 && n <= 999;
+  }
+  /** n is an integer in [1, 28]. */
+  private _isD28(n: number): n is number & { __d28: never } {
+    return Number.isInteger(n) && n >= 1 && n <= 28;
+  }
+
   // ---- VDSO-style tryFast gates — return true when handled ----
 
   /** tryFast setDate: kernel-timekeeping VDSO — update only D (coarse field),
@@ -602,13 +627,12 @@ export class Moment {
       p._tStale = true;
       return true;
     }
-    // Local + val ≤ 28: safe for all months.
-    if (val <= 28) {
+    // Local + val ≤ 28: safe for all months — arithmetic path.
+    if (this._isD28(val)) {
       p.D = val;
       if (p.d != null) {
         p.d.setDate(val);
         p.t = p.d.getTime();
-        // p.W left stale — refreshed on next _ensureFields via p.d
       } else {
         p._tStale = true;
       }
@@ -621,16 +645,16 @@ export class Moment {
     p.d.setDate(val);
     p.t = p.d.getTime();
     p.D = p.d.getDate();
-    p.offset = -p.d.getTimezoneOffset();
     return true;
   }
 
-  /** tryFast setHour: clean + p.d present + ordinary range → probe arithmetic or setHours. */
+  /** tryFast setHour: clean local cached + ordinary hour → probe arithmetic. */
   private _tryFastSetHour(num: number): boolean {
     const p = this._p;
-    if (p.dirty || updateOffsetCallback || p.d == null || num < 0 || num > 23 || num === p.H) {
+    if (!this._isCleanLocalCached(p) || !this._isHour(num) || num === p.H) {
       return false;
     }
+    // p is now narrowed: clean, local, p.d: Date. num is OrdinaryHour (0..23).
     const newT = p.t + (num - p.H) * HOUR_MS;
     if (_tzOffsetAt(newT) === p.offset) {
       p.t = newT;
@@ -646,10 +670,10 @@ export class Moment {
     return true;
   }
 
-  /** tryFast setMinute: clean + p.d present + ordinary range → arithmetic + setTime. */
+  /** tryFast setMinute: clean local cached + ordinary range → Date direct. */
   private _tryFastSetMinute(num: number): boolean {
     const p = this._p;
-    if (p.dirty || updateOffsetCallback || p.d == null || num < 0 || num > 59 || num === p.m) {
+    if (!this._isCleanLocalCached(p) || !this._isMinSec(num) || num === p.m) {
       return false;
     }
     p.d.setMinutes(num, p.s, p.ms);
@@ -659,10 +683,10 @@ export class Moment {
     return true;
   }
 
-  /** tryFast setSecond: clean + p.d present + ordinary range → arithmetic + setTime. */
+  /** tryFast setSecond: clean local cached + ordinary range → Date direct. */
   private _tryFastSetSecond(num: number): boolean {
     const p = this._p;
-    if (p.dirty || updateOffsetCallback || p.d == null || num < 0 || num > 59 || num === p.s) {
+    if (!this._isCleanLocalCached(p) || !this._isMinSec(num) || num === p.s) {
       return false;
     }
     p.d.setSeconds(num, p.ms);
@@ -672,10 +696,10 @@ export class Moment {
     return true;
   }
 
-  /** tryFast setMs: clean + p.d present + ordinary range → arithmetic + setTime. */
+  /** tryFast setMs: clean local cached + ordinary range → Date direct. */
   private _tryFastSetMs(num: number): boolean {
     const p = this._p;
-    if (p.dirty || updateOffsetCallback || p.d == null || num < 0 || num > 999 || num === p.ms) {
+    if (!this._isCleanLocalCached(p) || !this._isMs(num) || num === p.ms) {
       return false;
     }
     p.d.setMilliseconds(num);
@@ -685,8 +709,7 @@ export class Moment {
     return true;
   }
 
-  /** tryFast addDay: kernel-timekeeping VDSO — update only D (coarse field)
-   *  and T (fine epoch).  W left stale — refreshed by _refreshFields on demand.
+  /** tryFast addDay: clean + integer → kernel-timekeeping VDSO.
    *  UTC → pure T arithmetic.
    *  Local D+amount ∈ [1,28] → deferred-Date arithmetic.
    *  Fallback on uncertainty (dirty, _tStale, updateOffsetCallback,
@@ -696,7 +719,7 @@ export class Moment {
     if (p.dirty || p._tStale || updateOffsetCallback || !Number.isInteger(amount)) {
       return false;
     }
-    // UTC: pure T arithmetic — civil fields untouched, epoch is canonical.
+    // UTC: pure T arithmetic — civil fields untouched, epoch canonical.
     if (p.isUTC) {
       p.t += amount * DAY_MS;
       p.d = undefined;
@@ -708,7 +731,6 @@ export class Moment {
       return true;
     }
     // Local: arithmetic safe only when D stays ∈ [1,28] (no overflow).
-    // T update is off by DST ±1h, self-corrected by _syncT on demand.
     const newD = p.D + amount;
     if (newD < 1 || newD > 28) {
       return false;
@@ -723,44 +745,53 @@ export class Moment {
     return true;
   }
 
-  /** tryFast startOf('day'): VDSO-style — no Date allocation for UTC /
-   *  clean-local / _tStale+noD.  When p.d present + _tStale, falls through
-   *  to _opTStale (arithmetic faster than JS Date method calls). */
+  /** tryFast startOf('day'): clean local cached → setHours(0,0,0,0). */
   private _tryFastStartOfDay(): boolean {
     const p = this._p;
-    if (p.dirty || updateOffsetCallback) {
-      return false;
-    }
-    if (p.isUTC) {
-      p.t = floorUnitEpoch(p.t, DAY_MS);
-      p.d = undefined;
-    } else if (p.d != null) {
-      // _tStale + p.d: _opTStale arithmetic (ymdToEpochDays + _tzOffsetAt)
-      // beats JS Date method calls — fallback to _applyOp.
-      if (p._tStale) {
+    if (!this._isCleanLocalCached(p)) {
+      // Fallback for non-clean-local-cached states.
+      if (p.dirty || updateOffsetCallback) {
         return false;
       }
-      p.d.setHours(0, 0, 0, 0);
-      p.t = p.d.getTime();
-      p.offset = -p.d.getTimezoneOffset();
-    } else if (!p._tStale) {
-      // Local no-p.d clean — arithmetic + offset probe.
-      const phase = euclideanModulo(p.t + p.offset * MINUTE_MS, DAY_MS);
-      const candidateT = p.t - phase;
-      const offAtTarget = _tzOffsetAt(candidateT);
-      if (offAtTarget === p.offset) {
-        p.t = candidateT;
+      if (p.isUTC) {
+        p.t = floorUnitEpoch(p.t, DAY_MS);
+        p.d = undefined;
+      } else if (p.d != null) {
+        // _tStale + p.d: _opTStale arithmetic beats Date methods.
+        if (p._tStale) {
+          return false;
+        }
+        // Shouldn't reach here if _isCleanLocalCached passed, but be safe.
+        p.d.setHours(0, 0, 0, 0);
+        p.t = p.d.getTime();
+        p.offset = -p.d.getTimezoneOffset();
+      } else if (!p._tStale) {
+        const phase = euclideanModulo(p.t + p.offset * MINUTE_MS, DAY_MS);
+        const candidateT = p.t - phase;
+        const offAtTarget = _tzOffsetAt(candidateT);
+        if (offAtTarget === p.offset) {
+          p.t = candidateT;
+        } else {
+          p.t = candidateT + (offAtTarget - p.offset) * MINUTE_MS;
+          p.offset = offAtTarget;
+        }
       } else {
-        p.t = candidateT + (offAtTarget - p.offset) * MINUTE_MS;
-        p.offset = offAtTarget;
+        const utcMidnight = ymdToEpochDays(p.y, p.M, p.D) * DAY_MS;
+        const offMidnight = _tzOffsetAt(utcMidnight);
+        p.t = utcMidnight - offMidnight * MINUTE_MS;
+        p.offset = offMidnight;
       }
-    } else {
-      // _tStale + no p.d: arithmetic from fields — no allocation.
-      const utcMidnight = ymdToEpochDays(p.y, p.M, p.D) * DAY_MS;
-      const offMidnight = _tzOffsetAt(utcMidnight);
-      p.t = utcMidnight - offMidnight * MINUTE_MS;
-      p.offset = offMidnight;
+      p.H = 0;
+      p.m = 0;
+      p.s = 0;
+      p.ms = 0;
+      p._tStale = false;
+      return true;
     }
+    // Fast path: clean, local, p.d: Date — setHours directly.
+    p.d.setHours(0, 0, 0, 0);
+    p.t = p.d.getTime();
+    p.offset = -p.d.getTimezoneOffset();
     p.H = 0;
     p.m = 0;
     p.s = 0;
