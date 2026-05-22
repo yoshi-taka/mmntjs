@@ -293,27 +293,34 @@ export type OrdinaryDate28 = number & { [__ordDate28]: true };
 
 // -------------------------------------------------------------------------
 // Refined internal state types (zero-cost at runtime)
+// These model subcategories of the general Moment _p state.
 // -------------------------------------------------------------------------
 
 /** Local time, fields + t both fresh, p.d present */
-export interface LocalDCClean {
+export interface CleanLocalFreshWithDate {
   dirty: false;
   _tStale: false;
   isUTC: false;
   d: Date;
-  offset: number;
 }
 
-/** Local time, fields fresh, t stale, no Date object */
-export interface LocalNDClean {
+/** Local time, fields + t both fresh, p.d absent */
+export interface CleanLocalFreshNoDate {
   dirty: false;
-  _tStale: true;
+  _tStale: false;
   isUTC: false;
   d: undefined;
 }
 
+/** Local time, fields fresh, t stale (Date may or may not exist) */
+export interface CleanLocalStale {
+  dirty: false;
+  _tStale: true;
+  isUTC: false;
+}
+
 /** UTC mode, fields fresh */
-export interface UTCClean {
+export interface CleanUTC {
   dirty: false;
   isUTC: true;
 }

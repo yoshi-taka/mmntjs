@@ -34,7 +34,13 @@ import type { ParseLocale } from "./parse-locale";
 import type { FormattableMoment } from "./display/types";
 import type { OrdinaryHour, OrdinaryMinute, OrdinarySecond, OrdinaryMillisecond } from "./types";
 
-// ---- Branded numeric refinements (zero-cost, type-level only) ----
+// ---- Category-theory-inspired refinement types & morphisms (lite) ----
+
+type _P = MomentLite["_p"];
+
+function isCleanLocalWithDate(p: _P): p is _P & { dirty: false; d: Date } {
+  return !p.dirty && p.d != null;
+}
 
 function refineHour(v: unknown): OrdinaryHour | null {
   const n = typeof v === "number" ? v : Number(v);
@@ -53,19 +59,19 @@ function refineMs(v: unknown): OrdinaryMillisecond | null {
   return Number.isInteger(n) && n >= 0 && n <= 999 ? (n as OrdinaryMillisecond) : null;
 }
 
-// ---- Fast mutation helpers (lite: no _tStale, relies on dirty ≈ _tStale) ----
+// ---- Fast mutation morphisms (lite: no _tStale) ----
 
-function setMinuteFast(p: { d: Date; m: number; t: number }, m: OrdinaryMinute): void {
+function setMinuteFast(p: _P & { d: Date }, m: OrdinaryMinute): void {
   p.t += (m - p.m) * 60000;
   p.m = m;
   p.d.setTime(p.t);
 }
-function setSecondFast(p: { d: Date; s: number; t: number }, s: OrdinarySecond): void {
+function setSecondFast(p: _P & { d: Date }, s: OrdinarySecond): void {
   p.t += (s - p.s) * 1000;
   p.s = s;
   p.d.setTime(p.t);
 }
-function setMsFast(p: { d: Date; ms: number; t: number }, ms: OrdinaryMillisecond): void {
+function setMsFast(p: _P & { d: Date }, ms: OrdinaryMillisecond): void {
   p.t += ms - p.ms;
   p.ms = ms;
   p.d.setTime(p.t);
@@ -857,11 +863,11 @@ export class MomentLite {
       }
       const p = this._p;
       const refined = refineMinute(m);
-      if (refined !== null && !p.dirty && p.d != null) {
+      if (refined !== null && isCleanLocalWithDate(p)) {
         if (refined === p.m) {
           return this;
         }
-        setMinuteFast(p as never, refined);
+        setMinuteFast(p, refined);
         return this;
       }
       const num = refined ?? Number(m);
@@ -902,11 +908,11 @@ export class MomentLite {
       }
       const p = this._p;
       const refined = refineSecond(s);
-      if (refined !== null && !p.dirty && p.d != null) {
+      if (refined !== null && isCleanLocalWithDate(p)) {
         if (refined === p.s) {
           return this;
         }
-        setSecondFast(p as never, refined);
+        setSecondFast(p, refined);
         return this;
       }
       const num = refined ?? Number(s);
@@ -947,11 +953,11 @@ export class MomentLite {
       }
       const p = this._p;
       const refined = refineMs(ms);
-      if (refined !== null && !p.dirty && p.d != null) {
+      if (refined !== null && isCleanLocalWithDate(p)) {
         if (refined === p.ms) {
           return this;
         }
-        setMsFast(p as never, refined);
+        setMsFast(p, refined);
         return this;
       }
       const num = refined ?? Number(ms);

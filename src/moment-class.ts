@@ -37,15 +37,26 @@ import {
 import type { CalendarAwareMoment } from "./calendar-extra";
 import { startOfExtraMoment, endOfExtraMoment } from "./boundary-extra";
 
-// ---- Branded numeric refinements (zero-cost, type-level only) ----
+// ---- Category-theory-inspired refinement types & morphisms ----
+// Model: general Moment _p state is the base category.
+// Subcategories (refined state types) are subsets where fast-path
+// preconditions are satisfied.  Refinement functors (type guards)
+// narrow from the general state to a subcategory.  Fast mutation
+// morphisms operate only inside a subcategory with branded values.
+
 import type {
   OrdinaryHour,
   OrdinaryMinute,
   OrdinarySecond,
   OrdinaryMillisecond,
   OrdinaryDate28,
-  LocalDCClean,
+  CleanLocalFreshWithDate,
+  CleanLocalFreshNoDate,
+  CleanLocalStale,
+  CleanUTC,
 } from "./types";
+
+// ---- Refinement functors — brand values into constrained numeric types ----
 
 function refineHour(v: unknown): OrdinaryHour | null {
   const n = typeof v === "number" ? v : Number(v);
@@ -68,33 +79,107 @@ function refineDate28(v: unknown): OrdinaryDate28 | null {
   return Number.isInteger(n) && n >= 1 && n <= 28 ? (n as OrdinaryDate28) : null;
 }
 
-// ---- Fast mutation helpers (precondition: input already refined, state already checked) ----
+// ---- Refinement functors — narrow _p state into a subcategory ----
 
-/** hour [0,23] → lazy field write; _tStale resolves DST on next sync. */
+type _P = Moment["_p"];
+
+function isCleanLocalFreshWithDate(p: _P): p is _P & CleanLocalFreshWithDate {
+  return !p.dirty && !p._tStale && !p.isUTC && p.d != null;
+}
+function isCleanLocalFreshNoDate(p: _P): p is _P & CleanLocalFreshNoDate {
+  return !p.dirty && !p._tStale && !p.isUTC && p.d == null;
+}
+function isCleanLocalStale(p: _P): p is _P & CleanLocalStale {
+  return !p.dirty && p._tStale && !p.isUTC;
+}
+function isCleanUTC(p: _P): p is _P & CleanUTC {
+  return !p.dirty && p.isUTC;
+}
+
+// ---- Fast mutation morphisms (operate inside refined subcategories) ----
+// Preconditions: input values already branded, state already narrowed.
+// No redundant runtime checks inside — the type system enforces safety.
+
+/** date = d ∈ [1,28] on CleanLocalFreshWithDate → Date.setDate + field readback. */
+function setDate28_CLFD(p: _P & CleanLocalFreshWithDate, val: OrdinaryDate28): void {
+  p.d.setDate(val);
+  p.t = p.d.getTime();
+  p.y = p.d.getFullYear();
+  p.M = p.d.getMonth();
+  p.D = p.d.getDate();
+  p.W = p.d.getDay();
+  p.offset = -p.d.getTimezoneOffset();
+}
+/** date = d ∈ [1,28] on CleanLocalFreshNoDate → lazy field write. */
+function setDate28_CLFN(p: _P & CleanLocalFreshNoDate, val: OrdinaryDate28): void {
+  p.D = val;
+  (p as { _tStale: boolean })._tStale = true;
+}
+/** date = d ∈ [1,28] on CleanUTC → arithmetic. */
+function setDate28_UTC(p: _P & CleanUTC, val: OrdinaryDate28): void {
+  p.t = (Date.UTC(p.y, p.M, val, p.H, p.m, p.s, p.ms) + p.offset * 60000) >>> 0;
+  p.D = val;
+  (p as { _tStale: boolean })._tStale = true;
+}
+/** hour [0,23] → lazy field write on any clean state. */
 function setHourFast(p: { H: number; _tStale: boolean }, h: OrdinaryHour): void {
   p.H = h;
   p._tStale = true;
 }
-/** minute [0,59] → p.t delta + d.setTime avoids Date.setMinutes overhead. */
-function setMinuteFast(p: LocalDCClean & { m: number; t: number }, m: OrdinaryMinute): void {
+/** minute [0,59] → p.t delta + d.setTime on CleanLocalFreshWithDate. */
+function setMinuteFast(p: _P & CleanLocalFreshWithDate, m: OrdinaryMinute): void {
   p.t += (m - p.m) * 60000;
   p.m = m;
   p.d.setTime(p.t);
-  (p as { _tStale: boolean })._tStale = false;
 }
-/** second [0,59] → p.t delta + d.setTime. */
-function setSecondFast(p: LocalDCClean & { s: number; t: number }, s: OrdinarySecond): void {
+/** second [0,59] → p.t delta + d.setTime on CleanLocalFreshWithDate. */
+function setSecondFast(p: _P & CleanLocalFreshWithDate, s: OrdinarySecond): void {
   p.t += (s - p.s) * 1000;
   p.s = s;
   p.d.setTime(p.t);
-  (p as { _tStale: boolean })._tStale = false;
 }
-/** ms [0,999] → p.t delta + d.setTime. */
-function setMsFast(p: LocalDCClean & { ms: number; t: number }, ms: OrdinaryMillisecond): void {
+/** ms [0,999] → p.t delta + d.setTime on CleanLocalFreshWithDate. */
+function setMsFast(p: _P & CleanLocalFreshWithDate, ms: OrdinaryMillisecond): void {
   p.t += ms - p.ms;
   p.ms = ms;
   p.d.setTime(p.t);
-  (p as { _tStale: boolean })._tStale = false;
+}
+/** startOf('day') on CleanLocalFreshWithDate → Date.setHours(0,0,0,0). */
+function startOfDay_CLFD(p: _P & CleanLocalFreshWithDate): void {
+  if (p.H === 0 && p.m === 0 && p.s === 0 && p.ms === 0) {
+    return;
+  }
+  p.d.setHours(0, 0, 0, 0);
+  p.t = p.d.getTime();
+  p.offset = -p.d.getTimezoneOffset();
+  p.H = 0;
+  p.m = 0;
+  p.s = 0;
+  p.ms = 0;
+}
+/** add(1, "day") UTC → pure epoch arithmetic. */
+function addDayUTC(p: _P & CleanUTC, amount: number): void {
+  p.t += amount * 86400000;
+  p.d = undefined;
+  (p as { dirty: boolean }).dirty = true;
+}
+/** add(1, "day") on CleanLocalFreshWithDate → clone Date + setDate. */
+function addDay_CLFD(p: _P & CleanLocalFreshWithDate, amount: number): void {
+  const nd = new Date(p.d);
+  nd.setDate(nd.getDate() + amount);
+  p.d = nd;
+  p.t = nd.getTime();
+  p.y = nd.getFullYear();
+  p.M = nd.getMonth();
+  p.D = nd.getDate();
+  p.W = nd.getDay();
+  p.offset = -nd.getTimezoneOffset();
+}
+/** add(1, "day") on CleanLocalFreshNoDate, D+amount safe in [1,28] → arithmetic. */
+function addDay_CLFN_safe(p: _P & CleanLocalFreshNoDate, amount: number): void {
+  p.D += amount;
+  p.t += amount * 86400000;
+  (p as { _tStale: boolean })._tStale = true;
 }
 
 // ---- Adventure-style state-machine op codes and helpers ----
@@ -1595,39 +1680,31 @@ export class Moment {
   date(d?: unknown): number | this {
     if (d !== undefined) {
       const p = this._p;
-      const num = typeof d === "number" ? d : Number(d);
-      if (
-        num <= 0 ||
-        isNaN(num) ||
-        (typeof d !== "number" && (d === "" || (typeof d === "object" && !(d instanceof Date))))
-      ) {
-        return this;
-      }
-      // ---- Fast path: clean & no callback — UTC arithmetic or Date clamp ----
+      const refined = refineDate28(d);
+      // ---- Fast paths: clean + no callback, dispatched by subcategory ----
       if (!p.dirty && !updateOffsetCallback) {
-        if (num === p.D) {
-          return this;
+        if (refined !== null) {
+          if (refined === p.D) {
+            return this;
+          }
+          if (isCleanUTC(p)) {
+            setDate28_UTC(p, refined);
+            return this;
+          }
+          if (isCleanLocalFreshWithDate(p)) {
+            setDate28_CLFD(p, refined);
+            return this;
+          }
+          if (isCleanLocalFreshNoDate(p)) {
+            setDate28_CLFN(p, refined);
+            return this;
+          }
         }
-        if (p.isUTC) {
-          p.D = num;
-          p._tStale = true;
-          return this;
-        }
-        if (p.d != null) {
-          p.d.setDate(num);
-          p.t = p.d.getTime();
-          p.y = p.d.getFullYear();
-          p.M = p.d.getMonth();
-          p.D = p.d.getDate();
-          p.W = p.d.getDay();
-          p.offset = -p.d.getTimezoneOffset();
-          return this;
-        }
-        if (num <= 28) {
-          p.D = num;
-          p._tStale = true;
-          return this;
-        }
+        // val > 28 or _tStale → fall through
+      }
+      const num = refined ?? Number(d);
+      if (num <= 0 || isNaN(num)) {
+        return this;
       }
       if (p.dirty) {
         p.dirty = false;
@@ -1805,11 +1882,11 @@ export class Moment {
     if (m !== undefined) {
       const p = this._p;
       const refined = refineMinute(m);
-      if (refined !== null && !p.dirty && !p._tStale && !p.isUTC && p.d != null) {
+      if (refined !== null && isCleanLocalFreshWithDate(p)) {
         if (refined === p.m) {
           return this;
         }
-        setMinuteFast(p as never, refined);
+        setMinuteFast(p, refined);
         return this;
       }
       const num = refined ?? Number(m);
@@ -1851,11 +1928,11 @@ export class Moment {
     if (s !== undefined) {
       const p = this._p;
       const refined = refineSecond(s);
-      if (refined !== null && !p.dirty && !p._tStale && !p.isUTC && p.d != null) {
+      if (refined !== null && isCleanLocalFreshWithDate(p)) {
         if (refined === p.s) {
           return this;
         }
-        setSecondFast(p as never, refined);
+        setSecondFast(p, refined);
         return this;
       }
       const num = refined ?? Number(s);
@@ -1897,11 +1974,11 @@ export class Moment {
     if (ms !== undefined) {
       const p = this._p;
       const refined = refineMs(ms);
-      if (refined !== null && !p.dirty && !p._tStale && !p.isUTC && p.d != null) {
+      if (refined !== null && isCleanLocalFreshWithDate(p)) {
         if (refined === p.ms) {
           return this;
         }
-        setMsFast(p as never, refined);
+        setMsFast(p, refined);
         return this;
       }
       const num = refined ?? Number(ms);
@@ -2519,34 +2596,19 @@ export class Moment {
         case "date": {
           const p = this._p;
           if (!p.dirty && !p._tStale && !updateOffsetCallback && Number.isInteger(amount)) {
-            if (p.isUTC) {
-              p.t += amount * DAY_MS;
-              p.d = undefined;
-              p._tStale = false;
-              p.dirty = true;
+            if (isCleanUTC(p)) {
+              addDayUTC(p, amount);
               if (isNaN(p.t)) {
                 this._isValid = false;
               }
               return this;
             }
-            // Local + p.d present: clone-and-mutate (handles all D values, preserves external Date)
-            if (p.d != null) {
-              const nd = new Date(p.d);
-              nd.setDate(nd.getDate() + amount);
-              p.d = nd;
-              p.t = nd.getTime();
-              p.y = nd.getFullYear();
-              p.M = nd.getMonth();
-              p.D = nd.getDate();
-              p.W = nd.getDay();
-              p.offset = -nd.getTimezoneOffset();
+            if (isCleanLocalFreshWithDate(p)) {
+              addDay_CLFD(p, amount);
               return this;
             }
-            // No p.d but D∈[1,28]: safe arithmetic
-            if (p.D + amount >= 1 && p.D + amount <= 28) {
-              p.D += amount;
-              p.t += amount * DAY_MS;
-              p._tStale = true;
+            if (isCleanLocalFreshNoDate(p) && p.D + amount >= 1 && p.D + amount <= 28) {
+              addDay_CLFN_safe(p, amount);
               if (isNaN(p.t)) {
                 this._isValid = false;
               }
@@ -2675,18 +2737,8 @@ export class Moment {
       unit.charCodeAt(1) === 97 &&
       unit.charCodeAt(2) === 121
     ) {
-      if (!updateOffsetCallback && !p.dirty && !p.isUTC && p.d != null && !p._tStale) {
-        if (p.H === 0 && p.m === 0 && p.s === 0 && p.ms === 0) {
-          return this;
-        }
-        p.d.setHours(0, 0, 0, 0);
-        p.t = p.d.getTime();
-        p.offset = -p.d.getTimezoneOffset();
-        p.H = 0;
-        p.m = 0;
-        p.s = 0;
-        p.ms = 0;
-        p._tStale = false;
+      if (!updateOffsetCallback && isCleanLocalFreshWithDate(p)) {
+        startOfDay_CLFD(p);
         return this;
       }
       // Fall through to full path for non-fast-path state
