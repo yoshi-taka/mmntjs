@@ -1975,26 +1975,15 @@ export class Moment {
   }
 
   clone(): this {
-    if (this._p._tStale) {
+    const p = this._p;
+    if (p._tStale) {
       this._syncT();
     }
-    return this._cloneInto(
-      createMomentShell(this._l, this._p.isUTC, this._p.offset, this._isValid) as this,
-    );
-  }
-
-  private _cloneInto(m: this): this {
-    m._p.t = this._p.t;
-    m._p.dirty = this._p.dirty;
-    m._p.locale = this._p.locale;
-    m._p.y = this._p.y;
-    m._p.M = this._p.M;
-    m._p.D = this._p.D;
-    m._p.W = this._p.W;
-    m._p.H = this._p.H;
-    m._p.m = this._p.m;
-    m._p.s = this._p.s;
-    m._p.ms = this._p.ms;
+    const m = Object.create(Moment.prototype) as this;
+    m._isAMomentObject = true;
+    m._l = this._l;
+    m._p = { ...p, d: p.d ? new Date(p.t) : undefined };
+    m._isValid = this._isValid;
     m._i = this._i;
     m._f = this._f;
     m._strict = this._strict;
@@ -3205,35 +3194,31 @@ export class Moment {
       return this._startOfMonthFast();
     }
     if (unit === "year") {
-      return this._startOfYearFast();
+      const p = this._p;
+      if (!updateOffsetCallback && !p.dirty) {
+        if (p.M === 0 && p.D === 1 && p.H === 0 && p.m === 0 && p.s === 0 && p.ms === 0) {
+          return this;
+        }
+        if (isCleanUTC(p)) {
+          startOfYearUTC(p);
+          return this;
+        }
+        if (isCleanLocalFreshWithDate(p)) {
+          startOfYear_CLFD(p);
+          return this;
+        }
+        if (isCleanLocalFreshNoDate(p)) {
+          startOfYear_CLFN(p);
+          return this;
+        }
+        if (isCleanLocalStale(p)) {
+          startOfYearStale(p);
+          return this;
+        }
+      }
+      return this._startOfSlow("year");
     }
     return this._startOfSlow(unit);
-  }
-
-  private _startOfYearFast(): this {
-    const p = this._p;
-    if (!updateOffsetCallback && !p.dirty) {
-      if (p.M === 0 && p.D === 1 && p.H === 0 && p.m === 0 && p.s === 0 && p.ms === 0) {
-        return this;
-      }
-      if (isCleanUTC(p)) {
-        startOfYearUTC(p);
-        return this;
-      }
-      if (isCleanLocalFreshWithDate(p)) {
-        startOfYear_CLFD(p);
-        return this;
-      }
-      if (isCleanLocalFreshNoDate(p)) {
-        startOfYear_CLFN(p);
-        return this;
-      }
-      if (isCleanLocalStale(p)) {
-        startOfYearStale(p);
-        return this;
-      }
-    }
-    return this._startOfSlow("year");
   }
 
   private _startOfDayFast(): this {
@@ -3983,11 +3968,9 @@ export class Moment {
   }
 
   valueOf(): number {
-    this._syncT();
-    return this._valueOfCore();
-  }
-
-  private _valueOfCore(): number {
+    if (this._p._tStale) {
+      this._syncT();
+    }
     if (!this._isValid) {
       return NaN;
     }
