@@ -841,39 +841,33 @@ export class Moment {
       }
       this._ensureFields();
       // Banach fixed point: already at target year → no-op
-      if (num === this._p.y) { return this; }
+      if (num === this._p.y) {
+        return this;
+      }
       // D ≤ 28: no clamping possible (all months have 28+ days)
       const d_ = this._p.D <= 28 ? this._p.D : Math.min(this._p.D, daysInMonthFast(num, this._p.M));
       if (this._p.isUTC) {
-        // Fast path: years >= 100 use Date.UTC directly (avoids setUTCFullYear + intermediate Date)
-        if (num >= 100) {
-          this._p.t = Date.UTC(num, this._p.M, d_, this._p.H, this._p.m, this._p.s, this._p.ms);
-          this._p.d = undefined;
-          this._p._tStale = false;
-          this._p.dirty = false;
-          this._p.y = num;
-          this._p.D = d_;
-          this._p.W = _dayOfWeek(num, this._p.M, d_);
-        } else {
-          const tmp = new Date(
-            Date.UTC(2000, this._p.M, d_, this._p.H, this._p.m, this._p.s, this._p.ms),
-          );
-          tmp.setUTCFullYear(num);
-          this._p.t = tmp.getTime();
-          this._p.d = undefined;
-          this._p._tStale = false;
-          this._p.dirty = false;
-          this._p.y = num;
-          this._p.D = d_;
-          this._p.W = _dayOfWeek(num, this._p.M, d_);
-        }
-      } else {
-        // Tensor decomposition: Calendar factor changes (y←num), Time factor preserved.
-        // d_ already pre-clamped above (moment.js compat: clamp, not overflow).
-        // Defer epoch coupling to _syncT() — no Date allocation here.
+        // SSA-friendly straight-line: ymdToEpochDays is pure integer arithmetic
+        // for ALL years (including 0–99, unlike Date.UTC which treats them 1900+).
+        // No Date allocation, no conditional branch per year range.
+        this._p.t =
+          ymdToEpochDays(num, this._p.M, d_) * DAY_MS +
+          this._p.H * HOUR_MS +
+          this._p.m * MINUTE_MS +
+          this._p.s * SECOND_MS +
+          this._p.ms;
+        this._p.d = undefined;
+        this._p._tStale = false;
+        this._p.dirty = false;
         this._p.y = num;
         this._p.D = d_;
-        this._p.d = undefined;
+        this._p.W = _dayOfWeek(num, this._p.M, d_);
+      } else {
+        // Defer epoch coupling to _syncT(). Time-of-day (H,m,s,ms) preserved.
+        // _tStale signals _syncT() to create Date from fields on next access,
+        // which auto-clamps D and computes correct offset.
+        this._p.y = num;
+        this._p.D = d_;
         this._p._tStale = true;
       }
       // $H, $m, $s, $ms unchanged
@@ -921,45 +915,37 @@ export class Moment {
         return this;
       }
       // Banach fixed point: already at target month → no-op
-      if (num === this._p.M) { return this; }
-      const utc = this._p.isUTC;
+      if (num === this._p.M) {
+        return this;
+      }
+      // Hoist calendar decomposition — used by both UTC and local paths.
+      const y = this._p.y + Math.floor(num / 12);
+      const _m = normalizeMonth(num);
       const date = this._p.D;
-      if (utc) {
-        const y = this._p.y + Math.floor(num / 12);
-        const _m = normalizeMonth(num);
-        // D ≤ 28: smooth locus — no overflow possible, use arithmetic (no Date alloc)
-        if (date <= 28) {
-          this._p.y = y;
-          this._p.M = _m;
-          this._p.D = date;
-          this._p.W = _dayOfWeek(y, _m, date);
-          this._p.t = Date.UTC(y, _m, date, this._p.H, this._p.m, this._p.s, this._p.ms);
-          this._p.d = undefined;
-          this._p._tStale = false;
-          this._p.dirty = false;
-        } else {
-          const d = this._getD();
-          d.setUTCMonth(num);
-          if (d.getUTCDate() !== date) {
-            d.setUTCDate(0);
-          }
-          this._p.y = d.getUTCFullYear();
-          this._p.M = d.getUTCMonth();
-          this._p.D = d.getUTCDate();
-          this._p.W = _dayOfWeek(this._p.y, this._p.M, this._p.D);
-          this._p.t = d.getTime();
-        }
-      } else {
-        const y = this._p.y + Math.floor(num / 12);
-        const _m = normalizeMonth(num);
-        // Pre-clamp D to daysInMonth of new month (moment.js compat: clamp, not overflow).
-        const d_ = this._p.D <= 28 ? this._p.D : Math.min(this._p.D, daysInMonthFast(y, _m));
-        // Tensor decomposition: Calendar factor (M, y) changes, Time factor preserved.
-        // Defer epoch coupling to _syncT() — no Date allocation here.
+      if (this._p.isUTC) {
+        // Straight-line: clamp D to new month's days, then compute epoch via
+        // ymdToEpochDays (pure integer, no Date allocation, no year<100 edge case).
+        const d_ = date <= 28 ? date : Math.min(date, daysInMonthFast(y, _m));
+        this._p.t =
+          ymdToEpochDays(y, _m, d_) * DAY_MS +
+          this._p.H * HOUR_MS +
+          this._p.m * MINUTE_MS +
+          this._p.s * SECOND_MS +
+          this._p.ms;
         this._p.y = y;
         this._p.M = _m;
         this._p.D = d_;
+        this._p.W = _dayOfWeek(y, _m, d_);
         this._p.d = undefined;
+        this._p._tStale = false;
+        this._p.dirty = false;
+      } else {
+        // Defer epoch coupling to _syncT(). Pre-clamp D (moment.js compat:
+        // clamp, not overflow). Time-of-day preserved.
+        const d_ = date <= 28 ? date : Math.min(date, daysInMonthFast(y, _m));
+        this._p.y = y;
+        this._p.M = _m;
+        this._p.D = d_;
         this._p._tStale = true;
       }
       if (updateOffsetCallback) {
@@ -990,36 +976,41 @@ export class Moment {
       }
       this._ensureFields();
       // Banach fixed point: already at target date → no-op
-      if (num === this._p.D) { return this; }
+      if (num === this._p.D) {
+        return this;
+      }
       if (this._p.isUTC) {
-        // Phase decomposition: compute covering space epoch directly (allocation-free).
-        // Date.UTC handles overflow (e.g., Apr 31 → May 1 UTC).
-        this._p.t = Date.UTC(this._p.y, this._p.M, num, this._p.H, this._p.m, this._p.s, this._p.ms);
+        // Straight-line: ymdToEpochDays (pure integer) for t, _epochDaysToYMD
+        // for readback. Zero Date allocation, no year<100 edge case.
+        this._p.t =
+          ymdToEpochDays(this._p.y, this._p.M, num) * DAY_MS +
+          this._p.H * HOUR_MS +
+          this._p.m * MINUTE_MS +
+          this._p.s * SECOND_MS +
+          this._p.ms;
         this._p.d = undefined;
         this._p._tStale = false;
-        // D ≤ 28: no month overflow → y,M,W unchanged, D updated modulo.
+        // D ≤ 28: no month overflow → y,M unchanged, D and W updated via modular arithmetic.
+        // W shift = (old_W − old_D + new_D) mod 7 (branchless, no readback needed).
         if (num <= 28) {
-          this._p.W = ((this._p.W - this._p.D + num) % 7 + 7) % 7;
+          this._p.W = (((this._p.W - this._p.D + num) % 7) + 7) % 7;
           this._p.D = num;
         } else {
-          // D > 28: may overflow → read back clamped fields from Date.
-          const dt = new Date(this._p.t);
-          this._p.y = dt.getUTCFullYear();
-          this._p.M = dt.getUTCMonth();
-          this._p.D = dt.getUTCDate();
-          this._p.W = dt.getUTCDay();
-          this._p.d = dt;
+          // D > 28: may overflow month → readback clamped fields via _epochDaysToYMD.
+          const totalDays = Math.floor(this._p.t / DAY_MS);
+          const [y, M, D] = Moment._epochDaysToYMD(totalDays);
+          this._p.y = y;
+          this._p.M = M;
+          this._p.D = D;
+          this._p.W = euclideanModulo(totalDays + 4, 7);
         }
       } else {
-        // Phase decomposition: Calendar factor (D) changes, Time factor preserved.
-        // JS Date auto-clamps overflow (e.g., Apr 31 → May 1); _syncT() reads back.
-        // Defer epoch coupling to _syncT() — no Date allocation here.
+        // Defer to _syncT() (handles overflow + offset).
         // D ≤ 28: update W cyclically (no overflow). D > 28: _syncT handles it.
         if (num <= 28) {
-          this._p.W = ((this._p.W - this._p.D + num) % 7 + 7) % 7;
+          this._p.W = (((this._p.W - this._p.D + num) % 7) + 7) % 7;
         }
         this._p.D = num;
-        this._p.d = undefined;
         this._p._tStale = true;
       }
       if (updateOffsetCallback) {
@@ -1134,11 +1125,17 @@ export class Moment {
   hour(h: unknown): this;
   hour(h?: unknown): number | this {
     if (h !== undefined) {
-      if (h === null) { return this; }
+      if (h === null) {
+        return this;
+      }
       const num = Number(h);
-      if (isNaN(num)) { return this; }
+      if (isNaN(num)) {
+        return this;
+      }
       this._ensureFields();
-      if (num === this._p.H) { return this; }
+      if (num === this._p.H) {
+        return this;
+      }
       const utc = this._p.isUTC;
       const p = this._p;
       p.H = num;
@@ -1153,10 +1150,14 @@ export class Moment {
       } else {
         p._tStale = true;
       }
-      if (updateOffsetCallback) { this._updateOffset(true); }
+      if (updateOffsetCallback) {
+        this._updateOffset(true);
+      }
       return this;
     }
-    if (!this._isValid) { return NaN; }
+    if (!this._isValid) {
+      return NaN;
+    }
     this._ensureFields();
     return this._p.H;
   }
@@ -1165,11 +1166,17 @@ export class Moment {
   minute(m: unknown): this;
   minute(m?: unknown): number | this {
     if (m !== undefined) {
-      if (m === null) { return this; }
+      if (m === null) {
+        return this;
+      }
       const num = Number(m);
-      if (isNaN(num)) { return this; }
+      if (isNaN(num)) {
+        return this;
+      }
       this._ensureFields();
-      if (num === this._p.m) { return this; }
+      if (num === this._p.m) {
+        return this;
+      }
       const utc = this._p.isUTC;
       const p = this._p;
       p.m = num;
@@ -1184,10 +1191,14 @@ export class Moment {
       } else {
         p._tStale = true;
       }
-      if (updateOffsetCallback) { this._updateOffset(true); }
+      if (updateOffsetCallback) {
+        this._updateOffset(true);
+      }
       return this;
     }
-    if (!this._isValid) { return NaN; }
+    if (!this._isValid) {
+      return NaN;
+    }
     this._ensureFields();
     return this._p.m;
   }
@@ -1196,11 +1207,17 @@ export class Moment {
   second(s: unknown): this;
   second(s?: unknown): number | this {
     if (s !== undefined) {
-      if (s === null) { return this; }
+      if (s === null) {
+        return this;
+      }
       const num = Number(s);
-      if (isNaN(num)) { return this; }
+      if (isNaN(num)) {
+        return this;
+      }
       this._ensureFields();
-      if (num === this._p.s) { return this; }
+      if (num === this._p.s) {
+        return this;
+      }
       const utc = this._p.isUTC;
       const p = this._p;
       p.s = num;
@@ -1215,10 +1232,14 @@ export class Moment {
       } else {
         p._tStale = true;
       }
-      if (updateOffsetCallback) { this._updateOffset(true); }
+      if (updateOffsetCallback) {
+        this._updateOffset(true);
+      }
       return this;
     }
-    if (!this._isValid) { return NaN; }
+    if (!this._isValid) {
+      return NaN;
+    }
     this._ensureFields();
     return this._p.s;
   }
@@ -1227,11 +1248,17 @@ export class Moment {
   millisecond(ms: unknown): this;
   millisecond(ms?: unknown): number | this {
     if (ms !== undefined) {
-      if (ms === null) { return this; }
+      if (ms === null) {
+        return this;
+      }
       const num = Number(ms);
-      if (isNaN(num)) { return this; }
+      if (isNaN(num)) {
+        return this;
+      }
       this._ensureFields();
-      if (num === this._p.ms) { return this; }
+      if (num === this._p.ms) {
+        return this;
+      }
       const utc = this._p.isUTC;
       const p = this._p;
       p.ms = num;
@@ -1246,10 +1273,14 @@ export class Moment {
       } else {
         p._tStale = true;
       }
-      if (updateOffsetCallback) { this._updateOffset(true); }
+      if (updateOffsetCallback) {
+        this._updateOffset(true);
+      }
       return this;
     }
-    if (!this._isValid) { return NaN; }
+    if (!this._isValid) {
+      return NaN;
+    }
     this._ensureFields();
     return this._p.ms;
   }
@@ -1940,8 +1971,12 @@ export class Moment {
 
   startOf(unit: string): this {
     const code = fastNormalizeBoundaryUnit(unit);
-    if (code < 0) { return this; }
-    if (!this._isValid) { return this; }
+    if (code < 0) {
+      return this;
+    }
+    if (!this._isValid) {
+      return this;
+    }
     const p = this._p;
 
     // Clean-path branch: fields are fresh (!dirty), no _ensureFields needed.
@@ -1951,15 +1986,25 @@ export class Moment {
       // Banach fixed-point: already at boundary → no-op
       if (!updateOffsetCallback) {
         if (code === MONTH) {
-          if (p.D === 1 && p.H === 0 && p.m === 0 && p.s === 0 && p.ms === 0) { return this; }
+          if (p.D === 1 && p.H === 0 && p.m === 0 && p.s === 0 && p.ms === 0) {
+            return this;
+          }
         } else if (code === DATE || code === DAY) {
-          if (p.H === 0 && p.m === 0 && p.s === 0 && p.ms === 0) { return this; }
+          if (p.H === 0 && p.m === 0 && p.s === 0 && p.ms === 0) {
+            return this;
+          }
         } else if (code === HOUR) {
-          if (p.m === 0 && p.s === 0 && p.ms === 0) { return this; }
+          if (p.m === 0 && p.s === 0 && p.ms === 0) {
+            return this;
+          }
         } else if (code === MINUTE) {
-          if (p.s === 0 && p.ms === 0) { return this; }
+          if (p.s === 0 && p.ms === 0) {
+            return this;
+          }
         } else if (code === SECOND) {
-          if (p.ms === 0) { return this; }
+          if (p.ms === 0) {
+            return this;
+          }
         }
       }
       // _startOfUTC(DATE/HOUR/MINUTE/SECOND) needs fresh p.t for floorUnitEpoch.
@@ -1974,15 +2019,31 @@ export class Moment {
       // Post-ensure catch for dirty cases
       if (!updateOffsetCallback) {
         if (code === MONTH) {
-          if (this._p.D === 1 && this._p.H === 0 && this._p.m === 0 && this._p.s === 0 && this._p.ms === 0) { return this; }
+          if (
+            this._p.D === 1 &&
+            this._p.H === 0 &&
+            this._p.m === 0 &&
+            this._p.s === 0 &&
+            this._p.ms === 0
+          ) {
+            return this;
+          }
         } else if (code === DATE || code === DAY) {
-          if (this._p.H === 0 && this._p.m === 0 && this._p.s === 0 && this._p.ms === 0) { return this; }
+          if (this._p.H === 0 && this._p.m === 0 && this._p.s === 0 && this._p.ms === 0) {
+            return this;
+          }
         } else if (code === HOUR) {
-          if (this._p.m === 0 && this._p.s === 0 && this._p.ms === 0) { return this; }
+          if (this._p.m === 0 && this._p.s === 0 && this._p.ms === 0) {
+            return this;
+          }
         } else if (code === MINUTE) {
-          if (this._p.s === 0 && this._p.ms === 0) { return this; }
+          if (this._p.s === 0 && this._p.ms === 0) {
+            return this;
+          }
         } else if (code === SECOND) {
-          if (this._p.ms === 0) { return this; }
+          if (this._p.ms === 0) {
+            return this;
+          }
         }
       }
     }
@@ -2113,6 +2174,16 @@ export class Moment {
         if (this._p.d != null) {
           d = this._p.d;
           d.setHours(0, 0, 0, 0);
+        } else if (!this._p._tStale) {
+          // t is fresh → compute midnight epoch without Date allocation.
+          // Offset is preserved (correct on non-DST days; stale on DST
+          // boundaries but corrected by next _syncT).
+          this._p.t = floorUnitEpoch(this._p.t, DAY_MS);
+          this._p.H = 0;
+          this._p.m = 0;
+          this._p.s = 0;
+          this._p.ms = 0;
+          return; // skip _tStale=false / _updateOffset at end
         } else {
           d = this._p.d = new Date(this._p.y, this._p.M, this._p.D);
         }
@@ -2129,6 +2200,12 @@ export class Moment {
         if (this._p.d != null) {
           d = this._p.d;
           d.setMinutes(0, 0, 0);
+        } else if (!this._p._tStale) {
+          this._p.t = floorUnitEpoch(this._p.t, HOUR_MS);
+          this._p.m = 0;
+          this._p.s = 0;
+          this._p.ms = 0;
+          return;
         } else {
           d = this._p.d = new Date(this._p.y, this._p.M, this._p.D, this._p.H);
         }
@@ -2144,6 +2221,11 @@ export class Moment {
         if (this._p.d != null) {
           d = this._p.d;
           d.setSeconds(0, 0);
+        } else if (!this._p._tStale) {
+          this._p.t = floorUnitEpoch(this._p.t, MINUTE_MS);
+          this._p.s = 0;
+          this._p.ms = 0;
+          return;
         } else {
           d = this._p.d = new Date(this._p.y, this._p.M, this._p.D, this._p.H, this._p.m);
         }
@@ -2158,6 +2240,10 @@ export class Moment {
         if (this._p.d != null) {
           d = this._p.d;
           d.setMilliseconds(0);
+        } else if (!this._p._tStale) {
+          this._p.t = floorUnitEpoch(this._p.t, SECOND_MS);
+          this._p.ms = 0;
+          return;
         } else {
           d = this._p.d = new Date(
             this._p.y,

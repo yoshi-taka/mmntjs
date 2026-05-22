@@ -27,6 +27,8 @@
     "test/bundle-smoke.test.ts",
     "test/*-lite.test.ts",
     "test/*-lite-strict.test.ts",
+    "test/branch-targeted.test.ts",
+    "test/timezone-dst-subproc.test.ts",
     "test/lite-fns.test.ts",
     "test/format-basic.test.ts",
     "test/plugins.test.ts",

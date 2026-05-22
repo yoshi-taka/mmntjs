@@ -637,23 +637,24 @@ export class MomentLite {
         return this;
       }
       const date = this._p.D;
+      const dt = this._getD();
       if (this._p.isUTC) {
-        this._getD().setUTCMonth(num);
+        dt.setUTCMonth(num);
       } else {
-        this._getD().setMonth(num);
+        dt.setMonth(num);
       }
-      if ((this._p.isUTC ? this._getD().getUTCDate() : this._getD().getDate()) !== date) {
+      if ((this._p.isUTC ? dt.getUTCDate() : dt.getDate()) !== date) {
         if (this._p.isUTC) {
-          this._getD().setUTCDate(0);
+          dt.setUTCDate(0);
         } else {
-          this._getD().setDate(0);
+          dt.setDate(0);
         }
       }
-      this._p.y = this._p.isUTC ? this._getD().getUTCFullYear() : this._getD().getFullYear();
-      this._p.M = this._p.isUTC ? this._getD().getUTCMonth() : this._getD().getMonth();
-      this._p.D = this._p.isUTC ? this._getD().getUTCDate() : this._getD().getDate();
+      this._p.y = this._p.isUTC ? dt.getUTCFullYear() : dt.getFullYear();
+      this._p.M = this._p.isUTC ? dt.getUTCMonth() : dt.getMonth();
+      this._p.D = this._p.isUTC ? dt.getUTCDate() : dt.getDate();
       this._p.W = _dayOfWeek(this._p.y, this._p.M, this._p.D);
-      this._p.t = this._getD().getTime();
+      this._p.t = dt.getTime();
       return this;
     }
     if (!this._isValid) {
@@ -677,15 +678,16 @@ export class MomentLite {
       if (num <= 0) {
         return this;
       }
+      const dt = this._getD();
       if (this._p.isUTC) {
-        this._getD().setUTCDate(num);
+        dt.setUTCDate(num);
       } else {
-        this._getD().setDate(num);
+        dt.setDate(num);
       }
-      this._p.D = this._p.isUTC ? this._getD().getUTCDate() : this._getD().getDate();
-      this._p.M = this._p.isUTC ? this._getD().getUTCMonth() : this._getD().getMonth();
+      this._p.D = this._p.isUTC ? dt.getUTCDate() : dt.getDate();
+      this._p.M = this._p.isUTC ? dt.getUTCMonth() : dt.getMonth();
       this._p.W = _dayOfWeek(this._p.y, this._p.M, this._p.D);
-      this._p.t = this._getD().getTime();
+      this._p.t = dt.getTime();
       return this;
     }
     if (!this._isValid) {
