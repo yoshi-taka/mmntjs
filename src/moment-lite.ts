@@ -747,13 +747,18 @@ export class MomentLite {
       if (isNaN(num)) {
         return this;
       }
-      if (this._p.isUTC) {
-        this._getD().setUTCHours(num);
-      } else {
-        this._getD().setHours(num);
+      if (num === this._p.H) {
+        return this;
       }
-      this._p.H = this._p.isUTC ? this._getD().getUTCHours() : this._getD().getHours();
-      this._p.t = this._getD().getTime();
+      const d = this._getD();
+      if (this._p.isUTC) {
+        d.setUTCHours(num);
+        this._p.H = d.getUTCHours();
+      } else {
+        d.setHours(num);
+        this._p.H = d.getHours();
+      }
+      this._p.t = d.getTime();
       return this;
     }
     if (!this._isValid) {
@@ -774,13 +779,18 @@ export class MomentLite {
       if (isNaN(num)) {
         return this;
       }
-      if (this._p.isUTC) {
-        this._getD().setUTCMinutes(num);
-      } else {
-        this._getD().setMinutes(num);
+      if (num === this._p.m) {
+        return this;
       }
-      this._p.m = this._p.isUTC ? this._getD().getUTCMinutes() : this._getD().getMinutes();
-      this._p.t = this._getD().getTime();
+      const d = this._getD();
+      if (this._p.isUTC) {
+        d.setUTCMinutes(num);
+        this._p.m = d.getUTCMinutes();
+      } else {
+        d.setMinutes(num);
+        this._p.m = d.getMinutes();
+      }
+      this._p.t = d.getTime();
       return this;
     }
     if (!this._isValid) {
@@ -801,13 +811,18 @@ export class MomentLite {
       if (isNaN(num)) {
         return this;
       }
-      if (this._p.isUTC) {
-        this._getD().setUTCSeconds(num);
-      } else {
-        this._getD().setSeconds(num);
+      if (num === this._p.s) {
+        return this;
       }
-      this._p.s = this._p.isUTC ? this._getD().getUTCSeconds() : this._getD().getSeconds();
-      this._p.t = this._getD().getTime();
+      const d = this._getD();
+      if (this._p.isUTC) {
+        d.setUTCSeconds(num);
+        this._p.s = d.getUTCSeconds();
+      } else {
+        d.setSeconds(num);
+        this._p.s = d.getSeconds();
+      }
+      this._p.t = d.getTime();
       return this;
     }
     if (!this._isValid) {
@@ -828,15 +843,18 @@ export class MomentLite {
       if (isNaN(num)) {
         return this;
       }
-      if (this._p.isUTC) {
-        this._getD().setUTCMilliseconds(num);
-      } else {
-        this._getD().setMilliseconds(num);
+      if (num === this._p.ms) {
+        return this;
       }
-      this._p.ms = this._p.isUTC
-        ? this._getD().getUTCMilliseconds()
-        : this._getD().getMilliseconds();
-      this._p.t = this._getD().getTime();
+      const d = this._getD();
+      if (this._p.isUTC) {
+        d.setUTCMilliseconds(num);
+        this._p.ms = d.getUTCMilliseconds();
+      } else {
+        d.setMilliseconds(num);
+        this._p.ms = d.getMilliseconds();
+      }
+      this._p.t = d.getTime();
       return this;
     }
     if (!this._isValid) {

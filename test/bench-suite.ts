@@ -125,8 +125,36 @@ runGroups([
   {
     name: "startof",
     benches: [
-      (s) => s.add("mmntjs#startOfDay", () => mmntjs(date).startOf("day")),
+      // no-op: already at day boundary (midnight)
+      (s) => {
+        const m = mmntjs(new Date(2024, 0, 15, 0, 0, 0, 0));
+        s.add("mmntjs#startOfDay (no-op)", () => m.startOf("day"));
+      },
+      // UTC mode: stable initial
+      (s) => {
+        const m = mmntjs.utc(date);
+        s.add("mmntjs#startOfDay (UTC)", () => m.startOf("day"));
+      },
+      // local mode: stable initial (same as original)
+      (s) => s.add("mmntjs#startOfDay (stable)", () => mmntjs(date).startOf("day")),
       (s) => s.add("date-fns#startOfDay", () => startOfDay(date)),
+      // dirty: force _ensureFields before startOf
+      (s) => {
+        const m = mmntjs(date);
+        // access getter to leave clean, then force t mutation
+        s.add("mmntjs#startOfDay (dirty)", () => {
+          m._p.dirty = true;
+          return m.startOf("day");
+        });
+      },
+      // after setter chain: set hour then startOf day
+      (s) => {
+        const m = mmntjs(date);
+        s.add("mmntjs#startOfDay (after hour(5))", () => {
+          m.hour(5);
+          return m.startOf("day");
+        });
+      },
       (s) => s.add("mmntjs#startOfYear", () => mmntjs(date).startOf("year")),
       (s) => s.add("mmntjs#startOfMonth", () => mmntjs(date).startOf("month")),
       (s) => s.add("mmntjs#startOfHour", () => mmntjs(date).startOf("hour")),

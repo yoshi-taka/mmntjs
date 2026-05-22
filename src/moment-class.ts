@@ -1228,9 +1228,13 @@ export class Moment {
       if (num === this._p.H) {
         return this;
       }
-      const utc = this._p.isUTC;
       const p = this._p;
       p.H = num;
+      if (!updateOffsetCallback) {
+        p._tStale = true;
+        return this;
+      }
+      const utc = p.isUTC;
       if (utc) {
         p.t = Date.UTC(p.y, p.M, p.D, num, p.m, p.s, p.ms);
         p.d = undefined;
@@ -1242,9 +1246,7 @@ export class Moment {
       } else {
         p._tStale = true;
       }
-      if (updateOffsetCallback) {
-        this._updateOffset(true);
-      }
+      this._updateOffset(true);
       return this;
     }
     if (!this._isValid) {
@@ -1272,9 +1274,13 @@ export class Moment {
       if (num === this._p.m) {
         return this;
       }
-      const utc = this._p.isUTC;
       const p = this._p;
       p.m = num;
+      if (!updateOffsetCallback) {
+        p._tStale = true;
+        return this;
+      }
+      const utc = p.isUTC;
       if (utc) {
         p.t = Date.UTC(p.y, p.M, p.D, p.H, num, p.s, p.ms);
         p.d = undefined;
@@ -1286,9 +1292,7 @@ export class Moment {
       } else {
         p._tStale = true;
       }
-      if (updateOffsetCallback) {
-        this._updateOffset(true);
-      }
+      this._updateOffset(true);
       return this;
     }
     if (!this._isValid) {
@@ -1316,9 +1320,13 @@ export class Moment {
       if (num === this._p.s) {
         return this;
       }
-      const utc = this._p.isUTC;
       const p = this._p;
       p.s = num;
+      if (!updateOffsetCallback) {
+        p._tStale = true;
+        return this;
+      }
+      const utc = p.isUTC;
       if (utc) {
         p.t = Date.UTC(p.y, p.M, p.D, p.H, p.m, num, p.ms);
         p.d = undefined;
@@ -1330,9 +1338,7 @@ export class Moment {
       } else {
         p._tStale = true;
       }
-      if (updateOffsetCallback) {
-        this._updateOffset(true);
-      }
+      this._updateOffset(true);
       return this;
     }
     if (!this._isValid) {
@@ -1360,9 +1366,13 @@ export class Moment {
       if (num === this._p.ms) {
         return this;
       }
-      const utc = this._p.isUTC;
       const p = this._p;
       p.ms = num;
+      if (!updateOffsetCallback) {
+        p._tStale = true;
+        return this;
+      }
+      const utc = p.isUTC;
       if (utc) {
         p.t = Date.UTC(p.y, p.M, p.D, p.H, p.m, p.s, num);
         p.d = undefined;
@@ -1374,9 +1384,7 @@ export class Moment {
       } else {
         p._tStale = true;
       }
-      if (updateOffsetCallback) {
-        this._updateOffset(true);
-      }
+      this._updateOffset(true);
       return this;
     }
     if (!this._isValid) {
