@@ -735,8 +735,25 @@ export class Moment {
           if (val <= 28) {
             p.W = (((p.W - p.D + val) % 7) + 7) % 7;
             p.D = val;
-            p.d = undefined;
-            break;
+            if (p.d != null) {
+              // Keep Date alive — avoids allocation in future _getD
+              p.d.setDate(val);
+              p.t = p.d.getTime();
+              p._tStale = false;
+            } else {
+              p.d = undefined;
+              p._tStale = true;
+            }
+            return;
+          }
+          // val > 28: use Date if available for auto-clamping
+          if (p.d != null) {
+            p.d.setDate(val);
+            p.D = p.d.getDate();
+            p.t = p.d.getTime();
+            p.W = p.d.getDay();
+            p._tStale = false;
+            return;
           }
           return this._coldSetDateLocal(val);
         case _OP_YEAR:
@@ -1686,8 +1703,30 @@ export class Moment {
         return this;
       }
       if (!updateOffsetCallback) {
-        this._p.H = num;
-        this._p._tStale = true;
+        const p = this._p;
+        if (p.d != null && num >= 0 && num <= 23) {
+          // local p.d-present fast path: arithmetic + offset probe
+          // avoids setHours+getHours+getTime on the hot path.
+          // Only falls back to Date setter when DST offset changes.
+          if (num === p.H) {
+            return this;
+          }
+          const newT = p.t + (num - p.H) * HOUR_MS;
+          if (_tzOffsetAt(newT) === p.offset) {
+            p.t = newT;
+            p.d.setTime(newT);
+            p.H = num;
+          } else {
+            p.d.setHours(num, p.m, p.s, p.ms);
+            p.t = p.d.getTime();
+            p.offset = -p.d.getTimezoneOffset();
+            p.H = p.d.getHours();
+          }
+          p._tStale = false;
+          return this;
+        }
+        p.H = num;
+        p._tStale = true;
         return this;
       }
       this._applyOp(_OP_HOUR, num);
@@ -1720,8 +1759,18 @@ export class Moment {
         return this;
       }
       if (!updateOffsetCallback) {
-        this._p.m = num;
-        this._p._tStale = true;
+        const p = this._p;
+        if (p.d != null && num >= 0 && num <= 59) {
+          // p.d-present fast path: minute changes never cross DST
+          // boundaries within the same hour — pure arithmetic.
+          p.t += (num - p.m) * MINUTE_MS;
+          p.m = num;
+          p.d.setTime(p.t);
+          p._tStale = false;
+          return this;
+        }
+        p.m = num;
+        p._tStale = true;
         return this;
       }
       this._applyOp(_OP_MIN, num);
@@ -1754,8 +1803,16 @@ export class Moment {
         return this;
       }
       if (!updateOffsetCallback) {
-        this._p.s = num;
-        this._p._tStale = true;
+        const p = this._p;
+        if (p.d != null && num >= 0 && num <= 59) {
+          p.t += (num - p.s) * SECOND_MS;
+          p.s = num;
+          p.d.setTime(p.t);
+          p._tStale = false;
+          return this;
+        }
+        p.s = num;
+        p._tStale = true;
         return this;
       }
       this._applyOp(_OP_SEC, num);
@@ -1788,8 +1845,16 @@ export class Moment {
         return this;
       }
       if (!updateOffsetCallback) {
-        this._p.ms = num;
-        this._p._tStale = true;
+        const p = this._p;
+        if (p.d != null && num >= 0 && num <= 999) {
+          p.t += num - p.ms;
+          p.ms = num;
+          p.d.setTime(p.t);
+          p._tStale = false;
+          return this;
+        }
+        p.ms = num;
+        p._tStale = true;
         return this;
       }
       this._applyOp(_OP_MS, num);
