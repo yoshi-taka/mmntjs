@@ -277,6 +277,153 @@ function addDay_CLFN_overflow(p: _P & CleanLocalFreshNoDate, amount: number): vo
   p.offset = -d.getTimezoneOffset();
 }
 
+// ── addMonth morphisms (branded-state → civil arithmetic, allocation-free) ──
+/** add(1, "month") on CleanUTC → pure civil arithmetic, no Date. */
+function addMonthUTC(p: _P & CleanUTC, amount: number): void {
+  const totalMonths = Number.isInteger(amount)
+    ? amount
+    : amount < 0
+      ? Math.round(-amount) * -1
+      : Math.round(amount);
+  const tm = p.y * 12 + p.M + totalMonths;
+  const y = Math.floor(tm / 12);
+  const m = normalizeMonth(tm);
+  let d_ = p.D;
+  if (d_ > 28) {
+    const md = daysInMonthFast(y, m);
+    if (d_ > md) {
+      d_ = md;
+    }
+  }
+  p.t = ymdToEpochDays(y, m, d_) * DAY_MS + _tod(p);
+  p.y = y;
+  p.M = m;
+  p.D = d_;
+  p.W = _dayOfWeek(y, m, d_);
+  p.d = undefined;
+  p._tStale = false;
+}
+
+/** add(1, "month") on CleanLocalFreshWithDate → Date.setFullYear (no clone). */
+function addMonth_CLFD(p: _P & CleanLocalFreshWithDate, amount: number): void {
+  const totalMonths = Number.isInteger(amount)
+    ? amount
+    : amount < 0
+      ? Math.round(-amount) * -1
+      : Math.round(amount);
+  const tm = p.y * 12 + p.M + totalMonths;
+  const y = Math.floor(tm / 12);
+  const m = normalizeMonth(tm);
+  let d_ = p.D;
+  if (d_ > 28) {
+    const md = daysInMonthFast(y, m);
+    if (d_ > md) {
+      d_ = md;
+    }
+  }
+  p.t = p.d.setFullYear(y, m, d_);
+  p.y = y;
+  p.M = m;
+  p.D = d_;
+  p.W = p.d.getDay();
+  p.offset = -p.d.getTimezoneOffset();
+}
+
+/** add(1, "month") on CleanLocalFreshNoDate → allocate Date + setFullYear. */
+function addMonth_CLFN(p: _P & CleanLocalFreshNoDate, amount: number): void {
+  const totalMonths = Number.isInteger(amount)
+    ? amount
+    : amount < 0
+      ? Math.round(-amount) * -1
+      : Math.round(amount);
+  const tm = p.y * 12 + p.M + totalMonths;
+  const y = Math.floor(tm / 12);
+  const m = normalizeMonth(tm);
+  let d_ = p.D;
+  if (d_ > 28) {
+    const md = daysInMonthFast(y, m);
+    if (d_ > md) {
+      d_ = md;
+    }
+  }
+  const d = new Date(p.t);
+  p.t = d.setFullYear(y, m, d_);
+  (p as { d: Date | undefined }).d = d;
+  p.y = y;
+  p.M = m;
+  p.D = d_;
+  p.W = d.getDay();
+  p.offset = -d.getTimezoneOffset();
+}
+
+// ── startOf month morphisms ──
+/** startOf('month') on CleanLocalFreshWithDate → Date.setDate(1) + setHours(0,0,0,0). */
+function startOfMonth_CLFD(p: _P & CleanLocalFreshWithDate): void {
+  p.d.setDate(1);
+  p.d.setHours(0, 0, 0, 0);
+  p.t = p.d.getTime();
+  p.offset = -p.d.getTimezoneOffset();
+  p.D = 1;
+  p.H = 0;
+  p.m = 0;
+  p.s = 0;
+  p.ms = 0;
+  p.W = _dayOfWeek(p.y, p.M, 1);
+}
+
+/** startOf('month') on CleanLocalFreshNoDate → arithmetic + offset probe. */
+function startOfMonth_CLFN(p: _P & CleanLocalFreshNoDate): void {
+  const utcMidnight = ymdToEpochDays(p.y, p.M, 1) * DAY_MS;
+  const offAtMidnight = _tzOffsetAt(utcMidnight);
+  p.t = utcMidnight - offAtMidnight * MINUTE_MS;
+  p.offset = offAtMidnight;
+  p.D = 1;
+  p.H = 0;
+  p.m = 0;
+  p.s = 0;
+  p.ms = 0;
+  p.W = _dayOfWeek(p.y, p.M, 1);
+  p.d = undefined;
+}
+
+/** startOf('month') on CleanLocalStale → materialise Date from fields, then setDate/setHours. */
+function startOfMonthStale(p: _P & CleanLocalStale): void {
+  const d = new Date(p.y, p.M, 1, 0, 0, 0, 0);
+  p.t = d.getTime();
+  (p as { d: Date | undefined }).d = d;
+  p.offset = -d.getTimezoneOffset();
+  p.D = 1;
+  p.H = 0;
+  p.m = 0;
+  p.s = 0;
+  p.ms = 0;
+  p.W = d.getDay();
+  (p as { _tStale: boolean })._tStale = false;
+}
+
+// ── diff morphisms (branded-state-pair → pure arithmetic) ──
+/** diff("days") between two clean UTC moments → pure epoch arithmetic. */
+function diffDaysUTC(a: _P & CleanUTC, b: _P & CleanUTC, float?: boolean): number {
+  if (float) {
+    return (a.t - b.t) / DAY_MS;
+  }
+  const days = Math.floor(a.t / DAY_MS) - Math.floor(b.t / DAY_MS);
+  return days || 0;
+}
+
+/** diff("days") between two clean local moments → epoch arithmetic + zone adjust. */
+function diffDaysLocal(a: _P, b: _P, float?: boolean): number {
+  const aMs = a.isUTC ? a.t - a.offset * 60000 : a.t;
+  const bMs = b.isUTC ? b.t - b.offset * 60000 : b.t;
+  const zoneDelta = a.isUTC || b.isUTC ? 0 : (b.offset - a.offset) * 60000;
+  if (float) {
+    return (aMs - bMs - zoneDelta) / DAY_MS;
+  }
+  const r = (aMs - bMs - zoneDelta) / DAY_MS;
+  const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
+  return t || 0;
+}
+
 // ---- Adventure-style state-machine op codes and helpers ----
 const _R_UTC = 1,
   _R_TS = 2;
@@ -2757,14 +2904,64 @@ export class Moment {
           return this;
         case "M":
         case "month":
-        case "months":
+        case "months": {
+          const p = this._p;
+          if (!p.dirty && !p._tStale && !updateOffsetCallback && Number.isInteger(amount)) {
+            if (isCleanUTC(p)) {
+              addMonthUTC(p, amount);
+              if (isNaN(p.t)) {
+                this._isValid = false;
+              }
+              return this;
+            }
+            if (isCleanLocalFreshWithDate(p)) {
+              addMonth_CLFD(p, amount);
+              if (isNaN(p.t)) {
+                this._isValid = false;
+              }
+              return this;
+            }
+            if (isCleanLocalFreshNoDate(p)) {
+              addMonth_CLFN(p, amount);
+              if (isNaN(p.t)) {
+                this._isValid = false;
+              }
+              return this;
+            }
+          }
           this._addMonth(amount);
           return this;
+        }
         case "y":
         case "year":
-        case "years":
+        case "years": {
+          const _p = this._p;
+          if (!_p.dirty && !_p._tStale && !updateOffsetCallback && Number.isInteger(amount)) {
+            if (isCleanUTC(_p)) {
+              addMonthUTC(_p, amount * 12);
+              if (isNaN(_p.t)) {
+                this._isValid = false;
+              }
+              return this;
+            }
+            if (isCleanLocalFreshWithDate(_p)) {
+              addMonth_CLFD(_p, amount * 12);
+              if (isNaN(_p.t)) {
+                this._isValid = false;
+              }
+              return this;
+            }
+            if (isCleanLocalFreshNoDate(_p)) {
+              addMonth_CLFN(_p, amount * 12);
+              if (isNaN(_p.t)) {
+                this._isValid = false;
+              }
+              return this;
+            }
+          }
           this._addMonth(amount * 12);
           return this;
+        }
         case "w":
         case "week":
         case "weeks":
@@ -2772,9 +2969,34 @@ export class Moment {
           return this;
         case "Q":
         case "quarter":
-        case "quarters":
+        case "quarters": {
+          const qp = this._p;
+          if (!qp.dirty && !qp._tStale && !updateOffsetCallback && Number.isInteger(amount)) {
+            if (isCleanUTC(qp)) {
+              addMonthUTC(qp, amount * 3);
+              if (isNaN(qp.t)) {
+                this._isValid = false;
+              }
+              return this;
+            }
+            if (isCleanLocalFreshWithDate(qp)) {
+              addMonth_CLFD(qp, amount * 3);
+              if (isNaN(qp.t)) {
+                this._isValid = false;
+              }
+              return this;
+            }
+            if (isCleanLocalFreshNoDate(qp)) {
+              addMonth_CLFN(qp, amount * 3);
+              if (isNaN(qp.t)) {
+                this._isValid = false;
+              }
+              return this;
+            }
+          }
           this._addMonth(amount * 3);
           return this;
+        }
       }
     }
     // Uncommon or aliased unit → normalizeUnitCode + _addSimple
@@ -2846,8 +3068,7 @@ export class Moment {
     }
     const p = this._p;
 
-    // ---- startOf('day') fast path: bypass normalization — direct Date.setHours ----
-    // typeof "day" check avoids fastNormalizeBoundaryUnit switch dispatch
+    // ---- startOf('day'/'month') fast path: bypass normalization — direct Date mutation ----
     if (
       unit.length === 3 &&
       unit.charCodeAt(0) === 100 &&
@@ -2858,7 +3079,35 @@ export class Moment {
         startOfDay_CLFD(p);
         return this;
       }
-      // Fall through to full path for non-fast-path state
+    } else if (
+      unit.length === 5 &&
+      unit.charCodeAt(0) === 109 &&
+      unit.charCodeAt(1) === 111 &&
+      unit.charCodeAt(2) === 110 &&
+      unit.charCodeAt(3) === 116 &&
+      unit.charCodeAt(4) === 104
+    ) {
+      if (!updateOffsetCallback && !p.dirty) {
+        if (p.D === 1 && p.H === 0 && p.m === 0 && p.s === 0 && p.ms === 0) {
+          return this;
+        }
+        if (isCleanLocalFreshWithDate(p)) {
+          startOfMonth_CLFD(p);
+          return this;
+        }
+        if (isCleanLocalFreshNoDate(p)) {
+          startOfMonth_CLFN(p);
+          return this;
+        }
+        if (isCleanLocalStale(p)) {
+          startOfMonthStale(p);
+          return this;
+        }
+        if (isCleanUTC(p)) {
+          startOfMonthUTC(p);
+          return this;
+        }
+      }
     }
 
     const code = fastNormalizeBoundaryUnit(unit);
@@ -3243,6 +3492,7 @@ export class Moment {
   diff(input: MomentInput, unit?: string, float?: boolean): number {
     // Inline fast path: both Moments, clean state → skip momentFromAnything + _syncT
     let other: Moment;
+    let bothClean = false;
     if (input instanceof Moment) {
       other = input;
       if (this._p._tStale) {
@@ -3251,6 +3501,7 @@ export class Moment {
       if (other._p._tStale) {
         other._syncT();
       }
+      bothClean = !this._p.dirty && !other._p.dirty;
     } else {
       other = momentFromAnything(input);
       this._syncT();
@@ -3259,14 +3510,23 @@ export class Moment {
     if (!this._isValid || !other._isValid) {
       return NaN;
     }
-    const isUTC = this._p.isUTC;
-    const otherUTC = other._p.isUTC;
+    const p = this._p;
+    const op = other._p;
+    const isUTC = p.isUTC;
+    const otherUTC = op.isUTC;
     // Inline normalizeUnitCode for common cases (avoids toLowerCase + function call)
     let code: number;
     if (!unit) {
       code = INVALID_UNIT;
     } else if (unit === "day" || unit === "days" || unit === "date" || unit === "dates") {
       code = DATE;
+      // Typed morphism dispatch for DAY diff on clean pair
+      if (bothClean) {
+        if (isUTC && otherUTC && isCleanUTC(p) && isCleanUTC(op)) {
+          return diffDaysUTC(p, op, float);
+        }
+        return diffDaysLocal(p, op, float);
+      }
     } else if (unit === "hour" || unit === "hours") {
       code = HOUR;
     } else if (unit === "minute" || unit === "minutes") {
@@ -3277,17 +3537,17 @@ export class Moment {
       code = normalizeUnitCode(unit);
     }
     if (code < 0) {
-      const a = isUTC ? this._p.t - this._p.offset * 60000 : this._p.t;
-      const b = otherUTC ? other._p.t - other._p.offset * 60000 : other._p.t;
+      const a = isUTC ? p.t - p.offset * 60000 : p.t;
+      const b = otherUTC ? op.t - op.offset * 60000 : op.t;
       return a - b || 0;
     }
 
     switch (code) {
       case DATE:
       case DAY: {
-        const a = isUTC ? this._p.t - this._p.offset * 60000 : this._p.t;
-        const b = otherUTC ? other._p.t - other._p.offset * 60000 : other._p.t;
-        const zoneDelta = isUTC || otherUTC ? 0 : (other._p.offset - this._p.offset) * 60000;
+        const a = isUTC ? p.t - p.offset * 60000 : p.t;
+        const b = otherUTC ? op.t - op.offset * 60000 : op.t;
+        const zoneDelta = isUTC || otherUTC ? 0 : (op.offset - p.offset) * 60000;
         if (float) {
           return (a - b - zoneDelta) / DAY_MS;
         }
