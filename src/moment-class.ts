@@ -3245,8 +3245,12 @@ export class Moment {
     let other: Moment;
     if (input instanceof Moment) {
       other = input;
-      if (this._p._tStale) { this._syncT(); }
-      if (other._p._tStale) { other._syncT(); }
+      if (this._p._tStale) {
+        this._syncT();
+      }
+      if (other._p._tStale) {
+        other._syncT();
+      }
     } else {
       other = momentFromAnything(input);
       this._syncT();

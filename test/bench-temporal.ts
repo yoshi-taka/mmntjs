@@ -1,15 +1,23 @@
 import mmntjs from "../dist/index.js";
 
 function micros(ns: number): string {
-  if (ns < 1000) { return `${ns.toFixed(0)}ns`; }
-  if (ns < 1_000_000) { return `${(ns / 1000).toFixed(2)}\u03BCs`; }
+  if (ns < 1000) {
+    return `${ns.toFixed(0)}ns`;
+  }
+  if (ns < 1_000_000) {
+    return `${(ns / 1000).toFixed(2)}\u03BCs`;
+  }
   return `${(ns / 1_000_000).toFixed(3)}ms`;
 }
 
 function run(fn: () => void, iter: number, warmup = 500): number {
-  for (let i = 0; i < warmup; i++) { fn(); }
+  for (let i = 0; i < warmup; i++) {
+    fn();
+  }
   const start = process.hrtime.bigint();
-  for (let i = 0; i < iter; i++) { fn(); }
+  for (let i = 0; i < iter; i++) {
+    fn();
+  }
   const end = process.hrtime.bigint();
   return Number(end - start) / iter;
 }
@@ -22,10 +30,26 @@ function runCold(fn: () => void): number {
 }
 
 const TD = (globalThis as unknown as { Temporal: typeof TD }).Temporal as {
-  Now: { plainDateTimeISO: () => { year: number; month: number; day: number; hour: number; minute: number; second: number; millisecond: number } };
+  Now: {
+    plainDateTimeISO: () => {
+      year: number;
+      month: number;
+      day: number;
+      hour: number;
+      minute: number;
+      second: number;
+      millisecond: number;
+    };
+  };
   PlainDate: {
-    new (y: number, m: number, d: number): {
-      year: number; month: number; day: number;
+    new (
+      y: number,
+      m: number,
+      d: number,
+    ): {
+      year: number;
+      month: number;
+      day: number;
       add(d: { days?: number; months?: number }): unknown;
       since(o: unknown): { days: number };
       toString(): string;
@@ -34,9 +58,22 @@ const TD = (globalThis as unknown as { Temporal: typeof TD }).Temporal as {
     };
     from(s: string): unknown;
   };
-  PlainDateTime: new (y: number, m: number, d: number, h?: number, min?: number, s?: number, ms?: number) => {
-    year: number; month: number; day: number;
-    hour: number; minute: number; second: number; millisecond: number;
+  PlainDateTime: new (
+    y: number,
+    m: number,
+    d: number,
+    h?: number,
+    min?: number,
+    s?: number,
+    ms?: number,
+  ) => {
+    year: number;
+    month: number;
+    day: number;
+    hour: number;
+    minute: number;
+    second: number;
+    millisecond: number;
     add(d: { days?: number; months?: number }): unknown;
     since(o: unknown): { days: number; hours?: number };
     toString(): string;
@@ -98,8 +135,16 @@ const CASES = [
       const m = mmntjs(dateA);
       const pd = pdA_dateOnly;
       return [
-        () => { m.year(); m.month(); m.date(); },
-        () => { pd.year; pd.month; pd.day; },
+        () => {
+          m.year();
+          m.month();
+          m.date();
+        },
+        () => {
+          pd.year;
+          pd.month;
+          pd.day;
+        },
       ];
     },
   },
@@ -111,7 +156,9 @@ const CASES = [
       let pd = pdtA;
       return [
         () => m.add(1, "day"),
-        () => { pd = pd.add({ days: 1 }) as typeof pdtA; },
+        () => {
+          pd = pd.add({ days: 1 }) as typeof pdtA;
+        },
       ];
     },
   },
@@ -122,7 +169,9 @@ const CASES = [
       let pd = pdtA;
       return [
         () => m.add(1, "month"),
-        () => { pd = pd.add({ months: 1 }) as typeof pdtA; },
+        () => {
+          pd = pd.add({ months: 1 }) as typeof pdtA;
+        },
       ];
     },
   },
@@ -134,10 +183,7 @@ const CASES = [
       const mB = mmntjs(dateB);
       const pa = pdtA;
       const pb = pdtB;
-      return [
-        () => m.diff(mB, "days"),
-        () => pa.since(pb).days,
-      ];
+      return [() => m.diff(mB, "days"), () => pa.since(pb).days];
     },
   },
   // ── format / stringify ──
@@ -155,10 +201,7 @@ const CASES = [
     run: () => {
       const m = mmntjs("2024-06-15");
       const pd = pdA_dateOnly;
-      return [
-        () => m.startOf("month"),
-        () => pd.with({ day: 1 }),
-      ];
+      return [() => m.startOf("month"), () => pd.with({ day: 1 })];
     },
   },
   // ── daysInMonth ──
@@ -175,14 +218,24 @@ const CASES = [
     name: "[mmntjs] set hour+min+sec+ms (chained)",
     run: () => {
       const m = mmntjs("2024-06-15T10:30:45.123");
-      return [() => { m.hour(0).minute(0).second(0).millisecond(0); }, () => {}];
+      return [
+        () => {
+          m.hour(0).minute(0).second(0).millisecond(0);
+        },
+        () => {},
+      ];
     },
   },
   {
     name: "[mmntjs] set year+month+date (chained)",
     run: () => {
       const m = mmntjs("2024-06-15");
-      return [() => { m.year(2020).month(0).date(1); }, () => {}];
+      return [
+        () => {
+          m.year(2020).month(0).date(1);
+        },
+        () => {},
+      ];
     },
   },
 ];
@@ -191,7 +244,8 @@ console.log(
   "Operation                           cold m2   cold tmp       %   warm m2   warm tmp       %",
 );
 for (const c of CASES) {
-  const cm: number[] = [], ct: number[] = [];
+  const cm: number[] = [],
+    ct: number[] = [];
   for (let r = 0; r < COLD_RUNS; r++) {
     const [fnM2, fnT] = c.run();
     cm.push(runCold(fnM2));
@@ -203,7 +257,8 @@ for (const c of CASES) {
   const coldT = ct[Math.floor(COLD_RUNS / 2)];
   const coldRatio = coldT === 0 ? "-" : ((coldT / coldM2) * 100).toFixed(1);
 
-  const tm: number[] = [], tt: number[] = [];
+  const tm: number[] = [],
+    tt: number[] = [];
   for (let r = 0; r < WARM_RUNS; r++) {
     const [fnM2, fnT] = c.run();
     tm.push(run(fnM2, ITER, WARMUP));
