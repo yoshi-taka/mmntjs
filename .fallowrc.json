@@ -26,6 +26,7 @@
     "test/*-lite-strict.test.ts",
     "test/*-extra.test.ts",
     "test/sbst-*",
+    "test/pbt-counterexamples.test.ts",
     "packages/timezone/src/index.ts",
     "packages/timezone/test/basic.test.ts",
     "packages/timezone/test/compat.test.ts",
