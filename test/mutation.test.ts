@@ -129,7 +129,7 @@ makeMutations([
   {
     name: "valueOf: off by +1ms",
     file: "src/moment-class.ts",
-    patterns: [[/    return this\._t;\n/g, "    return this._t + 1;\n"]],
+    patterns: [[/    return this\._p\.t;\n/g, "    return this._p.t + 1;\n"]],
     inputs: fc.date({ noInvalidDate: true }),
     testFn: (input: unknown) => {
       return mutatedMoment(input).valueOf() === originalMoment(input as Date).valueOf();
@@ -161,7 +161,7 @@ makeMutations([
   {
     name: "add days: _t sign flipped",
     file: "src/moment-class.ts",
-    patterns: [[/this\._t \+= rounded \* 86400000;/g, "this._t -= rounded * 86400000;"]],
+    patterns: [[/this\._p\.t \+= rounded \* 86400000;/g, "this._p.t -= rounded * 86400000;"]],
     inputs: fc.tuple(fc.date({ noInvalidDate: true }), nonZeroInt(-100, 100)),
     testFn: (input: unknown) => {
       const [date, n] = input as [unknown, unknown];
@@ -242,8 +242,8 @@ makeMutations([
     file: "src/moment-class.ts",
     patterns: [
       [
-        /this\.\$H = 0;\n\s*this\.\$m = 0;\n\s*this\.\$s = 0;\n\s*this\.\$ms = 0;/g,
-        "this.$H = 12;\n    this.$m = 0;\n    this.$s = 0;\n    this.$ms = 0;",
+        /p\.H = 0;\n\s*p\.m = 0;\n\s*p\.s = 0;\n\s*p\.ms = 0;/g,
+        "p.H = 12;\n      p.m = 0;\n      p.s = 0;\n      p.ms = 0;",
       ],
     ],
     inputs: fc.date({ noInvalidDate: true }),
@@ -314,12 +314,13 @@ makeMutations([
     },
   },
   {
-    name: "year setter: wrong year stored",
+    name: "year setter: wrong year stored (_opCleanLocal p.y = val + 1)",
     file: "src/moment-class.ts",
     patterns: [
-      [/this\.\$y = this\._d\.getUTCFullYear\(\);/g, "this.$y = this._d.getUTCFullYear() + 1;"],
-      [/this\.\$y = d\.getFullYear\(\);/g, "this.$y = d.getFullYear() + 1;"],
-      [/this\.\$y = dt\.getFullYear\(\);/g, "this.$y = dt.getFullYear() + 1;"],
+      [
+        /case _OP_YEAR:\n\s*if \(p\.D <= 28\) \{\n\s*p\.y = val;\n\s*p\.d = undefined;\n\s*break;/g,
+        "case _OP_YEAR:\n          if (p.D <= 28) {\n            p.y = val + 1;\n            p.d = undefined;\n            break;",
+      ],
     ],
     inputs: fc.date({ noInvalidDate: true }),
     testFn: (input: unknown) => {
@@ -434,7 +435,7 @@ makeMutations([
   {
     name: "format: month display off-by-one ($M + 1 -> $M)",
     file: "src/display/format.ts",
-    patterns: [[/raw\.\$M \+ 1/g, "raw.$M"]],
+    patterns: [[/p2\(([rp])\.M \+ 1\)/g, "p2($1.M)"]],
     inputs: fc.date({ noInvalidDate: true }),
     testFn: (input: unknown) => {
       return (
@@ -450,8 +451,8 @@ makeMutations([
     file: "src/boundary-extra.ts",
     patterns: [
       [
-        /m\.\$W = utc \? d\.getUTCDay\(\) : d\.getDay\(\);\n\s*m\._t = d\.getTime\(\);\n\s*break;\n\s*\}\n\s*case ISO_WEEK:\n\s*\{/g,
-        "m.$W = 0;\n    m._t = d.getTime();\n    break;\n    }\n    case ISO_WEEK:\n    {",
+        /m\._p\.W = utc \? d\.getUTCDay\(\) : d\.getDay\(\);\n\s*m\._p\.t = d\.getTime\(\);\n\s*break;\n\s*\}\n\s*case ISO_WEEK:/g,
+        "m._p.W = 0;\n      m._p.t = d.getTime();\n      break;\n    }\n    case ISO_WEEK:",
       ],
     ],
     inputs: fc.date({
@@ -471,8 +472,8 @@ makeMutations([
     file: "src/boundary-extra.ts",
     patterns: [
       [
-        /m\.\$W = utc \? d\.getUTCDay\(\) : d\.getDay\(\);\n\s*m\._t = d\.getTime\(\);\n\s*break;\n\s*\}\n\s*\}\n\s*}/g,
-        "m.$W = 0;\n    m._t = d.getTime();\n    break;\n    }\n    }\n}",
+        /m\._p\.W = utc \? d\.getUTCDay\(\) : d\.getDay\(\);\n\s*m\._p\.t = d\.getTime\(\);\n\s*break;\n\s*\}\n\s*\}/g,
+        "m._p.W = 0;\n      m._p.t = d.getTime();\n      break;\n    }\n  }",
       ],
     ],
     inputs: fc.date({
@@ -492,8 +493,8 @@ makeMutations([
     file: "src/boundary-extra.ts",
     patterns: [
       [
-        /m\.\$W = utc \? d\.getUTCDay\(\) : d\.getDay\(\);\n\s*m\._t = d\.getTime\(\);\n\s*break;\n\s*\}\n\s*case ISO_WEEK:\n\s*\{/g,
-        "m.$W = 0;\n    m._t = d.getTime();\n    break;\n    }\n    case ISO_WEEK:\n    {",
+        /m\._p\.W = utc \? d\.getUTCDay\(\) : d\.getDay\(\);\n\s*m\._p\.t = d\.getTime\(\);\n\s*break;\n\s*\}\n\s*case ISO_WEEK:/g,
+        "m._p.W = 0;\n      m._p.t = d.getTime();\n      break;\n    }\n    case ISO_WEEK:",
       ],
     ],
     inputs: fc.date({
@@ -513,8 +514,8 @@ makeMutations([
     file: "src/boundary-extra.ts",
     patterns: [
       [
-        /m\.\$W = utc \? d\.getUTCDay\(\) : d\.getDay\(\);\n\s*m\._t = d\.getTime\(\);\n\s*break;\n\s*\}\n\s*\}\n\s*}/g,
-        "m.$W = 0;\n    m._t = d.getTime();\n    break;\n    }\n    }\n}",
+        /m\._p\.W = utc \? d\.getUTCDay\(\) : d\.getDay\(\);\n\s*m\._p\.t = d\.getTime\(\);\n\s*break;\n\s*\}\n\s*\}/g,
+        "m._p.W = 0;\n      m._p.t = d.getTime();\n      break;\n    }\n  }",
       ],
     ],
     inputs: fc.date({
@@ -532,12 +533,7 @@ makeMutations([
   {
     name: "boundary-extra: startOf WEEK locale dow ignored (constant 0)",
     file: "src/boundary-extra.ts",
-    patterns: [
-      [
-        /const dow = weekCfg\.dow;\n\s*const day = utc \? d\.getUTCDay\(\) : d\.getDay\(\);\n\s*const diff = \(day - dow \+ 7\) % 7;/g,
-        "const dow = 0;\n    const day = utc ? d.getUTCDay() : d.getDay();\n    const diff = (day - dow + 7) % 7;",
-      ],
-    ],
+    patterns: [[/const dow =[\s\S]*?\n\s*\)\.dow;/g, "const dow = 0;"]],
     inputs: fc.date({
       min: new Date("2000-01-01"),
       max: new Date("2030-12-31"),
@@ -557,12 +553,7 @@ makeMutations([
   {
     name: "boundary-extra: endOf WEEK locale dow ignored (constant 0)",
     file: "src/boundary-extra.ts",
-    patterns: [
-      [
-        /const dow = weekCfg\.dow;\n\s*const weekDay = utc \? d\.getUTCDay\(\) : d\.getDay\(\);\n\s*const diff = \(weekDay - dow \+ 7\) % 7;/g,
-        "const dow = 0;\n    const weekDay = utc ? d.getUTCDay() : d.getDay();\n    const diff = (weekDay - dow + 7) % 7;",
-      ],
-    ],
+    patterns: [[/const dow =[\s\S]*?\n\s*\)\.dow;/g, "const dow = 0;"]],
     inputs: fc.date({
       min: new Date("2000-01-01"),
       max: new Date("2030-12-31"),
@@ -584,8 +575,8 @@ makeMutations([
     file: "src/calendar-extra.ts",
     patterns: [
       [
-        /m\._t = dt\.getTime\(\);\n\s*m\._refreshFields\(\);/g,
-        "m._t = dt.getTime();\n    // _refreshFields removed",
+        /m\._p\.t = dt\.getTime\(\);\n\s*m\._refreshFields\(\);/g,
+        "m._p.t = dt.getTime();\n    // _refreshFields removed",
       ],
     ],
     inputs: fc.tuple(
@@ -605,12 +596,12 @@ makeMutations([
     },
   },
   {
-    name: "calendar-extra: dayOfYear setter no _refreshFields",
+    name: "calendar-extra: dayOfYear setter no _ensureFields",
     file: "src/calendar-extra.ts",
     patterns: [
       [
-        /m\._ensureFields\(\);\n\s*const year = m\.\$y;\n\s*const day = Number\(d\);/g,
-        "const year = m.$y;\n    const day = Number(d);",
+        /m\._ensureFields\(\);\n\s*const year = m\._p\.y;\n\s*const day = Number\(d\);/g,
+        "const year = m._p.y;\n    const day = Number(d);",
       ],
     ],
     inputs: fc.tuple(
@@ -649,23 +640,25 @@ makeMutations([
   {
     name: "defaultFormat: wrong default value",
     file: "src/moment-class.ts",
-    patterns: [[/return 'YYYY-MM-DDTHH:mm:ssZ'/g, "return 'YYYY/MM/DD'"]],
+    patterns: [[/_defaultFormat = "YYYY-MM-DDTHH:mm:ssZ"/g, '_defaultFormat = "YYYY/MM/DD"']],
     inputs: fc.constantFrom("2024-06-15T12:00:00", "2025-01-01T00:00:00"),
     testFn: (input: unknown) => {
       const m2 = mutatedMoment(input as string);
       const mOrig = originalMoment(input as string);
-      const origFmt = originalMoment.defaultFormat;
-      originalMoment.defaultFormat = "YYYY/MM/DD";
-      const ok = m2.format() === mOrig.format();
-      originalMoment.defaultFormat = origFmt;
-      return ok;
+      // With mutation, m2 uses YYYY/MM/DD while mOrig uses YYYY-MM-DDTHH:mm:ssZ
+      return m2.format() === mOrig.format();
     },
   },
   {
-    name: "localeData: monthsParse off-by-one (month index)",
+    name: "localeData: monthsParse skip startsWith regex fallback",
     file: "src/locale-runtime.ts",
-    patterns: [[/months\[monthIndex\] !== undefined/g, "months[monthIndex + 1] !== undefined"]],
-    inputs: fc.constantFrom("January", "February", "December", "Jan", "Dec"),
+    patterns: [
+      [
+        /for \(let i = 0; i < names\.length; i\+\+\) \{\n\s*if \(names\[i\]\.toLowerCase\(\)\.startsWith\(lower\)\) \{\n\s*return i;\n\s*\}/g,
+        "return -1; /* skip startsWith fallback */",
+      ],
+    ],
+    inputs: fc.constantFrom("January", "February", "March", "December"),
     testFn: (input: unknown) => {
       const mod = require("../src/index.ts").default;
       const loc = mod.localeData("en");
@@ -676,7 +669,7 @@ makeMutations([
   {
     name: "localeData: firstDayOfWeek wrong value",
     file: "src/locale-runtime.ts",
-    patterns: [[/return this\._config\.week\.dow;/g, "return 99;"]],
+    patterns: [[/return this\._config\.week\?\.dow \?\? 0;/g, "return 99;"]],
     inputs: fc.constantFrom("en", "en-gb", "de", "fr", "ja"),
     testFn: (input: unknown) => {
       const mod = require("../src/index.ts").default;
@@ -690,8 +683,8 @@ makeMutations([
     file: "src/locale-runtime.ts",
     patterns: [
       [
-        /weekdays\[weekdayIndex\] !== undefined/g,
-        "(weekdayIndex === 6 ? true : false) ? true : false",
+        /if \(idx >= 0\) \{\n\s*return idx;\n\s*\}/g,
+        "if (idx === 6) {return idx;} else {return -1;}",
       ],
     ],
     inputs: fc.constantFrom("Monday", "Tuesday", "Sunday", "Funday"),
@@ -724,17 +717,19 @@ makeMutations([
     file: "src/moment-class.ts",
     patterns: [
       [
-        /_compareCalendarValues\(other, unit \?\? "millisecond"\) <= 0/g,
-        '_compareCalendarValues(other, unit ?? "millisecond") < 0',
+        /this\._compareCalendarValues\(other, unit\) <= 0/g,
+        "this._compareCalendarValues(other, unit) < 0",
       ],
     ],
     inputs: fc.date({ noInvalidDate: true }),
     testFn: (input: unknown) => {
       const d = input as Date;
+      // Use "day" unit to exercise _compareCalendarValues path
       return (
-        mutatedMoment(d).isSameOrBefore(new Date(d.getTime() + 86400000)) ===
-          originalMoment(d as Date).isSameOrBefore(new Date(d.getTime() + 86400000)) &&
-        mutatedMoment(d).isSameOrBefore(d) === originalMoment(d as Date).isSameOrBefore(d as Date)
+        mutatedMoment(d).isSameOrBefore(new Date(d.getTime() + 86400000), "day") ===
+          originalMoment(d as Date).isSameOrBefore(new Date(d.getTime() + 86400000), "day") &&
+        mutatedMoment(d).isSameOrBefore(d, "day") ===
+          originalMoment(d as Date).isSameOrBefore(d as Date, "day")
       );
     },
   },
@@ -743,17 +738,58 @@ makeMutations([
     file: "src/moment-class.ts",
     patterns: [
       [
-        /_compareCalendarValues\(other, unit \?\? "millisecond"\) >= 0/g,
-        '_compareCalendarValues(other, unit ?? "millisecond") > 0',
+        /this\._compareCalendarValues\(other, unit\) >= 0/g,
+        "this._compareCalendarValues(other, unit) > 0",
       ],
     ],
     inputs: fc.date({ noInvalidDate: true }),
     testFn: (input: unknown) => {
       const d = input as Date;
       return (
-        mutatedMoment(d).isSameOrAfter(new Date(d.getTime() - 86400000)) ===
-          originalMoment(d as Date).isSameOrAfter(new Date(d.getTime() - 86400000)) &&
-        mutatedMoment(d).isSameOrAfter(d) === originalMoment(d as Date).isSameOrAfter(d as Date)
+        mutatedMoment(d).isSameOrAfter(new Date(d.getTime() - 86400000), "day") ===
+          originalMoment(d as Date).isSameOrAfter(new Date(d.getTime() - 86400000), "day") &&
+        mutatedMoment(d).isSameOrAfter(d, "day") ===
+          originalMoment(d as Date).isSameOrAfter(d as Date, "day")
+      );
+    },
+  },
+  {
+    name: "isSameOrBefore: moment-lite <= flipped to <",
+    file: "src/moment-lite.ts",
+    patterns: [
+      [
+        /this\._compareCalendarValues\(other, unit \?\? "millisecond"\) <= 0/g,
+        'this._compareCalendarValues(other, unit ?? "millisecond") < 0',
+      ],
+    ],
+    inputs: fc.date({ noInvalidDate: true }),
+    testFn: (input: unknown) => {
+      const d = input as Date;
+      return (
+        mutatedMoment(d).isSameOrBefore(new Date(d.getTime() + 86400000), "day") ===
+          originalMoment(d as Date).isSameOrBefore(new Date(d.getTime() + 86400000), "day") &&
+        mutatedMoment(d).isSameOrBefore(d, "day") ===
+          originalMoment(d as Date).isSameOrBefore(d as Date, "day")
+      );
+    },
+  },
+  {
+    name: "isSameOrAfter: moment-lite >= flipped to >",
+    file: "src/moment-lite.ts",
+    patterns: [
+      [
+        /this\._compareCalendarValues\(other, unit \?\? "millisecond"\) >= 0/g,
+        'this._compareCalendarValues(other, unit ?? "millisecond") > 0',
+      ],
+    ],
+    inputs: fc.date({ noInvalidDate: true }),
+    testFn: (input: unknown) => {
+      const d = input as Date;
+      return (
+        mutatedMoment(d).isSameOrAfter(new Date(d.getTime() - 86400000), "day") ===
+          originalMoment(d as Date).isSameOrAfter(new Date(d.getTime() - 86400000), "day") &&
+        mutatedMoment(d).isSameOrAfter(d, "day") ===
+          originalMoment(d as Date).isSameOrAfter(d as Date, "day")
       );
     },
   },
@@ -796,6 +832,146 @@ makeMutations([
       const loc = mod.localeData("en");
       const oloc = originalMoment.localeData("en");
       return loc.pastFuture(diff, rel) === oloc.pastFuture(diff, rel);
+    },
+  },
+
+  {
+    name: "clone: shared _p reference (no copy)",
+    file: "src/moment-class.ts",
+    patterns: [[/m\._p = \{ \.\.\.p, d: p\.d \? new Date\(p\.t\) : undefined \};/g, "m._p = p;"]],
+    inputs: fc.date({ noInvalidDate: true }),
+    testFn: (input: unknown) => {
+      const d = input as Date;
+      const m2 = mutatedMoment(d);
+      const c = m2.clone();
+      m2.add(1, "day");
+      // Clone should be independent; with shared _p, clone changes too
+      return c.valueOf() !== m2.valueOf();
+    },
+  },
+  {
+    name: "utcOffset: sign flipped (minutes negated)",
+    file: "src/moment-class.ts",
+    patterns: [
+      [/this\._p\.offset = -d\.getTimezoneOffset\(\);/g, "this._p.offset = d.getTimezoneOffset();"],
+      [/p\.offset = -d\.getTimezoneOffset\(\);/g, "p.offset = d.getTimezoneOffset();"],
+    ],
+    inputs: fc.date({ noInvalidDate: true }),
+    testFn: (input: unknown) => {
+      const d = input as Date;
+      const m2 = mutatedMoment(d);
+      // With flipped offset sign, the UTC epoch calculation differs:
+      // moment.js: utcEpoch = localEpoch + offset*60000 (correct)
+      // mutated:  utcEpoch = localEpoch - offset*60000 (wrong)
+      // comparison with moment.js oracle should catch this
+      return m2.valueOf() === mOrig.valueOf();
+    },
+  },
+  {
+    name: "format: year off-by-one (YYYY token)",
+    file: "src/moment-class.ts",
+    patterns: [
+      [
+        /format\(format\?: string, locale\?: string\): string \{/g,
+        "format(format?: string, locale?: string): string { format = format?.replace(/YYYY/g, String(Number(format?.match(/YYYY/)?.[0]) + 1));",
+      ],
+    ],
+    inputs: fc.date({ noInvalidDate: true }),
+    testFn: (input: unknown) => {
+      return mutatedMoment(input).format("YYYY") === originalMoment(input as Date).format("YYYY");
+    },
+  },
+  {
+    name: "isDST: always returns false",
+    file: "src/moment-class.ts",
+    patterns: [
+      [
+        /isDST\(\): boolean \{\n\s*return isDSTMoment/g,
+        "isDST(): boolean { return false; /* mutated */ }",
+      ],
+    ],
+    inputs: fc.date({ noInvalidDate: true }),
+    testFn: (input: unknown) => {
+      const d = input as Date;
+      // Create local moments (non-UTC) to exercise isDST in local timezone
+      const m2 = mutatedMoment(d);
+      const mOrig = originalMoment(d);
+      return m2.isDST() === mOrig.isDST();
+    },
+  },
+  {
+    name: "unix: wrong rounding (floor instead of floor)",
+    file: "src/moment-class.ts",
+    patterns: [
+      [
+        /return Math\.floor\(this\.valueOf\(\) \/ 1000\);/g,
+        "return Math.round(this.valueOf() / 1000);",
+      ],
+    ],
+    inputs: fc.date({ noInvalidDate: true }),
+    testFn: (input: unknown) => {
+      return mutatedMoment(input).unix() === originalMoment(input as Date).unix();
+    },
+  },
+  {
+    name: "toISOString: keepOffset wrong branch (UTC instead of local)",
+    file: "src/moment-class.ts",
+    patterns: [[/if \(keepOffset\) \{/g, "if (false) {"]],
+    inputs: fc.constantFrom("2024-06-15T12:00:00"),
+    testFn: (input: unknown) => {
+      const m2 = mutatedMoment(input as string);
+      const mOrig = originalMoment(input as string);
+      return m2.toISOString(true) === mOrig.toISOString(true);
+    },
+  },
+  {
+    name: "daysInMonth: always returns 30",
+    file: "src/moment-class.ts",
+    patterns: [
+      [
+        /daysInMonth\(\): number \{\n\s*if \(this\._p\.dirty\) \{\n\s*this\._ensureFields\(\);\n\s*\}\n\s*return daysInMonthFast\(this\._p\.y, this\._p\.M\);/g,
+        "daysInMonth(): number { return 30;",
+      ],
+    ],
+    inputs: fc.constantFrom("2024-01-15", "2024-02-15", "2024-03-15", "2023-02-15"),
+    testFn: (input: unknown) => {
+      return (
+        mutatedMoment(input as string).daysInMonth() ===
+        originalMoment(input as string).daysInMonth()
+      );
+    },
+  },
+  {
+    name: "date setter: Fast28 off by one (p.D = val -> p.D = val + 1)",
+    file: "src/moment-class.ts",
+    patterns: [
+      [
+        /p\.W = \(\(\(p\.W - p\.D \+ val\) % 7\) \+ 7\) % 7;\n\s*p\.t = ymdToEpochDays\(p\.y, p\.M, val\) \* DAY_MS \+ _tod\(p\);\n\s*p\.D = val;\n\s*p\.d = undefined;\n\s*p\._tStale = false;/g,
+        "p.W = (((p.W - p.D + val) % 7) + 7) % 7;\n            p.t = ymdToEpochDays(p.y, p.M, val) * DAY_MS + _tod(p);\n            p.D = val + 1;\n            p.d = undefined;\n            p._tStale = false;",
+      ],
+    ],
+    inputs: fc.date({ noInvalidDate: true }),
+    testFn: (input: unknown) => {
+      const d = input as Date;
+      const m2 = mutatedMoment(d);
+      const mOrig = originalMoment(d);
+      m2.date(15);
+      mOrig.date(15);
+      return m2.date() === mOrig.date() && m2.valueOf() === mOrig.valueOf();
+    },
+  },
+  {
+    name: "hour setter: fast path stuck (no-op when wrong value)",
+    file: "src/moment-class.ts",
+    patterns: [[/if \(refined === p\.H\) \{\n\s*return this;\n\s*\}/g, "if (false) {"]],
+    inputs: fc.date({ noInvalidDate: true }),
+    testFn: (input: unknown) => {
+      const d = input as Date;
+      const m2 = mutatedMoment(d);
+      const mOrig = originalMoment(d);
+      m2.hour(5);
+      mOrig.hour(5);
+      return m2.valueOf() === mOrig.valueOf() && m2.hour() === mOrig.hour();
     },
   },
 ]);
