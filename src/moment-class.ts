@@ -1697,20 +1697,14 @@ export class Moment {
       if (isNaN(num) || (typeof h !== "number" && h === null)) {
         return this;
       }
-      // ---- Fast path: ordinary range + clean + local + p.d present ----
-      if (Number.isInteger(num) && num >= 0 && num <= 23) {
-        if (!p.dirty && !p._tStale && !p.isUTC && p.d != null) {
-          if (num === p.H) {
-            return this;
-          }
-          p.d.setHours(num, p.m, p.s, p.ms);
-          p.t = p.d.getTime();
-          p.H = p.d.getHours();
-          p.offset = -p.d.getTimezoneOffset();
-          p._tStale = false;
+      // ---- Fast path: ordinary range + fields fresh → lazy field write ----
+      if (Number.isInteger(num) && num >= 0 && num <= 23 && !p.dirty) {
+        if (num === p.H) {
           return this;
         }
-        // State not suitable for fast path — fall through
+        p.H = num;
+        p._tStale = true;
+        return this;
       }
       if (num === p.H) {
         return this;
@@ -1726,6 +1720,10 @@ export class Moment {
       if (!updateOffsetCallback) {
         p.H = num;
         p._tStale = true;
+        // Normalize out-of-range (e.g. 24 → 0 + day+1) to match moment.js
+        if (num < 0 || num > 23) {
+          this._syncT();
+        }
         return this;
       }
       this._applyOp(_OP_HOUR, num);
@@ -1754,9 +1752,10 @@ export class Moment {
           if (num === p.m) {
             return this;
           }
-          p.d.setMinutes(num, p.s, p.ms);
+          const delta = (num - p.m) * 60000;
+          p.t += delta;
           p.m = num;
-          p.t = p.d.getTime();
+          p.d.setTime(p.t);
           p._tStale = false;
           return this;
         }
@@ -1774,6 +1773,9 @@ export class Moment {
       if (!updateOffsetCallback) {
         p.m = num;
         p._tStale = true;
+        if (num < 0 || num > 59) {
+          this._syncT();
+        }
         return this;
       }
       this._applyOp(_OP_MIN, num);
@@ -1801,9 +1803,10 @@ export class Moment {
           if (num === p.s) {
             return this;
           }
-          p.d.setSeconds(num, p.ms);
+          const delta = (num - p.s) * 1000;
+          p.t += delta;
           p.s = num;
-          p.t = p.d.getTime();
+          p.d.setTime(p.t);
           p._tStale = false;
           return this;
         }
@@ -1821,6 +1824,9 @@ export class Moment {
       if (!updateOffsetCallback) {
         p.s = num;
         p._tStale = true;
+        if (num < 0 || num > 59) {
+          this._syncT();
+        }
         return this;
       }
       this._applyOp(_OP_SEC, num);
@@ -1848,9 +1854,10 @@ export class Moment {
           if (num === p.ms) {
             return this;
           }
-          p.d.setMilliseconds(num);
+          const delta = num - p.ms;
+          p.t += delta;
           p.ms = num;
-          p.t = p.d.getTime();
+          p.d.setTime(p.t);
           p._tStale = false;
           return this;
         }
@@ -1868,6 +1875,9 @@ export class Moment {
       if (!updateOffsetCallback) {
         p.ms = num;
         p._tStale = true;
+        if (num < 0 || num > 999) {
+          this._syncT();
+        }
         return this;
       }
       this._applyOp(_OP_MS, num);

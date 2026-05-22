@@ -826,14 +826,10 @@ export class MomentLite {
         return this;
       }
       if (!p.dirty && p.d != null) {
-        if (p.isUTC) {
-          p.d.setUTCMinutes(num);
-          p.m = p.d.getUTCMinutes();
-        } else {
-          p.d.setMinutes(num);
-          p.m = p.d.getMinutes();
-        }
-        p.t = p.d.getTime();
+        const delta = (num - p.m) * 60000;
+        p.t += delta;
+        p.m = num;
+        p.d.setTime(p.t);
         return this;
       }
       if (p.dirty) {
@@ -874,14 +870,10 @@ export class MomentLite {
         return this;
       }
       if (!p.dirty && p.d != null) {
-        if (p.isUTC) {
-          p.d.setUTCSeconds(num);
-          p.s = p.d.getUTCSeconds();
-        } else {
-          p.d.setSeconds(num);
-          p.s = p.d.getSeconds();
-        }
-        p.t = p.d.getTime();
+        const delta = (num - p.s) * 1000;
+        p.t += delta;
+        p.s = num;
+        p.d.setTime(p.t);
         return this;
       }
       if (p.dirty) {
@@ -922,14 +914,10 @@ export class MomentLite {
         return this;
       }
       if (!p.dirty && p.d != null) {
-        if (p.isUTC) {
-          p.d.setUTCMilliseconds(num);
-          p.ms = p.d.getUTCMilliseconds();
-        } else {
-          p.d.setMilliseconds(num);
-          p.ms = p.d.getMilliseconds();
-        }
-        p.t = p.d.getTime();
+        const delta = num - p.ms;
+        p.t += delta;
+        p.ms = num;
+        p.d.setTime(p.t);
         return this;
       }
       if (p.dirty) {
