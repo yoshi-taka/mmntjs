@@ -2235,7 +2235,8 @@ export class Moment {
     const _p = this._p;
     // ── YEAR: January 1 midnight ──
     if (code === YEAR) {
-      if (!_p._tStale && _p.d != null) {
+      // Date-mutation path: always possible when p.d exists and offsets matter
+      if (_p.d != null) {
         _p.d.setMonth(0, 1);
         _p.d.setHours(0, 0, 0, 0);
         _p.t = _p.d.getTime();
@@ -2243,8 +2244,6 @@ export class Moment {
       } else if (!_p._tStale) {
         _p.t = ymdToEpochDays(_p.y, 0, 1) * DAY_MS - _p.offset * MINUTE_MS;
       } else {
-        // Arithmetic fast path: compute from fields + offset.
-        // Leaves _tStale=true for self-correction on next _ensureFields.
         _p.t = ymdToEpochDays(_p.y, 0, 1) * DAY_MS - _p.offset * MINUTE_MS;
         _p.M = 0;
         _p.D = 1;
@@ -2276,7 +2275,7 @@ export class Moment {
     }
     // ── MONTH: 1st midnight ──
     if (code === MONTH) {
-      if (!_p._tStale && _p.d != null) {
+      if (_p.d != null) {
         _p.d.setDate(1);
         _p.d.setHours(0, 0, 0, 0);
         _p.t = _p.d.getTime();
@@ -2326,12 +2325,13 @@ export class Moment {
     }
     // ── DATE / DAY: midnight ──
     if (code === DATE || code === DAY) {
-      if (!_p._tStale && _p.d != null) {
+      if (_p.d != null) {
         _p.d.setHours(0, 0, 0, 0);
         _p.t = _p.d.getTime();
         _p.offset = -_p.d.getTimezoneOffset();
       } else if (!_p._tStale) {
         _p.t = floorUnitEpoch(_p.t, DAY_MS);
+        _p.d = undefined;
         _p.H = 0;
         _p.m = 0;
         _p.s = 0;
@@ -2343,7 +2343,6 @@ export class Moment {
         }
         return;
       } else {
-        // Self-verifying arithmetic: compute midnight from fields + offset.
         _p.t = floorUnitEpoch(
           ymdToEpochDays(_p.y, _p.M, _p.D) * DAY_MS - _p.offset * MINUTE_MS,
           DAY_MS,
@@ -2372,12 +2371,13 @@ export class Moment {
     }
     // ── HOUR ──
     if (code === HOUR) {
-      if (!_p._tStale && _p.d != null) {
+      if (_p.d != null) {
         _p.d.setMinutes(0, 0, 0);
         _p.t = _p.d.getTime();
         _p.offset = -_p.d.getTimezoneOffset();
       } else if (!_p._tStale) {
         _p.t = floorUnitEpoch(_p.t, HOUR_MS);
+        _p.d = undefined;
         _p.m = 0;
         _p.s = 0;
         _p.ms = 0;
@@ -2414,12 +2414,13 @@ export class Moment {
     }
     // ── MINUTE ──
     if (code === MINUTE) {
-      if (!_p._tStale && _p.d != null) {
+      if (_p.d != null) {
         _p.d.setSeconds(0, 0);
         _p.t = _p.d.getTime();
         _p.offset = -_p.d.getTimezoneOffset();
       } else if (!_p._tStale) {
         _p.t = floorUnitEpoch(_p.t, MINUTE_MS);
+        _p.d = undefined;
         _p.s = 0;
         _p.ms = 0;
         _p._tStale = false;
@@ -2456,12 +2457,13 @@ export class Moment {
     }
     // ── SECOND ──
     if (code === SECOND) {
-      if (!_p._tStale && _p.d != null) {
+      if (_p.d != null) {
         _p.d.setMilliseconds(0);
         _p.t = _p.d.getTime();
         _p.offset = -_p.d.getTimezoneOffset();
       } else if (!_p._tStale) {
         _p.t = floorUnitEpoch(_p.t, SECOND_MS);
+        _p.d = undefined;
         _p.ms = 0;
         _p._tStale = false;
         _p.dirty = false;
