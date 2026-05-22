@@ -381,6 +381,130 @@ const CASES: BenchCase[] = [
       return [() => a.add(1, "year"), () => b.add(1, "year")];
     },
   },
+  // ── Cold-path setters & startOf ──
+  {
+    name: "startOf('day') UTC",
+    run: () => {
+      const a = moment.utc("2024-06-15"),
+        b = mmntjs.utc("2024-06-15");
+      return [() => a.startOf("day"), () => b.startOf("day")];
+    },
+  },
+  {
+    name: "startOf('day') local",
+    run: () => {
+      const a = moment("2024-06-15"),
+        b = mmntjs("2024-06-15");
+      return [() => a.startOf("day"), () => b.startOf("day")];
+    },
+  },
+  {
+    name: "set year UTC",
+    run: () => {
+      const a = moment.utc("2024-06-15"),
+        b = mmntjs.utc("2024-06-15");
+      return [() => a.year(2020), () => b.year(2020)];
+    },
+  },
+  {
+    name: "set year local D<=28",
+    run: () => {
+      const a = moment("2024-06-15"),
+        b = mmntjs("2024-06-15");
+      return [() => a.year(2020), () => b.year(2020)];
+    },
+  },
+  {
+    name: "set month UTC",
+    run: () => {
+      const a = moment.utc("2024-06-15"),
+        b = mmntjs.utc("2024-06-15");
+      return [() => a.month(0), () => b.month(0)];
+    },
+  },
+  {
+    name: "set month local D<=28",
+    run: () => {
+      const a = moment("2024-06-15"),
+        b = mmntjs("2024-06-15");
+      return [() => a.month(0), () => b.month(0)];
+    },
+  },
+  {
+    name: "set date D<=28 UTC",
+    run: () => {
+      const a = moment.utc("2024-06-15"),
+        b = mmntjs.utc("2024-06-15");
+      return [() => a.date(15), () => b.date(15)];
+    },
+  },
+  {
+    name: "set date D<=28 local",
+    run: () => {
+      const a = moment("2024-06-15"),
+        b = mmntjs("2024-06-15");
+      return [() => a.date(15), () => b.date(15)];
+    },
+  },
+  {
+    name: "set date D>28 UTC",
+    run: () => {
+      const a = moment.utc("2024-01-31"),
+        b = mmntjs.utc("2024-01-31");
+      return [() => a.date(31), () => b.date(31)];
+    },
+  },
+  {
+    name: "set date D>28 local",
+    run: () => {
+      const a = moment("2024-01-31"),
+        b = mmntjs("2024-01-31");
+      return [() => a.date(31), () => b.date(31)];
+    },
+  },
+  {
+    name: "set hour UTC (p.d hot)",
+    run: () => {
+      const a = moment.utc("2024-06-15"),
+        b = mmntjs.utc("2024-06-15");
+      return [() => a.hour(12), () => b.hour(12)];
+    },
+  },
+  {
+    name: "set hour local (p.d hot)",
+    run: () => {
+      const a = moment("2024-06-15"),
+        b = mmntjs("2024-06-15");
+      return [() => a.hour(12), () => b.hour(12)];
+    },
+  },
+  {
+    name: "chained y+M+d (3 setters) local",
+    run: () => {
+      const a = moment("2024-06-15"),
+        b = mmntjs("2024-06-15");
+      return [() => a.year(2020).month(0).date(1), () => b.year(2020).month(0).date(1)];
+    },
+  },
+  {
+    name: "chained y+M+d+H+m+s (6 setters) local",
+    run: () => {
+      const a = moment("2024-06-15 10:30:45"),
+        b = mmntjs("2024-06-15 10:30:45");
+      return [
+        () => a.year(2020).month(0).date(1).hour(0).minute(0).second(0),
+        () => b.year(2020).month(0).date(1).hour(0).minute(0).second(0),
+      ];
+    },
+  },
+  {
+    name: "set year local D>28 (Jan 31→Feb)",
+    run: () => {
+      const a = moment("2024-01-31"),
+        b = mmntjs("2024-01-31");
+      return [() => a.year(2023), () => b.year(2023)];
+    },
+  },
 ];
 
 const ITER = 5000;

@@ -464,6 +464,16 @@ export class Moment {
     }
   }
 
+  /** Like _ensureFields but skips _syncT. Safest for setters that only
+   *  touch fields (y/M/D/H/m/s/ms) and never read p.t. When _tStale is
+   *  true, fields are fresh (fields-master) — no Date allocation needed. */
+  _ensureFreshFields(): void {
+    if (this._p.dirty) {
+      this._p.dirty = false;
+      this._refreshFields();
+    }
+  }
+
   _getD(): Date {
     this._syncT();
     this._ensureFields();
@@ -839,7 +849,10 @@ export class Moment {
       if (isNaN(num)) {
         return this;
       }
-      this._ensureFields();
+      if (this._p.dirty) {
+        this._p.dirty = false;
+        this._refreshFields();
+      }
       // Banach fixed point: already at target year → no-op
       if (num === this._p.y) {
         return this;
@@ -887,7 +900,10 @@ export class Moment {
   month(m: unknown): this;
   month(m?: unknown): number | this {
     if (m !== undefined) {
-      this._ensureFields();
+      if (this._p.dirty) {
+        this._p.dirty = false;
+        this._refreshFields();
+      }
       if (typeof m === "string" && !/^-?\d+$/.test(m)) {
         const lower = m.toLowerCase();
         const localeMonthsFull = this._getLocale().monthsArray();
@@ -974,7 +990,10 @@ export class Moment {
       if (num <= 0) {
         return this;
       }
-      this._ensureFields();
+      if (this._p.dirty) {
+        this._p.dirty = false;
+        this._refreshFields();
+      }
       // Banach fixed point: already at target date → no-op
       if (num === this._p.D) {
         return this;
@@ -1029,7 +1048,10 @@ export class Moment {
   day(d: unknown): this;
   day(d?: unknown): number | this {
     if (d !== undefined) {
-      this._ensureFields();
+      if (this._p.dirty) {
+        this._p.dirty = false;
+        this._refreshFields();
+      }
       let dayNum = Number(d);
       if (typeof d === "string") {
         const lower = d.toLowerCase();
@@ -1132,7 +1154,10 @@ export class Moment {
       if (isNaN(num)) {
         return this;
       }
-      this._ensureFields();
+      if (this._p.dirty) {
+        this._p.dirty = false;
+        this._refreshFields();
+      }
       if (num === this._p.H) {
         return this;
       }
@@ -1142,7 +1167,7 @@ export class Moment {
       if (utc) {
         p.t = Date.UTC(p.y, p.M, p.D, num, p.m, p.s, p.ms);
         p.d = undefined;
-      } else if (p.d != null) {
+      } else if (!p._tStale && p.d != null) {
         p.d.setHours(num);
         p.H = p.d.getHours();
         p.t = p.d.getTime();
@@ -1173,7 +1198,10 @@ export class Moment {
       if (isNaN(num)) {
         return this;
       }
-      this._ensureFields();
+      if (this._p.dirty) {
+        this._p.dirty = false;
+        this._refreshFields();
+      }
       if (num === this._p.m) {
         return this;
       }
@@ -1183,7 +1211,7 @@ export class Moment {
       if (utc) {
         p.t = Date.UTC(p.y, p.M, p.D, p.H, num, p.s, p.ms);
         p.d = undefined;
-      } else if (p.d != null) {
+      } else if (!p._tStale && p.d != null) {
         p.d.setMinutes(num);
         p.m = p.d.getMinutes();
         p.t = p.d.getTime();
@@ -1214,7 +1242,10 @@ export class Moment {
       if (isNaN(num)) {
         return this;
       }
-      this._ensureFields();
+      if (this._p.dirty) {
+        this._p.dirty = false;
+        this._refreshFields();
+      }
       if (num === this._p.s) {
         return this;
       }
@@ -1224,7 +1255,7 @@ export class Moment {
       if (utc) {
         p.t = Date.UTC(p.y, p.M, p.D, p.H, p.m, num, p.ms);
         p.d = undefined;
-      } else if (p.d != null) {
+      } else if (!p._tStale && p.d != null) {
         p.d.setSeconds(num);
         p.s = p.d.getSeconds();
         p.t = p.d.getTime();
@@ -1255,7 +1286,10 @@ export class Moment {
       if (isNaN(num)) {
         return this;
       }
-      this._ensureFields();
+      if (this._p.dirty) {
+        this._p.dirty = false;
+        this._refreshFields();
+      }
       if (num === this._p.ms) {
         return this;
       }
@@ -1265,7 +1299,7 @@ export class Moment {
       if (utc) {
         p.t = Date.UTC(p.y, p.M, p.D, p.H, p.m, p.s, num);
         p.d = undefined;
-      } else if (p.d != null) {
+      } else if (!p._tStale && p.d != null) {
         p.d.setMilliseconds(num);
         p.ms = p.d.getMilliseconds();
         p.t = p.d.getTime();
@@ -1329,7 +1363,10 @@ export class Moment {
 
   set(unit: string | object, value?: number): this {
     if (isObject(unit)) {
-      this._ensureFields();
+      if (this._p.dirty) {
+        this._p.dirty = false;
+        this._refreshFields();
+      }
       const obj = unit;
 
       const yearVal =
