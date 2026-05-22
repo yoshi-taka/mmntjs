@@ -3241,15 +3241,37 @@ export class Moment {
   }
 
   diff(input: MomentInput, unit?: string, float?: boolean): number {
-    const other = momentFromAnything(input);
+    // Inline fast path: both Moments, clean state → skip momentFromAnything + _syncT
+    let other: Moment;
+    if (input instanceof Moment) {
+      other = input;
+      if (this._p._tStale) { this._syncT(); }
+      if (other._p._tStale) { other._syncT(); }
+    } else {
+      other = momentFromAnything(input);
+      this._syncT();
+      other._syncT();
+    }
     if (!this._isValid || !other._isValid) {
       return NaN;
     }
-    this._syncT();
-    other._syncT();
     const isUTC = this._p.isUTC;
     const otherUTC = other._p.isUTC;
-    const code = unit ? normalizeUnitCode(unit) : (INVALID_UNIT as -1);
+    // Inline normalizeUnitCode for common cases (avoids toLowerCase + function call)
+    let code: number;
+    if (!unit) {
+      code = INVALID_UNIT;
+    } else if (unit === "day" || unit === "days" || unit === "date" || unit === "dates") {
+      code = DATE;
+    } else if (unit === "hour" || unit === "hours") {
+      code = HOUR;
+    } else if (unit === "minute" || unit === "minutes") {
+      code = MINUTE;
+    } else if (unit === "second" || unit === "seconds") {
+      code = SECOND;
+    } else {
+      code = normalizeUnitCode(unit);
+    }
     if (code < 0) {
       const a = isUTC ? this._p.t - this._p.offset * 60000 : this._p.t;
       const b = otherUTC ? other._p.t - other._p.offset * 60000 : other._p.t;
@@ -3262,17 +3284,10 @@ export class Moment {
         const a = isUTC ? this._p.t - this._p.offset * 60000 : this._p.t;
         const b = otherUTC ? other._p.t - other._p.offset * 60000 : other._p.t;
         const zoneDelta = isUTC || otherUTC ? 0 : (other._p.offset - this._p.offset) * 60000;
-        if (isUTC && otherUTC) {
-          if (float) {
-            return (a - b) / 86400000;
-          }
-          const days = Math.floor(a / 86400000) - Math.floor(b / 86400000);
-          return days || 0;
-        }
-        const r = (a - b - zoneDelta) / 86400000;
         if (float) {
-          return r;
+          return (a - b - zoneDelta) / DAY_MS;
         }
+        const r = (a - b - zoneDelta) / DAY_MS;
         const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
         return t || 0;
       }
