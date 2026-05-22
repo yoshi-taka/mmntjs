@@ -1538,6 +1538,20 @@ export class Moment {
       if (num === this._p.D) {
         return this;
       }
+      // Ordinary-value fast path: num ≤ 28 with clean state
+      if (num <= 28) {
+        const p = this._p;
+        p.W = (((p.W - p.D + num) % 7) + 7) % 7;
+        p.D = num;
+        if (p.d != null) {
+          p.d.setDate(num);
+          p.t = p.d.getTime();
+          p._tStale = false;
+        } else {
+          p._tStale = true;
+        }
+        return this;
+      }
       this._applyOp(_OP_DATE, num);
       if (updateOffsetCallback) {
         this._updateOffset(true);
@@ -1671,12 +1685,13 @@ export class Moment {
       if (!updateOffsetCallback) {
         const p = this._p;
         if (p.d != null && num >= 0 && num <= 23) {
-          // local p.d-present fast path: arithmetic + offset probe
-          // avoids setHours+getHours+getTime on the hot path.
-          // Only falls back to Date setter when DST offset changes.
           if (num === p.H) {
             return this;
           }
+          // Arithmetic + offset-probe fast path: avoids setHours cost
+          // on the hot path by computing p.t from p.H delta.  Falls
+          // back to setHours only when DST offset changes at the
+          // candidate time (rare — ~2 days/year).
           const newT = p.t + (num - p.H) * HOUR_MS;
           if (_tzOffsetAt(newT) === p.offset) {
             p.t = newT;
@@ -1727,8 +1742,8 @@ export class Moment {
       if (!updateOffsetCallback) {
         const p = this._p;
         if (p.d != null && num >= 0 && num <= 59) {
-          // p.d-present fast path: minute changes never cross DST
-          // boundaries within the same hour — pure arithmetic.
+          // Minute changes never cross DST within same hour — pure
+          // arithmetic + setTime keeps Date in sync.
           p.t += (num - p.m) * MINUTE_MS;
           p.m = num;
           p.d.setTime(p.t);
@@ -2414,6 +2429,23 @@ export class Moment {
         case "day":
         case "days":
         case "date":
+          // Fast path: arithmetic fields update for clean state.
+          // Avoids _addDay's dirty-check + overflow-loop overhead.
+          // D ∈ [1,28] guaranteed safe (all months have 28+ days).
+          if (!updateOffsetCallback && !this._p.dirty) {
+            const p = this._p;
+            const newD = p.D + amount;
+            if (newD >= 1 && newD <= 28 && Number.isInteger(amount)) {
+              p.D = newD;
+              p.W = (((p.W + amount) % 7) + 7) % 7;
+              p.t += amount * 86400000;
+              p._tStale = true;
+              if (isNaN(p.t)) {
+                this._isValid = false;
+              }
+              return this;
+            }
+          }
           this._addDay(amount);
           return this;
         case "h":
@@ -2566,6 +2598,28 @@ export class Moment {
                   ? _OP_SS
                   : -1;
 
+    // Fast path: bypass _applyOp dispatch for common startOf cases
+    if (startOp >= 0 && !updateOffsetCallback && !p.dirty && !p._tStale) {
+      if (startOp === _OP_SD) {
+        if (p.isUTC) {
+          p.t = floorUnitEpoch(p.t, DAY_MS);
+          p.d = undefined;
+        } else if (p.d != null) {
+          p.d.setHours(0, 0, 0, 0);
+          p.t = p.d.getTime();
+          p.offset = -p.d.getTimezoneOffset();
+        } else {
+          this._applyOp(startOp, 0);
+          return this;
+        }
+        p.H = 0;
+        p.m = 0;
+        p.s = 0;
+        p.ms = 0;
+        p._tStale = false;
+        return this;
+      }
+    }
     if (startOp >= 0) {
       this._applyOp(startOp, 0);
     } else {
