@@ -800,71 +800,40 @@ export class Moment {
           p.ms = 0;
           p.W = _dayOfWeek(p.y, p.M, 1);
           break;
-        case _OP_SD: {
-          // musl-inspired: compute from arithmetic + offset verify
-          // instead of Date mutation.  Keep p.d alive via setTime(candidateT)
-          // so that future _refreshFields doesn't need to allocate a new Date.
-          const phase = euclideanModulo(p.t + p.offset * 60000, DAY_MS);
-          const candidateT = p.t - phase;
-          if (_tzOffsetAt(candidateT) === p.offset) {
-            p.t = candidateT;
-            p.d.setTime(candidateT);
-          } else {
-            p.d.setHours(0, 0, 0, 0);
-            p.t = p.d.getTime();
-            p.offset = -p.d.getTimezoneOffset();
-          }
+        // glibc/musl-inspired: let Date handle the full normalization
+        // (equivalent of mktime — set fields, let the runtime resolve
+        // DST offset, then read back the result).  Simpler than arithmetic
+        // + offset probe for the p.d-present case.
+        case _OP_SD:
+          p.d.setHours(0, 0, 0, 0);
+          p.t = p.d.getTime();
+          p.offset = -p.d.getTimezoneOffset();
           p.H = 0;
           p.m = 0;
           p.s = 0;
           p.ms = 0;
           break;
-        }
-        case _OP_SH: {
-          const phase = euclideanModulo(p.t + p.offset * 60000, HOUR_MS);
-          const candidateT = p.t - phase;
-          if (_tzOffsetAt(candidateT) === p.offset) {
-            p.t = candidateT;
-            p.d.setTime(candidateT);
-          } else {
-            p.d.setMinutes(0, 0, 0);
-            p.t = p.d.getTime();
-            p.offset = -p.d.getTimezoneOffset();
-          }
+        case _OP_SH:
+          p.d.setMinutes(0, 0, 0);
+          p.t = p.d.getTime();
+          p.offset = -p.d.getTimezoneOffset();
           p.m = 0;
           p.s = 0;
           p.ms = 0;
           break;
-        }
-        case _OP_SN: {
-          const phase = euclideanModulo(p.t + p.offset * 60000, MINUTE_MS);
-          const candidateT = p.t - phase;
-          if (_tzOffsetAt(candidateT) === p.offset) {
-            p.t = candidateT;
-            p.d.setTime(candidateT);
-          } else {
-            p.d.setSeconds(0, 0);
-            p.t = p.d.getTime();
-            p.offset = -p.d.getTimezoneOffset();
-          }
+        case _OP_SN:
+          p.d.setSeconds(0, 0);
+          p.t = p.d.getTime();
+          p.offset = -p.d.getTimezoneOffset();
           p.s = 0;
           p.ms = 0;
           break;
-        }
-        case _OP_SS: {
-          const phase = euclideanModulo(p.t + p.offset * 60000, SECOND_MS);
-          const candidateT = p.t - phase;
-          if (_tzOffsetAt(candidateT) === p.offset) {
-            p.t = candidateT;
-            p.d.setTime(candidateT);
-          } else {
-            p.d.setMilliseconds(0);
-            p.t = p.d.getTime();
-            p.offset = -p.d.getTimezoneOffset();
-          }
+        case _OP_SS:
+          p.d.setMilliseconds(0);
+          p.t = p.d.getTime();
+          p.offset = -p.d.getTimezoneOffset();
           p.ms = 0;
           break;
-        }
       }
       p._tStale = false;
       p.dirty = false;
