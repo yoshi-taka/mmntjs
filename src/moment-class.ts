@@ -586,6 +586,130 @@ export class Moment {
     }
   }
 
+  // ---- VDSO-style tryFast gates — return true when handled ----
+
+  /** tryFast setDate: clean + num ≤ 28 → arithmetic p.W + setDate when p.d present. */
+  private _tryFastSetDate(val: number): boolean {
+    const p = this._p;
+    if (p.dirty || updateOffsetCallback || val > 28 || val === p.D) {
+      return false;
+    }
+    p.W = (((p.W - p.D + val) % 7) + 7) % 7;
+    p.D = val;
+    if (p.d != null) {
+      p.d.setDate(val);
+      p.t = p.d.getTime();
+      p._tStale = false;
+    } else {
+      p._tStale = true;
+    }
+    return true;
+  }
+
+  /** tryFast setHour: clean + p.d present + ordinary range → probe arithmetic or setHours. */
+  private _tryFastSetHour(num: number): boolean {
+    const p = this._p;
+    if (p.dirty || updateOffsetCallback || p.d == null || num < 0 || num > 23 || num === p.H) {
+      return false;
+    }
+    const newT = p.t + (num - p.H) * HOUR_MS;
+    if (_tzOffsetAt(newT) === p.offset) {
+      p.t = newT;
+      p.d.setTime(newT);
+      p.H = num;
+    } else {
+      p.d.setHours(num, p.m, p.s, p.ms);
+      p.t = p.d.getTime();
+      p.offset = -p.d.getTimezoneOffset();
+      p.H = p.d.getHours();
+    }
+    p._tStale = false;
+    return true;
+  }
+
+  /** tryFast setMinute: clean + p.d present + ordinary range → arithmetic + setTime. */
+  private _tryFastSetMinute(num: number): boolean {
+    const p = this._p;
+    if (p.dirty || updateOffsetCallback || p.d == null || num < 0 || num > 59 || num === p.m) {
+      return false;
+    }
+    p.d.setMinutes(num, p.s, p.ms);
+    p.m = num;
+    p.t = p.d.getTime();
+    p._tStale = false;
+    return true;
+  }
+
+  /** tryFast setSecond: clean + p.d present + ordinary range → arithmetic + setTime. */
+  private _tryFastSetSecond(num: number): boolean {
+    const p = this._p;
+    if (p.dirty || updateOffsetCallback || p.d == null || num < 0 || num > 59 || num === p.s) {
+      return false;
+    }
+    p.d.setSeconds(num, p.ms);
+    p.s = num;
+    p.t = p.d.getTime();
+    p._tStale = false;
+    return true;
+  }
+
+  /** tryFast setMs: clean + p.d present + ordinary range → arithmetic + setTime. */
+  private _tryFastSetMs(num: number): boolean {
+    const p = this._p;
+    if (p.dirty || updateOffsetCallback || p.d == null || num < 0 || num > 999 || num === p.ms) {
+      return false;
+    }
+    p.d.setMilliseconds(num);
+    p.ms = num;
+    p.t = p.d.getTime();
+    p._tStale = false;
+    return true;
+  }
+
+  /** tryFast addDay: clean state + integer + D+amount ∈ [1,28] → pure arithmetic. */
+  private _tryFastAddDay(amount: number): boolean {
+    const p = this._p;
+    if (p.dirty || updateOffsetCallback || !Number.isInteger(amount)) {
+      return false;
+    }
+    const newD = p.D + amount;
+    if (newD < 1 || newD > 28) {
+      return false;
+    }
+    p.D = newD;
+    p.W = (((p.W + amount) % 7) + 7) % 7;
+    p.t += amount * 86400000;
+    p._tStale = true;
+    if (isNaN(p.t)) {
+      (this as Moment)._isValid = false;
+    }
+    return true;
+  }
+
+  /** tryFast startOf('day'): clean + !_tStale + local p.d present → setHours(0,0,0,0). */
+  private _tryFastStartOfDay(): boolean {
+    const p = this._p;
+    if (p.dirty || p._tStale || updateOffsetCallback) {
+      return false;
+    }
+    if (p.isUTC) {
+      p.t = floorUnitEpoch(p.t, DAY_MS);
+      p.d = undefined;
+    } else if (p.d != null) {
+      p.d.setHours(0, 0, 0, 0);
+      p.t = p.d.getTime();
+      p.offset = -p.d.getTimezoneOffset();
+    } else {
+      return false;
+    }
+    p.H = 0;
+    p.m = 0;
+    p.s = 0;
+    p.ms = 0;
+    p._tStale = false;
+    return true;
+  }
+
   // ---- Region dispatch for setters + startOf ----
 
   private _applyOp(op: number, val: number): void {
@@ -1531,25 +1655,14 @@ export class Moment {
       if (num <= 0) {
         return this;
       }
+      if (this._tryFastSetDate(num)) {
+        return this;
+      }
       if (this._p.dirty) {
         this._p.dirty = false;
         this._refreshFields();
       }
       if (num === this._p.D) {
-        return this;
-      }
-      // Ordinary-value fast path: num ≤ 28 with clean state
-      if (num <= 28) {
-        const p = this._p;
-        p.W = (((p.W - p.D + num) % 7) + 7) % 7;
-        p.D = num;
-        if (p.d != null) {
-          p.d.setDate(num);
-          p.t = p.d.getTime();
-          p._tStale = false;
-        } else {
-          p._tStale = true;
-        }
         return this;
       }
       this._applyOp(_OP_DATE, num);
@@ -1675,6 +1788,10 @@ export class Moment {
       if (isNaN(num)) {
         return this;
       }
+      // VDSO fast path: handles clean + p.d present + ordinary range
+      if (this._tryFastSetHour(num)) {
+        return this;
+      }
       if (this._p.dirty) {
         this._p.dirty = false;
         this._refreshFields();
@@ -1683,31 +1800,8 @@ export class Moment {
         return this;
       }
       if (!updateOffsetCallback) {
-        const p = this._p;
-        if (p.d != null && num >= 0 && num <= 23) {
-          if (num === p.H) {
-            return this;
-          }
-          // Arithmetic + offset-probe fast path: avoids setHours cost
-          // on the hot path by computing p.t from p.H delta.  Falls
-          // back to setHours only when DST offset changes at the
-          // candidate time (rare — ~2 days/year).
-          const newT = p.t + (num - p.H) * HOUR_MS;
-          if (_tzOffsetAt(newT) === p.offset) {
-            p.t = newT;
-            p.d.setTime(newT);
-            p.H = num;
-          } else {
-            p.d.setHours(num, p.m, p.s, p.ms);
-            p.t = p.d.getTime();
-            p.offset = -p.d.getTimezoneOffset();
-            p.H = p.d.getHours();
-          }
-          p._tStale = false;
-          return this;
-        }
-        p.H = num;
-        p._tStale = true;
+        this._p.H = num;
+        this._p._tStale = true;
         return this;
       }
       this._applyOp(_OP_HOUR, num);
@@ -1732,6 +1826,9 @@ export class Moment {
       if (isNaN(num)) {
         return this;
       }
+      if (this._tryFastSetMinute(num)) {
+        return this;
+      }
       if (this._p.dirty) {
         this._p.dirty = false;
         this._refreshFields();
@@ -1740,18 +1837,8 @@ export class Moment {
         return this;
       }
       if (!updateOffsetCallback) {
-        const p = this._p;
-        if (p.d != null && num >= 0 && num <= 59) {
-          // Minute changes never cross DST within same hour — pure
-          // arithmetic + setTime keeps Date in sync.
-          p.t += (num - p.m) * MINUTE_MS;
-          p.m = num;
-          p.d.setTime(p.t);
-          p._tStale = false;
-          return this;
-        }
-        p.m = num;
-        p._tStale = true;
+        this._p.m = num;
+        this._p._tStale = true;
         return this;
       }
       this._applyOp(_OP_MIN, num);
@@ -1776,6 +1863,9 @@ export class Moment {
       if (isNaN(num)) {
         return this;
       }
+      if (this._tryFastSetSecond(num)) {
+        return this;
+      }
       if (this._p.dirty) {
         this._p.dirty = false;
         this._refreshFields();
@@ -1784,16 +1874,8 @@ export class Moment {
         return this;
       }
       if (!updateOffsetCallback) {
-        const p = this._p;
-        if (p.d != null && num >= 0 && num <= 59) {
-          p.t += (num - p.s) * SECOND_MS;
-          p.s = num;
-          p.d.setTime(p.t);
-          p._tStale = false;
-          return this;
-        }
-        p.s = num;
-        p._tStale = true;
+        this._p.s = num;
+        this._p._tStale = true;
         return this;
       }
       this._applyOp(_OP_SEC, num);
@@ -1818,6 +1900,9 @@ export class Moment {
       if (isNaN(num)) {
         return this;
       }
+      if (this._tryFastSetMs(num)) {
+        return this;
+      }
       if (this._p.dirty) {
         this._p.dirty = false;
         this._refreshFields();
@@ -1826,16 +1911,8 @@ export class Moment {
         return this;
       }
       if (!updateOffsetCallback) {
-        const p = this._p;
-        if (p.d != null && num >= 0 && num <= 999) {
-          p.t += num - p.ms;
-          p.ms = num;
-          p.d.setTime(p.t);
-          p._tStale = false;
-          return this;
-        }
-        p.ms = num;
-        p._tStale = true;
+        this._p.ms = num;
+        this._p._tStale = true;
         return this;
       }
       this._applyOp(_OP_MS, num);
@@ -2429,22 +2506,8 @@ export class Moment {
         case "day":
         case "days":
         case "date":
-          // Fast path: arithmetic fields update for clean state.
-          // Avoids _addDay's dirty-check + overflow-loop overhead.
-          // D ∈ [1,28] guaranteed safe (all months have 28+ days).
-          if (!updateOffsetCallback && !this._p.dirty) {
-            const p = this._p;
-            const newD = p.D + amount;
-            if (newD >= 1 && newD <= 28 && Number.isInteger(amount)) {
-              p.D = newD;
-              p.W = (((p.W + amount) % 7) + 7) % 7;
-              p.t += amount * 86400000;
-              p._tStale = true;
-              if (isNaN(p.t)) {
-                this._isValid = false;
-              }
-              return this;
-            }
+          if (this._tryFastAddDay(amount)) {
+            return this;
           }
           this._addDay(amount);
           return this;
@@ -2598,27 +2661,9 @@ export class Moment {
                   ? _OP_SS
                   : -1;
 
-    // Fast path: bypass _applyOp dispatch for common startOf cases
-    if (startOp >= 0 && !updateOffsetCallback && !p.dirty && !p._tStale) {
-      if (startOp === _OP_SD) {
-        if (p.isUTC) {
-          p.t = floorUnitEpoch(p.t, DAY_MS);
-          p.d = undefined;
-        } else if (p.d != null) {
-          p.d.setHours(0, 0, 0, 0);
-          p.t = p.d.getTime();
-          p.offset = -p.d.getTimezoneOffset();
-        } else {
-          this._applyOp(startOp, 0);
-          return this;
-        }
-        p.H = 0;
-        p.m = 0;
-        p.s = 0;
-        p.ms = 0;
-        p._tStale = false;
-        return this;
-      }
+    // VDSO fast path: try startOf('day') for clean local+p.d or UTC
+    if (startOp === _OP_SD && this._tryFastStartOfDay()) {
+      return this;
     }
     if (startOp >= 0) {
       this._applyOp(startOp, 0);
