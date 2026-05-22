@@ -2254,16 +2254,13 @@ export class Moment {
       if (isNaN(num)) {
         return this;
       }
-      if (num === p.H) {
-        return this;
-      }
       // ---- Mid/slow path ----
       if (p.dirty) {
         p.dirty = false;
         this._refreshFields();
-        if (num === p.H) {
-          return this;
-        }
+      }
+      if (num === p.H) {
+        return this;
       }
       if (!updateOffsetCallback) {
         p.H = num;
@@ -2302,15 +2299,12 @@ export class Moment {
       if (isNaN(num)) {
         return this;
       }
-      if (num === p.m) {
-        return this;
-      }
       if (p.dirty) {
         p.dirty = false;
         this._refreshFields();
-        if (num === p.m) {
-          return this;
-        }
+      }
+      if (num === p.m) {
+        return this;
       }
       if (!updateOffsetCallback) {
         p.m = num;
@@ -2348,15 +2342,12 @@ export class Moment {
       if (isNaN(num)) {
         return this;
       }
-      if (num === p.s) {
-        return this;
-      }
       if (p.dirty) {
         p.dirty = false;
         this._refreshFields();
-        if (num === p.s) {
-          return this;
-        }
+      }
+      if (num === p.s) {
+        return this;
       }
       if (!updateOffsetCallback) {
         p.s = num;
@@ -2394,15 +2385,12 @@ export class Moment {
       if (isNaN(num)) {
         return this;
       }
-      if (num === p.ms) {
-        return this;
-      }
       if (p.dirty) {
         p.dirty = false;
         this._refreshFields();
-        if (num === p.ms) {
-          return this;
-        }
+      }
+      if (num === p.ms) {
+        return this;
       }
       if (!updateOffsetCallback) {
         p.ms = num;

@@ -15,7 +15,8 @@
     "test/properties/dst-oracle.test.ts",
     "test/properties/api-pbt.test.ts",
     "test/properties/timezone-partition.test.ts",
-    "test/properties/comparison-partition.test.ts"
+    "test/properties/comparison-partition.test.ts",
+    "test/properties/short-chains.test.ts"
   ],
   "project": ["src/**", "test/**", "packages/timezone/src/**"],
   "ignore": [

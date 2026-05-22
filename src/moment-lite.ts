@@ -873,13 +873,13 @@ export class MomentLite {
       if (isNaN(num)) {
         return this;
       }
-      if (num === p.H) {
-        return this;
-      }
       // Slow path: refresh dirty + allocate Date if needed
       if (p.dirty) {
         p.dirty = false;
         this._refreshFields();
+      }
+      if (num === p.H) {
+        return this;
       }
       const d = p.d ?? (p.d = new Date(p.t));
       if (p.isUTC) {
@@ -919,12 +919,12 @@ export class MomentLite {
       if (isNaN(num)) {
         return this;
       }
-      if (num === p.m) {
-        return this;
-      }
       if (p.dirty) {
         p.dirty = false;
         this._refreshFields();
+      }
+      if (num === p.m) {
+        return this;
       }
       const d = p.d ?? (p.d = new Date(p.t));
       if (p.isUTC) {
@@ -964,12 +964,12 @@ export class MomentLite {
       if (isNaN(num)) {
         return this;
       }
-      if (num === p.s) {
-        return this;
-      }
       if (p.dirty) {
         p.dirty = false;
         this._refreshFields();
+      }
+      if (num === p.s) {
+        return this;
       }
       const d = p.d ?? (p.d = new Date(p.t));
       if (p.isUTC) {
@@ -1009,12 +1009,12 @@ export class MomentLite {
       if (isNaN(num)) {
         return this;
       }
-      if (num === p.ms) {
-        return this;
-      }
       if (p.dirty) {
         p.dirty = false;
         this._refreshFields();
+      }
+      if (num === p.ms) {
+        return this;
       }
       const d = p.d ?? (p.d = new Date(p.t));
       if (p.isUTC) {

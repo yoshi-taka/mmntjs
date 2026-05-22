@@ -88,7 +88,7 @@
     "test:core": "TZ=UTC bun test --parallel ./test/moment/*.js ./test/mmntjs.test.ts ./test/temporal.test.ts ./test/tree-shaking.test.ts ./test/bundle-smoke.test.ts ./test/regression/ ./test/parse-main.test.ts ./test/parse-format.test.ts",
     "test:tz:quick": "TZ=UTC bun test --parallel ./test/timezone-compat.test.ts ./test/iso-parse-temporal-oracle.test.ts ./packages/timezone/test/",
     "test:locale:quick": "TZ=UTC bun test --parallel ./test/locale-format-targeted.test.ts ./test/locale-metamorphic.test.ts ./test/locale-equivalence.test.ts ./test/locale-branch-targeted.test.ts",
-    "test:extra": "TZ=UTC bun test --parallel ./test/stateful-model.test.ts ./test/display-branch-targeted.test.ts ./test/calendar-branch-targeted.test.ts",
+    "test:extra": "TZ=UTC bun test --parallel ./test/stateful-model.test.ts ./test/properties/short-chains.test.ts ./test/display-branch-targeted.test.ts ./test/calendar-branch-targeted.test.ts",
     "test:bin": "TZ=UTC bun test ./test/bin.test.ts",
     "test:mutation": "TZ=UTC bun test ./test/mutation.test.ts",
     "test:tz": "bash scripts/run-timezone-tests.sh",
