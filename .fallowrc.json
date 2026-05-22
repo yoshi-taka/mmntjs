@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
-  "entry": ["src/index.ts", "src/bin/cli.ts", "src/temporal-entry.ts", "test/mutation.test.ts", "test/properties/basic.test.ts", "test/properties/boundary.test.ts", "test/iso-parse-temporal-oracle.test.ts", "test/regression/crashes.test.ts", "test/browser-bundle-compare.ts", "packages/timezone/src/index.ts", "packages/timezone/test/basic.test.ts", "packages/timezone/test/compat.test.ts", "packages/timezone/test/properties.test.ts"],
+  "entry": ["src/index.ts", "src/bin/cli.ts", "src/temporal-entry.ts", "test/mutation.test.ts", "test/properties/basic.test.ts", "test/properties/boundary.test.ts", "test/iso-parse-temporal-oracle.test.ts", "test/regression/crashes.test.ts", "test/browser-bundle-compare.ts", "test/branch-targeted.test.ts", "test/timezone-dst-subproc.test.ts", "packages/timezone/src/index.ts", "packages/timezone/test/basic.test.ts", "packages/timezone/test/compat.test.ts", "packages/timezone/test/properties.test.ts"],
   "ignorePatterns": [
     "moment/**",
     "lib/**",
@@ -27,8 +27,6 @@
     "test/bundle-smoke.test.ts",
     "test/*-lite.test.ts",
     "test/*-lite-strict.test.ts",
-    "test/branch-targeted.test.ts",
-    "test/timezone-dst-subproc.test.ts",
     "test/lite-fns.test.ts",
     "test/format-basic.test.ts",
     "test/plugins.test.ts",
