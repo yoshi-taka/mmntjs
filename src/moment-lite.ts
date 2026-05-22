@@ -2168,112 +2168,141 @@ export class MomentLite {
       return this;
     }
     this._ensureFields();
-    const utc = this._p.isUTC;
-    let d: Date | undefined;
-
     switch (code) {
       case YEAR:
-        if (utc) {
-          this._p.t = (ymdToEpochDays(this._p.y, 11, 31) + 1) * DAY_MS - 1;
-          this._p.d = undefined;
-        } else {
-          d = this._getDNoEnsure();
-          d.setFullYear(this._p.y, 11, 31);
-          d.setHours(23, 59, 59, 999);
-          this._p.t = d.getTime();
-        }
-        this._p.M = 11;
-        this._p.D = 31;
-        this._p.H = 23;
-        this._p.m = 59;
-        this._p.s = 59;
-        this._p.ms = 999;
-        this._p.W = _dayOfWeek(this._p.y, 11, 31);
+        this._endOfYear();
         break;
-      case MONTH: {
-        const _eomMaxDay = daysInMonthFast(this._p.y, this._p.M);
-        if (utc) {
-          this._p.t = (ymdToEpochDays(this._p.y, this._p.M, _eomMaxDay) + 1) * DAY_MS - 1;
-          this._p.d = undefined;
-        } else {
-          d = this._getDNoEnsure();
-          d.setFullYear(this._p.y, this._p.M, _eomMaxDay);
-          d.setHours(23, 59, 59, 999);
-          this._p.t = d.getTime();
-        }
-        this._p.D = _eomMaxDay;
-        this._p.H = 23;
-        this._p.m = 59;
-        this._p.s = 59;
-        this._p.ms = 999;
-        this._p.W = _dayOfWeek(this._p.y, this._p.M, _eomMaxDay);
+      case MONTH:
+        this._endOfMonth();
         break;
-      }
       case DATE:
       case DAY:
-        if (utc) {
-          this._p.t = endOfUnitEpoch(this._p.t, DAY_MS);
-          this._p.d = undefined;
-        } else {
-          d = this._getDNoEnsure();
-          d.setHours(0, 0, 0, 0);
-          d.setDate(d.getDate() + 1);
-          d.setMilliseconds(-1);
-          this._p.D = d.getDate();
-          this._p.H = d.getHours();
-          this._p.m = d.getMinutes();
-          this._p.s = d.getSeconds();
-          this._p.ms = d.getMilliseconds();
-          this._p.W = _dayOfWeek(this._p.y, this._p.M, this._p.D);
-          this._p.t = d.getTime();
-        }
+        this._endOfDay();
         break;
       case HOUR:
-        if (utc) {
-          this._p.t = endOfUnitEpoch(this._p.t, HOUR_MS);
-          this._p.d = undefined;
-        } else {
-          d = this._getDNoEnsure();
-          d.setMinutes(0, 0, 0);
-          d.setHours(d.getHours() + 1, 0, 0, -1);
-          this._p.H = d.getHours();
-          this._p.m = d.getMinutes();
-          this._p.s = d.getSeconds();
-          this._p.ms = d.getMilliseconds();
-          this._p.t = d.getTime();
-        }
+        this._endOfHour();
         break;
       case MINUTE:
-        if (utc) {
-          this._p.t = endOfUnitEpoch(this._p.t, MINUTE_MS);
-          this._p.d = undefined;
-        } else {
-          d = this._getDNoEnsure();
-          d.setSeconds(0, 0);
-          d.setMinutes(d.getMinutes() + 1, 0, -1);
-          this._p.m = d.getMinutes();
-          this._p.s = d.getSeconds();
-          this._p.ms = d.getMilliseconds();
-          this._p.t = d.getTime();
-        }
+        this._endOfMinute();
         break;
       case SECOND:
-        if (utc) {
-          this._p.t = endOfUnitEpoch(this._p.t, SECOND_MS);
-          this._p.d = undefined;
-        } else {
-          d = this._getDNoEnsure();
-          d.setSeconds(d.getSeconds() + 1, -1);
-          this._p.s = d.getSeconds();
-          this._p.ms = d.getMilliseconds();
-          this._p.t = d.getTime();
-        }
+        this._endOfSecond();
         break;
     }
-    if (!utc && d) {
-      this._p.offset = -d.getTimezoneOffset();
-    }
     return this;
+  }
+
+  private _endOfYear(): void {
+    const p = this._p;
+    if (p.isUTC) {
+      p.t = (ymdToEpochDays(p.y, 11, 31) + 1) * DAY_MS - 1;
+      p.d = undefined;
+    } else {
+      const d = this._getDNoEnsure();
+      d.setFullYear(p.y, 11, 31);
+      d.setHours(23, 59, 59, 999);
+      p.t = d.getTime();
+      p.offset = -d.getTimezoneOffset();
+    }
+    p.M = 11;
+    p.D = 31;
+    p.H = 23;
+    p.m = 59;
+    p.s = 59;
+    p.ms = 999;
+    p.W = _dayOfWeek(p.y, 11, 31);
+  }
+
+  private _endOfMonth(): void {
+    const p = this._p;
+    const _eomMaxDay = daysInMonthFast(p.y, p.M);
+    if (p.isUTC) {
+      p.t = (ymdToEpochDays(p.y, p.M, _eomMaxDay) + 1) * DAY_MS - 1;
+      p.d = undefined;
+    } else {
+      const d = this._getDNoEnsure();
+      d.setFullYear(p.y, p.M, _eomMaxDay);
+      d.setHours(23, 59, 59, 999);
+      p.t = d.getTime();
+      p.offset = -d.getTimezoneOffset();
+    }
+    p.D = _eomMaxDay;
+    p.H = 23;
+    p.m = 59;
+    p.s = 59;
+    p.ms = 999;
+    p.W = _dayOfWeek(p.y, p.M, _eomMaxDay);
+  }
+
+  private _endOfDay(): void {
+    const p = this._p;
+    if (p.isUTC) {
+      p.t = endOfUnitEpoch(p.t, DAY_MS);
+      p.d = undefined;
+    } else {
+      const d = this._getDNoEnsure();
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() + 1);
+      d.setMilliseconds(-1);
+      p.D = d.getDate();
+      p.H = d.getHours();
+      p.m = d.getMinutes();
+      p.s = d.getSeconds();
+      p.ms = d.getMilliseconds();
+      p.W = _dayOfWeek(p.y, p.M, p.D);
+      p.t = d.getTime();
+      p.offset = -d.getTimezoneOffset();
+    }
+  }
+
+  private _endOfHour(): void {
+    const p = this._p;
+    if (p.isUTC) {
+      p.t = endOfUnitEpoch(p.t, HOUR_MS);
+      p.d = undefined;
+    } else {
+      const d = this._getDNoEnsure();
+      d.setMinutes(0, 0, 0);
+      d.setHours(d.getHours() + 1, 0, 0, -1);
+      p.H = d.getHours();
+      p.m = d.getMinutes();
+      p.s = d.getSeconds();
+      p.ms = d.getMilliseconds();
+      p.t = d.getTime();
+      p.offset = -d.getTimezoneOffset();
+    }
+  }
+
+  private _endOfMinute(): void {
+    const p = this._p;
+    if (p.isUTC) {
+      p.t = endOfUnitEpoch(p.t, MINUTE_MS);
+      p.d = undefined;
+    } else {
+      const d = this._getDNoEnsure();
+      d.setSeconds(0, 0);
+      d.setMinutes(d.getMinutes() + 1, 0, -1);
+      p.m = d.getMinutes();
+      p.s = d.getSeconds();
+      p.ms = d.getMilliseconds();
+      p.t = d.getTime();
+      p.offset = -d.getTimezoneOffset();
+    }
+  }
+
+  private _endOfSecond(): void {
+    const p = this._p;
+    if (p.isUTC) {
+      p.t = endOfUnitEpoch(p.t, SECOND_MS);
+      p.d = undefined;
+    } else {
+      const d = this._getDNoEnsure();
+      d.setSeconds(d.getSeconds() + 1, -1);
+      p.s = d.getSeconds();
+      p.ms = d.getMilliseconds();
+      p.t = d.getTime();
+      p.offset = -d.getTimezoneOffset();
+    }
   }
 
   format(formatStr?: string): string {

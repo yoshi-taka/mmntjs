@@ -184,92 +184,110 @@ export class Duration {
 
   constructor(input?: DurationLike, unit?: string) {
     if (input == null) {
-      this._locale = getCurrentLocale();
-      this._milliseconds = 0;
-      this._days = 0;
-      this._months = 0;
-    } else if (typeof input === "number") {
-      if (unit && !isNaN(input)) {
-        const aliasKey = unitAliasToKey[unit];
-        if (aliasKey === "years" || aliasKey === "months") {
-          if (aliasKey === "years") {
-            this._months = input * 12;
-          } else {
-            this._months = input;
-          }
-        } else if (aliasKey === "quarters") {
-          this._months = input * 3;
-        } else {
-          const ms = unitToMs(unit);
-          if (aliasKey === "weeks") {
-            this._days = input * 7;
-          } else if (aliasKey === "days") {
-            this._days = input;
-          } else {
-            this._milliseconds = Math.round(input * ms);
-          }
-        }
-      } else if (isNaN(input)) {
-        this._isValid = false;
-        this._milliseconds = NaN;
-      } else {
-        this._milliseconds = input;
+      return;
+    }
+    if (typeof input === "number") {
+      if (!unit || isNaN(input)) {
+        this._initNumber(input);
+        return;
       }
-    } else if (typeof input === "string") {
-      this._locale = getCurrentLocale();
-      if (unit) {
-        const aliasKey = unitAliasToKey[unit];
-        if (aliasKey) {
-          const val = Number(input) || 0;
-          if (aliasKey === "years") {
-            this._months = val * 12;
-          } else if (aliasKey === "months") {
-            this._months = val;
-          } else if (aliasKey === "quarters") {
-            this._months = val * 3;
-          } else if (aliasKey === "weeks") {
-            this._days = val * 7;
-          } else if (aliasKey === "days") {
-            this._days = val;
-          } else {
-            this._milliseconds = Math.round(val * unitToMs(unit));
-          }
-        }
-      } else {
-        const aliasKey = unitAliasToKey[input];
-        if (aliasKey) {
-          if (aliasKey === "years") {
-            this._months = 1 * 12;
-          } else if (aliasKey === "months") {
-            this._months = 1;
-          } else if (aliasKey === "quarters") {
-            this._months = 3;
-          } else if (aliasKey === "weeks") {
-            this._days = 1 * 7;
-          } else if (aliasKey === "days") {
-            this._days = 1;
-          } else {
-            this._milliseconds = unitToMs(input);
-          }
-        } else {
-          this._parseString(input);
-        }
-      }
-    } else if (input instanceof Duration) {
+      this._initNumberWithUnit(input, unit);
+      return;
+    }
+    if (typeof input === "string") {
+      this._initString(input, unit);
+      return;
+    }
+    if (input instanceof Duration) {
       this._locale = input._locale;
       this._milliseconds = input._milliseconds;
       this._days = input._days;
       this._months = input._months;
       this._isValid = input._isValid;
-    } else if (isObject(input)) {
-      this._locale = getCurrentLocale();
-      if ((input as { _isAMomentObject?: boolean })._isAMomentObject) {
-        this._locale = (input as { _l?: string })._l ?? this._locale;
-      }
-      this._parseObject(input as DurationInput);
+      this._bubble();
+      return;
     }
-
+    this._locale = getCurrentLocale();
+    if ((input as { _isAMomentObject?: boolean })._isAMomentObject) {
+      this._locale = (input as { _l?: string })._l ?? this._locale;
+    }
+    this._parseObject(input);
     this._bubble();
+  }
+
+  private _initNumber(input: number): void {
+    if (isNaN(input)) {
+      this._isValid = false;
+      this._milliseconds = NaN;
+    } else {
+      this._milliseconds = input;
+    }
+    this._bubble();
+  }
+
+  private _initNumberWithUnit(input: number, unit: string): void {
+    this._locale = getCurrentLocale();
+    const aliasKey = unitAliasToKey[unit];
+    if (aliasKey === "years" || aliasKey === "months") {
+      this._months = aliasKey === "years" ? input * 12 : input;
+    } else if (aliasKey === "quarters") {
+      this._months = input * 3;
+    } else {
+      const ms = unitToMs(unit);
+      if (aliasKey === "weeks") {
+        this._days = input * 7;
+      } else if (aliasKey === "days") {
+        this._days = input;
+      } else {
+        this._milliseconds = Math.round(input * ms);
+      }
+    }
+    this._bubble();
+  }
+
+  private _initString(input: string, unit?: string): void {
+    this._locale = getCurrentLocale();
+    if (unit) {
+      const aliasKey = unitAliasToKey[unit];
+      if (aliasKey) {
+        const val = Number(input) || 0;
+        if (aliasKey === "years") {
+          this._months = val * 12;
+        } else if (aliasKey === "months") {
+          this._months = val;
+        } else if (aliasKey === "quarters") {
+          this._months = val * 3;
+        } else if (aliasKey === "weeks") {
+          this._days = val * 7;
+        } else if (aliasKey === "days") {
+          this._days = val;
+        } else {
+          this._milliseconds = Math.round(val * unitToMs(unit));
+        }
+        this._bubble();
+        return;
+      }
+    }
+    const aliasKey = unitAliasToKey[input];
+    if (aliasKey) {
+      if (aliasKey === "years") {
+        this._months = 12;
+      } else if (aliasKey === "months") {
+        this._months = 1;
+      } else if (aliasKey === "quarters") {
+        this._months = 3;
+      } else if (aliasKey === "weeks") {
+        this._days = 7;
+      } else if (aliasKey === "days") {
+        this._days = 1;
+      } else {
+        this._milliseconds = unitToMs(input);
+      }
+      this._bubble();
+    } else {
+      this._parseString(input);
+      this._bubble();
+    }
   }
 
   private _parseISONum(s: string | undefined): number {

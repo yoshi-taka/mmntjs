@@ -1815,7 +1815,12 @@ export class Moment {
 
   clone(): this {
     this._syncT();
-    const m = createMomentShell(this._l, this._p.isUTC, this._p.offset, this._isValid) as this;
+    return this._cloneInto(
+      createMomentShell(this._l, this._p.isUTC, this._p.offset, this._isValid) as this,
+    );
+  }
+
+  private _cloneInto(m: this): this {
     m._p.t = this._p.t;
     m._p.dirty = this._p.dirty;
     m._p.locale = this._p.locale;
@@ -3036,7 +3041,24 @@ export class Moment {
     if (unit === "month") {
       return this._startOfMonthFast();
     }
+    if (unit === "year") {
+      return this._startOfYearFast();
+    }
     return this._startOfSlow(unit);
+  }
+
+  private _startOfYearFast(): this {
+    const p = this._p;
+    if (!updateOffsetCallback && !p.dirty) {
+      if (p.M === 0 && p.D === 1 && p.H === 0 && p.m === 0 && p.s === 0 && p.ms === 0) {
+        return this;
+      }
+      if (isCleanUTC(p)) {
+        startOfYearUTC(p);
+        return this;
+      }
+    }
+    return this._startOfSlow("year");
   }
 
   private _startOfDayFast(): this {
@@ -3180,11 +3202,73 @@ export class Moment {
   }
 
   endOf(unit: string): this {
-    const code = fastNormalizeBoundaryUnit(unit);
-    if (code < 0) {
+    if (!this._isValid) {
       return this;
     }
-    if (!this._isValid) {
+    if (unit === "day" || unit === "days") {
+      return this._endOfDay();
+    }
+    if (unit === "month") {
+      return this._endOfMonth();
+    }
+    return this._endOfSlow(unit);
+  }
+
+  private _endOfFast(code: UnitCode): this {
+    this._ensureFields();
+    if (this._p.isUTC) {
+      this._endOfUTC(code);
+    } else {
+      this._endOfLocal(code);
+    }
+    return this;
+  }
+
+  private _endOfDay(): this {
+    return this._endOfFast(DAY);
+  }
+
+  private _endOfMonth(): this {
+    this._ensureFields();
+    if (!updateOffsetCallback) {
+      if (this._p.isUTC) {
+        const endDay = daysInMonthFast(this._p.y, this._p.M);
+        if (
+          this._p.D === endDay &&
+          this._p.H === 23 &&
+          this._p.m === 59 &&
+          this._p.s === 59 &&
+          this._p.ms === 999
+        ) {
+          return this;
+        }
+      } else if (
+        this._p.D === 1 &&
+        this._p.H === 0 &&
+        this._p.m === 0 &&
+        this._p.s === 0 &&
+        this._p.ms === 0
+      ) {
+        const endDay = daysInMonthFast(this._p.y, this._p.M);
+        const d = new Date(this._p.y, this._p.M, endDay, 23, 59, 59, 999);
+        this._p.d = d;
+        this._p.t = d.getTime();
+        this._p.D = endDay;
+        this._p.H = 23;
+        this._p.m = 59;
+        this._p.s = 59;
+        this._p.ms = 999;
+        this._p.W = d.getDay();
+        this._p.offset = -d.getTimezoneOffset();
+        return this;
+      }
+    }
+    return this._endOfFast(MONTH);
+  }
+
+  private _endOfSlow(unit: string): this {
+    const code = fastNormalizeBoundaryUnit(unit);
+    if (code < 0) {
       return this;
     }
     this._ensureFields();
@@ -3681,6 +3765,10 @@ export class Moment {
 
   valueOf(): number {
     this._syncT();
+    return this._valueOfCore();
+  }
+
+  private _valueOfCore(): number {
     if (!this._isValid) {
       return NaN;
     }
