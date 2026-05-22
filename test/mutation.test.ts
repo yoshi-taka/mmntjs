@@ -425,7 +425,7 @@ makeMutations([
     name: "format: UTC+0 offset sign (> vs >=)",
     file: "src/format-tokens.ts",
     patterns: [
-      [/const sign = offset >= 0 \? "\+" : "-";/g, 'const sign = offset > 0 ? "+" : "-";'],
+      [/const s = o >= 0 \? "\+" : "-";/g, 'const s = o > 0 ? "+" : "-";'],
     ],
     inputs: fc.constant(0),
     testFn: (_input: unknown) => {
@@ -435,7 +435,7 @@ makeMutations([
   {
     name: "format: month display off-by-one ($M + 1 -> $M)",
     file: "src/display/format.ts",
-    patterns: [[/p2\(([rp])\.M \+ 1\)/g, "p2($1.M)"]],
+    patterns: [[/pad2\(([rp])\.M \+ 1\)/g, "pad2($1.M)"]],
     inputs: fc.date({ noInvalidDate: true }),
     testFn: (input: unknown) => {
       return (
