@@ -36,6 +36,32 @@ import {
 } from "./calendar-extra";
 import type { CalendarAwareMoment } from "./calendar-extra";
 import { startOfExtraMoment, endOfExtraMoment } from "./boundary-extra";
+
+// ---- Adventure-style state-machine op codes and helpers ----
+const _R_UTC = 1,
+  _R_TS = 2;
+function _region(p: { dirty: boolean; isUTC: boolean; _tStale: boolean }): number {
+  if (p.dirty) {
+    return 4;
+  }
+  return (p.isUTC ? _R_UTC : 0) | (p._tStale ? _R_TS : 0);
+}
+const _OP_YEAR = 0,
+  _OP_MONTH = 1,
+  _OP_DATE = 2;
+const _OP_HOUR = 3,
+  _OP_MIN = 4,
+  _OP_SEC = 5,
+  _OP_MS = 6;
+const _OP_SY = 7,
+  _OP_SM = 8,
+  _OP_SD = 9,
+  _OP_SH = 10,
+  _OP_SN = 11,
+  _OP_SS = 12;
+function _tod(p: { H: number; m: number; s: number; ms: number }): number {
+  return p.H * HOUR_MS + p.m * MINUTE_MS + p.s * 1000 + p.ms;
+}
 import {
   toArrayMoment,
   inspectMoment,
@@ -539,6 +565,486 @@ export class Moment {
     }
   }
 
+  // ---- Region dispatch for setters + startOf ----
+
+  private _applyOp(op: number, val: number): void {
+    const p = this._p;
+    if (p.dirty) {
+      p.dirty = false;
+      this._refreshFields();
+    }
+    if (!this._isValid) {
+      return;
+    }
+    switch (_region(p)) {
+      case 1:
+        return this._opCleanUTC(op, val);
+      case 0:
+        return this._opCleanLocal(op, val);
+      case 2:
+      case 3:
+        return this._opTStale(op, val);
+    }
+  }
+
+  private _opCleanUTC(op: number, val: number): void {
+    const p = this._p;
+    if (op <= _OP_MS) {
+      switch (op) {
+        case _OP_HOUR:
+          p.H = val;
+          break;
+        case _OP_MIN:
+          p.m = val;
+          break;
+        case _OP_SEC:
+          p.s = val;
+          break;
+        case _OP_MS:
+          p.ms = val;
+          break;
+        case _OP_DATE:
+          if (val <= 28) {
+            p.W = (((p.W - p.D + val) % 7) + 7) % 7;
+            p.t = ymdToEpochDays(p.y, p.M, val) * DAY_MS + _tod(p);
+            p.D = val;
+            p.d = undefined;
+            p._tStale = false;
+            return;
+          }
+          return this._coldSetDateUTC(val);
+        case _OP_YEAR:
+          if (p.D <= 28) {
+            p.t = ymdToEpochDays(val, p.M, p.D) * DAY_MS + _tod(p);
+            p.y = val;
+            p.W = _dayOfWeek(val, p.M, p.D);
+            p.d = undefined;
+            p._tStale = false;
+            return;
+          }
+          return this._coldSetYearUTC(val);
+        case _OP_MONTH: {
+          const y = p.y + Math.floor(val / 12);
+          const m = normalizeMonth(val);
+          if (p.D <= 28) {
+            p.t = ymdToEpochDays(y, m, p.D) * DAY_MS + _tod(p);
+            p.y = y;
+            p.M = m;
+            p.W = _dayOfWeek(y, m, p.D);
+            p.d = undefined;
+            p._tStale = false;
+            return;
+          }
+          return this._coldSetMonthUTC(val);
+        }
+      }
+      p._tStale = true;
+      return;
+    }
+    switch (op) {
+      case _OP_SY:
+        p.t = ymdToEpochDays(p.y, 0, 1) * DAY_MS;
+        p.M = 0;
+        p.D = 1;
+        p.H = 0;
+        p.m = 0;
+        p.s = 0;
+        p.ms = 0;
+        p.W = _dayOfWeek(p.y, 0, 1);
+        p.d = undefined;
+        break;
+      case _OP_SM:
+        p.t = ymdToEpochDays(p.y, p.M, 1) * DAY_MS;
+        p.D = 1;
+        p.H = 0;
+        p.m = 0;
+        p.s = 0;
+        p.ms = 0;
+        p.W = _dayOfWeek(p.y, p.M, 1);
+        p.d = undefined;
+        break;
+      case _OP_SD:
+        p.t = floorUnitEpoch(p.t, DAY_MS);
+        p.H = 0;
+        p.m = 0;
+        p.s = 0;
+        p.ms = 0;
+        p.d = undefined;
+        break;
+      case _OP_SH:
+        p.t = floorUnitEpoch(p.t, HOUR_MS);
+        p.m = 0;
+        p.s = 0;
+        p.ms = 0;
+        p.d = undefined;
+        break;
+      case _OP_SN:
+        p.t = floorUnitEpoch(p.t, MINUTE_MS);
+        p.s = 0;
+        p.ms = 0;
+        p.d = undefined;
+        break;
+      case _OP_SS:
+        p.t = floorUnitEpoch(p.t, SECOND_MS);
+        p.ms = 0;
+        p.d = undefined;
+        break;
+    }
+    p._tStale = false;
+    p.dirty = false;
+  }
+
+  private _opCleanLocal(op: number, val: number): void {
+    const p = this._p;
+    if (op <= _OP_MS) {
+      switch (op) {
+        case _OP_HOUR:
+          p.H = val;
+          break;
+        case _OP_MIN:
+          p.m = val;
+          break;
+        case _OP_SEC:
+          p.s = val;
+          break;
+        case _OP_MS:
+          p.ms = val;
+          break;
+        case _OP_DATE:
+          if (val <= 28) {
+            p.W = (((p.W - p.D + val) % 7) + 7) % 7;
+            p.D = val;
+            p.d = undefined;
+            break;
+          }
+          return this._coldSetDateLocal(val);
+        case _OP_YEAR:
+          if (p.D <= 28) {
+            p.y = val;
+            p.d = undefined;
+            break;
+          }
+          return this._coldSetYearLocal(val);
+        case _OP_MONTH:
+          if (p.D <= 28) {
+            p.y += Math.floor(val / 12);
+            p.M = normalizeMonth(val);
+            p.d = undefined;
+            break;
+          }
+          return this._coldSetMonthLocal(val);
+      }
+      p._tStale = true;
+      return;
+    }
+    // startOf in CleanLocal
+    if (p.d != null) {
+      switch (op) {
+        case _OP_SY:
+          p.d.setMonth(0, 1);
+          p.d.setHours(0, 0, 0, 0);
+          p.t = p.d.getTime();
+          p.offset = -p.d.getTimezoneOffset();
+          p.M = 0;
+          p.D = 1;
+          p.H = 0;
+          p.m = 0;
+          p.s = 0;
+          p.ms = 0;
+          p.W = _dayOfWeek(p.y, 0, 1);
+          break;
+        case _OP_SM:
+          p.d.setDate(1);
+          p.d.setHours(0, 0, 0, 0);
+          p.t = p.d.getTime();
+          p.offset = -p.d.getTimezoneOffset();
+          p.D = 1;
+          p.H = 0;
+          p.m = 0;
+          p.s = 0;
+          p.ms = 0;
+          p.W = _dayOfWeek(p.y, p.M, 1);
+          break;
+        case _OP_SD:
+          p.d.setHours(0, 0, 0, 0);
+          p.t = p.d.getTime();
+          p.offset = -p.d.getTimezoneOffset();
+          p.H = 0;
+          p.m = 0;
+          p.s = 0;
+          p.ms = 0;
+          break;
+        case _OP_SH:
+          p.d.setMinutes(0, 0, 0);
+          p.t = p.d.getTime();
+          p.offset = -p.d.getTimezoneOffset();
+          p.m = 0;
+          p.s = 0;
+          p.ms = 0;
+          break;
+        case _OP_SN:
+          p.d.setSeconds(0, 0);
+          p.t = p.d.getTime();
+          p.offset = -p.d.getTimezoneOffset();
+          p.s = 0;
+          p.ms = 0;
+          break;
+        case _OP_SS:
+          p.d.setMilliseconds(0);
+          p.t = p.d.getTime();
+          p.offset = -p.d.getTimezoneOffset();
+          p.ms = 0;
+          break;
+      }
+      p._tStale = false;
+      p.dirty = false;
+      return;
+    }
+    // CleanLocal without p.d: arithmetic fallthrough
+    switch (op) {
+      case _OP_SY:
+        p.t = ymdToEpochDays(p.y, 0, 1) * DAY_MS - p.offset * MINUTE_MS;
+        p.M = 0;
+        p.D = 1;
+        p.H = 0;
+        p.m = 0;
+        p.s = 0;
+        p.ms = 0;
+        p.W = _dayOfWeek(p.y, 0, 1);
+        break;
+      case _OP_SM:
+        p.t = ymdToEpochDays(p.y, p.M, 1) * DAY_MS - p.offset * MINUTE_MS;
+        p.D = 1;
+        p.H = 0;
+        p.m = 0;
+        p.s = 0;
+        p.ms = 0;
+        p.W = _dayOfWeek(p.y, p.M, 1);
+        break;
+      case _OP_SD:
+        p.t = floorUnitEpoch(p.t, DAY_MS);
+        p.H = 0;
+        p.m = 0;
+        p.s = 0;
+        p.ms = 0;
+        break;
+      case _OP_SH:
+        p.t = floorUnitEpoch(p.t, HOUR_MS);
+        p.m = 0;
+        p.s = 0;
+        p.ms = 0;
+        break;
+      case _OP_SN:
+        p.t = floorUnitEpoch(p.t, MINUTE_MS);
+        p.s = 0;
+        p.ms = 0;
+        break;
+      case _OP_SS:
+        p.t = floorUnitEpoch(p.t, SECOND_MS);
+        p.ms = 0;
+        break;
+    }
+    p.d = undefined;
+    p._tStale = false;
+    p.dirty = false;
+  }
+
+  private _opTStale(op: number, val: number): void {
+    const p = this._p;
+    if (op <= _OP_MS) {
+      switch (op) {
+        case _OP_HOUR:
+          p.H = val;
+          return;
+        case _OP_MIN:
+          p.m = val;
+          return;
+        case _OP_SEC:
+          p.s = val;
+          return;
+        case _OP_MS:
+          p.ms = val;
+          return;
+        case _OP_DATE:
+          if (val <= 28) {
+            p.W = (((p.W - p.D + val) % 7) + 7) % 7;
+            p.D = val;
+            return;
+          }
+          this._coldSetDateLocal(val);
+          return;
+        case _OP_YEAR:
+          p.y = val;
+          if (p.D > 28) {
+            this._coldSetYearLocal(val);
+          }
+          return;
+        case _OP_MONTH: {
+          p.y += Math.floor(val / 12);
+          p.M = normalizeMonth(val);
+          if (p.D > 28) {
+            this._coldSetMonthLocal(val);
+          }
+          return;
+        }
+      }
+      return;
+    }
+    const utc = p.isUTC;
+    switch (op) {
+      case _OP_SY:
+        p.t = ymdToEpochDays(p.y, 0, 1) * DAY_MS - (utc ? 0 : p.offset * MINUTE_MS);
+        p.M = 0;
+        p.D = 1;
+        p.H = 0;
+        p.m = 0;
+        p.s = 0;
+        p.ms = 0;
+        p.W = _dayOfWeek(p.y, 0, 1);
+        p.d = undefined;
+        p.dirty = false;
+        if (utc) {
+          p._tStale = false;
+        }
+        return;
+      case _OP_SM:
+        p.t = ymdToEpochDays(p.y, p.M, 1) * DAY_MS - (utc ? 0 : p.offset * MINUTE_MS);
+        p.D = 1;
+        p.H = 0;
+        p.m = 0;
+        p.s = 0;
+        p.ms = 0;
+        p.W = _dayOfWeek(p.y, p.M, 1);
+        p.d = undefined;
+        p.dirty = false;
+        if (utc) {
+          p._tStale = false;
+        } else {
+          p._tStale = true;
+        }
+        return;
+      case _OP_SD:
+        p.t = floorUnitEpoch(
+          ymdToEpochDays(p.y, p.M, p.D) * DAY_MS - (utc ? 0 : p.offset * MINUTE_MS),
+          DAY_MS,
+        );
+        p.H = 0;
+        p.m = 0;
+        p.s = 0;
+        p.ms = 0;
+        p.d = undefined;
+        p.dirty = false;
+        if (utc) {
+          p._tStale = false;
+        }
+        return;
+      case _OP_SH:
+        p.t = floorUnitEpoch(
+          ymdToEpochDays(p.y, p.M, p.D) * DAY_MS + p.H * HOUR_MS - (utc ? 0 : p.offset * MINUTE_MS),
+          HOUR_MS,
+        );
+        p.m = 0;
+        p.s = 0;
+        p.ms = 0;
+        p.d = undefined;
+        p.dirty = false;
+        if (utc) {
+          p._tStale = false;
+        }
+        return;
+      case _OP_SN:
+        p.t = floorUnitEpoch(
+          ymdToEpochDays(p.y, p.M, p.D) * DAY_MS +
+            p.H * HOUR_MS +
+            p.m * MINUTE_MS -
+            (utc ? 0 : p.offset * MINUTE_MS),
+          MINUTE_MS,
+        );
+        p.s = 0;
+        p.ms = 0;
+        p.d = undefined;
+        p.dirty = false;
+        if (utc) {
+          p._tStale = false;
+        }
+        return;
+      case _OP_SS:
+        p.t = floorUnitEpoch(
+          ymdToEpochDays(p.y, p.M, p.D) * DAY_MS +
+            p.H * HOUR_MS +
+            p.m * MINUTE_MS +
+            p.s * SECOND_MS -
+            (utc ? 0 : p.offset * MINUTE_MS),
+          SECOND_MS,
+        );
+        p.ms = 0;
+        p.d = undefined;
+        p.dirty = false;
+        if (utc) {
+          p._tStale = false;
+        }
+        return;
+    }
+  }
+
+  // ---- Cold paths: D>28 month-end clamping ----
+
+  private _coldSetDateUTC(val: number): void {
+    const p = this._p;
+    p.t = ymdToEpochDays(p.y, p.M, val) * DAY_MS + _tod(p);
+    p.d = undefined;
+    p._tStale = false;
+    const totalDays = Math.floor(p.t / DAY_MS);
+    [p.y, p.M, p.D] = Moment._epochDaysToYMD(totalDays);
+    p.W = euclideanModulo(totalDays + 4, 7);
+  }
+  private _coldSetDateLocal(val: number): void {
+    this._p.D = val;
+    this._p.d = undefined;
+    this._p._tStale = true;
+  }
+  private _coldSetYearUTC(val: number): void {
+    const p = this._p;
+    const d_ = Math.min(p.D, daysInMonthFast(val, p.M));
+    p.t = ymdToEpochDays(val, p.M, d_) * DAY_MS + _tod(p);
+    p.d = undefined;
+    p._tStale = false;
+    p.y = val;
+    p.D = d_;
+    p.W = _dayOfWeek(val, p.M, d_);
+  }
+  private _coldSetYearLocal(val: number): void {
+    const p = this._p;
+    const d_ = Math.min(p.D, daysInMonthFast(val, p.M));
+    p.y = val;
+    p.D = d_;
+    p.d = undefined;
+    p._tStale = true;
+  }
+  private _coldSetMonthUTC(val: number): void {
+    const p = this._p;
+    const y = p.y + Math.floor(val / 12);
+    const m = normalizeMonth(val);
+    const d_ = Math.min(p.D, daysInMonthFast(y, m));
+    p.t = ymdToEpochDays(y, m, d_) * DAY_MS + _tod(p);
+    p.d = undefined;
+    p._tStale = false;
+    p.y = y;
+    p.M = m;
+    p.D = d_;
+    p.W = _dayOfWeek(y, m, d_);
+  }
+  private _coldSetMonthLocal(val: number): void {
+    const p = this._p;
+    const y = p.y + Math.floor(val / 12);
+    const m = normalizeMonth(val);
+    p.y = y;
+    p.M = m;
+    p.D = Math.min(p.D, daysInMonthFast(y, m));
+    p.d = undefined;
+    p._tStale = true;
+  }
+
   constructor(config: MomentConstructionConfig = {}) {
     const c = config;
     this._isAMomentObject = true;
@@ -859,64 +1365,14 @@ export class Moment {
         this._p.dirty = false;
         this._refreshFields();
       }
-      // Banach fixed point: already at target year → no-op
       if (num === this._p.y) {
         return this;
       }
-      const p = this._p;
-      // D ≤ 28: no month-end clipping possible (all months have 28+ days).
-      // Fast path: no daysInMonthFast, no Math.min, no d_ variable.
-      if (p.D <= 28) {
-        if (p.isUTC) {
-          p.t =
-            ymdToEpochDays(num, p.M, p.D) * DAY_MS +
-            p.H * HOUR_MS +
-            p.m * MINUTE_MS +
-            p.s * SECOND_MS +
-            p.ms;
-          p.d = undefined;
-          p._tStale = false;
-          p.dirty = false;
-          p.y = num;
-          p.W = _dayOfWeek(num, p.M, p.D);
-        } else {
-          p.y = num;
-          p.d = undefined;
-          p._tStale = true;
-        }
-        if (updateOffsetCallback) {
-          this._updateOffset(true);
-        }
-        return this;
+      this._applyOp(_OP_YEAR, num);
+      if (updateOffsetCallback) {
+        this._updateOffset(true);
       }
-      // Slow path: D > 28 — may need month-end clamping.
-      // Isolated as a page-fault handler: rare, uses daysInMonthFast.
-      {
-        const d_ = Math.min(p.D, daysInMonthFast(num, p.M));
-        if (p.isUTC) {
-          p.t =
-            ymdToEpochDays(num, p.M, d_) * DAY_MS +
-            p.H * HOUR_MS +
-            p.m * MINUTE_MS +
-            p.s * SECOND_MS +
-            p.ms;
-          p.d = undefined;
-          p._tStale = false;
-          p.dirty = false;
-          p.y = num;
-          p.D = d_;
-          p.W = _dayOfWeek(num, p.M, d_);
-        } else {
-          p.y = num;
-          p.D = d_;
-          p.d = undefined;
-          p._tStale = true;
-        }
-        if (updateOffsetCallback) {
-          this._updateOffset(true);
-        }
-        return this;
-      }
+      return this;
     }
     if (!this._isValid) {
       return NaN;
@@ -959,69 +1415,14 @@ export class Moment {
       if (isNaN(num)) {
         return this;
       }
-      // Banach fixed point: already at target month → no-op
       if (num === this._p.M) {
         return this;
       }
-      const p = this._p;
-      const y = p.y + Math.floor(num / 12);
-      const _m = normalizeMonth(num);
-      // D ≤ 28: no month-end clipping possible (all months have 28+ days).
-      // Fast path: no daysInMonthFast, no d_ variable.
-      if (p.D <= 28) {
-        if (p.isUTC) {
-          p.t =
-            ymdToEpochDays(y, _m, p.D) * DAY_MS +
-            p.H * HOUR_MS +
-            p.m * MINUTE_MS +
-            p.s * SECOND_MS +
-            p.ms;
-          p.y = y;
-          p.M = _m;
-          p.W = _dayOfWeek(y, _m, p.D);
-          p.d = undefined;
-          p._tStale = false;
-          p.dirty = false;
-        } else {
-          p.y = y;
-          p.M = _m;
-          p.d = undefined;
-          p._tStale = true;
-        }
-        if (updateOffsetCallback) {
-          this._updateOffset(true);
-        }
-        return this;
+      this._applyOp(_OP_MONTH, num);
+      if (updateOffsetCallback) {
+        this._updateOffset(true);
       }
-      // Slow path: D > 28 — may need month-end clamping.
-      {
-        const d_ = Math.min(p.D, daysInMonthFast(y, _m));
-        if (p.isUTC) {
-          p.t =
-            ymdToEpochDays(y, _m, d_) * DAY_MS +
-            p.H * HOUR_MS +
-            p.m * MINUTE_MS +
-            p.s * SECOND_MS +
-            p.ms;
-          p.y = y;
-          p.M = _m;
-          p.D = d_;
-          p.W = _dayOfWeek(y, _m, d_);
-          p.d = undefined;
-          p._tStale = false;
-          p.dirty = false;
-        } else {
-          p.y = y;
-          p.M = _m;
-          p.D = d_;
-          p.d = undefined;
-          p._tStale = true;
-        }
-        if (updateOffsetCallback) {
-          this._updateOffset(true);
-        }
-        return this;
-      }
+      return this;
     }
     if (!this._isValid) {
       return NaN;
@@ -1048,57 +1449,10 @@ export class Moment {
         this._p.dirty = false;
         this._refreshFields();
       }
-      // Banach fixed point: already at target date → no-op
       if (num === this._p.D) {
         return this;
       }
-      const p = this._p;
-      if (num <= 28) {
-        // Fast path: D ≤ 28 — no month overflow possible.
-        // Update W via modular arithmetic: W' = (W - D + num) mod 7. Branchless.
-        p.W = (((p.W - p.D + num) % 7) + 7) % 7;
-        if (p.isUTC) {
-          p.t =
-            ymdToEpochDays(p.y, p.M, num) * DAY_MS +
-            p.H * HOUR_MS +
-            p.m * MINUTE_MS +
-            p.s * SECOND_MS +
-            p.ms;
-          p.d = undefined;
-          p._tStale = false;
-        } else {
-          p.d = undefined;
-          p._tStale = true;
-        }
-        p.D = num;
-        if (updateOffsetCallback) {
-          this._updateOffset(true);
-        }
-        return this;
-      }
-      // Slow path: D > 28 — may overflow month.
-      if (p.isUTC) {
-        // UTC: recompute epoch, then readback clamped fields via integer arithmetic.
-        p.t =
-          ymdToEpochDays(p.y, p.M, num) * DAY_MS +
-          p.H * HOUR_MS +
-          p.m * MINUTE_MS +
-          p.s * SECOND_MS +
-          p.ms;
-        p.d = undefined;
-        p._tStale = false;
-        const totalDays = Math.floor(p.t / DAY_MS);
-        const [y, M, D] = Moment._epochDaysToYMD(totalDays);
-        p.y = y;
-        p.M = M;
-        p.D = D;
-        p.W = euclideanModulo(totalDays + 4, 7);
-      } else {
-        // Local: defer month overflow + offset computation to _syncT.
-        p.D = num;
-        p.d = undefined;
-        p._tStale = true;
-      }
+      this._applyOp(_OP_DATE, num);
       if (updateOffsetCallback) {
         this._updateOffset(true);
       }
@@ -1228,24 +1582,12 @@ export class Moment {
       if (num === this._p.H) {
         return this;
       }
-      const p = this._p;
-      p.H = num;
       if (!updateOffsetCallback) {
-        p._tStale = true;
+        this._p.H = num;
+        this._p._tStale = true;
         return this;
       }
-      const utc = p.isUTC;
-      if (utc) {
-        p.t = Date.UTC(p.y, p.M, p.D, num, p.m, p.s, p.ms);
-        p.d = undefined;
-      } else if (!p._tStale && p.d != null) {
-        p.d.setHours(num);
-        p.H = p.d.getHours();
-        p.t = p.d.getTime();
-        p.offset = -p.d.getTimezoneOffset();
-      } else {
-        p._tStale = true;
-      }
+      this._applyOp(_OP_HOUR, num);
       this._updateOffset(true);
       return this;
     }
@@ -1274,24 +1616,12 @@ export class Moment {
       if (num === this._p.m) {
         return this;
       }
-      const p = this._p;
-      p.m = num;
       if (!updateOffsetCallback) {
-        p._tStale = true;
+        this._p.m = num;
+        this._p._tStale = true;
         return this;
       }
-      const utc = p.isUTC;
-      if (utc) {
-        p.t = Date.UTC(p.y, p.M, p.D, p.H, num, p.s, p.ms);
-        p.d = undefined;
-      } else if (!p._tStale && p.d != null) {
-        p.d.setMinutes(num);
-        p.m = p.d.getMinutes();
-        p.t = p.d.getTime();
-        p.offset = -p.d.getTimezoneOffset();
-      } else {
-        p._tStale = true;
-      }
+      this._applyOp(_OP_MIN, num);
       this._updateOffset(true);
       return this;
     }
@@ -1320,24 +1650,12 @@ export class Moment {
       if (num === this._p.s) {
         return this;
       }
-      const p = this._p;
-      p.s = num;
       if (!updateOffsetCallback) {
-        p._tStale = true;
+        this._p.s = num;
+        this._p._tStale = true;
         return this;
       }
-      const utc = p.isUTC;
-      if (utc) {
-        p.t = Date.UTC(p.y, p.M, p.D, p.H, p.m, num, p.ms);
-        p.d = undefined;
-      } else if (!p._tStale && p.d != null) {
-        p.d.setSeconds(num);
-        p.s = p.d.getSeconds();
-        p.t = p.d.getTime();
-        p.offset = -p.d.getTimezoneOffset();
-      } else {
-        p._tStale = true;
-      }
+      this._applyOp(_OP_SEC, num);
       this._updateOffset(true);
       return this;
     }
@@ -1366,24 +1684,12 @@ export class Moment {
       if (num === this._p.ms) {
         return this;
       }
-      const p = this._p;
-      p.ms = num;
       if (!updateOffsetCallback) {
-        p._tStale = true;
+        this._p.ms = num;
+        this._p._tStale = true;
         return this;
       }
-      const utc = p.isUTC;
-      if (utc) {
-        p.t = Date.UTC(p.y, p.M, p.D, p.H, p.m, p.s, num);
-        p.d = undefined;
-      } else if (!p._tStale && p.d != null) {
-        p.d.setMilliseconds(num);
-        p.ms = p.d.getMilliseconds();
-        p.t = p.d.getTime();
-        p.offset = -p.d.getTimezoneOffset();
-      } else {
-        p._tStale = true;
-      }
+      this._applyOp(_OP_MS, num);
       this._updateOffset(true);
       return this;
     }
@@ -2091,411 +2397,60 @@ export class Moment {
     }
     const p = this._p;
 
-    // Clean-path branch: fields are fresh (!dirty), no _ensureFields needed.
-    // _startOfLocal creates its own Date for the boundary; _startOfUTC can
-    // recompute t from fields via Date.UTC if stale (no Date allocation).
-    if (!p.dirty) {
-      // Banach fixed-point: already at boundary → no-op
-      if (!updateOffsetCallback) {
-        if (code === MONTH) {
-          if (p.D === 1 && p.H === 0 && p.m === 0 && p.s === 0 && p.ms === 0) {
-            return this;
-          }
-        } else if (code === DATE || code === DAY) {
-          if (p.H === 0 && p.m === 0 && p.s === 0 && p.ms === 0) {
-            return this;
-          }
-        } else if (code === HOUR) {
-          if (p.m === 0 && p.s === 0 && p.ms === 0) {
-            return this;
-          }
-        } else if (code === MINUTE) {
-          if (p.s === 0 && p.ms === 0) {
-            return this;
-          }
-        } else if (code === SECOND) {
-          if (p.ms === 0) {
-            return this;
-          }
-        }
-      }
-      // _startOfUTC(DATE/HOUR/MINUTE/SECOND) needs fresh p.t for floorUnitEpoch.
-      // Recompute from fields without Date allocation using Date.UTC.
-      if (p._tStale && p.isUTC) {
-        p.t = Date.UTC(p.y, p.M, p.D, p.H, p.m, p.s, p.ms);
-        p._tStale = false;
-        p.d = undefined;
-      }
-    } else {
-      this._ensureFields();
-      // Post-ensure catch for dirty cases
-      if (!updateOffsetCallback) {
-        if (code === MONTH) {
-          if (
-            this._p.D === 1 &&
-            this._p.H === 0 &&
-            this._p.m === 0 &&
-            this._p.s === 0 &&
-            this._p.ms === 0
-          ) {
-            return this;
-          }
-        } else if (code === DATE || code === DAY) {
-          if (this._p.H === 0 && this._p.m === 0 && this._p.s === 0 && this._p.ms === 0) {
-            return this;
-          }
-        } else if (code === HOUR) {
-          if (this._p.m === 0 && this._p.s === 0 && this._p.ms === 0) {
-            return this;
-          }
-        } else if (code === MINUTE) {
-          if (this._p.s === 0 && this._p.ms === 0) {
-            return this;
-          }
-        } else if (code === SECOND) {
-          if (this._p.ms === 0) {
-            return this;
-          }
-        }
+    // Banach fixed-point: already at boundary → no-op
+    if (!updateOffsetCallback && !p.dirty) {
+      if (
+        code === MONTH
+          ? p.D === 1 && p.H === 0 && p.m === 0 && p.s === 0 && p.ms === 0
+          : code === DATE || code === DAY
+            ? p.H === 0 && p.m === 0 && p.s === 0 && p.ms === 0
+            : code === HOUR
+              ? p.m === 0 && p.s === 0 && p.ms === 0
+              : code === MINUTE
+                ? p.s === 0 && p.ms === 0
+                : code === SECOND
+                  ? p.ms === 0
+                  : false
+      ) {
+        return this;
       }
     }
 
-    if (p.isUTC) {
-      this._startOfUTC(code);
-    } else {
-      this._startOfLocal(code);
-    }
-    return this;
-  }
+    // Map UnitCode to startOf op
+    const startOp =
+      code === YEAR
+        ? _OP_SY
+        : code === MONTH
+          ? _OP_SM
+          : code === DATE || code === DAY
+            ? _OP_SD
+            : code === HOUR
+              ? _OP_SH
+              : code === MINUTE
+                ? _OP_SN
+                : code === SECOND
+                  ? _OP_SS
+                  : -1;
 
-  _startOfUTC(code: UnitCode): void {
-    switch (code) {
-      case YEAR:
-        this._p.t = ymdToEpochDays(this._p.y, 0, 1) * DAY_MS;
-        this._p.d = undefined;
-        this._p.M = 0;
-        this._p.D = 1;
-        this._p.H = 0;
-        this._p.m = 0;
-        this._p.s = 0;
-        this._p.ms = 0;
-        this._p.W = _dayOfWeek(this._p.y, 0, 1);
-        break;
-      case MONTH:
-        this._p.t = ymdToEpochDays(this._p.y, this._p.M, 1) * DAY_MS;
-        this._p.d = undefined;
-        this._p.D = 1;
-        this._p.H = 0;
-        this._p.m = 0;
-        this._p.s = 0;
-        this._p.ms = 0;
-        this._p.W = _dayOfWeek(this._p.y, this._p.M, 1);
-        break;
-      case QUARTER:
-      case WEEK:
-      case ISO_WEEK:
-        startOfExtraMoment(this, code);
-        break;
-      case DATE:
-      case DAY:
-        this._p.t = floorUnitEpoch(this._p.t, DAY_MS);
-        this._p.d = undefined;
-        this._p.H = 0;
-        this._p.m = 0;
-        this._p.s = 0;
-        this._p.ms = 0;
-        break;
-      case HOUR:
-        this._p.t = floorUnitEpoch(this._p.t, HOUR_MS);
-        this._p.d = undefined;
-        this._p.m = 0;
-        this._p.s = 0;
-        this._p.ms = 0;
-        break;
-      case MINUTE:
-        this._p.t = floorUnitEpoch(this._p.t, MINUTE_MS);
-        this._p.d = undefined;
-        this._p.s = 0;
-        this._p.ms = 0;
-        break;
-      case SECOND:
-        this._p.t = floorUnitEpoch(this._p.t, SECOND_MS);
-        this._p.d = undefined;
-        this._p.ms = 0;
-        break;
+    if (startOp >= 0) {
+      this._applyOp(startOp, 0);
+    } else {
+      // QUARTER / WEEK / ISO_WEEK — handled by extra module
+      if (p.dirty) {
+        p.dirty = false;
+        this._refreshFields();
+      }
+      startOfExtraMoment(this, code);
+      if (!p.isUTC && p.d) {
+        p.offset = -p.d.getTimezoneOffset();
+      }
+      p._tStale = false;
+      p.dirty = false;
     }
-    this._p._tStale = false;
-    this._p.dirty = false;
     if (updateOffsetCallback) {
       this._updateOffset(true);
     }
-  }
-
-  _startOfLocal(code: UnitCode): void {
-    const _p = this._p;
-    // ── YEAR: January 1 midnight ──
-    if (code === YEAR) {
-      // Date-mutation path: always possible when p.d exists and offsets matter
-      if (_p.d != null) {
-        _p.d.setMonth(0, 1);
-        _p.d.setHours(0, 0, 0, 0);
-        _p.t = _p.d.getTime();
-        _p.offset = -_p.d.getTimezoneOffset();
-      } else if (!_p._tStale) {
-        _p.t = ymdToEpochDays(_p.y, 0, 1) * DAY_MS - _p.offset * MINUTE_MS;
-      } else {
-        _p.t = ymdToEpochDays(_p.y, 0, 1) * DAY_MS - _p.offset * MINUTE_MS;
-        _p.M = 0;
-        _p.D = 1;
-        _p.H = 0;
-        _p.m = 0;
-        _p.s = 0;
-        _p.ms = 0;
-        _p.W = _dayOfWeek(_p.y, 0, 1);
-        _p.d = undefined;
-        _p.dirty = false;
-        if (updateOffsetCallback) {
-          this._updateOffset(true);
-        }
-        return;
-      }
-      _p.M = 0;
-      _p.D = 1;
-      _p.H = 0;
-      _p.m = 0;
-      _p.s = 0;
-      _p.ms = 0;
-      _p.W = _dayOfWeek(_p.y, 0, 1);
-      _p._tStale = false;
-      _p.dirty = false;
-      if (updateOffsetCallback) {
-        this._updateOffset(true);
-      }
-      return;
-    }
-    // ── MONTH: 1st midnight ──
-    if (code === MONTH) {
-      if (_p.d != null) {
-        _p.d.setDate(1);
-        _p.d.setHours(0, 0, 0, 0);
-        _p.t = _p.d.getTime();
-        _p.offset = -_p.d.getTimezoneOffset();
-      } else if (!_p._tStale) {
-        _p.t = ymdToEpochDays(_p.y, _p.M, 1) * DAY_MS - _p.offset * MINUTE_MS;
-      } else {
-        _p.t = ymdToEpochDays(_p.y, _p.M, 1) * DAY_MS - _p.offset * MINUTE_MS;
-        _p.D = 1;
-        _p.H = 0;
-        _p.m = 0;
-        _p.s = 0;
-        _p.ms = 0;
-        _p.W = _dayOfWeek(_p.y, _p.M, 1);
-        _p._tStale = true;
-        _p.dirty = false;
-        if (updateOffsetCallback) {
-          this._updateOffset(true);
-        }
-        return;
-      }
-      _p.D = 1;
-      _p.H = 0;
-      _p.m = 0;
-      _p.s = 0;
-      _p.ms = 0;
-      _p.W = _dayOfWeek(_p.y, _p.M, 1);
-      _p._tStale = false;
-      _p.dirty = false;
-      if (updateOffsetCallback) {
-        this._updateOffset(true);
-      }
-      return;
-    }
-    // ── QUARTER / WEEK / ISO_WEEK ──
-    if (code === QUARTER || code === WEEK || code === ISO_WEEK) {
-      startOfExtraMoment(this, code);
-      if (_p.d) {
-        _p.offset = -_p.d.getTimezoneOffset();
-      }
-      _p._tStale = false;
-      _p.dirty = false;
-      if (updateOffsetCallback) {
-        this._updateOffset(true);
-      }
-      return;
-    }
-    // ── DATE / DAY: midnight ──
-    if (code === DATE || code === DAY) {
-      if (_p.d != null) {
-        _p.d.setHours(0, 0, 0, 0);
-        _p.t = _p.d.getTime();
-        _p.offset = -_p.d.getTimezoneOffset();
-      } else if (!_p._tStale) {
-        _p.t = floorUnitEpoch(_p.t, DAY_MS);
-        _p.d = undefined;
-        _p.H = 0;
-        _p.m = 0;
-        _p.s = 0;
-        _p.ms = 0;
-        _p._tStale = false;
-        _p.dirty = false;
-        if (updateOffsetCallback) {
-          this._updateOffset(true);
-        }
-        return;
-      } else {
-        _p.t = floorUnitEpoch(
-          ymdToEpochDays(_p.y, _p.M, _p.D) * DAY_MS - _p.offset * MINUTE_MS,
-          DAY_MS,
-        );
-        _p.H = 0;
-        _p.m = 0;
-        _p.s = 0;
-        _p.ms = 0;
-        _p.d = undefined;
-        _p.dirty = false;
-        if (updateOffsetCallback) {
-          this._updateOffset(true);
-        }
-        return;
-      }
-      _p.H = 0;
-      _p.m = 0;
-      _p.s = 0;
-      _p.ms = 0;
-      _p._tStale = false;
-      _p.dirty = false;
-      if (updateOffsetCallback) {
-        this._updateOffset(true);
-      }
-      return;
-    }
-    // ── HOUR ──
-    if (code === HOUR) {
-      if (_p.d != null) {
-        _p.d.setMinutes(0, 0, 0);
-        _p.t = _p.d.getTime();
-        _p.offset = -_p.d.getTimezoneOffset();
-      } else if (!_p._tStale) {
-        _p.t = floorUnitEpoch(_p.t, HOUR_MS);
-        _p.d = undefined;
-        _p.m = 0;
-        _p.s = 0;
-        _p.ms = 0;
-        _p._tStale = false;
-        _p.dirty = false;
-        if (updateOffsetCallback) {
-          this._updateOffset(true);
-        }
-        return;
-      } else {
-        _p.t = floorUnitEpoch(
-          ymdToEpochDays(_p.y, _p.M, _p.D) * DAY_MS + _p.H * HOUR_MS - _p.offset * MINUTE_MS,
-          HOUR_MS,
-        );
-        _p.m = 0;
-        _p.s = 0;
-        _p.ms = 0;
-        _p.d = undefined;
-        _p.dirty = false;
-        if (updateOffsetCallback) {
-          this._updateOffset(true);
-        }
-        return;
-      }
-      _p.m = 0;
-      _p.s = 0;
-      _p.ms = 0;
-      _p._tStale = false;
-      _p.dirty = false;
-      if (updateOffsetCallback) {
-        this._updateOffset(true);
-      }
-      return;
-    }
-    // ── MINUTE ──
-    if (code === MINUTE) {
-      if (_p.d != null) {
-        _p.d.setSeconds(0, 0);
-        _p.t = _p.d.getTime();
-        _p.offset = -_p.d.getTimezoneOffset();
-      } else if (!_p._tStale) {
-        _p.t = floorUnitEpoch(_p.t, MINUTE_MS);
-        _p.d = undefined;
-        _p.s = 0;
-        _p.ms = 0;
-        _p._tStale = false;
-        _p.dirty = false;
-        if (updateOffsetCallback) {
-          this._updateOffset(true);
-        }
-        return;
-      } else {
-        _p.t = floorUnitEpoch(
-          ymdToEpochDays(_p.y, _p.M, _p.D) * DAY_MS +
-            _p.H * HOUR_MS +
-            _p.m * MINUTE_MS -
-            _p.offset * MINUTE_MS,
-          MINUTE_MS,
-        );
-        _p.s = 0;
-        _p.ms = 0;
-        _p.d = undefined;
-        _p.dirty = false;
-        if (updateOffsetCallback) {
-          this._updateOffset(true);
-        }
-        return;
-      }
-      _p.s = 0;
-      _p.ms = 0;
-      _p._tStale = false;
-      _p.dirty = false;
-      if (updateOffsetCallback) {
-        this._updateOffset(true);
-      }
-      return;
-    }
-    // ── SECOND ──
-    if (code === SECOND) {
-      if (_p.d != null) {
-        _p.d.setMilliseconds(0);
-        _p.t = _p.d.getTime();
-        _p.offset = -_p.d.getTimezoneOffset();
-      } else if (!_p._tStale) {
-        _p.t = floorUnitEpoch(_p.t, SECOND_MS);
-        _p.d = undefined;
-        _p.ms = 0;
-        _p._tStale = false;
-        _p.dirty = false;
-        if (updateOffsetCallback) {
-          this._updateOffset(true);
-        }
-        return;
-      } else {
-        _p.t = floorUnitEpoch(
-          ymdToEpochDays(_p.y, _p.M, _p.D) * DAY_MS +
-            _p.H * HOUR_MS +
-            _p.m * MINUTE_MS +
-            _p.s * SECOND_MS -
-            _p.offset * MINUTE_MS,
-          SECOND_MS,
-        );
-        _p.ms = 0;
-        _p.d = undefined;
-        _p.dirty = false;
-        if (updateOffsetCallback) {
-          this._updateOffset(true);
-        }
-        return;
-      }
-      _p.ms = 0;
-      _p._tStale = false;
-      _p.dirty = false;
-      if (updateOffsetCallback) {
-        this._updateOffset(true);
-      }
-      return;
-    }
+    return this;
   }
 
   endOf(unit: string): this {
