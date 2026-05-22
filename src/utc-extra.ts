@@ -38,12 +38,17 @@ export type UtcMoment = Moment & {
 export function localMoment(m: UtcMoment, keepLocalTime?: boolean): Moment {
   if (m._p.isUTC) {
     if (keepLocalTime) {
+      // moment.js compat: local(keepLocalTime) from isUTC:
+      //   _d += _d.getTimezoneOffset() * 60000
+      // where _d = p.t (display epoch) in our representation
       (m as unknown as { _ensureFields: () => void })._ensureFields();
-      m._p.d = new Date(m._p.y, m._p.M, m._p.D, m._p.H, m._p.m, m._p.s, m._p.ms);
+      const _d = m._p.t;
+      m._p.d = new Date(_d + new Date(_d).getTimezoneOffset() * 60000);
+      m._p.t = m._p.d.getTime();
     } else {
       m._p.d = new Date(m.valueOf());
+      m._p.t = m._p.d.getTime();
     }
-    m._p.t = m._p.d.getTime();
   }
   m._p.isUTC = false;
   m._refreshFields();
@@ -124,15 +129,22 @@ export function utcOffsetMoment(
   if (keepLocalTime) {
     (m as unknown as { _ensureFields: () => void })._ensureFields();
     if (!m._p.isUTC) {
-      m._p.d = new Date(Date.UTC(m._p.y, m._p.M, m._p.D, m._p.H, m._p.m, m._p.s, m._p.ms));
-      m._p.t = m._p.d.getTime();
+      // moment.js compat: localAdjust = getDateOffset(this) = this._p.offset
+      // then add(localAdjust, 'm') after setting offset/isUTC
+      const localAdjust = m._p.offset;
+      m._p.offset = numOffset;
+      m._p.isUTC = true;
+      m._p.t += localAdjust * MINUTE_MS;
+      m._p.d = undefined;
+    } else {
+      m._p.offset = numOffset;
+      m._p.isUTC = true;
     }
-    m._p.offset = numOffset;
-    m._p.isUTC = true;
   } else {
-    const oldAbsTime = m.valueOf();
-    m._p.d = new Date(oldAbsTime + numOffset * MINUTE_MS);
-    m._p.t = m._p.d.getTime();
+    // moment.js compat: _d += (new_offset - old_offset) * 60000
+    const oldOffset = m._p.isUTC ? m._p.offset || 0 : 0;
+    m._p.t = m._p.t + (numOffset - oldOffset) * MINUTE_MS;
+    m._p.d = undefined;
     m._p.offset = numOffset;
     m._p.isUTC = true;
   }
