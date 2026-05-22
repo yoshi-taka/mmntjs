@@ -2843,163 +2843,127 @@ export class Moment {
       }
       return this;
     }
-    // Hot path: inline dispatch for common units
-    if (unit.length <= 5) {
-      switch (unit) {
-        case "d":
-        case "day":
-        case "days":
-        case "date": {
-          const p = this._p;
-          if (!p.dirty && !p._tStale && !updateOffsetCallback && Number.isInteger(amount)) {
-            if (isCleanUTC(p)) {
-              addDayUTC(p, amount);
-              if (isNaN(p.t)) {
-                this._isValid = false;
-              }
-              return this;
-            }
-            if (isCleanLocalFreshWithDate(p)) {
-              if (p.D + amount >= 1 && p.D + amount <= 28) {
-                addDay_CLFD_safe(p, amount);
-              } else {
-                addDay_CLFD_overflow(p, amount);
-              }
-              return this;
-            }
-            if (isCleanLocalFreshNoDate(p)) {
-              if (p.D + amount >= 1 && p.D + amount <= 28) {
-                addDay_CLFN_safe(p, amount);
-              } else {
-                addDay_CLFN_overflow(p, amount);
-              }
-              if (isNaN(p.t)) {
-                this._isValid = false;
-              }
-              return this;
-            }
-          }
-          this._addDay(amount);
-          return this;
+    switch (unit) {
+      case "d":
+      case "day":
+      case "days":
+      case "date":
+        this._addDayFast(amount);
+        return this;
+      case "h":
+      case "hour":
+      case "hours":
+        this._addTime(amount, 3600000);
+        return this;
+      case "m":
+      case "minute":
+      case "minutes":
+        this._addTime(amount, 60000);
+        return this;
+      case "s":
+      case "second":
+      case "seconds":
+        this._addTime(amount, 1000);
+        return this;
+      case "ms":
+      case "millisecond":
+      case "milliseconds":
+        this._addTime(amount, 1);
+        return this;
+      case "M":
+      case "month":
+      case "months":
+        this._addMonthFast(amount);
+        return this;
+      case "y":
+      case "year":
+      case "years":
+        this._addYearFast(amount);
+        return this;
+      case "w":
+      case "week":
+      case "weeks":
+        this._addDay(amount * 7);
+        return this;
+      case "Q":
+      case "quarter":
+      case "quarters":
+        this._addQuarterFast(amount);
+        return this;
+    }
+    return this._addSlow(amount, unit);
+  }
+
+  private _addDayFast(amount: number): void {
+    const p = this._p;
+    if (!p.dirty && !p._tStale && !updateOffsetCallback && Number.isInteger(amount)) {
+      if (isCleanUTC(p)) {
+        addDayUTC(p, amount);
+        if (isNaN(p.t)) {
+          this._isValid = false;
         }
-        case "h":
-        case "hour":
-        case "hours":
-          this._addTime(amount, 3600000);
-          return this;
-        case "m":
-        case "minute":
-        case "minutes":
-          this._addTime(amount, 60000);
-          return this;
-        case "s":
-        case "second":
-        case "seconds":
-          this._addTime(amount, 1000);
-          return this;
-        case "ms":
-        case "millisecond":
-        case "milliseconds":
-          this._addTime(amount, 1);
-          return this;
-        case "M":
-        case "month":
-        case "months": {
-          const p = this._p;
-          if (!p.dirty && !p._tStale && !updateOffsetCallback && Number.isInteger(amount)) {
-            if (isCleanUTC(p)) {
-              addMonthUTC(p, amount);
-              if (isNaN(p.t)) {
-                this._isValid = false;
-              }
-              return this;
-            }
-            if (isCleanLocalFreshWithDate(p)) {
-              addMonth_CLFD(p, amount);
-              if (isNaN(p.t)) {
-                this._isValid = false;
-              }
-              return this;
-            }
-            if (isCleanLocalFreshNoDate(p)) {
-              addMonth_CLFN(p, amount);
-              if (isNaN(p.t)) {
-                this._isValid = false;
-              }
-              return this;
-            }
-          }
-          this._addMonth(amount);
-          return this;
+        return;
+      }
+      if (isCleanLocalFreshWithDate(p)) {
+        if (p.D + amount >= 1 && p.D + amount <= 28) {
+          addDay_CLFD_safe(p, amount);
+        } else {
+          addDay_CLFD_overflow(p, amount);
         }
-        case "y":
-        case "year":
-        case "years": {
-          const _p = this._p;
-          if (!_p.dirty && !_p._tStale && !updateOffsetCallback && Number.isInteger(amount)) {
-            if (isCleanUTC(_p)) {
-              addMonthUTC(_p, amount * 12);
-              if (isNaN(_p.t)) {
-                this._isValid = false;
-              }
-              return this;
-            }
-            if (isCleanLocalFreshWithDate(_p)) {
-              addMonth_CLFD(_p, amount * 12);
-              if (isNaN(_p.t)) {
-                this._isValid = false;
-              }
-              return this;
-            }
-            if (isCleanLocalFreshNoDate(_p)) {
-              addMonth_CLFN(_p, amount * 12);
-              if (isNaN(_p.t)) {
-                this._isValid = false;
-              }
-              return this;
-            }
-          }
-          this._addMonth(amount * 12);
-          return this;
+        return;
+      }
+      if (isCleanLocalFreshNoDate(p)) {
+        if (p.D + amount >= 1 && p.D + amount <= 28) {
+          addDay_CLFN_safe(p, amount);
+        } else {
+          addDay_CLFN_overflow(p, amount);
         }
-        case "w":
-        case "week":
-        case "weeks":
-          this._addDay(amount * 7);
-          return this;
-        case "Q":
-        case "quarter":
-        case "quarters": {
-          const qp = this._p;
-          if (!qp.dirty && !qp._tStale && !updateOffsetCallback && Number.isInteger(amount)) {
-            if (isCleanUTC(qp)) {
-              addMonthUTC(qp, amount * 3);
-              if (isNaN(qp.t)) {
-                this._isValid = false;
-              }
-              return this;
-            }
-            if (isCleanLocalFreshWithDate(qp)) {
-              addMonth_CLFD(qp, amount * 3);
-              if (isNaN(qp.t)) {
-                this._isValid = false;
-              }
-              return this;
-            }
-            if (isCleanLocalFreshNoDate(qp)) {
-              addMonth_CLFN(qp, amount * 3);
-              if (isNaN(qp.t)) {
-                this._isValid = false;
-              }
-              return this;
-            }
-          }
-          this._addMonth(amount * 3);
-          return this;
+        if (isNaN(p.t)) {
+          this._isValid = false;
         }
+        return;
       }
     }
-    // Uncommon or aliased unit → normalizeUnitCode + _addSimple
+    this._addDay(amount);
+  }
+
+  private _addMonthFast(amount: number): void {
+    const p = this._p;
+    if (!p.dirty && !p._tStale && !updateOffsetCallback && Number.isInteger(amount)) {
+      if (isCleanUTC(p)) {
+        addMonthUTC(p, amount);
+        if (isNaN(p.t)) {
+          this._isValid = false;
+        }
+        return;
+      }
+      if (isCleanLocalFreshWithDate(p)) {
+        addMonth_CLFD(p, amount);
+        if (isNaN(p.t)) {
+          this._isValid = false;
+        }
+        return;
+      }
+      if (isCleanLocalFreshNoDate(p)) {
+        addMonth_CLFN(p, amount);
+        if (isNaN(p.t)) {
+          this._isValid = false;
+        }
+        return;
+      }
+    }
+    this._addMonth(amount);
+  }
+
+  private _addYearFast(amount: number): void {
+    this._addMonthFast(amount * 12);
+  }
+
+  private _addQuarterFast(amount: number): void {
+    this._addMonthFast(amount * 3);
+  }
+
+  private _addSlow(amount: number, unit: string): this {
     const code = normalizeUnitCode(unit);
     if (code < 0) {
       return this;
@@ -3066,50 +3030,52 @@ export class Moment {
     if (!this._isValid) {
       return this;
     }
-    const p = this._p;
+    if (unit === "day") {
+      return this._startOfDayFast();
+    }
+    if (unit === "month") {
+      return this._startOfMonthFast();
+    }
+    return this._startOfSlow(unit);
+  }
 
-    // ---- startOf('day'/'month') fast path: bypass normalization — direct Date mutation ----
-    if (
-      unit.length === 3 &&
-      unit.charCodeAt(0) === 100 &&
-      unit.charCodeAt(1) === 97 &&
-      unit.charCodeAt(2) === 121
-    ) {
-      if (!updateOffsetCallback && isCleanLocalFreshWithDate(p)) {
-        startOfDay_CLFD(p);
+  private _startOfDayFast(): this {
+    const p = this._p;
+    if (!updateOffsetCallback && isCleanLocalFreshWithDate(p)) {
+      startOfDay_CLFD(p);
+      return this;
+    }
+    return this._startOfSlow("day");
+  }
+
+  private _startOfMonthFast(): this {
+    const p = this._p;
+    if (!updateOffsetCallback && !p.dirty) {
+      if (p.D === 1 && p.H === 0 && p.m === 0 && p.s === 0 && p.ms === 0) {
         return this;
       }
-    } else if (
-      unit.length === 5 &&
-      unit.charCodeAt(0) === 109 &&
-      unit.charCodeAt(1) === 111 &&
-      unit.charCodeAt(2) === 110 &&
-      unit.charCodeAt(3) === 116 &&
-      unit.charCodeAt(4) === 104
-    ) {
-      if (!updateOffsetCallback && !p.dirty) {
-        if (p.D === 1 && p.H === 0 && p.m === 0 && p.s === 0 && p.ms === 0) {
-          return this;
-        }
-        if (isCleanLocalFreshWithDate(p)) {
-          startOfMonth_CLFD(p);
-          return this;
-        }
-        if (isCleanLocalFreshNoDate(p)) {
-          startOfMonth_CLFN(p);
-          return this;
-        }
-        if (isCleanLocalStale(p)) {
-          startOfMonthStale(p);
-          return this;
-        }
-        if (isCleanUTC(p)) {
-          startOfMonthUTC(p);
-          return this;
-        }
+      if (isCleanLocalFreshWithDate(p)) {
+        startOfMonth_CLFD(p);
+        return this;
+      }
+      if (isCleanLocalFreshNoDate(p)) {
+        startOfMonth_CLFN(p);
+        return this;
+      }
+      if (isCleanLocalStale(p)) {
+        startOfMonthStale(p);
+        return this;
+      }
+      if (isCleanUTC(p)) {
+        startOfMonthUTC(p);
+        return this;
       }
     }
+    return this._startOfSlow("month");
+  }
 
+  private _startOfSlow(unit: string): this {
+    const p = this._p;
     const code = fastNormalizeBoundaryUnit(unit);
     if (code < 0) {
       return this;
@@ -3521,8 +3487,18 @@ export class Moment {
     } else if (unit === "day" || unit === "days" || unit === "date" || unit === "dates") {
       code = DATE;
       // Typed morphism dispatch for DAY diff on clean pair
+      // diffDaysUTC is only valid for pure UTC (offset === 0).
+      // Moments with .utcOffset(N) have isUTC=true but non-zero offset;
+      // their _p.t is shifted, so we must subtract offset first.
       if (bothClean) {
-        if (isUTC && otherUTC && isCleanUTC(p) && isCleanUTC(op)) {
+        if (
+          isUTC &&
+          otherUTC &&
+          isCleanUTC(p) &&
+          isCleanUTC(op) &&
+          p.offset === 0 &&
+          op.offset === 0
+        ) {
           return diffDaysUTC(p, op, float);
         }
         return diffDaysLocal(p, op, float);

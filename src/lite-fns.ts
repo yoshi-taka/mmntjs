@@ -158,50 +158,46 @@ export function endOf(d: Date, unit: string): Date {
   return r;
 }
 
+function addMonthsToDate(r: Date, amount: number): Date {
+  const raw = Number.isInteger(amount)
+    ? amount
+    : amount < 0
+      ? Math.round(-amount) * -1
+      : Math.round(amount);
+  const total = r.getFullYear() * 12 + r.getMonth() + raw;
+  const ny = Math.floor(total / 12);
+  const nm = ((total % 12) + 12) % 12;
+  let d_ = r.getDate();
+  if (d_ > 28) {
+    const md =
+      nm === 1
+        ? ny % 4 === 0 && (ny % 100 !== 0 || ny % 400 === 0)
+          ? 29
+          : 28
+        : nm === 3 || nm === 5 || nm === 8 || nm === 10
+          ? 30
+          : 31;
+    if (d_ > md) {
+      d_ = md;
+    }
+  }
+  r.setFullYear(ny, nm, d_);
+  return r;
+}
+
 // copied from moment-lite.ts _addSimple() LOCAL path + add() MONTH path
 export function add(d: Date, amount: number, unit: string): Date {
   const r = new Date(d);
   switch (unit) {
     case "year":
       return add(r, Math.round(amount * 12), "month");
-    case "month": {
-      const raw = Number.isInteger(amount)
-        ? amount
-        : amount < 0
-          ? Math.round(-amount) * -1
-          : Math.round(amount);
-      const total = r.getFullYear() * 12 + r.getMonth() + raw;
-      const ny = Math.floor(total / 12);
-      const nm = ((total % 12) + 12) % 12;
-      let d_ = r.getDate();
-      if (d_ > 28) {
-        const md =
-          nm === 1
-            ? ny % 4 === 0 && (ny % 100 !== 0 || ny % 400 === 0)
-              ? 29
-              : 28
-            : nm === 3 || nm === 5 || nm === 8 || nm === 10
-              ? 30
-              : 31;
-        if (d_ > md) {
-          d_ = md;
-        }
-      }
-      r.setFullYear(ny, nm, d_);
-      break;
-    }
+    case "month":
+      return addMonthsToDate(r, amount);
     case "quarter":
       return add(r, Math.round(amount * 3), "month");
-    case "week": {
-      const raw = amount * 7;
-      const rounded = Number.isInteger(raw)
-        ? raw
-        : raw < 0
-          ? Math.round(-raw) * -1
-          : Math.round(raw);
-      r.setDate(r.getDate() + rounded);
+    case "week":
+      r.setDate(r.getDate() + (Number.isInteger(amount * 7) ? amount * 7 : Math.round(amount * 7)));
       break;
-    }
     case "day":
     case "date":
       if (Number.isInteger(amount)) {

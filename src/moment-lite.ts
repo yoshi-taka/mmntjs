@@ -32,7 +32,13 @@ import { parseString, type ParsedData } from "./parse-lite";
 import { formatMomentBasic } from "./display/format-basic";
 import type { ParseLocale } from "./parse-locale";
 import type { FormattableMoment } from "./display/types";
-import type { OrdinaryHour, OrdinaryMinute, OrdinarySecond, OrdinaryMillisecond } from "./types";
+import type {
+  OrdinaryHour,
+  OrdinaryMinute,
+  OrdinarySecond,
+  OrdinaryMillisecond,
+  UnitCode,
+} from "./types";
 
 // ---- Category-theory-inspired refinement types & morphisms (lite) ----
 
@@ -1655,58 +1661,58 @@ export class MomentLite {
       }
       return this;
     }
-    // Hot path: inline dispatch for common units
-    if (unit.length <= 5) {
-      switch (unit) {
-        case "d":
-        case "day":
-        case "days":
-        case "date":
-          this._addDay(amount);
-          return this;
-        case "h":
-        case "hour":
-        case "hours":
-          this._addTime(amount, 3600000);
-          return this;
-        case "m":
-        case "minute":
-        case "minutes":
-          this._addTime(amount, 60000);
-          return this;
-        case "s":
-        case "second":
-        case "seconds":
-          this._addTime(amount, 1000);
-          return this;
-        case "ms":
-        case "millisecond":
-        case "milliseconds":
-          this._addTime(amount, 1);
-          return this;
-        case "M":
-        case "month":
-        case "months":
-          this._addMonth(amount);
-          return this;
-        case "y":
-        case "year":
-        case "years":
-          this._addMonth(amount * 12);
-          return this;
-        case "w":
-        case "week":
-        case "weeks":
-          this._addDay(amount * 7);
-          return this;
-        case "Q":
-        case "quarter":
-        case "quarters":
-          this._addMonth(amount * 3);
-          return this;
-      }
+    switch (unit) {
+      case "d":
+      case "day":
+      case "days":
+      case "date":
+        this._addDay(amount);
+        return this;
+      case "h":
+      case "hour":
+      case "hours":
+        this._addTime(amount, 3600000);
+        return this;
+      case "m":
+      case "minute":
+      case "minutes":
+        this._addTime(amount, 60000);
+        return this;
+      case "s":
+      case "second":
+      case "seconds":
+        this._addTime(amount, 1000);
+        return this;
+      case "ms":
+      case "millisecond":
+      case "milliseconds":
+        this._addTime(amount, 1);
+        return this;
+      case "M":
+      case "month":
+      case "months":
+        this._addMonth(amount);
+        return this;
+      case "y":
+      case "year":
+      case "years":
+        this._addMonth(amount * 12);
+        return this;
+      case "w":
+      case "week":
+      case "weeks":
+        this._addDay(amount * 7);
+        return this;
+      case "Q":
+      case "quarter":
+      case "quarters":
+        this._addMonth(amount * 3);
+        return this;
     }
-    // Uncommon or aliased unit → normalizeUnitCode + _addSimple
+    return this._addSlow(amount, unit);
+  }
+
+  private _addSlow(amount: number, unit: string): this {
     const code = normalizeUnitCode(unit);
     if (code < 0) {
       return this;
@@ -1947,183 +1953,213 @@ export class MomentLite {
       return this;
     }
     this._ensureFields();
-    const p = this._p;
-    const utc = p.isUTC;
+    return this._startOfByCode(code);
+  }
 
+  private _startOfByCode(code: UnitCode): this {
     switch (code) {
       case YEAR:
-        if (utc) {
-          p.t = ymdToEpochDays(p.y, 0, 1) * DAY_MS;
-          p.d = undefined;
-        } else {
-          let d: Date;
-          if (p.d != null) {
-            d = p.d;
-            d.setMonth(0, 1);
-            d.setHours(0, 0, 0, 0);
-          } else {
-            d = p.d = new Date(p.y, 0, 1);
-          }
-          p.t = d.getTime();
-          p.offset = -d.getTimezoneOffset();
-        }
-        p.M = 0;
-        p.D = 1;
-        p.H = 0;
-        p.m = 0;
-        p.s = 0;
-        p.ms = 0;
-        p.W = _dayOfWeek(p.y, 0, 1);
+        this._startOfYear();
         break;
       case MONTH:
-        if (utc) {
-          p.t = ymdToEpochDays(p.y, p.M, 1) * DAY_MS;
-          p.d = undefined;
-        } else {
-          let d: Date;
-          if (p.d != null) {
-            d = p.d;
-            d.setDate(1);
-            d.setHours(0, 0, 0, 0);
-          } else {
-            d = p.d = new Date(p.y, p.M, 1);
-          }
-          p.t = d.getTime();
-          p.offset = -d.getTimezoneOffset();
-        }
-        p.D = 1;
-        p.H = 0;
-        p.m = 0;
-        p.s = 0;
-        p.ms = 0;
-        p.W = _dayOfWeek(p.y, p.M, 1);
+        this._startOfMonth();
         break;
       case DATE:
       case DAY:
-        if (utc) {
-          p.t = floorUnitEpoch(p.t, DAY_MS);
-          p.d = undefined;
-        } else if (p.d != null) {
-          // musl-inspired arithmetic path with offset verify
-          const phase = euclideanModulo(p.t + p.offset * 60000, DAY_MS);
-          const candidateT = p.t - phase;
-          if (_tzOffsetAt(candidateT) === p.offset) {
-            p.t = candidateT;
-            p.d.setTime(candidateT);
-          } else {
-            p.d.setHours(0, 0, 0, 0);
-            p.t = p.d.getTime();
-            p.offset = -p.d.getTimezoneOffset();
-          }
-        } else {
-          const phase = euclideanModulo(p.t + p.offset * 60000, DAY_MS);
-          const candidateT = p.t - phase;
-          const offAtTarget = _tzOffsetAt(candidateT);
-          if (offAtTarget === p.offset) {
-            p.t = candidateT;
-          } else {
-            p.d = new Date(candidateT);
-            p.t = p.d.getTime();
-            p.offset = offAtTarget;
-          }
-        }
-        p.H = 0;
-        p.m = 0;
-        p.s = 0;
-        p.ms = 0;
+        this._startOfDay();
         break;
       case HOUR:
-        if (utc) {
-          p.t = floorUnitEpoch(p.t, HOUR_MS);
-          p.d = undefined;
-        } else if (p.d != null) {
-          const phase = euclideanModulo(p.t + p.offset * 60000, HOUR_MS);
-          const candidateT = p.t - phase;
-          if (_tzOffsetAt(candidateT) === p.offset) {
-            p.t = candidateT;
-            p.d.setTime(candidateT);
-          } else {
-            p.d.setMinutes(0, 0, 0);
-            p.t = p.d.getTime();
-            p.offset = -p.d.getTimezoneOffset();
-          }
-        } else {
-          const phase = euclideanModulo(p.t + p.offset * 60000, HOUR_MS);
-          const candidateT = p.t - phase;
-          const offAtTarget = _tzOffsetAt(candidateT);
-          if (offAtTarget === p.offset) {
-            p.t = candidateT;
-          } else {
-            p.d = new Date(candidateT);
-            p.t = p.d.getTime();
-            p.offset = offAtTarget;
-          }
-        }
-        p.m = 0;
-        p.s = 0;
-        p.ms = 0;
+        this._startOfHour();
         break;
       case MINUTE:
-        if (utc) {
-          p.t = floorUnitEpoch(p.t, MINUTE_MS);
-          p.d = undefined;
-        } else if (p.d != null) {
-          const phase = euclideanModulo(p.t + p.offset * 60000, MINUTE_MS);
-          const candidateT = p.t - phase;
-          if (_tzOffsetAt(candidateT) === p.offset) {
-            p.t = candidateT;
-            p.d.setTime(candidateT);
-          } else {
-            p.d.setSeconds(0, 0);
-            p.t = p.d.getTime();
-            p.offset = -p.d.getTimezoneOffset();
-          }
-        } else {
-          const phase = euclideanModulo(p.t + p.offset * 60000, MINUTE_MS);
-          const candidateT = p.t - phase;
-          const offAtTarget = _tzOffsetAt(candidateT);
-          if (offAtTarget === p.offset) {
-            p.t = candidateT;
-          } else {
-            p.d = new Date(candidateT);
-            p.t = p.d.getTime();
-            p.offset = offAtTarget;
-          }
-        }
-        p.s = 0;
-        p.ms = 0;
+        this._startOfMinute();
         break;
       case SECOND:
-        if (utc) {
-          p.t = floorUnitEpoch(p.t, SECOND_MS);
-          p.d = undefined;
-        } else if (p.d != null) {
-          const phase = euclideanModulo(p.t + p.offset * 60000, SECOND_MS);
-          const candidateT = p.t - phase;
-          if (_tzOffsetAt(candidateT) === p.offset) {
-            p.t = candidateT;
-            p.d.setTime(candidateT);
-          } else {
-            p.d.setMilliseconds(0);
-            p.t = p.d.getTime();
-            p.offset = -p.d.getTimezoneOffset();
-          }
-        } else {
-          const phase = euclideanModulo(p.t + p.offset * 60000, SECOND_MS);
-          const candidateT = p.t - phase;
-          const offAtTarget = _tzOffsetAt(candidateT);
-          if (offAtTarget === p.offset) {
-            p.t = candidateT;
-          } else {
-            p.d = new Date(candidateT);
-            p.t = p.d.getTime();
-            p.offset = offAtTarget;
-          }
-        }
-        p.ms = 0;
+        this._startOfSecond();
         break;
     }
     return this;
+  }
+
+  private _startOfYear(): void {
+    const p = this._p;
+    if (p.isUTC) {
+      p.t = ymdToEpochDays(p.y, 0, 1) * DAY_MS;
+      p.d = undefined;
+    } else {
+      let d: Date;
+      if (p.d != null) {
+        d = p.d;
+        d.setMonth(0, 1);
+        d.setHours(0, 0, 0, 0);
+      } else {
+        d = p.d = new Date(p.y, 0, 1);
+      }
+      p.t = d.getTime();
+      p.offset = -d.getTimezoneOffset();
+    }
+    p.M = 0;
+    p.D = 1;
+    p.H = 0;
+    p.m = 0;
+    p.s = 0;
+    p.ms = 0;
+    p.W = _dayOfWeek(p.y, 0, 1);
+  }
+
+  private _startOfMonth(): void {
+    const p = this._p;
+    if (p.isUTC) {
+      p.t = ymdToEpochDays(p.y, p.M, 1) * DAY_MS;
+      p.d = undefined;
+    } else {
+      let d: Date;
+      if (p.d != null) {
+        d = p.d;
+        d.setDate(1);
+        d.setHours(0, 0, 0, 0);
+      } else {
+        d = p.d = new Date(p.y, p.M, 1);
+      }
+      p.t = d.getTime();
+      p.offset = -d.getTimezoneOffset();
+    }
+    p.D = 1;
+    p.H = 0;
+    p.m = 0;
+    p.s = 0;
+    p.ms = 0;
+    p.W = _dayOfWeek(p.y, p.M, 1);
+  }
+
+  private _startOfDay(): void {
+    const p = this._p;
+    if (p.isUTC) {
+      p.t = floorUnitEpoch(p.t, DAY_MS);
+      p.d = undefined;
+    } else if (p.d != null) {
+      const phase = euclideanModulo(p.t + p.offset * 60000, DAY_MS);
+      const candidateT = p.t - phase;
+      if (_tzOffsetAt(candidateT) === p.offset) {
+        p.t = candidateT;
+        p.d.setTime(candidateT);
+      } else {
+        p.d.setHours(0, 0, 0, 0);
+        p.t = p.d.getTime();
+        p.offset = -p.d.getTimezoneOffset();
+      }
+    } else {
+      const phase = euclideanModulo(p.t + p.offset * 60000, DAY_MS);
+      const candidateT = p.t - phase;
+      const offAtTarget = _tzOffsetAt(candidateT);
+      if (offAtTarget === p.offset) {
+        p.t = candidateT;
+      } else {
+        p.d = new Date(candidateT);
+        p.t = p.d.getTime();
+        p.offset = offAtTarget;
+      }
+    }
+    p.H = 0;
+    p.m = 0;
+    p.s = 0;
+    p.ms = 0;
+  }
+
+  private _startOfHour(): void {
+    const p = this._p;
+    if (p.isUTC) {
+      p.t = floorUnitEpoch(p.t, HOUR_MS);
+      p.d = undefined;
+    } else if (p.d != null) {
+      const phase = euclideanModulo(p.t + p.offset * 60000, HOUR_MS);
+      const candidateT = p.t - phase;
+      if (_tzOffsetAt(candidateT) === p.offset) {
+        p.t = candidateT;
+        p.d.setTime(candidateT);
+      } else {
+        p.d.setMinutes(0, 0, 0);
+        p.t = p.d.getTime();
+        p.offset = -p.d.getTimezoneOffset();
+      }
+    } else {
+      const phase = euclideanModulo(p.t + p.offset * 60000, HOUR_MS);
+      const candidateT = p.t - phase;
+      const offAtTarget = _tzOffsetAt(candidateT);
+      if (offAtTarget === p.offset) {
+        p.t = candidateT;
+      } else {
+        p.d = new Date(candidateT);
+        p.t = p.d.getTime();
+        p.offset = offAtTarget;
+      }
+    }
+    p.m = 0;
+    p.s = 0;
+    p.ms = 0;
+  }
+
+  private _startOfMinute(): void {
+    const p = this._p;
+    if (p.isUTC) {
+      p.t = floorUnitEpoch(p.t, MINUTE_MS);
+      p.d = undefined;
+    } else if (p.d != null) {
+      const phase = euclideanModulo(p.t + p.offset * 60000, MINUTE_MS);
+      const candidateT = p.t - phase;
+      if (_tzOffsetAt(candidateT) === p.offset) {
+        p.t = candidateT;
+        p.d.setTime(candidateT);
+      } else {
+        p.d.setSeconds(0, 0);
+        p.t = p.d.getTime();
+        p.offset = -p.d.getTimezoneOffset();
+      }
+    } else {
+      const phase = euclideanModulo(p.t + p.offset * 60000, MINUTE_MS);
+      const candidateT = p.t - phase;
+      const offAtTarget = _tzOffsetAt(candidateT);
+      if (offAtTarget === p.offset) {
+        p.t = candidateT;
+      } else {
+        p.d = new Date(candidateT);
+        p.t = p.d.getTime();
+        p.offset = offAtTarget;
+      }
+    }
+    p.s = 0;
+    p.ms = 0;
+  }
+
+  private _startOfSecond(): void {
+    const p = this._p;
+    if (p.isUTC) {
+      p.t = floorUnitEpoch(p.t, SECOND_MS);
+      p.d = undefined;
+    } else if (p.d != null) {
+      const phase = euclideanModulo(p.t + p.offset * 60000, SECOND_MS);
+      const candidateT = p.t - phase;
+      if (_tzOffsetAt(candidateT) === p.offset) {
+        p.t = candidateT;
+        p.d.setTime(candidateT);
+      } else {
+        p.d.setMilliseconds(0);
+        p.t = p.d.getTime();
+        p.offset = -p.d.getTimezoneOffset();
+      }
+    } else {
+      const phase = euclideanModulo(p.t + p.offset * 60000, SECOND_MS);
+      const candidateT = p.t - phase;
+      const offAtTarget = _tzOffsetAt(candidateT);
+      if (offAtTarget === p.offset) {
+        p.t = candidateT;
+      } else {
+        p.d = new Date(candidateT);
+        p.t = p.d.getTime();
+        p.offset = offAtTarget;
+      }
+    }
+    p.ms = 0;
   }
 
   endOf(unit: string): this {
