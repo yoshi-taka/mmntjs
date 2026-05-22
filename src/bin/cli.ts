@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { runCheck, runApply } from "./codemod";
 import { runInit } from "./init";
-import { runAudit } from "./audit";
+import { runAudit, type OutputFormat } from "./audit";
 import { runStats } from "./stats";
 import { runReport } from "./report";
 import { resolveOptionFlag } from "./cli-option-resolver";
@@ -27,6 +27,24 @@ function parseMigrateArgs(argv: string[]) {
   return { flags, mode, dir };
 }
 
+function parseOutputFormat(argv: string[]): { format: OutputFormat; rest: string[] } {
+  let format: OutputFormat = "text";
+  const rest: string[] = [];
+  for (const arg of argv) {
+    if (arg.startsWith("--output=")) {
+      const val = arg.slice("--output=".length);
+      if (val !== "text" && val !== "markdown") {
+        console.error(`Unknown output format: "${val}". Use "text" or "markdown".`);
+        process.exit(1);
+      }
+      format = val;
+    } else {
+      rest.push(arg);
+    }
+  }
+  return { format, rest };
+}
+
 const [cmd, ...args] = process.argv.slice(2);
 
 try {
@@ -47,15 +65,19 @@ try {
       }
       break;
     }
-    case "audit":
-      runAudit(args[0]);
+    case "audit": {
+      const { format, rest } = parseOutputFormat(args);
+      runAudit(format, rest[0]);
       break;
+    }
     case "stats":
       runStats(args[0]);
       break;
-    case "report":
-      runReport(args[0]);
+    case "report": {
+      const { format, rest } = parseOutputFormat(args);
+      runReport(format, rest[0]);
       break;
+    }
     default:
       console.log(`
 mmntjs v1.0.0 — Migration CLI
@@ -67,9 +89,9 @@ Commands:
   mmntjs migrate --mode=rewrite [dir]    Auto-rewrite imports (default)
   mmntjs migrate --mode=rewrite --dry [dir] Preview changes without writing
   mmntjs migrate --mode=rewrite --fns [dir] Force rewrite to 'mmntjs/lite/fns'
-  mmntjs audit [dir]                     Analyze moment usage
-  mmntjs stats [dir]                     Show migration stats
-  mmntjs report [dir]                    Generate migration report
+  mmntjs audit [--output=(text|markdown)] [dir]  Analyze moment usage
+  mmntjs stats [dir]                              Show migration stats
+  mmntjs report [--output=(text|markdown)] [dir]  Generate migration report
 `);
   }
 } catch (error) {

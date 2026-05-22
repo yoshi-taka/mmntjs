@@ -259,9 +259,22 @@ function knownApis(): Set<string> {
   return s;
 }
 
-export function runAudit(dir = ".") {
-  console.log(`\nAuditing moment usages in ${path.resolve(dir)}...\n`);
+export type OutputFormat = "text" | "markdown";
 
+interface AuditData {
+  totalLines: number;
+  constructorCalls: number;
+  staticMethodCalls: number;
+  chainMethodCalls: number;
+  unrecognizedCalls: number;
+  unrecognized: Set<string>;
+  unrecognizedLines: string[];
+  totalCalls: number;
+  recognizedCalls: number;
+  confidence: number;
+}
+
+function collectAuditData(dir: string): AuditData {
   const known = knownApis();
   let totalLines = 0;
   let constructorCalls = 0;
@@ -325,24 +338,99 @@ export function runAudit(dir = ".") {
   const recognizedCalls = totalCalls - unrecognizedCalls;
   const confidence = totalCalls > 0 ? Math.round((recognizedCalls / totalCalls) * 100) : 100;
 
-  console.log(`  moment():         ${constructorCalls}`);
-  console.log(`  moment.xxx():      ${staticMethodCalls}`);
-  console.log(`  .xxx() chain:    ${chainMethodCalls}`);
-  console.log(`  ───────────────────────`);
-  console.log(`  Total usages:      ${totalCalls}`);
-  console.log(`  Recognized calls:   ${recognizedCalls} / ${totalCalls}`);
-  console.log(`  Confidence:        ${confidence}%`);
+  return {
+    totalLines,
+    constructorCalls,
+    staticMethodCalls,
+    chainMethodCalls,
+    unrecognizedCalls,
+    unrecognized,
+    unrecognizedLines,
+    totalCalls,
+    recognizedCalls,
+    confidence,
+  };
+}
 
-  if (unrecognized.size > 0) {
-    console.log(`\n  Unrecognized API(s): ${[...unrecognized].join(", ") || "(none)"}`);
+function printTextAudit(d: AuditData): void {
+  console.log(`  moment():         ${d.constructorCalls}`);
+  console.log(`  moment.xxx():      ${d.staticMethodCalls}`);
+  console.log(`  .xxx() chain:    ${d.chainMethodCalls}`);
+  console.log(`  ───────────────────────`);
+  console.log(`  Total usages:      ${d.totalCalls}`);
+  console.log(`  Recognized calls:   ${d.recognizedCalls} / ${d.totalCalls}`);
+  console.log(`  Confidence:        ${d.confidence}%`);
+
+  if (d.unrecognized.size > 0) {
+    console.log(`\n  Unrecognized API(s): ${[...d.unrecognized].join(", ") || "(none)"}`);
   }
 
-  if (unrecognizedLines.length > 0) {
+  if (d.unrecognizedLines.length > 0) {
     console.log(`\n  Details:`);
-    for (const detail of unrecognizedLines) {
+    for (const detail of d.unrecognizedLines) {
       console.log(`    - ${detail}`);
     }
   }
 
   console.log();
+}
+
+function printMarkdownAudit(d: AuditData, dir: string): void {
+  const unknownList = [...d.unrecognized].sort();
+  const unknownDetail = d.unrecognizedLines;
+
+  console.log(`# Moment.js Usage Audit
+
+## Summary
+
+- **Directory:** \`${dir}\`
+- **Files containing moment:** ${d.totalLines}
+- **Total moment usages:** ${d.totalCalls}
+- **Recognized:** ${d.recognizedCalls} / ${d.totalCalls} (${d.confidence}%)
+- **Unknown:** ${d.unrecognizedCalls}
+
+## Call Breakdown
+
+| Category | Count |
+|----------|-------|
+| \`moment()\` constructor | ${d.constructorCalls} |
+| \`moment.xxx()\` static | ${d.staticMethodCalls} |
+| \`.xxx()\` chain | ${d.chainMethodCalls} |
+
+${
+  unknownList.length > 0
+    ? `## Unknown APIs
+
+The following APIs were not recognized and may require manual review:
+
+| API | Occurrences |
+|-----|-------------|
+${unknownList.map((api) => `| \`${api}\` | ${unknownDetail.filter((l) => l.includes(api)).length} |`).join("\n")}
+
+### Locations
+
+${unknownDetail.map((l) => `- ${l}`).join("\n")}
+`
+    : `## Result
+
+All moment.js usages are recognized. Migration is safe.
+`
+}
+
+## Confidence Score
+
+${d.confidence >= 90 ? "✅ **High** — The vast majority of moment.js APIs are recognized." : d.confidence >= 70 ? "⚠️ **Medium** — Some APIs need manual verification before migration." : "❌ **Low** — Significant manual review required before migration."}
+`);
+}
+
+export function runAudit(format: OutputFormat, dir = ".") {
+  const resolvedDir = path.resolve(dir);
+  const d = collectAuditData(resolvedDir);
+
+  if (format === "markdown") {
+    printMarkdownAudit(d, dir);
+  } else {
+    console.log(`\nAuditing moment usages in ${resolvedDir}...\n`);
+    printTextAudit(d);
+  }
 }

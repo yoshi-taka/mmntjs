@@ -1,19 +1,38 @@
-import path from "node:path";
-import fs from "node:fs";
 import { scanMomentUsages } from "./moment-usage";
 import { scanFiles } from "./codemod";
+import type { OutputFormat } from "./audit";
 
-export function runReport(dir = ".") {
-  const { apiCounts, totalUsages, temporalReady } = scanMomentUsages(dir);
+function buildTextReport(
+  apiCounts: Record<string, number>,
+  totalUsages: number,
+  temporalReady: number,
+  modifiedFiles: number,
+): string {
+  const pct = totalUsages > 0 ? Math.round((temporalReady / totalUsages) * 100) : 0;
+  return [
+    `moment usages: ${totalUsages}`,
+    `Temporal-ready: ${temporalReady} (${pct}%)`,
+    `Files scanned: ${modifiedFiles}`,
+    `Usage breakdown:`,
+    ...Object.entries(apiCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([api, count]) => `  ${api}: ${count}`),
+  ].join("\n");
+}
 
-  const results = scanFiles(dir) as unknown as {
+function buildMarkdownReport(
+  apiCounts: Record<string, number>,
+  totalUsages: number,
+  temporalReady: number,
+  results: {
     modifiedFiles: string[];
     fullOnly: Record<string, Record<string, number>>;
     liteOk: Record<string, Record<string, number>>;
     fnsOk: Record<string, Record<string, number>>;
     tzFiles: string[];
-  };
-
+  },
+  dir: string,
+): string {
   const fullFiles = Object.keys(results.fullOnly);
   const liteOnlyFiles = results.modifiedFiles.filter((f) => {
     const fo = results.fullOnly[f] ?? {};
@@ -36,7 +55,7 @@ export function runReport(dir = ".") {
         : "`mmntjs/lite` (~42KB)"
       : "`mmntjs` (~141KB, mixed with lite-compatible files)";
 
-  const report = `# moment → mmntjs Migration Report
+  return `# moment → mmntjs Migration Report
 
 ## Current State
 
@@ -81,8 +100,29 @@ ${Object.entries(apiCounts)
 - [ ] unit tests passing
 - [ ] reviewed by team
 `;
+}
 
-  const outPath = path.resolve(dir, "MIGRATION.md");
-  fs.writeFileSync(outPath, report);
-  console.log(`Report written to ${outPath}`);
+export function runReport(format: OutputFormat, dir = ".") {
+  const { apiCounts, totalUsages, temporalReady } = scanMomentUsages(dir);
+
+  const results = scanFiles(dir) as unknown as {
+    modifiedFiles: string[];
+    fullOnly: Record<string, Record<string, number>>;
+    liteOk: Record<string, Record<string, number>>;
+    fnsOk: Record<string, Record<string, number>>;
+    tzFiles: string[];
+  };
+
+  if (format === "markdown") {
+    const report = buildMarkdownReport(apiCounts, totalUsages, temporalReady, results, dir);
+    console.log(report);
+  } else {
+    const report = buildTextReport(
+      apiCounts,
+      totalUsages,
+      temporalReady,
+      results.modifiedFiles.length,
+    );
+    console.log(report);
+  }
 }
