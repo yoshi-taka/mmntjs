@@ -1534,18 +1534,16 @@ export class Moment {
   date(d: unknown): this;
   date(d?: unknown): number | this {
     if (d !== undefined) {
-      if (d === "" || (typeof d === "object" && !(d instanceof Date))) {
-        return this;
-      }
-      const num = Number(d);
-      if (isNaN(num)) {
-        return this;
-      }
-      if (num <= 0) {
-        return this;
-      }
       const p = this._p;
-      // ---- Fast path: clean & no callback — UTC arithmetic, local D≤28, or Date clamp ----
+      const num = typeof d === "number" ? d : Number(d);
+      if (
+        num <= 0 ||
+        isNaN(num) ||
+        (typeof d !== "number" && (d === "" || (typeof d === "object" && !(d instanceof Date))))
+      ) {
+        return this;
+      }
+      // ---- Fast path: clean & no callback — UTC arithmetic or Date clamp ----
       if (!p.dirty && !updateOffsetCallback) {
         if (num === p.D) {
           return this;
@@ -1555,20 +1553,19 @@ export class Moment {
           p._tStale = true;
           return this;
         }
-        if (num <= 28) {
-          p.D = num;
-          if (p.d != null) {
-            p.d.setDate(num);
-            p.t = p.d.getTime();
-          } else {
-            p._tStale = true;
-          }
-          return this;
-        }
         if (p.d != null) {
           p.d.setDate(num);
           p.t = p.d.getTime();
+          p.y = p.d.getFullYear();
+          p.M = p.d.getMonth();
           p.D = p.d.getDate();
+          p.W = p.d.getDay();
+          p.offset = -p.d.getTimezoneOffset();
+          return this;
+        }
+        if (num <= 28) {
+          p.D = num;
+          p._tStale = true;
           return this;
         }
       }
@@ -1588,7 +1585,7 @@ export class Moment {
     if (!this._isValid) {
       return NaN;
     }
-    this._ensureFields();
+    this._ensureFreshFields();
     return this._p.D;
   }
 
@@ -1695,39 +1692,30 @@ export class Moment {
   hour(h: unknown): this;
   hour(h?: unknown): number | this {
     if (h !== undefined) {
-      if (h === null) {
-        return this;
-      }
-      const num = Number(h);
-      if (isNaN(num)) {
-        return this;
-      }
       const p = this._p;
-      // ---- Fast path: clean + local + p.d present + ordinary range ----
-      if (!p.dirty && !p._tStale && !p.isUTC && p.d != null) {
-        if (Number.isInteger(num) && num >= 0 && num <= 23) {
+      const num = typeof h === "number" ? h : Number(h);
+      if (isNaN(num) || (typeof h !== "number" && h === null)) {
+        return this;
+      }
+      // ---- Fast path: ordinary range + clean + local + p.d present ----
+      if (Number.isInteger(num) && num >= 0 && num <= 23) {
+        if (!p.dirty && !p._tStale && !p.isUTC && p.d != null) {
           if (num === p.H) {
             return this;
           }
-          const newT = p.t + (num - p.H) * HOUR_MS;
-          if (_tzOffsetAt(newT) === p.offset) {
-            p.t = newT;
-            p.d.setTime(newT);
-            p.H = num;
-          } else {
-            p.d.setHours(num, p.m, p.s, p.ms);
-            p.t = p.d.getTime();
-            p.offset = -p.d.getTimezoneOffset();
-            p.H = p.d.getHours();
-          }
+          p.d.setHours(num, p.m, p.s, p.ms);
+          p.t = p.d.getTime();
+          p.H = p.d.getHours();
+          p.offset = -p.d.getTimezoneOffset();
           p._tStale = false;
           return this;
         }
-        if (num === p.H) {
-          return this;
-        }
+        // State not suitable for fast path — fall through
       }
-      // ---- Mid path: refresh dirty or fast field set ----
+      if (num === p.H) {
+        return this;
+      }
+      // ---- Mid/slow path ----
       if (p.dirty) {
         p.dirty = false;
         this._refreshFields();
@@ -1740,7 +1728,6 @@ export class Moment {
         p._tStale = true;
         return this;
       }
-      // ---- Slow path: updateOffset callback ----
       this._applyOp(_OP_HOUR, num);
       this._updateOffset(true);
       return this;
@@ -1748,7 +1735,7 @@ export class Moment {
     if (!this._isValid) {
       return NaN;
     }
-    this._ensureFields();
+    this._ensureFreshFields();
     return this._p.H;
   }
 
@@ -1756,28 +1743,26 @@ export class Moment {
   minute(m: unknown): this;
   minute(m?: unknown): number | this {
     if (m !== undefined) {
-      if (m === null) {
-        return this;
-      }
-      const num = Number(m);
-      if (isNaN(num)) {
-        return this;
-      }
       const p = this._p;
-      // ---- Fast path: clean + local + p.d present + 0..59 ----
-      if (!p.dirty && !p._tStale && !p.isUTC && p.d != null) {
-        if (Number.isInteger(num) && num >= 0 && num <= 59) {
+      const num = typeof m === "number" ? m : Number(m);
+      if (isNaN(num) || (typeof m !== "number" && m === null)) {
+        return this;
+      }
+      // ---- Fast path: ordinary range + clean + local + p.d present ----
+      if (Number.isInteger(num) && num >= 0 && num <= 59) {
+        if (!p.dirty && !p._tStale && !p.isUTC && p.d != null) {
           if (num === p.m) {
             return this;
           }
           p.d.setMinutes(num, p.s, p.ms);
           p.m = num;
           p.t = p.d.getTime();
+          p._tStale = false;
           return this;
         }
-        if (num === p.m) {
-          return this;
-        }
+      }
+      if (num === p.m) {
+        return this;
       }
       if (p.dirty) {
         p.dirty = false;
@@ -1798,7 +1783,7 @@ export class Moment {
     if (!this._isValid) {
       return NaN;
     }
-    this._ensureFields();
+    this._ensureFreshFields();
     return this._p.m;
   }
 
@@ -1806,28 +1791,25 @@ export class Moment {
   second(s: unknown): this;
   second(s?: unknown): number | this {
     if (s !== undefined) {
-      if (s === null) {
-        return this;
-      }
-      const num = Number(s);
-      if (isNaN(num)) {
-        return this;
-      }
       const p = this._p;
-      // ---- Fast path: clean + local + p.d present + 0..59 ----
-      if (!p.dirty && !p._tStale && !p.isUTC && p.d != null) {
-        if (Number.isInteger(num) && num >= 0 && num <= 59) {
+      const num = typeof s === "number" ? s : Number(s);
+      if (isNaN(num) || (typeof s !== "number" && s === null)) {
+        return this;
+      }
+      if (Number.isInteger(num) && num >= 0 && num <= 59) {
+        if (!p.dirty && !p._tStale && !p.isUTC && p.d != null) {
           if (num === p.s) {
             return this;
           }
           p.d.setSeconds(num, p.ms);
           p.s = num;
           p.t = p.d.getTime();
+          p._tStale = false;
           return this;
         }
-        if (num === p.s) {
-          return this;
-        }
+      }
+      if (num === p.s) {
+        return this;
       }
       if (p.dirty) {
         p.dirty = false;
@@ -1848,7 +1830,7 @@ export class Moment {
     if (!this._isValid) {
       return NaN;
     }
-    this._ensureFields();
+    this._ensureFreshFields();
     return this._p.s;
   }
 
@@ -1856,28 +1838,25 @@ export class Moment {
   millisecond(ms: unknown): this;
   millisecond(ms?: unknown): number | this {
     if (ms !== undefined) {
-      if (ms === null) {
-        return this;
-      }
-      const num = Number(ms);
-      if (isNaN(num)) {
-        return this;
-      }
       const p = this._p;
-      // ---- Fast path: clean + local + p.d present + 0..999 ----
-      if (!p.dirty && !p._tStale && !p.isUTC && p.d != null) {
-        if (Number.isInteger(num) && num >= 0 && num <= 999) {
+      const num = typeof ms === "number" ? ms : Number(ms);
+      if (isNaN(num) || (typeof ms !== "number" && ms === null)) {
+        return this;
+      }
+      if (Number.isInteger(num) && num >= 0 && num <= 999) {
+        if (!p.dirty && !p._tStale && !p.isUTC && p.d != null) {
           if (num === p.ms) {
             return this;
           }
           p.d.setMilliseconds(num);
           p.ms = num;
           p.t = p.d.getTime();
+          p._tStale = false;
           return this;
         }
-        if (num === p.ms) {
-          return this;
-        }
+      }
+      if (num === p.ms) {
+        return this;
       }
       if (p.dirty) {
         p.dirty = false;
@@ -1898,7 +1877,7 @@ export class Moment {
     if (!this._isValid) {
       return NaN;
     }
-    this._ensureFields();
+    this._ensureFreshFields();
     return this._p.ms;
   }
 
@@ -2483,7 +2462,6 @@ export class Moment {
         case "days":
         case "date": {
           const p = this._p;
-          // Fast path: clean + integer amount — UTC arithmetic or local D∈[1,28]
           if (!p.dirty && !p._tStale && !updateOffsetCallback && Number.isInteger(amount)) {
             if (p.isUTC) {
               p.t += amount * DAY_MS;
@@ -2495,11 +2473,23 @@ export class Moment {
               }
               return this;
             }
-            const newD = p.D + amount;
-            if (newD >= 1 && newD <= 28) {
-              p.D = newD;
+            // Local + p.d present: clone-and-mutate (handles all D values, preserves external Date)
+            if (p.d != null) {
+              const nd = new Date(p.d);
+              nd.setDate(nd.getDate() + amount);
+              p.d = nd;
+              p.t = nd.getTime();
+              p.y = nd.getFullYear();
+              p.M = nd.getMonth();
+              p.D = nd.getDate();
+              p.W = nd.getDay();
+              p.offset = -nd.getTimezoneOffset();
+              return this;
+            }
+            // No p.d but D∈[1,28]: safe arithmetic
+            if (p.D + amount >= 1 && p.D + amount <= 28) {
+              p.D += amount;
               p.t += amount * DAY_MS;
-              p.d = undefined;
               p._tStale = true;
               if (isNaN(p.t)) {
                 this._isValid = false;
@@ -2616,14 +2606,40 @@ export class Moment {
   }
 
   startOf(unit: string): this {
-    const code = fastNormalizeBoundaryUnit(unit);
-    if (code < 0) {
-      return this;
-    }
     if (!this._isValid) {
       return this;
     }
     const p = this._p;
+
+    // ---- startOf('day') fast path: bypass normalization — direct Date.setHours ----
+    // typeof "day" check avoids fastNormalizeBoundaryUnit switch dispatch
+    if (
+      unit.length === 3 &&
+      unit.charCodeAt(0) === 100 &&
+      unit.charCodeAt(1) === 97 &&
+      unit.charCodeAt(2) === 121
+    ) {
+      if (!updateOffsetCallback && !p.dirty && !p.isUTC && p.d != null && !p._tStale) {
+        if (p.H === 0 && p.m === 0 && p.s === 0 && p.ms === 0) {
+          return this;
+        }
+        p.d.setHours(0, 0, 0, 0);
+        p.t = p.d.getTime();
+        p.offset = -p.d.getTimezoneOffset();
+        p.H = 0;
+        p.m = 0;
+        p.s = 0;
+        p.ms = 0;
+        p._tStale = false;
+        return this;
+      }
+      // Fall through to full path for non-fast-path state
+    }
+
+    const code = fastNormalizeBoundaryUnit(unit);
+    if (code < 0) {
+      return this;
+    }
 
     // Banach fixed-point: already at boundary → no-op
     if (!updateOffsetCallback && !p.dirty) {
@@ -2660,7 +2676,7 @@ export class Moment {
                   ? _OP_SS
                   : -1;
 
-    // startOf('day') fast path: clean & no callback — direct arithmetic or Date.setHours
+    // startOf('day') fast path (non-"day" aliases like "date" or "days")
     if (startOp === _OP_SD && !p.dirty && !updateOffsetCallback) {
       if (p.isUTC) {
         p.t = floorUnitEpoch(p.t, DAY_MS);
