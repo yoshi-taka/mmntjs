@@ -775,24 +775,21 @@ export class Moment {
           p.ms = 0;
           break;
         case _OP_SH:
-          p.d.setMinutes(0, 0, 0);
-          p.t = p.d.getTime();
-          p.offset = -p.d.getTimezoneOffset();
+          p.t = floorUnitEpoch(p.t, HOUR_MS);
+          p.d = undefined;
           p.m = 0;
           p.s = 0;
           p.ms = 0;
           break;
         case _OP_SN:
-          p.d.setSeconds(0, 0);
-          p.t = p.d.getTime();
-          p.offset = -p.d.getTimezoneOffset();
+          p.t = floorUnitEpoch(p.t, MINUTE_MS);
+          p.d = undefined;
           p.s = 0;
           p.ms = 0;
           break;
         case _OP_SS:
-          p.d.setMilliseconds(0);
-          p.t = p.d.getTime();
-          p.offset = -p.d.getTimezoneOffset();
+          p.t = floorUnitEpoch(p.t, SECOND_MS);
+          p.d = undefined;
           p.ms = 0;
           break;
       }
