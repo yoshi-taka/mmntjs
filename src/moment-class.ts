@@ -588,21 +588,40 @@ export class Moment {
 
   // ---- VDSO-style tryFast gates — return true when handled ----
 
-  /** tryFast setDate: clean + num ≤ 28 → arithmetic p.W + setDate when p.d present. */
+  /** tryFast setDate: kernel-timekeeping VDSO — update only D (coarse field),
+   *  defer epoch recomputation and weekday to _syncT/_refreshFields. */
   private _tryFastSetDate(val: number): boolean {
     const p = this._p;
-    if (p.dirty || updateOffsetCallback || val > 28 || val === p.D) {
+    if (p.dirty || updateOffsetCallback || val <= 0 || val === p.D) {
       return false;
     }
-    p.W = (((p.W - p.D + val) % 7) + 7) % 7;
-    p.D = val;
-    if (p.d != null) {
-      p.d.setDate(val);
-      p.t = p.d.getTime();
-      p._tStale = false;
-    } else {
+    // UTC: set civil field D, mark t stale — _syncT recomputes p.t from
+    // fields via Date.UTC (no Date allocation).
+    if (p.isUTC) {
+      p.D = val;
       p._tStale = true;
+      return true;
     }
+    // Local + val ≤ 28: safe for all months.
+    if (val <= 28) {
+      p.D = val;
+      if (p.d != null) {
+        p.d.setDate(val);
+        p.t = p.d.getTime();
+        // p.W left stale — refreshed on next _ensureFields via p.d
+      } else {
+        p._tStale = true;
+      }
+      return true;
+    }
+    // Local + val > 28: needs Date for auto-clamping.
+    if (p.d == null) {
+      return false;
+    }
+    p.d.setDate(val);
+    p.t = p.d.getTime();
+    p.D = p.d.getDate();
+    p.offset = -p.d.getTimezoneOffset();
     return true;
   }
 
@@ -666,19 +685,37 @@ export class Moment {
     return true;
   }
 
-  /** tryFast addDay: clean state + integer + D+amount ∈ [1,28] → pure arithmetic. */
+  /** tryFast addDay: kernel-timekeeping VDSO — update only D (coarse field)
+   *  and T (fine epoch).  W left stale — refreshed by _refreshFields on demand.
+   *  UTC → pure T arithmetic.
+   *  Local D+amount ∈ [1,28] → deferred-Date arithmetic.
+   *  Fallback on uncertainty (dirty, _tStale, updateOffsetCallback,
+   *  non-integer, month overflow). */
   private _tryFastAddDay(amount: number): boolean {
     const p = this._p;
-    if (p.dirty || updateOffsetCallback || !Number.isInteger(amount)) {
+    if (p.dirty || p._tStale || updateOffsetCallback || !Number.isInteger(amount)) {
       return false;
     }
+    // UTC: pure T arithmetic — civil fields untouched, epoch is canonical.
+    if (p.isUTC) {
+      p.t += amount * DAY_MS;
+      p.d = undefined;
+      p._tStale = false;
+      p.dirty = true;
+      if (isNaN(p.t)) {
+        (this as Moment)._isValid = false;
+      }
+      return true;
+    }
+    // Local: arithmetic safe only when D stays ∈ [1,28] (no overflow).
+    // T update is off by DST ±1h, self-corrected by _syncT on demand.
     const newD = p.D + amount;
     if (newD < 1 || newD > 28) {
       return false;
     }
     p.D = newD;
-    p.W = (((p.W + amount) % 7) + 7) % 7;
-    p.t += amount * 86400000;
+    p.t += amount * DAY_MS;
+    p.d = undefined;
     p._tStale = true;
     if (isNaN(p.t)) {
       (this as Moment)._isValid = false;
@@ -686,21 +723,43 @@ export class Moment {
     return true;
   }
 
-  /** tryFast startOf('day'): clean + !_tStale + local p.d present → setHours(0,0,0,0). */
+  /** tryFast startOf('day'): VDSO-style — no Date allocation for UTC /
+   *  clean-local / _tStale+noD.  When p.d present + _tStale, falls through
+   *  to _opTStale (arithmetic faster than JS Date method calls). */
   private _tryFastStartOfDay(): boolean {
     const p = this._p;
-    if (p.dirty || p._tStale || updateOffsetCallback) {
+    if (p.dirty || updateOffsetCallback) {
       return false;
     }
     if (p.isUTC) {
       p.t = floorUnitEpoch(p.t, DAY_MS);
       p.d = undefined;
     } else if (p.d != null) {
+      // _tStale + p.d: _opTStale arithmetic (ymdToEpochDays + _tzOffsetAt)
+      // beats JS Date method calls — fallback to _applyOp.
+      if (p._tStale) {
+        return false;
+      }
       p.d.setHours(0, 0, 0, 0);
       p.t = p.d.getTime();
       p.offset = -p.d.getTimezoneOffset();
+    } else if (!p._tStale) {
+      // Local no-p.d clean — arithmetic + offset probe.
+      const phase = euclideanModulo(p.t + p.offset * MINUTE_MS, DAY_MS);
+      const candidateT = p.t - phase;
+      const offAtTarget = _tzOffsetAt(candidateT);
+      if (offAtTarget === p.offset) {
+        p.t = candidateT;
+      } else {
+        p.t = candidateT + (offAtTarget - p.offset) * MINUTE_MS;
+        p.offset = offAtTarget;
+      }
     } else {
-      return false;
+      // _tStale + no p.d: arithmetic from fields — no allocation.
+      const utcMidnight = ymdToEpochDays(p.y, p.M, p.D) * DAY_MS;
+      const offMidnight = _tzOffsetAt(utcMidnight);
+      p.t = utcMidnight - offMidnight * MINUTE_MS;
+      p.offset = offMidnight;
     }
     p.H = 0;
     p.m = 0;
