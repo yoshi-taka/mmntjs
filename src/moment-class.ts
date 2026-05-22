@@ -438,6 +438,12 @@ export class Moment {
       return;
     }
     p._tStale = false;
+    // UTC mode can recompute t from fields via Date.UTC without allocating
+    if (p.isUTC) {
+      p.t = Date.UTC(p.y, p.M, p.D, p.H, p.m, p.s, p.ms);
+      p.d = undefined;
+      return;
+    }
     const d = new Date(p.y, p.M, p.D, p.H, p.m, p.s, p.ms);
     // JS Date interprets years 0-99 as 1900-1999; correct via setFullYear
     if (p.y >= 0 && p.y < 100) {
@@ -857,37 +863,58 @@ export class Moment {
       if (num === this._p.y) {
         return this;
       }
-      // D ≤ 28: no clamping possible (all months have 28+ days)
-      const d_ = this._p.D <= 28 ? this._p.D : Math.min(this._p.D, daysInMonthFast(num, this._p.M));
-      if (this._p.isUTC) {
-        // SSA-friendly straight-line: ymdToEpochDays is pure integer arithmetic
-        // for ALL years (including 0–99, unlike Date.UTC which treats them 1900+).
-        // No Date allocation, no conditional branch per year range.
-        this._p.t =
-          ymdToEpochDays(num, this._p.M, d_) * DAY_MS +
-          this._p.H * HOUR_MS +
-          this._p.m * MINUTE_MS +
-          this._p.s * SECOND_MS +
-          this._p.ms;
-        this._p.d = undefined;
-        this._p._tStale = false;
-        this._p.dirty = false;
-        this._p.y = num;
-        this._p.D = d_;
-        this._p.W = _dayOfWeek(num, this._p.M, d_);
-      } else {
-        // Defer epoch coupling to _syncT(). Time-of-day (H,m,s,ms) preserved.
-        // _tStale signals _syncT() to create Date from fields on next access,
-        // which auto-clamps D and computes correct offset.
-        this._p.y = num;
-        this._p.D = d_;
-        this._p._tStale = true;
+      const p = this._p;
+      // D ≤ 28: no month-end clipping possible (all months have 28+ days).
+      // Fast path: no daysInMonthFast, no Math.min, no d_ variable.
+      if (p.D <= 28) {
+        if (p.isUTC) {
+          p.t =
+            ymdToEpochDays(num, p.M, p.D) * DAY_MS +
+            p.H * HOUR_MS +
+            p.m * MINUTE_MS +
+            p.s * SECOND_MS +
+            p.ms;
+          p.d = undefined;
+          p._tStale = false;
+          p.dirty = false;
+          p.y = num;
+          p.W = _dayOfWeek(num, p.M, p.D);
+        } else {
+          p.y = num;
+          p._tStale = true;
+        }
+        if (updateOffsetCallback) {
+          this._updateOffset(true);
+        }
+        return this;
       }
-      // $H, $m, $s, $ms unchanged
-      if (updateOffsetCallback) {
-        this._updateOffset(true);
+      // Slow path: D > 28 — may need month-end clamping.
+      // Isolated as a page-fault handler: rare, uses daysInMonthFast.
+      {
+        const d_ = Math.min(p.D, daysInMonthFast(num, p.M));
+        if (p.isUTC) {
+          p.t =
+            ymdToEpochDays(num, p.M, d_) * DAY_MS +
+            p.H * HOUR_MS +
+            p.m * MINUTE_MS +
+            p.s * SECOND_MS +
+            p.ms;
+          p.d = undefined;
+          p._tStale = false;
+          p.dirty = false;
+          p.y = num;
+          p.D = d_;
+          p.W = _dayOfWeek(num, p.M, d_);
+        } else {
+          p.y = num;
+          p.D = d_;
+          p._tStale = true;
+        }
+        if (updateOffsetCallback) {
+          this._updateOffset(true);
+        }
+        return this;
       }
-      return this;
     }
     if (!this._isValid) {
       return NaN;
@@ -934,40 +961,63 @@ export class Moment {
       if (num === this._p.M) {
         return this;
       }
-      // Hoist calendar decomposition — used by both UTC and local paths.
-      const y = this._p.y + Math.floor(num / 12);
+      const p = this._p;
+      const y = p.y + Math.floor(num / 12);
       const _m = normalizeMonth(num);
-      const date = this._p.D;
-      if (this._p.isUTC) {
-        // Straight-line: clamp D to new month's days, then compute epoch via
-        // ymdToEpochDays (pure integer, no Date allocation, no year<100 edge case).
-        const d_ = date <= 28 ? date : Math.min(date, daysInMonthFast(y, _m));
-        this._p.t =
-          ymdToEpochDays(y, _m, d_) * DAY_MS +
-          this._p.H * HOUR_MS +
-          this._p.m * MINUTE_MS +
-          this._p.s * SECOND_MS +
-          this._p.ms;
-        this._p.y = y;
-        this._p.M = _m;
-        this._p.D = d_;
-        this._p.W = _dayOfWeek(y, _m, d_);
-        this._p.d = undefined;
-        this._p._tStale = false;
-        this._p.dirty = false;
-      } else {
-        // Defer epoch coupling to _syncT(). Pre-clamp D (moment.js compat:
-        // clamp, not overflow). Time-of-day preserved.
-        const d_ = date <= 28 ? date : Math.min(date, daysInMonthFast(y, _m));
-        this._p.y = y;
-        this._p.M = _m;
-        this._p.D = d_;
-        this._p._tStale = true;
+      // D ≤ 28: no month-end clipping possible (all months have 28+ days).
+      // Fast path: no daysInMonthFast, no d_ variable.
+      if (p.D <= 28) {
+        if (p.isUTC) {
+          p.t =
+            ymdToEpochDays(y, _m, p.D) * DAY_MS +
+            p.H * HOUR_MS +
+            p.m * MINUTE_MS +
+            p.s * SECOND_MS +
+            p.ms;
+          p.y = y;
+          p.M = _m;
+          p.W = _dayOfWeek(y, _m, p.D);
+          p.d = undefined;
+          p._tStale = false;
+          p.dirty = false;
+        } else {
+          p.y = y;
+          p.M = _m;
+          p._tStale = true;
+        }
+        if (updateOffsetCallback) {
+          this._updateOffset(true);
+        }
+        return this;
       }
-      if (updateOffsetCallback) {
-        this._updateOffset(true);
+      // Slow path: D > 28 — may need month-end clamping.
+      {
+        const d_ = Math.min(p.D, daysInMonthFast(y, _m));
+        if (p.isUTC) {
+          p.t =
+            ymdToEpochDays(y, _m, d_) * DAY_MS +
+            p.H * HOUR_MS +
+            p.m * MINUTE_MS +
+            p.s * SECOND_MS +
+            p.ms;
+          p.y = y;
+          p.M = _m;
+          p.D = d_;
+          p.W = _dayOfWeek(y, _m, d_);
+          p.d = undefined;
+          p._tStale = false;
+          p.dirty = false;
+        } else {
+          p.y = y;
+          p.M = _m;
+          p.D = d_;
+          p._tStale = true;
+        }
+        if (updateOffsetCallback) {
+          this._updateOffset(true);
+        }
+        return this;
       }
-      return this;
     }
     if (!this._isValid) {
       return NaN;
@@ -998,39 +1048,50 @@ export class Moment {
       if (num === this._p.D) {
         return this;
       }
-      if (this._p.isUTC) {
-        // Straight-line: ymdToEpochDays (pure integer) for t, _epochDaysToYMD
-        // for readback. Zero Date allocation, no year<100 edge case.
-        this._p.t =
-          ymdToEpochDays(this._p.y, this._p.M, num) * DAY_MS +
-          this._p.H * HOUR_MS +
-          this._p.m * MINUTE_MS +
-          this._p.s * SECOND_MS +
-          this._p.ms;
-        this._p.d = undefined;
-        this._p._tStale = false;
-        // D ≤ 28: no month overflow → y,M unchanged, D and W updated via modular arithmetic.
-        // W shift = (old_W − old_D + new_D) mod 7 (branchless, no readback needed).
-        if (num <= 28) {
-          this._p.W = (((this._p.W - this._p.D + num) % 7) + 7) % 7;
-          this._p.D = num;
+      const p = this._p;
+      if (num <= 28) {
+        // Fast path: D ≤ 28 — no month overflow possible.
+        // Update W via modular arithmetic: W' = (W - D + num) mod 7. Branchless.
+        p.W = (((p.W - p.D + num) % 7) + 7) % 7;
+        if (p.isUTC) {
+          p.t =
+            ymdToEpochDays(p.y, p.M, num) * DAY_MS +
+            p.H * HOUR_MS +
+            p.m * MINUTE_MS +
+            p.s * SECOND_MS +
+            p.ms;
+          p.d = undefined;
+          p._tStale = false;
         } else {
-          // D > 28: may overflow month → readback clamped fields via _epochDaysToYMD.
-          const totalDays = Math.floor(this._p.t / DAY_MS);
-          const [y, M, D] = Moment._epochDaysToYMD(totalDays);
-          this._p.y = y;
-          this._p.M = M;
-          this._p.D = D;
-          this._p.W = euclideanModulo(totalDays + 4, 7);
+          p._tStale = true;
         }
+        p.D = num;
+        if (updateOffsetCallback) {
+          this._updateOffset(true);
+        }
+        return this;
+      }
+      // Slow path: D > 28 — may overflow month.
+      if (p.isUTC) {
+        // UTC: recompute epoch, then readback clamped fields via integer arithmetic.
+        p.t =
+          ymdToEpochDays(p.y, p.M, num) * DAY_MS +
+          p.H * HOUR_MS +
+          p.m * MINUTE_MS +
+          p.s * SECOND_MS +
+          p.ms;
+        p.d = undefined;
+        p._tStale = false;
+        const totalDays = Math.floor(p.t / DAY_MS);
+        const [y, M, D] = Moment._epochDaysToYMD(totalDays);
+        p.y = y;
+        p.M = M;
+        p.D = D;
+        p.W = euclideanModulo(totalDays + 4, 7);
       } else {
-        // Defer to _syncT() (handles overflow + offset).
-        // D ≤ 28: update W cyclically (no overflow). D > 28: _syncT handles it.
-        if (num <= 28) {
-          this._p.W = (((this._p.W - this._p.D + num) % 7) + 7) % 7;
-        }
-        this._p.D = num;
-        this._p._tStale = true;
+        // Local: defer month overflow + offset computation to _syncT.
+        p.D = num;
+        p._tStale = true;
       }
       if (updateOffsetCallback) {
         this._updateOffset(true);
