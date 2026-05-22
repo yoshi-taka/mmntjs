@@ -157,21 +157,19 @@ function startOfDay_CLFD(p: _P & CleanLocalFreshWithDate): void {
   p.s = 0;
   p.ms = 0;
 }
-/** Add `amount` days in UTC mode via civil-date arithmetic.  Fields stay fresh. */
+/** Add `amount` days in UTC mode.  Civil arithmetic for safe D, dirty-defer for boundary. */
 function addDayUTC(p: _P & CleanUTC, amount: number): void {
   p.t += amount * 86400000;
   p.d = undefined;
-  // D + amount ∈ [1,28]: safe arithmetic, no month boundary
   if (p.D + amount >= 1 && p.D + amount <= 28) {
+    // No month boundary → cheap arithmetic, fields stay fresh
     p.D += amount;
-    p.W = (((p.W + amount) % 7) + 7) % 7;
+    p.W = ((p.W + amount) % 7 + 7) % 7;
   } else {
-    // Month boundary — full civil recompute
-    const totalDays = Math.floor(p.t / 86400000);
-    [p.y, p.M, p.D] = Moment._epochDaysToYMD(totalDays);
-    p.W = (((totalDays + 4) % 7) + 7) % 7;
+    // May cross month/year boundary → defer to dirty
+    (p as { dirty: boolean }).dirty = true;
   }
-}
+  }
 /** add(1, "day") on CleanLocalFreshWithDate, D+amount ∈ [1,28] → arithmetic-only, allocation-free. */
 function addDay_CLFD_safe(p: _P & CleanLocalFreshWithDate, amount: number): void {
   p.D += amount;
@@ -2308,13 +2306,9 @@ export class Moment {
       p.d = undefined;
       if (p.D + amount >= 1 && p.D + amount <= 28) {
         p.D += amount;
-        p.W = (((p.W + amount) % 7) + 7) % 7;
-        p.dirty = false;
+        p.W = ((p.W + amount) % 7 + 7) % 7;
       } else {
-        const totalDays = Math.floor(p.t / 86400000);
-        [p.y, p.M, p.D] = Moment._epochDaysToYMD(totalDays);
-        p.W = (((totalDays + 4) % 7) + 7) % 7;
-        p.dirty = false;
+        (p as { dirty: boolean }).dirty = true;
       }
       p._tStale = false;
     } else {
