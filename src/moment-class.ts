@@ -586,49 +586,22 @@ export class Moment {
     }
   }
 
-  // ---- Internal branded/refined types ----
-  // Module-level type aliases — zero runtime cost, purely TS narrowing.
-  private _isCleanLocalCached(
-    p: this["_p"],
-  ): p is this["_p"] & { dirty: false; _tStale: false; isUTC: false; d: Date } {
-    return !p.dirty && !p._tStale && !p.isUTC && p.d != null;
-  }
-
-  /** n is an integer in [0, 23]. */
-  private _isHour(n: number): n is number & { __h: never } {
-    return Number.isInteger(n) && n >= 0 && n <= 23;
-  }
-  /** n is an integer in [0, 59]. */
-  private _isMinSec(n: number): n is number & { __ms: never } {
-    return Number.isInteger(n) && n >= 0 && n <= 59;
-  }
-  /** n is an integer in [0, 999]. */
-  private _isMs(n: number): n is number & { __M: never } {
-    return Number.isInteger(n) && n >= 0 && n <= 999;
-  }
-  /** n is an integer in [1, 28]. */
-  private _isD28(n: number): n is number & { __d28: never } {
-    return Number.isInteger(n) && n >= 1 && n <= 28;
-  }
-
   // ---- VDSO-style tryFast gates — return true when handled ----
+  // Flat design: inline all guard checks directly, no helper indirection.
+  // TypeScript's control-flow analysis narrows p.d to Date after null guard.
 
-  /** tryFast setDate: kernel-timekeeping VDSO — update only D (coarse field),
-   *  defer epoch recomputation and weekday to _syncT/_refreshFields. */
+  /** tryFast setDate: UTC or local-D≤28 arithmetic, Date-clamp for D>28. */
   private _tryFastSetDate(val: number): boolean {
     const p = this._p;
     if (p.dirty || updateOffsetCallback || val <= 0 || val === p.D) {
       return false;
     }
-    // UTC: set civil field D, mark t stale — _syncT recomputes p.t from
-    // fields via Date.UTC (no Date allocation).
     if (p.isUTC) {
       p.D = val;
       p._tStale = true;
       return true;
     }
-    // Local + val ≤ 28: safe for all months — arithmetic path.
-    if (this._isD28(val)) {
+    if (val <= 28) {
       p.D = val;
       if (p.d != null) {
         p.d.setDate(val);
@@ -638,7 +611,6 @@ export class Moment {
       }
       return true;
     }
-    // Local + val > 28: needs Date for auto-clamping.
     if (p.d == null) {
       return false;
     }
@@ -648,13 +620,15 @@ export class Moment {
     return true;
   }
 
-  /** tryFast setHour: clean local cached + ordinary hour → probe arithmetic. */
+  /** tryFast setHour: local+p.d+clean+ordinary-hour → arithmetic or setHours. */
   private _tryFastSetHour(num: number): boolean {
     const p = this._p;
-    if (!this._isCleanLocalCached(p) || !this._isHour(num) || num === p.H) {
+    if (p.dirty || p._tStale || p.isUTC || p.d == null) {
       return false;
     }
-    // p is now narrowed: clean, local, p.d: Date. num is OrdinaryHour (0..23).
+    if (!Number.isInteger(num) || num < 0 || num > 23 || num === p.H) {
+      return false;
+    }
     const newT = p.t + (num - p.H) * HOUR_MS;
     if (_tzOffsetAt(newT) === p.offset) {
       p.t = newT;
@@ -670,10 +644,13 @@ export class Moment {
     return true;
   }
 
-  /** tryFast setMinute: clean local cached + ordinary range → Date direct. */
+  /** tryFast setMinute: local+p.d+clean+0..59 → Date.setMinutes. */
   private _tryFastSetMinute(num: number): boolean {
     const p = this._p;
-    if (!this._isCleanLocalCached(p) || !this._isMinSec(num) || num === p.m) {
+    if (p.dirty || p._tStale || p.isUTC || p.d == null) {
+      return false;
+    }
+    if (!Number.isInteger(num) || num < 0 || num > 59 || num === p.m) {
       return false;
     }
     p.d.setMinutes(num, p.s, p.ms);
@@ -683,10 +660,13 @@ export class Moment {
     return true;
   }
 
-  /** tryFast setSecond: clean local cached + ordinary range → Date direct. */
+  /** tryFast setSecond: local+p.d+clean+0..59 → Date.setSeconds. */
   private _tryFastSetSecond(num: number): boolean {
     const p = this._p;
-    if (!this._isCleanLocalCached(p) || !this._isMinSec(num) || num === p.s) {
+    if (p.dirty || p._tStale || p.isUTC || p.d == null) {
+      return false;
+    }
+    if (!Number.isInteger(num) || num < 0 || num > 59 || num === p.s) {
       return false;
     }
     p.d.setSeconds(num, p.ms);
@@ -696,10 +676,13 @@ export class Moment {
     return true;
   }
 
-  /** tryFast setMs: clean local cached + ordinary range → Date direct. */
+  /** tryFast setMs: local+p.d+clean+0..999 → Date.setMilliseconds. */
   private _tryFastSetMs(num: number): boolean {
     const p = this._p;
-    if (!this._isCleanLocalCached(p) || !this._isMs(num) || num === p.ms) {
+    if (p.dirty || p._tStale || p.isUTC || p.d == null) {
+      return false;
+    }
+    if (!Number.isInteger(num) || num < 0 || num > 999 || num === p.ms) {
       return false;
     }
     p.d.setMilliseconds(num);
@@ -709,17 +692,12 @@ export class Moment {
     return true;
   }
 
-  /** tryFast addDay: clean + integer → kernel-timekeeping VDSO.
-   *  UTC → pure T arithmetic.
-   *  Local D+amount ∈ [1,28] → deferred-Date arithmetic.
-   *  Fallback on uncertainty (dirty, _tStale, updateOffsetCallback,
-   *  non-integer, month overflow). */
+  /** tryFast addDay: clean → UTC arithmetic or local D∈[1,28] arithmetic. */
   private _tryFastAddDay(amount: number): boolean {
     const p = this._p;
     if (p.dirty || p._tStale || updateOffsetCallback || !Number.isInteger(amount)) {
       return false;
     }
-    // UTC: pure T arithmetic — civil fields untouched, epoch canonical.
     if (p.isUTC) {
       p.t += amount * DAY_MS;
       p.d = undefined;
@@ -730,7 +708,6 @@ export class Moment {
       }
       return true;
     }
-    // Local: arithmetic safe only when D stays ∈ [1,28] (no overflow).
     const newD = p.D + amount;
     if (newD < 1 || newD > 28) {
       return false;
@@ -745,53 +722,38 @@ export class Moment {
     return true;
   }
 
-  /** tryFast startOf('day'): clean local cached → setHours(0,0,0,0). */
+  /** tryFast startOf('day'): flat dispatch on state — no helper indirection. */
   private _tryFastStartOfDay(): boolean {
     const p = this._p;
-    if (!this._isCleanLocalCached(p)) {
-      // Fallback for non-clean-local-cached states.
-      if (p.dirty || updateOffsetCallback) {
+    if (p.dirty || updateOffsetCallback) {
+      return false;
+    }
+    if (p.isUTC) {
+      p.t = floorUnitEpoch(p.t, DAY_MS);
+      p.d = undefined;
+    } else if (p.d != null) {
+      if (p._tStale) {
         return false;
       }
-      if (p.isUTC) {
-        p.t = floorUnitEpoch(p.t, DAY_MS);
-        p.d = undefined;
-      } else if (p.d != null) {
-        // _tStale + p.d: _opTStale arithmetic beats Date methods.
-        if (p._tStale) {
-          return false;
-        }
-        // Shouldn't reach here if _isCleanLocalCached passed, but be safe.
-        p.d.setHours(0, 0, 0, 0);
-        p.t = p.d.getTime();
-        p.offset = -p.d.getTimezoneOffset();
-      } else if (!p._tStale) {
-        const phase = euclideanModulo(p.t + p.offset * MINUTE_MS, DAY_MS);
-        const candidateT = p.t - phase;
-        const offAtTarget = _tzOffsetAt(candidateT);
-        if (offAtTarget === p.offset) {
-          p.t = candidateT;
-        } else {
-          p.t = candidateT + (offAtTarget - p.offset) * MINUTE_MS;
-          p.offset = offAtTarget;
-        }
+      p.d.setHours(0, 0, 0, 0);
+      p.t = p.d.getTime();
+      p.offset = -p.d.getTimezoneOffset();
+    } else if (!p._tStale) {
+      const phase = euclideanModulo(p.t + p.offset * MINUTE_MS, DAY_MS);
+      const candidateT = p.t - phase;
+      const offAtTarget = _tzOffsetAt(candidateT);
+      if (offAtTarget === p.offset) {
+        p.t = candidateT;
       } else {
-        const utcMidnight = ymdToEpochDays(p.y, p.M, p.D) * DAY_MS;
-        const offMidnight = _tzOffsetAt(utcMidnight);
-        p.t = utcMidnight - offMidnight * MINUTE_MS;
-        p.offset = offMidnight;
+        p.t = candidateT + (offAtTarget - p.offset) * MINUTE_MS;
+        p.offset = offAtTarget;
       }
-      p.H = 0;
-      p.m = 0;
-      p.s = 0;
-      p.ms = 0;
-      p._tStale = false;
-      return true;
+    } else {
+      const utcMidnight = ymdToEpochDays(p.y, p.M, p.D) * DAY_MS;
+      const offMidnight = _tzOffsetAt(utcMidnight);
+      p.t = utcMidnight - offMidnight * MINUTE_MS;
+      p.offset = offMidnight;
     }
-    // Fast path: clean, local, p.d: Date — setHours directly.
-    p.d.setHours(0, 0, 0, 0);
-    p.t = p.d.getTime();
-    p.offset = -p.d.getTimezoneOffset();
     p.H = 0;
     p.m = 0;
     p.s = 0;
