@@ -12,7 +12,13 @@
 
 import type { Locale } from "./locale-runtime";
 import type { DurationInput } from "./duration";
-import type { UnitCode } from "./types";
+import type {
+  UnitCode,
+  CleanLocalFreshWithDate,
+  CleanLocalFreshNoDate,
+  CleanLocalStale,
+  CleanUTC,
+} from "./types";
 import { hasLiteLocale } from "./locale-lite";
 import {
   localeWeekday,
@@ -44,40 +50,14 @@ import { startOfExtraMoment, endOfExtraMoment } from "./boundary-extra";
 // narrow from the general state to a subcategory.  Fast mutation
 // morphisms operate only inside a subcategory with branded values.
 
+import { refineHour, refineMinute, refineSecond, refineMs, refineDate28 } from "./types";
 import type {
   OrdinaryHour,
   OrdinaryMinute,
   OrdinarySecond,
   OrdinaryMillisecond,
   OrdinaryDate28,
-  CleanLocalFreshWithDate,
-  CleanLocalFreshNoDate,
-  CleanLocalStale,
-  CleanUTC,
 } from "./types";
-
-// ---- Refinement functors — brand values into constrained numeric types ----
-
-function refineHour(v: unknown): OrdinaryHour | null {
-  const n = typeof v === "number" ? v : Number(v);
-  return Number.isInteger(n) && n >= 0 && n <= 23 ? (n as OrdinaryHour) : null;
-}
-function refineMinute(v: unknown): OrdinaryMinute | null {
-  const n = typeof v === "number" ? v : Number(v);
-  return Number.isInteger(n) && n >= 0 && n <= 59 ? (n as OrdinaryMinute) : null;
-}
-function refineSecond(v: unknown): OrdinarySecond | null {
-  const n = typeof v === "number" ? v : Number(v);
-  return Number.isInteger(n) && n >= 0 && n <= 59 ? (n as OrdinarySecond) : null;
-}
-function refineMs(v: unknown): OrdinaryMillisecond | null {
-  const n = typeof v === "number" ? v : Number(v);
-  return Number.isInteger(n) && n >= 0 && n <= 999 ? (n as OrdinaryMillisecond) : null;
-}
-function refineDate28(v: unknown): OrdinaryDate28 | null {
-  const n = typeof v === "number" ? v : Number(v);
-  return Number.isInteger(n) && n >= 1 && n <= 28 ? (n as OrdinaryDate28) : null;
-}
 
 // ---- Refinement functors — narrow _p state into a subcategory ----
 

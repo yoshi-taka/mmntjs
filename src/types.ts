@@ -291,6 +291,29 @@ export type OrdinaryMillisecond = number & { [__ordMs]: true };
 /** 1–28 (safe for all months) */
 export type OrdinaryDate28 = number & { [__ordDate28]: true };
 
+const _num = (v: unknown): number => (typeof v === "number" ? v : Number(v));
+
+export function refineHour(v: unknown): OrdinaryHour | null {
+  const n = _num(v);
+  return Number.isInteger(n) && n >= 0 && n <= 23 ? (n as OrdinaryHour) : null;
+}
+export function refineMinute(v: unknown): OrdinaryMinute | null {
+  const n = _num(v);
+  return Number.isInteger(n) && n >= 0 && n <= 59 ? (n as OrdinaryMinute) : null;
+}
+export function refineSecond(v: unknown): OrdinarySecond | null {
+  const n = _num(v);
+  return Number.isInteger(n) && n >= 0 && n <= 59 ? (n as OrdinarySecond) : null;
+}
+export function refineMs(v: unknown): OrdinaryMillisecond | null {
+  const n = _num(v);
+  return Number.isInteger(n) && n >= 0 && n <= 999 ? (n as OrdinaryMillisecond) : null;
+}
+export function refineDate28(v: unknown): OrdinaryDate28 | null {
+  const n = _num(v);
+  return Number.isInteger(n) && n >= 1 && n <= 28 ? (n as OrdinaryDate28) : null;
+}
+
 // -------------------------------------------------------------------------
 // Refined internal state types (zero-cost at runtime)
 // These model subcategories of the general Moment _p state.

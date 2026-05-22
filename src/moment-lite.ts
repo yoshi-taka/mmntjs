@@ -32,6 +32,7 @@ import { parseString, type ParsedData } from "./parse-lite";
 import { formatMomentBasic } from "./display/format-basic";
 import type { ParseLocale } from "./parse-locale";
 import type { FormattableMoment } from "./display/types";
+import { refineHour, refineMinute, refineSecond, refineMs } from "./types";
 import type {
   OrdinaryHour,
   OrdinaryMinute,
@@ -46,23 +47,6 @@ type _P = MomentLite["_p"];
 
 function isCleanLocalWithDate(p: _P): p is _P & { dirty: false; d: Date } {
   return !p.dirty && p.d != null;
-}
-
-function refineHour(v: unknown): OrdinaryHour | null {
-  const n = typeof v === "number" ? v : Number(v);
-  return Number.isInteger(n) && n >= 0 && n <= 23 ? (n as OrdinaryHour) : null;
-}
-function refineMinute(v: unknown): OrdinaryMinute | null {
-  const n = typeof v === "number" ? v : Number(v);
-  return Number.isInteger(n) && n >= 0 && n <= 59 ? (n as OrdinaryMinute) : null;
-}
-function refineSecond(v: unknown): OrdinarySecond | null {
-  const n = typeof v === "number" ? v : Number(v);
-  return Number.isInteger(n) && n >= 0 && n <= 59 ? (n as OrdinarySecond) : null;
-}
-function refineMs(v: unknown): OrdinaryMillisecond | null {
-  const n = typeof v === "number" ? v : Number(v);
-  return Number.isInteger(n) && n >= 0 && n <= 999 ? (n as OrdinaryMillisecond) : null;
 }
 
 // ---- Fast mutation morphisms (lite: no _tStale) ----

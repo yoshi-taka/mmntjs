@@ -1,5 +1,5 @@
 import type { FormattableMoment } from "./types";
-import { LruMap } from "../utils";
+import { LruMap, pad2, pad3, zeroFill } from "../utils";
 import {
   setCurrentLocale,
   currentFormat,
@@ -62,22 +62,10 @@ function expandLocaleTokens(m: FormattableMoment, format: string): string {
   return result;
 }
 
-function p2(n: number): string {
-  return n < 10 ? `0${n}` : String(n);
-}
-
-function padYear(y: number): string {
-  return y < 10 ? `000${y}` : y < 100 ? `00${y}` : y < 1000 ? `0${y}` : String(y);
-}
-
-function pad3(n: number): string {
-  return n < 10 ? `00${n}` : n < 100 ? `0${n}` : String(n);
-}
-
 function formatOffset(offset: number): string {
   const sign = offset >= 0 ? "+" : "-";
   const abs = Math.abs(offset);
-  return `${sign + p2(Math.floor(abs / 60))}:${p2(abs % 60)}`;
+  return `${sign + pad2(Math.floor(abs / 60))}:${pad2(abs % 60)}`;
 }
 
 const enMonths = [
@@ -146,19 +134,20 @@ interface P2 {
 type PureFn = (p: P2, loc?: Record<string, unknown>) => string;
 
 const pure: Record<string, PureFn | undefined> = {
-  "HH:mm": (p) => `${p2(p.H)}:${p2(p.m)}`,
-  "HH:mm:ss": (p) => `${p2(p.H)}:${p2(p.m)}:${p2(p.s)}`,
-  "HH:mm:ss.SSS": (p) => `${p2(p.H)}:${p2(p.m)}:${p2(p.s)}.${pad3(p.ms)}`,
-  "h:mm A": (p, loc) => `${fmt12H(p.H)}:${p2(p.m)} ${localeMeridiem(loc!, p.H)}`,
-  "h:mm:ss A": (p, loc) => `${fmt12H(p.H)}:${p2(p.m)}:${p2(p.s)} ${localeMeridiem(loc!, p.H)}`,
-  "DD/MM/YYYY": (p) => `${p2(p.D)}/${p2(p.M + 1)}/${padYear(p.y)}`,
-  "MM/DD/YYYY": (p) => `${p2(p.M + 1)}/${p2(p.D)}/${padYear(p.y)}`,
-  "YYYY-MM-DD": (p) => `${padYear(p.y)}-${p2(p.M + 1)}-${p2(p.D)}`,
-  "YYYY-MM-DD HH:mm": (p) => `${padYear(p.y)}-${p2(p.M + 1)}-${p2(p.D)} ${p2(p.H)}:${p2(p.m)}`,
+  "HH:mm": (p) => `${pad2(p.H)}:${pad2(p.m)}`,
+  "HH:mm:ss": (p) => `${pad2(p.H)}:${pad2(p.m)}:${pad2(p.s)}`,
+  "HH:mm:ss.SSS": (p) => `${pad2(p.H)}:${pad2(p.m)}:${pad2(p.s)}.${pad3(p.ms)}`,
+  "h:mm A": (p, loc) => `${fmt12H(p.H)}:${pad2(p.m)} ${localeMeridiem(loc!, p.H)}`,
+  "h:mm:ss A": (p, loc) => `${fmt12H(p.H)}:${pad2(p.m)}:${pad2(p.s)} ${localeMeridiem(loc!, p.H)}`,
+  "DD/MM/YYYY": (p) => `${pad2(p.D)}/${pad2(p.M + 1)}/${zeroFill(p.y, 4)}`,
+  "MM/DD/YYYY": (p) => `${pad2(p.M + 1)}/${pad2(p.D)}/${zeroFill(p.y, 4)}`,
+  "YYYY-MM-DD": (p) => `${zeroFill(p.y, 4)}-${pad2(p.M + 1)}-${pad2(p.D)}`,
+  "YYYY-MM-DD HH:mm": (p) =>
+    `${zeroFill(p.y, 4)}-${pad2(p.M + 1)}-${pad2(p.D)} ${pad2(p.H)}:${pad2(p.m)}`,
   "YYYY-MM-DD HH:mm:ss": (p) =>
-    `${padYear(p.y)}-${p2(p.M + 1)}-${p2(p.D)} ${p2(p.H)}:${p2(p.m)}:${p2(p.s)}`,
+    `${zeroFill(p.y, 4)}-${pad2(p.M + 1)}-${pad2(p.D)} ${pad2(p.H)}:${pad2(p.m)}:${pad2(p.s)}`,
   "YYYY-MM-DD HH:mm:ss.SSS": (p) =>
-    `${padYear(p.y)}-${p2(p.M + 1)}-${p2(p.D)} ${p2(p.H)}:${p2(p.m)}:${p2(p.s)}.${pad3(p.ms)}`,
+    `${zeroFill(p.y, 4)}-${pad2(p.M + 1)}-${pad2(p.D)} ${pad2(p.H)}:${pad2(p.m)}:${pad2(p.s)}.${pad3(p.ms)}`,
 };
 
 function formatPureToken(
@@ -192,26 +181,26 @@ interface P3 {
 
 const enTmts = {
   "YYYY-MM-DD": (_r: P3, datePart: string) => datePart,
-  "HH:mm:ss": (r: P3) => `${p2(r.H)}:${p2(r.m)}:${p2(r.s)}`,
-  "HH:mm:ss.SSS": (r: P3) => `${p2(r.H)}:${p2(r.m)}:${p2(r.s)}.${pad3(r.ms)}`,
+  "HH:mm:ss": (r: P3) => `${pad2(r.H)}:${pad2(r.m)}:${pad2(r.s)}`,
+  "HH:mm:ss.SSS": (r: P3) => `${pad2(r.H)}:${pad2(r.m)}:${pad2(r.s)}.${pad3(r.ms)}`,
   "YYYY-MM-DD HH:mm:ss": (r: P3, datePart: string) =>
-    `${datePart} ${p2(r.H)}:${p2(r.m)}:${p2(r.s)}`,
+    `${datePart} ${pad2(r.H)}:${pad2(r.m)}:${pad2(r.s)}`,
   "YYYY-MM-DD HH:mm:ss.SSS": (r: P3, datePart: string) =>
-    `${datePart} ${p2(r.H)}:${p2(r.m)}:${p2(r.s)}.${pad3(r.ms)}`,
-  LT: (r: P3) => `${fmt12H(r.H)}:${p2(r.m)} ${fmtAmPm(r.H)}`,
-  LTS: (r: P3) => `${fmt12H(r.H)}:${p2(r.m)}:${p2(r.s)} ${fmtAmPm(r.H)}`,
-  L: (r: P3) => `${p2(r.M + 1)}/${p2(r.D)}/${padYear(r.y)}`,
-  l: (r: P3) => `${r.M + 1}/${r.D}/${padYear(r.y)}`,
-  LL: (r: P3) => `${enMonths[r.M]} ${r.D}, ${padYear(r.y)}`,
-  ll: (r: P3) => `${enMonthsShort[r.M]} ${r.D}, ${padYear(r.y)}`,
+    `${datePart} ${pad2(r.H)}:${pad2(r.m)}:${pad2(r.s)}.${pad3(r.ms)}`,
+  LT: (r: P3) => `${fmt12H(r.H)}:${pad2(r.m)} ${fmtAmPm(r.H)}`,
+  LTS: (r: P3) => `${fmt12H(r.H)}:${pad2(r.m)}:${pad2(r.s)} ${fmtAmPm(r.H)}`,
+  L: (r: P3) => `${pad2(r.M + 1)}/${pad2(r.D)}/${zeroFill(r.y, 4)}`,
+  l: (r: P3) => `${r.M + 1}/${r.D}/${zeroFill(r.y, 4)}`,
+  LL: (r: P3) => `${enMonths[r.M]} ${r.D}, ${zeroFill(r.y, 4)}`,
+  ll: (r: P3) => `${enMonthsShort[r.M]} ${r.D}, ${zeroFill(r.y, 4)}`,
   LLL: (r: P3) =>
-    `${enMonths[r.M]} ${r.D}, ${padYear(r.y)} ${fmt12H(r.H)}:${p2(r.m)} ${fmtAmPm(r.H)}`,
+    `${enMonths[r.M]} ${r.D}, ${zeroFill(r.y, 4)} ${fmt12H(r.H)}:${pad2(r.m)} ${fmtAmPm(r.H)}`,
   lll: (r: P3) =>
-    `${enMonthsShort[r.M]} ${r.D}, ${padYear(r.y)} ${fmt12H(r.H)}:${p2(r.m)} ${fmtAmPm(r.H)}`,
+    `${enMonthsShort[r.M]} ${r.D}, ${zeroFill(r.y, 4)} ${fmt12H(r.H)}:${pad2(r.m)} ${fmtAmPm(r.H)}`,
   LLLL: (r: P3) =>
-    `${enWeekdays[r.W]}, ${enMonths[r.M]} ${r.D}, ${padYear(r.y)} ${fmt12H(r.H)}:${p2(r.m)} ${fmtAmPm(r.H)}`,
+    `${enWeekdays[r.W]}, ${enMonths[r.M]} ${r.D}, ${zeroFill(r.y, 4)} ${fmt12H(r.H)}:${pad2(r.m)} ${fmtAmPm(r.H)}`,
   llll: (r: P3) =>
-    `${enWeekdaysShort[r.W]}, ${enMonthsShort[r.M]} ${r.D}, ${padYear(r.y)} ${fmt12H(r.H)}:${p2(r.m)} ${fmtAmPm(r.H)}`,
+    `${enWeekdaysShort[r.W]}, ${enMonthsShort[r.M]} ${r.D}, ${zeroFill(r.y, 4)} ${fmt12H(r.H)}:${pad2(r.m)} ${fmtAmPm(r.H)}`,
   dddd: (r: P3) => enWeekdays[r.W],
   ddd: (r: P3) => enWeekdaysShort[r.W],
   dd: (r: P3) => enWeekdaysMin[r.W],
@@ -221,9 +210,9 @@ const enTmts = {
   A: (r: P3) => fmtAmPm(r.H),
   a: (r: P3) => fmtAmPm(r.H).toLowerCase(),
   h: (r: P3) => String(fmt12H(r.H)),
-  "h:mm:ss a": (r: P3) => `${fmt12H(r.H)}:${p2(r.m)}:${p2(r.s)} ${fmtAmPm(r.H).toLowerCase()}`,
+  "h:mm:ss a": (r: P3) => `${fmt12H(r.H)}:${pad2(r.m)}:${pad2(r.s)} ${fmtAmPm(r.H).toLowerCase()}`,
   "dddd, MMMM Do YYYY, h:mm:ss a": (r: P3) =>
-    `${enWeekdays[r.W]}, ${enMonths[r.M]} ${r.D}${ordinalSuffix(r.D)} ${padYear(r.y)}, ${fmt12H(r.H)}:${p2(r.m)}:${p2(r.s)} ${fmtAmPm(r.H).toLowerCase()}`,
+    `${enWeekdays[r.W]}, ${enMonths[r.M]} ${r.D}${ordinalSuffix(r.D)} ${zeroFill(r.y, 4)}, ${fmt12H(r.H)}:${pad2(r.m)}:${pad2(r.s)} ${fmtAmPm(r.H).toLowerCase()}`,
 };
 
 function formatCommonEn(m: FormattableMoment, format: string): string | undefined {
@@ -242,9 +231,9 @@ function formatCommonEn(m: FormattableMoment, format: string): string | undefine
   if (p.y < 0 || p.y > 9999) {
     return undefined;
   }
-  const datePart = `${padYear(p.y)}-${p2(p.M + 1)}-${p2(p.D)}`;
+  const datePart = `${zeroFill(p.y, 4)}-${pad2(p.M + 1)}-${pad2(p.D)}`;
   if (format === "YYYY-MM-DDTHH:mm:ss.SSSZ") {
-    return `${datePart}T${p2(p.H)}:${p2(p.m)}:${p2(p.s)}.${pad3(p.ms)}${formatOffset(m.utcOffset())}`;
+    return `${datePart}T${pad2(p.H)}:${pad2(p.m)}:${pad2(p.s)}.${pad3(p.ms)}${formatOffset(m.utcOffset())}`;
   }
   return (enTmts as Record<string, (r: P3, datePart?: string) => string | undefined>)[format]?.(
     p,

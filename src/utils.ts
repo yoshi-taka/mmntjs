@@ -9,6 +9,20 @@ export function lowerVariant(fmt: string): string {
     .replaceAll("hh", "h");
 }
 
+export function pad2(n: number): string {
+  return n < 10 ? `0${n}` : String(n);
+}
+
+export function pad3(n: number): string {
+  return n < 10 ? `00${n}` : n < 100 ? `0${n}` : String(n);
+}
+
+export function padYear(y: number): string {
+  const abs = Math.abs(y);
+  const s = abs < 10 ? `000${abs}` : abs < 100 ? `00${abs}` : abs < 1000 ? `0${abs}` : String(abs);
+  return y < 0 ? `-${s}` : y > 9999 ? `+${s}` : s;
+}
+
 export function zeroFill(num: number, targetLength: number): string {
   const sign = num < 0 ? "-" : "";
   const abs = Math.abs(num).toString();
