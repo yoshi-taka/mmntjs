@@ -151,10 +151,51 @@ function startOfMonthUTC(p: _P & CleanUTC): void {
   p.W = _dayOfWeek(p.y, p.M, 1);
   p.d = undefined;
 }
-/** hour [0,23] → lazy field write on any clean state. */
-function setHourFast(p: { H: number; _tStale: boolean }, h: OrdinaryHour): void {
-  p.H = h;
-  p._tStale = true;
+/** hour [0,23] → epoch delta arithmetic with DST guard.
+ *  UTC: pure arithmetic, no Date allocation.
+ *  Local + fresh t: epoch delta + offset verification.
+ *  Local + stale t: lazy field write (no _syncT needed). */
+function setHourFast(p: _P, h: OrdinaryHour): void {
+  if (p.isUTC) {
+    p.t += (h - p.H) * HOUR_MS;
+    p.H = h;
+    p.d = undefined;
+    p._tStale = false;
+    return;
+  }
+  if (p._tStale) {
+    // Fields master, t stale — lazy field write is cheapest
+    p.H = h;
+    return;
+  }
+  // p.t and fields are fresh — use epoch delta with DST guard
+  const delta = (h - p.H) * HOUR_MS;
+  const newT = p.t + delta;
+  if (_tzOffsetAt(newT) === p.offset) {
+    // Same DST offset → pure arithmetic (no allocation)
+    p.t = newT;
+    p.H = h;
+    if (p.d) {
+      p.d.setTime(p.t);
+    }
+    p._tStale = false;
+    return;
+  }
+  // DST transition detected — Date path (cold)
+  if (p.d) {
+    p.d.setHours(h);
+    p.t = p.d.getTime();
+    p.offset = -p.d.getTimezoneOffset();
+    p.H = p.d.getHours();
+  } else {
+    const d = new Date(p.t);
+    d.setHours(h);
+    p.t = d.getTime();
+    p.d = d;
+    p.offset = -d.getTimezoneOffset();
+    p.H = d.getHours();
+  }
+  p._tStale = false;
 }
 /** minute [0,59] → p.t delta + d.setTime on CleanLocalFreshWithDate. */
 function setMinuteFast(p: _P & CleanLocalFreshWithDate, m: OrdinaryMinute): void {

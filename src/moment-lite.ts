@@ -61,6 +61,48 @@ function refineMs(v: unknown): OrdinaryMillisecond | null {
 
 // ---- Fast mutation morphisms (lite: no _tStale) ----
 
+/** hour [0,23] → epoch delta arithmetic with DST guard.
+ *  UTC: pure arithmetic, no Date allocation.
+ *  Local: epoch delta + offset verification. */
+function setHourFast(p: _P, h: OrdinaryHour): void {
+  if (p.isUTC) {
+    p.t += (h - p.H) * HOUR_MS;
+    p.H = h;
+    p.d = undefined;
+    return;
+  }
+  // Local: need p.t fresh — fall back if dirty
+  if (p.dirty) {
+    p.H = h;
+    return;
+  }
+  const delta = (h - p.H) * HOUR_MS;
+  const newT = p.t + delta;
+  if (_tzOffsetAt(newT) === p.offset) {
+    // Same DST offset → pure arithmetic (no allocation)
+    p.t = newT;
+    p.H = h;
+    if (p.d) {
+      p.d.setTime(p.t);
+    }
+    return;
+  }
+  // DST transition — Date path (cold)
+  if (p.d) {
+    p.d.setHours(h);
+    p.t = p.d.getTime();
+    p.offset = -p.d.getTimezoneOffset();
+    p.H = p.d.getHours();
+  } else {
+    const d = new Date(p.t);
+    d.setHours(h);
+    p.t = d.getTime();
+    p.d = d;
+    p.offset = -d.getTimezoneOffset();
+    p.H = d.getHours();
+  }
+}
+
 function setMinuteFast(p: _P & { d: Date }, m: OrdinaryMinute): void {
   p.t += (m - p.m) * 60000;
   p.m = m;
@@ -811,24 +853,21 @@ export class MomentLite {
       if (h === null) {
         return this;
       }
-      const num = Number(h);
+      const p = this._p;
+      const refined = refineHour(h);
+      // Fast path: clean state → setHourFast (epoch delta + DST guard)
+      if (refined !== null && !p.dirty) {
+        if (refined === p.H) {
+          return this;
+        }
+        setHourFast(p, refined);
+        return this;
+      }
+      const num = refined ?? Number(h);
       if (isNaN(num)) {
         return this;
       }
-      const p = this._p;
       if (num === p.H) {
-        return this;
-      }
-      // Fast path: clean + p.d present → direct Date mutation
-      if (!p.dirty && p.d != null) {
-        if (p.isUTC) {
-          p.d.setUTCHours(num);
-          p.H = p.d.getUTCHours();
-        } else {
-          p.d.setHours(num);
-          p.H = p.d.getHours();
-        }
-        p.t = p.d.getTime();
         return this;
       }
       // Slow path: refresh dirty + allocate Date if needed

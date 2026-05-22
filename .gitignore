@@ -7,6 +7,7 @@ dist/
 node_modules/
 **/*.bak
 coverage/
+coverage?/
 # Fuzz artifacts
 test/fuzz/crashes/
 test/fuzz/coverage/
@@ -20,3 +21,6 @@ test/regression/generated.test.ts
 
 # Internal working docs (not for publishing)
 docs/internal/
+
+# Vim `script` recording artifact
+typescript
