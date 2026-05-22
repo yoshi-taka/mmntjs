@@ -54,7 +54,9 @@ jobs:
             ./test/plugins.test.ts ./test/units.test.ts \
             ./test/utc-extra.test.ts
       - name: "Generated regression"
-        run: TZ=UTC bun test ./test/regression/generated.test.ts
+        run: |
+          bun run scripts/fuzz-regression-generate-tests.ts
+          TZ=UTC bun test ./test/regression/generated.test.ts
       - name: "Mutation"
         run: TZ=UTC bun test ./test/mutation.test.ts
       - name: "Bin"
