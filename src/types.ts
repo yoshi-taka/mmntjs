@@ -274,6 +274,55 @@ export type NormalizedUnitBrand = string & { [__normalizedUnit]: true };
 declare const __unitAlias: unique symbol;
 export type UnitAliasBrand = string & { [__unitAlias]: true };
 
+declare const __ordHour: unique symbol;
+declare const __ordMinute: unique symbol;
+declare const __ordSecond: unique symbol;
+declare const __ordMs: unique symbol;
+declare const __ordDate28: unique symbol;
+
+/** 0–23 */
+export type OrdinaryHour = number & { [__ordHour]: true };
+/** 0–59 */
+export type OrdinaryMinute = number & { [__ordMinute]: true };
+/** 0–59 */
+export type OrdinarySecond = number & { [__ordSecond]: true };
+/** 0–999 */
+export type OrdinaryMillisecond = number & { [__ordMs]: true };
+/** 1–28 (safe for all months) */
+export type OrdinaryDate28 = number & { [__ordDate28]: true };
+
+// -------------------------------------------------------------------------
+// Refined internal state types (zero-cost at runtime)
+// -------------------------------------------------------------------------
+
+/** Local time, fields + t both fresh, p.d present */
+export interface LocalDCClean {
+  dirty: false;
+  _tStale: false;
+  isUTC: false;
+  d: Date;
+  offset: number;
+}
+
+/** Local time, fields fresh, t stale, no Date object */
+export interface LocalNDClean {
+  dirty: false;
+  _tStale: true;
+  isUTC: false;
+  d: undefined;
+}
+
+/** UTC mode, fields fresh */
+export interface UTCClean {
+  dirty: false;
+  isUTC: true;
+}
+
+/** Dirty — fields stale, must refresh from Date before reading */
+export interface DirtyState {
+  dirty: true;
+}
+
 // -------------------------------------------------------------------------
 // Parsed data shape (internal)
 // -------------------------------------------------------------------------

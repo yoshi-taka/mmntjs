@@ -32,6 +32,44 @@ import { parseString, type ParsedData } from "./parse-lite";
 import { formatMomentBasic } from "./display/format-basic";
 import type { ParseLocale } from "./parse-locale";
 import type { FormattableMoment } from "./display/types";
+import type { OrdinaryHour, OrdinaryMinute, OrdinarySecond, OrdinaryMillisecond } from "./types";
+
+// ---- Branded numeric refinements (zero-cost, type-level only) ----
+
+function refineHour(v: unknown): OrdinaryHour | null {
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isInteger(n) && n >= 0 && n <= 23 ? (n as OrdinaryHour) : null;
+}
+function refineMinute(v: unknown): OrdinaryMinute | null {
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isInteger(n) && n >= 0 && n <= 59 ? (n as OrdinaryMinute) : null;
+}
+function refineSecond(v: unknown): OrdinarySecond | null {
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isInteger(n) && n >= 0 && n <= 59 ? (n as OrdinarySecond) : null;
+}
+function refineMs(v: unknown): OrdinaryMillisecond | null {
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isInteger(n) && n >= 0 && n <= 999 ? (n as OrdinaryMillisecond) : null;
+}
+
+// ---- Fast mutation helpers (lite: no _tStale, relies on dirty ≈ _tStale) ----
+
+function setMinuteFast(p: { d: Date; m: number; t: number }, m: OrdinaryMinute): void {
+  p.t += (m - p.m) * 60000;
+  p.m = m;
+  p.d.setTime(p.t);
+}
+function setSecondFast(p: { d: Date; s: number; t: number }, s: OrdinarySecond): void {
+  p.t += (s - p.s) * 1000;
+  p.s = s;
+  p.d.setTime(p.t);
+}
+function setMsFast(p: { d: Date; ms: number; t: number }, ms: OrdinaryMillisecond): void {
+  p.t += ms - p.ms;
+  p.ms = ms;
+  p.d.setTime(p.t);
+}
 
 const TIME_UNIT_MS: Record<number, number> = {
   [HOUR]: HOUR_MS,
@@ -817,19 +855,20 @@ export class MomentLite {
       if (m === null) {
         return this;
       }
-      const num = Number(m);
+      const p = this._p;
+      const refined = refineMinute(m);
+      if (refined !== null && !p.dirty && p.d != null) {
+        if (refined === p.m) {
+          return this;
+        }
+        setMinuteFast(p as never, refined);
+        return this;
+      }
+      const num = refined ?? Number(m);
       if (isNaN(num)) {
         return this;
       }
-      const p = this._p;
       if (num === p.m) {
-        return this;
-      }
-      if (!p.dirty && p.d != null) {
-        const delta = (num - p.m) * 60000;
-        p.t += delta;
-        p.m = num;
-        p.d.setTime(p.t);
         return this;
       }
       if (p.dirty) {
@@ -861,19 +900,20 @@ export class MomentLite {
       if (s === null) {
         return this;
       }
-      const num = Number(s);
+      const p = this._p;
+      const refined = refineSecond(s);
+      if (refined !== null && !p.dirty && p.d != null) {
+        if (refined === p.s) {
+          return this;
+        }
+        setSecondFast(p as never, refined);
+        return this;
+      }
+      const num = refined ?? Number(s);
       if (isNaN(num)) {
         return this;
       }
-      const p = this._p;
       if (num === p.s) {
-        return this;
-      }
-      if (!p.dirty && p.d != null) {
-        const delta = (num - p.s) * 1000;
-        p.t += delta;
-        p.s = num;
-        p.d.setTime(p.t);
         return this;
       }
       if (p.dirty) {
@@ -905,19 +945,20 @@ export class MomentLite {
       if (ms === null) {
         return this;
       }
-      const num = Number(ms);
+      const p = this._p;
+      const refined = refineMs(ms);
+      if (refined !== null && !p.dirty && p.d != null) {
+        if (refined === p.ms) {
+          return this;
+        }
+        setMsFast(p as never, refined);
+        return this;
+      }
+      const num = refined ?? Number(ms);
       if (isNaN(num)) {
         return this;
       }
-      const p = this._p;
       if (num === p.ms) {
-        return this;
-      }
-      if (!p.dirty && p.d != null) {
-        const delta = num - p.ms;
-        p.t += delta;
-        p.ms = num;
-        p.d.setTime(p.t);
         return this;
       }
       if (p.dirty) {

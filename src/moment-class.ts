@@ -37,6 +37,66 @@ import {
 import type { CalendarAwareMoment } from "./calendar-extra";
 import { startOfExtraMoment, endOfExtraMoment } from "./boundary-extra";
 
+// ---- Branded numeric refinements (zero-cost, type-level only) ----
+import type {
+  OrdinaryHour,
+  OrdinaryMinute,
+  OrdinarySecond,
+  OrdinaryMillisecond,
+  OrdinaryDate28,
+  LocalDCClean,
+} from "./types";
+
+function refineHour(v: unknown): OrdinaryHour | null {
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isInteger(n) && n >= 0 && n <= 23 ? (n as OrdinaryHour) : null;
+}
+function refineMinute(v: unknown): OrdinaryMinute | null {
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isInteger(n) && n >= 0 && n <= 59 ? (n as OrdinaryMinute) : null;
+}
+function refineSecond(v: unknown): OrdinarySecond | null {
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isInteger(n) && n >= 0 && n <= 59 ? (n as OrdinarySecond) : null;
+}
+function refineMs(v: unknown): OrdinaryMillisecond | null {
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isInteger(n) && n >= 0 && n <= 999 ? (n as OrdinaryMillisecond) : null;
+}
+function refineDate28(v: unknown): OrdinaryDate28 | null {
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isInteger(n) && n >= 1 && n <= 28 ? (n as OrdinaryDate28) : null;
+}
+
+// ---- Fast mutation helpers (precondition: input already refined, state already checked) ----
+
+/** hour [0,23] → lazy field write; _tStale resolves DST on next sync. */
+function setHourFast(p: { H: number; _tStale: boolean }, h: OrdinaryHour): void {
+  p.H = h;
+  p._tStale = true;
+}
+/** minute [0,59] → p.t delta + d.setTime avoids Date.setMinutes overhead. */
+function setMinuteFast(p: LocalDCClean & { m: number; t: number }, m: OrdinaryMinute): void {
+  p.t += (m - p.m) * 60000;
+  p.m = m;
+  p.d.setTime(p.t);
+  (p as { _tStale: boolean })._tStale = false;
+}
+/** second [0,59] → p.t delta + d.setTime. */
+function setSecondFast(p: LocalDCClean & { s: number; t: number }, s: OrdinarySecond): void {
+  p.t += (s - p.s) * 1000;
+  p.s = s;
+  p.d.setTime(p.t);
+  (p as { _tStale: boolean })._tStale = false;
+}
+/** ms [0,999] → p.t delta + d.setTime. */
+function setMsFast(p: LocalDCClean & { ms: number; t: number }, ms: OrdinaryMillisecond): void {
+  p.t += ms - p.ms;
+  p.ms = ms;
+  p.d.setTime(p.t);
+  (p as { _tStale: boolean })._tStale = false;
+}
+
 // ---- Adventure-style state-machine op codes and helpers ----
 const _R_UTC = 1,
   _R_TS = 2;
@@ -1693,17 +1753,19 @@ export class Moment {
   hour(h?: unknown): number | this {
     if (h !== undefined) {
       const p = this._p;
-      const num = typeof h === "number" ? h : Number(h);
-      if (isNaN(num) || (typeof h !== "number" && h === null)) {
-        return this;
-      }
-      // ---- Fast path: ordinary range + fields fresh → lazy field write ----
-      if (Number.isInteger(num) && num >= 0 && num <= 23 && !p.dirty) {
-        if (num === p.H) {
+      // 1) input refinement
+      const refined = refineHour(h);
+      // 2) fast mutation when state allows
+      if (refined !== null && !p.dirty) {
+        if (refined === p.H) {
           return this;
         }
-        p.H = num;
-        p._tStale = true;
+        setHourFast(p, refined);
+        return this;
+      }
+      // 3) fallback: re-extract num for slow path
+      const num = refined ?? Number(h);
+      if (isNaN(num)) {
         return this;
       }
       if (num === p.H) {
@@ -1742,23 +1804,17 @@ export class Moment {
   minute(m?: unknown): number | this {
     if (m !== undefined) {
       const p = this._p;
-      const num = typeof m === "number" ? m : Number(m);
-      if (isNaN(num) || (typeof m !== "number" && m === null)) {
-        return this;
-      }
-      // ---- Fast path: ordinary range + clean + local + p.d present ----
-      if (Number.isInteger(num) && num >= 0 && num <= 59) {
-        if (!p.dirty && !p._tStale && !p.isUTC && p.d != null) {
-          if (num === p.m) {
-            return this;
-          }
-          const delta = (num - p.m) * 60000;
-          p.t += delta;
-          p.m = num;
-          p.d.setTime(p.t);
-          p._tStale = false;
+      const refined = refineMinute(m);
+      if (refined !== null && !p.dirty && !p._tStale && !p.isUTC && p.d != null) {
+        if (refined === p.m) {
           return this;
         }
+        setMinuteFast(p as never, refined);
+        return this;
+      }
+      const num = refined ?? Number(m);
+      if (isNaN(num)) {
+        return this;
       }
       if (num === p.m) {
         return this;
@@ -1794,22 +1850,17 @@ export class Moment {
   second(s?: unknown): number | this {
     if (s !== undefined) {
       const p = this._p;
-      const num = typeof s === "number" ? s : Number(s);
-      if (isNaN(num) || (typeof s !== "number" && s === null)) {
-        return this;
-      }
-      if (Number.isInteger(num) && num >= 0 && num <= 59) {
-        if (!p.dirty && !p._tStale && !p.isUTC && p.d != null) {
-          if (num === p.s) {
-            return this;
-          }
-          const delta = (num - p.s) * 1000;
-          p.t += delta;
-          p.s = num;
-          p.d.setTime(p.t);
-          p._tStale = false;
+      const refined = refineSecond(s);
+      if (refined !== null && !p.dirty && !p._tStale && !p.isUTC && p.d != null) {
+        if (refined === p.s) {
           return this;
         }
+        setSecondFast(p as never, refined);
+        return this;
+      }
+      const num = refined ?? Number(s);
+      if (isNaN(num)) {
+        return this;
       }
       if (num === p.s) {
         return this;
@@ -1845,22 +1896,17 @@ export class Moment {
   millisecond(ms?: unknown): number | this {
     if (ms !== undefined) {
       const p = this._p;
-      const num = typeof ms === "number" ? ms : Number(ms);
-      if (isNaN(num) || (typeof ms !== "number" && ms === null)) {
-        return this;
-      }
-      if (Number.isInteger(num) && num >= 0 && num <= 999) {
-        if (!p.dirty && !p._tStale && !p.isUTC && p.d != null) {
-          if (num === p.ms) {
-            return this;
-          }
-          const delta = num - p.ms;
-          p.t += delta;
-          p.ms = num;
-          p.d.setTime(p.t);
-          p._tStale = false;
+      const refined = refineMs(ms);
+      if (refined !== null && !p.dirty && !p._tStale && !p.isUTC && p.d != null) {
+        if (refined === p.ms) {
           return this;
         }
+        setMsFast(p as never, refined);
+        return this;
+      }
+      const num = refined ?? Number(ms);
+      if (isNaN(num)) {
+        return this;
       }
       if (num === p.ms) {
         return this;
