@@ -154,11 +154,12 @@ export interface MomentConstructionConfig {
   _t?: number;
 }
 
+const _DOW_OFFSET = new Uint8Array([0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4]);
+
 function _dayOfWeek(y: number, m: number, d: number): number {
-  const t = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
   y -= m < 3 ? 1 : 0;
   return euclideanModulo(
-    (y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) + t[m] + d) | 0,
+    (y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) + _DOW_OFFSET[m] + d) | 0,
     7,
   );
 }

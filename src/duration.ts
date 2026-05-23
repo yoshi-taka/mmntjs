@@ -1098,7 +1098,7 @@ export class Duration {
  *  Skips locale lookup and uses default locale "en".
  *  Creates a shell Duration and computes breakdown directly without sign-check loop.
  *  @public */
-export function createDurationFromMsFast(ms: number): Duration {
+export function createDurationFromMsFast(ms: number, locale = "en"): Duration {
   const d = Object.create(Duration.prototype) as Duration;
   d._milliseconds = ms;
   d._days = 0;
@@ -1113,7 +1113,7 @@ export function createDurationFromMsFast(ms: number): Duration {
   d._bdDays = absFloor(hours / 24);
   d._bdMonths = 0;
   d._bdYears = 0;
-  d._locale = "en";
+  d._locale = locale;
   d._isValid = !isNaN(ms);
   return d;
 }
@@ -1125,28 +1125,27 @@ export function createDurationFast(input?: DurationLike, unit?: string): Duratio
   if (typeof input !== "number") {
     return new Duration(input, unit);
   }
+  if (!unit) {
+    return createDurationFromMsFast(input, getCurrentLocale());
+  }
   const d = createDurationShell(getCurrentLocale(), !isNaN(input));
   if (!d._isValid) {
     d._milliseconds = NaN;
     return d;
   }
-  if (unit) {
-    const aliasKey = unitAliasToKey[unit];
-    if (aliasKey === "years") {
-      d._months = input * 12;
-    } else if (aliasKey === "months") {
-      d._months = input;
-    } else if (aliasKey === "quarters") {
-      d._months = input * 3;
-    } else if (aliasKey === "weeks") {
-      d._days = input * 7;
-    } else if (aliasKey === "days") {
-      d._days = input;
-    } else {
-      return bubbleMillisecondsOnly(d, Math.round(input * unitToMs(unit)));
-    }
+  const aliasKey = unitAliasToKey[unit];
+  if (aliasKey === "years") {
+    d._months = input * 12;
+  } else if (aliasKey === "months") {
+    d._months = input;
+  } else if (aliasKey === "quarters") {
+    d._months = input * 3;
+  } else if (aliasKey === "weeks") {
+    d._days = input * 7;
+  } else if (aliasKey === "days") {
+    d._days = input;
   } else {
-    return bubbleMillisecondsOnly(d, input);
+    return bubbleMillisecondsOnly(d, Math.round(input * unitToMs(unit)));
   }
   d._bubble();
   return d;
