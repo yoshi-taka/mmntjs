@@ -186,6 +186,90 @@ export function normalizeUnitCode(unit: string): UnitCode {
   return INVALID_UNIT;
 }
 
+/**
+ * narrowCommonUnit — fast-path narrowing for the most common unit aliases.
+ * Returns a UnitCode only for d/Day/date/month/millisecond families.
+ * Returns INVALID_UNIT for anything else, letting the caller fall back
+ * to normalizeUnitCode or the existing slow path.
+ *
+ * This is intentionally a separate function from normalizeUnitCode so that
+ * callers can thread narrowed units directly to typed fast kernels without
+ * paying the full normalization cost for unusual unit tokens.
+ */
+export function narrowCommonUnit(unit: string): UnitCode {
+  if (!unit) {
+    return INVALID_UNIT;
+  }
+  // Single-char fast path for the hottest aliases
+  if (unit.length === 1) {
+    switch (unit.charCodeAt(0)) {
+      case 100:
+        return DAY; // "d"
+      case 68:
+        return DATE; // "D"
+      case 77:
+        return MONTH; // "M"
+      case 109:
+        return MINUTE; // "m"
+      case 104:
+      case 72:
+        return HOUR; // "h"/"H"
+      case 115:
+      case 83:
+        return SECOND; // "s"/"S"
+      case 81:
+        return QUARTER; // "Q"
+    }
+    return INVALID_UNIT;
+  }
+  // Two chars: only "ms"
+  if (unit.length === 2) {
+    if (unit === "ms") {
+      return MILLISECOND;
+    }
+    if (unit === "Mo" || unit === "mo") {
+      return MONTH;
+    }
+    return INVALID_UNIT;
+  }
+  // Three+ chars: case-insensitive match on common families
+  switch (unit.toLowerCase()) {
+    case "day":
+    case "days":
+      return DAY;
+    case "date":
+    case "dates":
+      return DATE;
+    case "month":
+    case "months":
+      return MONTH;
+    case "year":
+    case "years":
+      return YEAR;
+    case "hour":
+    case "hours":
+      return HOUR;
+    case "minute":
+    case "minutes":
+      return MINUTE;
+    case "second":
+    case "seconds":
+      return SECOND;
+    case "millisecond":
+    case "milliseconds":
+      return MILLISECOND;
+    case "week":
+    case "weeks":
+      return WEEK;
+    case "quarter":
+    case "quarters":
+      return QUARTER;
+    // Unusual units (isoWeek, dayOfYear, etc.) → let caller fall back
+    default:
+      return INVALID_UNIT;
+  }
+}
+
 export function euclideanModulo(value: number, mod: number): number {
   return ((value % mod) + mod) % mod;
 }

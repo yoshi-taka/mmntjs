@@ -1,6 +1,6 @@
 import type { MomentConstructionConfig } from "../moment-class";
 import { Moment, checkOverflow, createMomentFromDate, createSimpleMoment } from "../moment-class";
-import type { InternalParsedData } from "../types";
+import type { InternalParsedData, FastZonedISO, FastLocalISO, ParseFailed } from "../types";
 import {
   isMoment,
   isDate,
@@ -69,18 +69,10 @@ export type FactoryDeps = {
   nowFn: () => number;
 };
 
-function parseFixedISOZ(str: string): {
-  d: Date;
-  y: number;
-  M: number;
-  D: number;
-  H: number;
-  m: number;
-  s: number;
-  ms: number;
-} | null {
+/** Typed fast parser: YYYY-MM-DDTHH:mm:ss.SSSZ (fixed 24-char). */
+function parseFixedISOZ(str: string): FastZonedISO | ParseFailed {
   if (str.length !== 24) {
-    return null;
+    return { kind: "fail" };
   }
   if (
     str.charCodeAt(4) !== 45 ||
@@ -91,162 +83,163 @@ function parseFixedISOZ(str: string): {
     str.charCodeAt(19) !== 46 ||
     str.charCodeAt(23) !== 90
   ) {
-    return null;
+    return { kind: "fail" };
   }
-  // charCode arithmetic
   const y0 = str.charCodeAt(0) - 48;
   if (y0 < 0 || y0 > 9) {
-    return null;
+    return { kind: "fail" };
   }
   const y1 = str.charCodeAt(1) - 48;
   if (y1 < 0 || y1 > 9) {
-    return null;
+    return { kind: "fail" };
   }
   const y2 = str.charCodeAt(2) - 48;
   if (y2 < 0 || y2 > 9) {
-    return null;
+    return { kind: "fail" };
   }
   const y3 = str.charCodeAt(3) - 48;
   if (y3 < 0 || y3 > 9) {
-    return null;
+    return { kind: "fail" };
   }
   const year = y0 * 1000 + y1 * 100 + y2 * 10 + y3;
   const m0 = str.charCodeAt(5) - 48;
   if (m0 < 0 || m0 > 9) {
-    return null;
+    return { kind: "fail" };
   }
   const m1 = str.charCodeAt(6) - 48;
   if (m1 < 0 || m1 > 9) {
-    return null;
+    return { kind: "fail" };
   }
   const month = m0 * 10 + m1;
   if (month < 1 || month > 12) {
-    return null;
+    return { kind: "fail" };
   }
   const d0 = str.charCodeAt(8) - 48;
   if (d0 < 0 || d0 > 9) {
-    return null;
+    return { kind: "fail" };
   }
   const d1 = str.charCodeAt(9) - 48;
   if (d1 < 0 || d1 > 9) {
-    return null;
+    return { kind: "fail" };
   }
   const day = d0 * 10 + d1;
   const monthIdx = month - 1;
   if (day < 1 || day > daysInMonthFast(year, monthIdx)) {
-    return null;
+    return { kind: "fail" };
   }
   const h0 = str.charCodeAt(11) - 48;
   if (h0 < 0 || h0 > 9) {
-    return null;
+    return { kind: "fail" };
   }
   const h1 = str.charCodeAt(12) - 48;
   if (h1 < 0 || h1 > 9) {
-    return null;
+    return { kind: "fail" };
   }
   const hour = h0 * 10 + h1;
   if (hour < 0 || hour > 23) {
-    return null;
+    return { kind: "fail" };
   }
   const mi0 = str.charCodeAt(14) - 48;
   if (mi0 < 0 || mi0 > 9) {
-    return null;
+    return { kind: "fail" };
   }
   const mi1 = str.charCodeAt(15) - 48;
   if (mi1 < 0 || mi1 > 9) {
-    return null;
+    return { kind: "fail" };
   }
   const minute = mi0 * 10 + mi1;
   if (minute < 0 || minute > 59) {
-    return null;
+    return { kind: "fail" };
   }
   const s0 = str.charCodeAt(17) - 48;
   if (s0 < 0 || s0 > 9) {
-    return null;
+    return { kind: "fail" };
   }
   const s1 = str.charCodeAt(18) - 48;
   if (s1 < 0 || s1 > 9) {
-    return null;
+    return { kind: "fail" };
   }
   const second = s0 * 10 + s1;
   if (second < 0 || second > 59) {
-    return null;
+    return { kind: "fail" };
   }
   const ms0 = str.charCodeAt(20) - 48;
   if (ms0 < 0 || ms0 > 9) {
-    return null;
+    return { kind: "fail" };
   }
   const ms1 = str.charCodeAt(21) - 48;
   if (ms1 < 0 || ms1 > 9) {
-    return null;
+    return { kind: "fail" };
   }
   const ms2 = str.charCodeAt(22) - 48;
   if (ms2 < 0 || ms2 > 9) {
-    return null;
+    return { kind: "fail" };
   }
   const ms = ms0 * 100 + ms1 * 10 + ms2;
-  const d = createUTCDate(year, monthIdx, day, hour, minute, second, ms);
-  if (isNaN(d.getTime())) {
-    return null;
-  }
-  return { d, y: year, M: monthIdx, D: day, H: hour, m: minute, s: second, ms };
+  return {
+    kind: "zoned",
+    y: year,
+    M: monthIdx,
+    D: day,
+    H: hour,
+    m: minute,
+    s: second,
+    ms,
+    offset: 0,
+  };
 }
 
-function parseFixedLocalDate(str: string): { d: Date; y: number; M: number; D: number } | null {
+/** Typed fast parser: YYYY-MM-DD (fixed 10-char, local interpretation). */
+function parseFixedLocalDate(str: string): FastLocalISO | ParseFailed {
   if (str.length !== 10) {
-    return null;
+    return { kind: "fail" };
   }
   if (str.charCodeAt(4) !== 45 || str.charCodeAt(7) !== 45) {
-    return null;
+    return { kind: "fail" };
   }
-  // charCode arithmetic — no slice, no Number()
   const y0 = str.charCodeAt(0) - 48;
   if (y0 < 0 || y0 > 9) {
-    return null;
+    return { kind: "fail" };
   }
   const y1 = str.charCodeAt(1) - 48;
   if (y1 < 0 || y1 > 9) {
-    return null;
+    return { kind: "fail" };
   }
   const y2 = str.charCodeAt(2) - 48;
   if (y2 < 0 || y2 > 9) {
-    return null;
+    return { kind: "fail" };
   }
   const y3 = str.charCodeAt(3) - 48;
   if (y3 < 0 || y3 > 9) {
-    return null;
+    return { kind: "fail" };
   }
   const year = y0 * 1000 + y1 * 100 + y2 * 10 + y3;
   const m0 = str.charCodeAt(5) - 48;
   if (m0 < 0 || m0 > 9) {
-    return null;
+    return { kind: "fail" };
   }
   const m1 = str.charCodeAt(6) - 48;
   if (m1 < 0 || m1 > 9) {
-    return null;
+    return { kind: "fail" };
   }
   const month01 = m0 * 10 + m1;
   if (month01 < 1 || month01 > 12) {
-    return null;
+    return { kind: "fail" };
   }
   const d0 = str.charCodeAt(8) - 48;
   if (d0 < 0 || d0 > 9) {
-    return null;
+    return { kind: "fail" };
   }
   const d1 = str.charCodeAt(9) - 48;
   if (d1 < 0 || d1 > 9) {
-    return null;
+    return { kind: "fail" };
   }
   const day = d0 * 10 + d1;
   const monthIdx = month01 - 1;
   if (day < 1 || day > daysInMonthFast(year, monthIdx)) {
-    return null;
+    return { kind: "fail" };
   }
-  const d = createDateSafe(year, monthIdx, day, 0, 0, 0, 0, false);
-  if (isNaN(d.getTime())) {
-    return null;
-  }
-  return { d, y: year, M: monthIdx, D: day };
+  return { kind: "local", y: year, M: monthIdx, D: day };
 }
 
 export function createMomentFactory(deps: FactoryDeps) {
@@ -440,9 +433,10 @@ export function createMomentFactory(deps: FactoryDeps) {
     const directFormat = typeof format === "string" ? format : undefined;
     if (directFormat === "YYYY-MM-DDTHH:mm:ss.SSSZ" || directFormat === "YYYY-MM-DDTHH:mm:ssZ") {
       const z = parseFixedISOZ(str);
-      if (z) {
+      if (z.kind === "zoned") {
+        const d = createUTCDate(z.y, z.M, z.D, z.H, z.m, z.s, z.ms);
         return new Moment({
-          _d: z.d,
+          _d: d,
           _dClone: false,
           _isUTC: true,
           _offset: 0,
@@ -454,9 +448,10 @@ export function createMomentFactory(deps: FactoryDeps) {
     }
     if (directFormat === "YYYY-MM-DD") {
       const p = parseFixedLocalDate(str);
-      if (p) {
+      if (p.kind === "local") {
+        const d = createDateSafe(p.y, p.M, p.D, 0, 0, 0, 0, false);
         return new Moment({
-          _d: p.d,
+          _d: d,
           _dClone: false,
           _i: str,
           _f: directFormat,
@@ -464,10 +459,11 @@ export function createMomentFactory(deps: FactoryDeps) {
         });
       }
     }
-    const z = format === undefined ? parseFixedISOZ(str) : null;
-    if (z) {
+    const z = format === undefined ? parseFixedISOZ(str) : { kind: "fail" as const };
+    if (z.kind === "zoned") {
+      const d = createUTCDate(z.y, z.M, z.D, z.H, z.m, z.s, z.ms);
       return new Moment({
-        _d: z.d,
+        _d: d,
         _dClone: false,
         _isUTC: true,
         _offset: 0,
@@ -475,10 +471,11 @@ export function createMomentFactory(deps: FactoryDeps) {
         _presetFields: { y: z.y, M: z.M, D: z.D, H: z.H, m: z.m, s: z.s, ms: z.ms },
       });
     }
-    const p = format === undefined ? parseFixedLocalDate(str) : null;
-    if (p) {
+    const p = format === undefined ? parseFixedLocalDate(str) : { kind: "fail" as const };
+    if (p.kind === "local") {
+      const d = createDateSafe(p.y, p.M, p.D, 0, 0, 0, 0, false);
       return new Moment({
-        _d: p.d,
+        _d: d,
         _dClone: false,
         _i: str,
         _presetFields: { y: p.y, M: p.M, D: p.D, H: 0, m: 0, s: 0, ms: 0 },

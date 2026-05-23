@@ -274,12 +274,19 @@ export type NormalizedUnitBrand = string & { [__normalizedUnit]: true };
 declare const __unitAlias: unique symbol;
 export type UnitAliasBrand = string & { [__unitAlias]: true };
 
+declare const __ordYear: unique symbol;
+declare const __ordMonth: unique symbol;
 declare const __ordHour: unique symbol;
 declare const __ordMinute: unique symbol;
 declare const __ordSecond: unique symbol;
 declare const __ordMs: unique symbol;
 declare const __ordDate28: unique symbol;
+declare const __intAmount: unique symbol;
 
+/** OrdinaryYear — any finite integer (no range restriction at brand level) */
+export type OrdinaryYear = number & { [__ordYear]: true };
+/** 0–11 */
+export type OrdinaryMonth = number & { [__ordMonth]: true };
 /** 0–23 */
 export type OrdinaryHour = number & { [__ordHour]: true };
 /** 0–59 */
@@ -290,6 +297,8 @@ export type OrdinarySecond = number & { [__ordSecond]: true };
 export type OrdinaryMillisecond = number & { [__ordMs]: true };
 /** 1–28 (safe for all months) */
 export type OrdinaryDate28 = number & { [__ordDate28]: true };
+/** Guaranteed integer (any finite integer) */
+export type IntegerAmount = number & { [__intAmount]: true };
 
 const _num = (v: unknown): number => (typeof v === "number" ? v : Number(v));
 
@@ -312,6 +321,30 @@ export function refineMs(v: unknown): OrdinaryMillisecond | null {
 export function refineDate28(v: unknown): OrdinaryDate28 | null {
   const n = _num(v);
   return Number.isInteger(n) && n >= 1 && n <= 28 ? (n as OrdinaryDate28) : null;
+}
+
+/** Refine to month 0–11 */
+export function asMonthNumber(v: unknown): OrdinaryMonth | null {
+  const n = _num(v);
+  return Number.isInteger(n) && n >= 0 && n <= 11 ? (n as OrdinaryMonth) : null;
+}
+
+/** Refine to date 1–28 (alias for refineDate28, shorter name for hot paths) */
+export function asDate28(v: unknown): OrdinaryDate28 | null {
+  const n = _num(v);
+  return Number.isInteger(n) && n >= 1 && n <= 28 ? (n as OrdinaryDate28) : null;
+}
+
+/** Refine to ms 0–999 (alias for refineMs, shorter name for hot paths) */
+export function asMillisecond(v: unknown): OrdinaryMillisecond | null {
+  const n = _num(v);
+  return Number.isInteger(n) && n >= 0 && n <= 999 ? (n as OrdinaryMillisecond) : null;
+}
+
+/** Refine to finite integer */
+export function asIntegerAmount(v: unknown): IntegerAmount | null {
+  const n = _num(v);
+  return Number.isInteger(n) && isFinite(n) ? (n as IntegerAmount) : null;
 }
 
 // -------------------------------------------------------------------------
@@ -348,10 +381,57 @@ export interface CleanUTC {
   isUTC: true;
 }
 
+/** UTC mode with non-zero fixed offset (fields fresh) */
+export interface CleanUTCWithOffset {
+  dirty: false;
+  isUTC: true;
+  offset: number;
+}
+
 /** Dirty — fields stale, must refresh from Date before reading */
 export interface DirtyState {
   dirty: true;
 }
+
+// -------------------------------------------------------------------------
+// Typed parser results for zoned ISO parsing fast paths
+// -------------------------------------------------------------------------
+
+/**
+ * FastZonedISO — charCode-validated zoned ISO parse result.
+ * All numeric fields are guaranteed in-range via the fast-parser checks.
+ */
+export interface FastZonedISO {
+  kind: "zoned";
+  y: number;
+  M: number;
+  D: number;
+  H: number;
+  m: number;
+  s: number;
+  ms: number;
+  offset: number;
+}
+
+/**
+ * FastLocalISO — charCode-validated local-date parse result (YYYY-MM-DD).
+ * Date fields guaranteed in-range.
+ */
+export interface FastLocalISO {
+  kind: "local";
+  y: number;
+  M: number;
+  D: number;
+}
+
+/**
+ * ParseFailed — signal that fast path could not handle the input.
+ */
+export interface ParseFailed {
+  kind: "fail";
+}
+
+export type FastISOResult = FastZonedISO | FastLocalISO | ParseFailed;
 
 // -------------------------------------------------------------------------
 // Parsed data shape (internal)
