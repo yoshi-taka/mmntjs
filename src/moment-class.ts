@@ -50,13 +50,23 @@ import { startOfExtraMoment, endOfExtraMoment } from "./boundary-extra";
 // narrow from the general state to a subcategory.  Fast mutation
 // morphisms operate only inside a subcategory with branded values.
 
-import { refineHour, refineMinute, refineSecond, refineMs, refineDate28 } from "./types";
+import {
+  refineHour,
+  refineMinute,
+  refineSecond,
+  refineMs,
+  refineDate28,
+  asIntegerAmount,
+} from "./types";
 import type {
   OrdinaryHour,
   OrdinaryMinute,
   OrdinarySecond,
   OrdinaryMillisecond,
   OrdinaryDate28,
+  OrdinaryMonth,
+  IntegerAmount,
+  CleanUTCWithOffset,
 } from "./types";
 
 // ---- Refinement functors — narrow _p state into a subcategory ----
@@ -412,11 +422,10 @@ function endOfMonth_CLFD(p: _P & CleanLocalFreshWithDate): void {
 }
 /** endOf('month') on CleanLocalFreshNoDate → allocate Date + set. */
 function endOfMonth_CLFN(p: _P & CleanLocalFreshNoDate): void {
-  const eom = daysInMonthFast(p.y, p.M);
-  const d = new Date(p.y, p.M, eom, 23, 59, 59, 999);
+  const d = new Date(p.y, p.M + 1, 0, 23, 59, 59, 999);
   p.t = d.getTime();
   (p as { d: Date | undefined }).d = d;
-  p.D = eom;
+  p.D = d.getDate();
   p.H = 23;
   p.m = 59;
   p.s = 59;
@@ -426,18 +435,16 @@ function endOfMonth_CLFN(p: _P & CleanLocalFreshNoDate): void {
 }
 /** endOf('month') on CleanLocalStale → materialise Date from fields. */
 function endOfMonthStale(p: _P & CleanLocalStale): void {
-  const eom = daysInMonthFast(p.y, p.M);
-  const d = new Date(p.y, p.M, eom, 23, 59, 59, 999);
+  const d = new Date(p.y, p.M + 1, 0, 23, 59, 59, 999);
   p.t = d.getTime();
   (p as { d: Date | undefined }).d = d;
-  p.D = eom;
+  p.D = d.getDate();
   p.H = 23;
   p.m = 59;
   p.s = 59;
   p.ms = 999;
   p.W = d.getDay();
   p.offset = -d.getTimezoneOffset();
-  (p as { _tStale: boolean })._tStale = false;
 }
 
 // ── endOf year morphisms ──
@@ -593,6 +600,70 @@ function _tod(p: { H: number; m: number; s: number; ms: number }): number {
   return p.H * HOUR_MS + p.m * MINUTE_MS + p.s * 1000 + p.ms;
 }
 
+// ---- Typed fast kernels (branded state + branded values, no validation) ----
+
+/** addMsFast — add integer ms on CleanUTC or CleanLocalFreshWithDate.
+ *  Precondition: amount is an integer (already refined).
+ *  After t mutation, fields are stale → mark dirty. */
+function addMsFast(p: _P & (CleanUTC | CleanLocalFreshWithDate), amount: IntegerAmount): void {
+  p.t += amount;
+  p.d = undefined;
+  (p as { dirty: boolean }).dirty = true;
+  p._tStale = false;
+}
+
+/** setMonthDateFast — simultaneously set month [0,11] + date [1,28]
+ *  on CleanUTC or CleanLocalFreshNoDate. No month-boundary risk
+ *  because date ≤ 28 is safe for all months.
+ *  On UTC: pure civil arithmetic, no Date allocation.
+ *  On CLFN: lazy field write with t-stale. */
+function setMonthDateFast(
+  p: _P & (CleanUTC | CleanLocalFreshNoDate),
+  month: OrdinaryMonth,
+  date: OrdinaryDate28,
+): void {
+  if (p.isUTC) {
+    p.t = ymdToEpochDays(p.y, month, date) * DAY_MS + _tod(p);
+    p.M = month;
+    p.D = date;
+    p.W = _dayOfWeek(p.y, month, date);
+    p.d = undefined;
+    p._tStale = false;
+  } else {
+    // CleanLocalFreshNoDate — lazy field write, t-stale
+    p.M = month;
+    p.D = date;
+    (p as { _tStale: boolean })._tStale = true;
+  }
+}
+
+/** startOfDayZonedFast — reset time to midnight for a CleanUTCWithOffset.
+ *  Pure civil arithmetic: epochDays * DAY_MS - offset.
+ *  Re-derives y/M/D from the new epoch (may cross date boundary).
+ *  No Date allocation, no offset probe. */
+function startOfDayZonedFast(p: _P & CleanUTCWithOffset): void {
+  if (p.H === 0 && p.m === 0 && p.s === 0 && p.ms === 0) {
+    return;
+  }
+  const utcMidnight = ymdToEpochDays(p.y, p.M, p.D) * DAY_MS;
+  p.t = utcMidnight - p.offset * MINUTE_MS;
+  // Re-derive y/M/D — t change may cross date boundary
+  const totalDays = Math.floor((p.t + p.offset * MINUTE_MS) / DAY_MS);
+  [p.y, p.M, p.D] = Moment._epochDaysToYMD(totalDays);
+  p.W = (((totalDays + 4) % 7) + 7) % 7;
+  p.H = 0;
+  p.m = 0;
+  p.s = 0;
+  p.ms = 0;
+  p.d = undefined;
+  p._tStale = false;
+}
+
+/** Refinement guard for CleanUTCWithOffset (non-zero offset). */
+function isCleanUTCWithOffset(p: _P): p is _P & CleanUTCWithOffset {
+  return !p.dirty && p.isUTC && p.offset !== 0;
+}
+
 // ---- musl-inspired timezone offset probe (no Date allocation) ----
 // A single reusable Date avoids allocating new Date objects just to
 // query getTimezoneOffset().  Musl's __tz.c separates timezone resolution
@@ -669,6 +740,7 @@ import {
   WEEK,
   YEAR,
   normalizeUnitCode,
+  narrowCommonUnit,
   normalizeUnits,
   normalizeMonth,
   daysInMonth,
@@ -2889,6 +2961,18 @@ export class Moment {
   /** Hot-path helper for add(number, "ms") — skips _syncT when t is fresh. */
   private _addMsFast(amount: number): void {
     const p = this._p;
+    // Try the branded fast path first: clean state + integer amount
+    if (!p.dirty && !p._tStale && (isCleanUTC(p) || isCleanLocalFreshWithDate(p))) {
+      const iAmount = asIntegerAmount(amount);
+      if (iAmount !== null) {
+        addMsFast(p, iAmount);
+        if (isNaN(p.t)) {
+          this._isValid = false;
+        }
+        return;
+      }
+      // Non-integer amount → fall through to _addTime
+    }
     if (!p._tStale) {
       p.t += Number.isInteger(amount) ? amount : Math.round(amount);
       p.d = undefined;
@@ -3152,53 +3236,40 @@ export class Moment {
       }
       return this;
     }
-    switch (unit) {
-      case "d":
-      case "day":
-      case "days":
-      case "date":
-        this._addDayFast(amount);
-        return this;
-      case "h":
-      case "hour":
-      case "hours":
-        this._addTime(amount, HOUR_MS);
-        return this;
-      case "m":
-      case "minute":
-      case "minutes":
-        this._addTime(amount, MINUTE_MS);
-        return this;
-      case "s":
-      case "second":
-      case "seconds":
-        this._addTime(amount, SECOND_MS);
-        return this;
-      case "ms":
-      case "millisecond":
-      case "milliseconds":
-        this._addMsFast(amount);
-        return this;
-      case "M":
-      case "month":
-      case "months":
-        this._addMonthFast(amount);
-        return this;
-      case "y":
-      case "year":
-      case "years":
-        this._addYearFast(amount);
-        return this;
-      case "w":
-      case "week":
-      case "weeks":
-        this._addDayFast(amount * 7);
-        return this;
-      case "Q":
-      case "quarter":
-      case "quarters":
-        this._addQuarterFast(amount);
-        return this;
+    // Narrow common unit tokens first, then route to typed fast kernels.
+    // If narrowing fails, fall through to _addSlow (full normalization).
+    const narrowCode = narrowCommonUnit(unit);
+    if (narrowCode >= 0) {
+      switch (narrowCode) {
+        case MILLISECOND:
+          this._addMsFast(amount);
+          return this;
+        case SECOND:
+          this._addTime(amount, SECOND_MS);
+          return this;
+        case MINUTE:
+          this._addTime(amount, MINUTE_MS);
+          return this;
+        case HOUR:
+          this._addTime(amount, HOUR_MS);
+          return this;
+        case DAY:
+        case DATE:
+          this._addDayFast(amount);
+          return this;
+        case MONTH:
+          this._addMonthFast(amount);
+          return this;
+        case YEAR:
+          this._addYearFast(amount);
+          return this;
+        case WEEK:
+          this._addDayFast(amount * 7);
+          return this;
+        case QUARTER:
+          this._addQuarterFast(amount);
+          return this;
+      }
     }
     return this._addSlow(amount, unit);
   }
@@ -3348,53 +3419,38 @@ export class Moment {
       }
       return this;
     }
-    switch (unit) {
-      case "d":
-      case "day":
-      case "days":
-      case "date":
-        this._addDayFast(-amount);
-        return this;
-      case "h":
-      case "hour":
-      case "hours":
-        this._addTime(-amount, HOUR_MS);
-        return this;
-      case "m":
-      case "minute":
-      case "minutes":
-        this._addTime(-amount, MINUTE_MS);
-        return this;
-      case "s":
-      case "second":
-      case "seconds":
-        this._addTime(-amount, SECOND_MS);
-        return this;
-      case "ms":
-      case "millisecond":
-      case "milliseconds":
-        this._addMsFast(-amount);
-        return this;
-      case "M":
-      case "month":
-      case "months":
-        this._addMonthFast(-amount);
-        return this;
-      case "y":
-      case "year":
-      case "years":
-        this._addYearFast(-amount);
-        return this;
-      case "w":
-      case "week":
-      case "weeks":
-        this._addDayFast(-amount * 7);
-        return this;
-      case "Q":
-      case "quarter":
-      case "quarters":
-        this._addQuarterFast(-amount);
-        return this;
+    const narrowCode = narrowCommonUnit(unit);
+    if (narrowCode >= 0) {
+      switch (narrowCode) {
+        case MILLISECOND:
+          this._addMsFast(-amount);
+          return this;
+        case SECOND:
+          this._addTime(-amount, SECOND_MS);
+          return this;
+        case MINUTE:
+          this._addTime(-amount, MINUTE_MS);
+          return this;
+        case HOUR:
+          this._addTime(-amount, HOUR_MS);
+          return this;
+        case DAY:
+        case DATE:
+          this._addDayFast(-amount);
+          return this;
+        case MONTH:
+          this._addMonthFast(-amount);
+          return this;
+        case YEAR:
+          this._addYearFast(-amount);
+          return this;
+        case WEEK:
+          this._addDayFast(-amount * 7);
+          return this;
+        case QUARTER:
+          this._addQuarterFast(-amount);
+          return this;
+      }
     }
     return this._addSlow(-amount, unit);
   }
@@ -3899,11 +3955,10 @@ export class Moment {
         this._p.s === 0 &&
         this._p.ms === 0
       ) {
-        const endDay = daysInMonthFast(this._p.y, this._p.M);
-        const d = new Date(this._p.y, this._p.M, endDay, 23, 59, 59, 999);
+        const d = new Date(this._p.y, this._p.M + 1, 0, 23, 59, 59, 999);
         this._p.d = d;
         this._p.t = d.getTime();
-        this._p.D = endDay;
+        this._p.D = d.getDate();
         this._p.H = 23;
         this._p.m = 59;
         this._p.s = 59;
@@ -4069,8 +4124,8 @@ export class Moment {
    */
   private _endOfMonthFromStartFast(): void {
     const p = this._p;
-    const endDay = daysInMonthFast(p.y, p.M);
     if (p.isUTC) {
+      const endDay = daysInMonthFast(p.y, p.M);
       p.t = (ymdToEpochDays(p.y, p.M, endDay) + 1) * DAY_MS - 1;
       p.d = undefined;
       p.D = endDay;
@@ -4080,10 +4135,10 @@ export class Moment {
       p.ms = 999;
       p.W = _dayOfWeek(p.y, p.M, endDay);
     } else if (p.d != null && !p._tStale) {
-      p.d.setDate(endDay);
+      p.d.setFullYear(p.y, p.M + 1, 0);
       p.d.setHours(23, 59, 59, 999);
       p.t = p.d.getTime();
-      p.D = endDay;
+      p.D = p.d.getDate();
       p.H = 23;
       p.m = 59;
       p.s = 59;
@@ -4091,10 +4146,10 @@ export class Moment {
       p.W = p.d.getDay();
       p.offset = -p.d.getTimezoneOffset();
     } else {
-      const d = new Date(p.y, p.M, endDay, 23, 59, 59, 999);
+      const d = new Date(p.y, p.M + 1, 0, 23, 59, 59, 999);
       p.t = d.getTime();
       p.d = d;
-      p.D = endDay;
+      p.D = d.getDate();
       p.H = 23;
       p.m = 59;
       p.s = 59;

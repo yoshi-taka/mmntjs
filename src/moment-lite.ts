@@ -27,6 +27,7 @@ import {
   MILLISECOND,
   WEEK,
   QUARTER,
+  narrowCommonUnit,
   weeksInYear,
   getDayOfYear,
   getISOWeekNumber,
@@ -43,6 +44,11 @@ import type {
   OrdinaryMinute,
   OrdinarySecond,
   OrdinaryMillisecond,
+  OrdinaryMonth,
+  OrdinaryDate28,
+  IntegerAmount,
+  CleanUTC,
+  CleanUTCWithOffset,
   UnitCode,
 } from "./types";
 
@@ -51,7 +57,15 @@ import type {
 type _P = MomentLite["_p"];
 
 function isCleanLocalWithDate(p: _P): p is _P & { dirty: false; d: Date } {
-  return !p.dirty && p.d != null;
+  return !p.dirty && p.d != null && !p.isUTC;
+}
+
+function isCleanUTC(p: _P): p is _P & CleanUTC {
+  return !p.dirty && p.isUTC;
+}
+
+function isCleanUTCWithOffset(p: _P): p is _P & CleanUTCWithOffset {
+  return !p.dirty && p.isUTC && p.offset !== 0;
 }
 
 // ---- Fast mutation morphisms (lite: no _tStale) ----
@@ -114,6 +128,60 @@ function setMsFast(p: _P & { d: Date }, ms: OrdinaryMillisecond): void {
   p.d.setTime(p.t);
 }
 
+// ---- Typed fast kernels (lite: no _tStale) ----
+
+/** addMsFast (lite) — add integer ms on CleanUTC or CleanLocalWithDate.
+ *  Precondition: amount is an integer (already refined).
+ *  After t mutation, fields are stale → mark dirty. */
+function addMsFastLite(
+  p: _P & (CleanUTC | { dirty: false; d: Date; isUTC: false }),
+  amount: IntegerAmount,
+): void {
+  p.t += amount;
+  p.d = undefined;
+  (p as { dirty: boolean }).dirty = true;
+}
+
+/** setMonthDateFast (lite) — simultaneously set month [0,11] + date [1,28]
+ *  on CleanUTC. No month-boundary risk because date ≤ 28 is safe for all months. */
+function setMonthDateFastLite(p: _P & CleanUTC, month: OrdinaryMonth, date: OrdinaryDate28): void {
+  p.t =
+    ymdToEpochDays(p.y, month, date) * DAY_MS +
+    (p.H * HOUR_MS + p.m * MINUTE_MS + p.s * 1000 + p.ms);
+  p.M = month;
+  p.D = date;
+  p.W = (() => {
+    const y = p.y - (month < 2 ? 1 : 0);
+    const era = Math.floor(y / 400);
+    const yoe = y - era * 400;
+    const mp = month >= 2 ? month - 2 : month + 10;
+    const doy = Math.floor((153 * mp + 2) / 5) + date - 1;
+    const doe = yoe * 365 + Math.floor(yoe / 4) - Math.floor(yoe / 100) + doy;
+    const totalDays = era * 146097 + doe - 719468;
+    return (((totalDays + 4) % 7) + 7) % 7;
+  })();
+  p.d = undefined;
+}
+
+/** startOfDayZonedFast (lite) — reset time to midnight for CleanUTCWithOffset.
+ *  Re-derives y/M/D from the new epoch (may cross date boundary).
+ *  No Date allocation. */
+function startOfDayZonedFastLite(p: _P & CleanUTCWithOffset): void {
+  if (p.H === 0 && p.m === 0 && p.s === 0 && p.ms === 0) {
+    return;
+  }
+  const utcMidnight = ymdToEpochDays(p.y, p.M, p.D) * DAY_MS;
+  p.t = utcMidnight - p.offset * MINUTE_MS;
+  const totalDays = Math.floor((p.t + p.offset * MINUTE_MS) / DAY_MS);
+  [p.y, p.M, p.D] = epochDaysToYMD(totalDays);
+  p.W = (((totalDays + 4) % 7) + 7) % 7;
+  p.H = 0;
+  p.m = 0;
+  p.s = 0;
+  p.ms = 0;
+  p.d = undefined;
+}
+
 const TIME_UNIT_MS: Record<number, number> = {
   [HOUR]: HOUR_MS,
   [MINUTE]: MINUTE_MS,
@@ -168,6 +236,22 @@ function _dayOfWeek(y: number, m: number, d: number): number {
 // Reusable probe Date for lightweight offset verification (no allocation)
 const _probeDate = new Date(0);
 const _probeCache = { t: NaN, offset: NaN };
+function epochDaysToYMD(z: number): [number, number, number] {
+  z += 719468;
+  const era = Math.floor(z / 146097);
+  const doe = z - era * 146097;
+  const yoe = Math.floor(
+    (doe - Math.floor(doe / 1460) + Math.floor(doe / 36524) - Math.floor(doe / 146096)) / 365,
+  );
+  const y = yoe + era * 400;
+  const doy = doe - (365 * yoe + Math.floor(yoe / 4) - Math.floor(yoe / 100));
+  const mp = Math.floor((5 * doy + 2) / 153);
+  const d = doy - Math.floor((153 * mp + 2) / 5) + 1;
+  const m = mp + (mp < 10 ? 3 : -9);
+  const year = y + (m <= 2 ? 1 : 0);
+  return [year, m - 1, d];
+}
+
 function _tzOffsetAt(t: number): number {
   if (t === _probeCache.t) {
     return _probeCache.offset;
@@ -1613,53 +1697,38 @@ export class MomentLite {
       }
       return this;
     }
-    switch (unit) {
-      case "d":
-      case "day":
-      case "days":
-      case "date":
-        this._addDay(amount);
-        return this;
-      case "h":
-      case "hour":
-      case "hours":
-        this._addTime(amount, 3600000);
-        return this;
-      case "m":
-      case "minute":
-      case "minutes":
-        this._addTime(amount, 60000);
-        return this;
-      case "s":
-      case "second":
-      case "seconds":
-        this._addTime(amount, 1000);
-        return this;
-      case "ms":
-      case "millisecond":
-      case "milliseconds":
-        this._addTime(amount, 1);
-        return this;
-      case "M":
-      case "month":
-      case "months":
-        this._addMonth(amount);
-        return this;
-      case "y":
-      case "year":
-      case "years":
-        this._addMonth(amount * 12);
-        return this;
-      case "w":
-      case "week":
-      case "weeks":
-        this._addDay(amount * 7);
-        return this;
-      case "Q":
-      case "quarter":
-      case "quarters":
-        this._addMonth(amount * 3);
-        return this;
+    const narrowCode = narrowCommonUnit(unit);
+    if (narrowCode >= 0) {
+      switch (narrowCode) {
+        case MILLISECOND:
+          this._addTime(amount, 1);
+          return this;
+        case SECOND:
+          this._addTime(amount, 1000);
+          return this;
+        case MINUTE:
+          this._addTime(amount, 60000);
+          return this;
+        case HOUR:
+          this._addTime(amount, 3600000);
+          return this;
+        case DAY:
+        case DATE:
+          this._addDay(amount);
+          return this;
+        case MONTH:
+          this._addMonth(amount);
+          return this;
+        case YEAR:
+          this._addMonth(amount * 12);
+          return this;
+        case WEEK:
+          this._addDay(amount * 7);
+          return this;
+        case QUARTER:
+          this._addMonth(amount * 3);
+          return this;
+      }
     }
     return this._addSlow(amount, unit);
   }
@@ -1919,10 +1988,26 @@ export class MomentLite {
   }
 
   startOf(unit: string): this {
+    // Narrow common unit tokens first
+    const narrowCode = narrowCommonUnit(unit);
+    if (narrowCode >= 0) {
+      switch (narrowCode) {
+        case YEAR:
+        case QUARTER:
+          // year paths need full normalization for quarter
+          break;
+        default:
+          if (!this._p.dirty && isCleanLocalWithDate(this._p) && narrowCode === DAY) {
+            this._startOfDay();
+            return this;
+          }
+          break;
+      }
+    }
     if ((unit === "year" || unit === "years" || unit === "y") && !this._p.dirty) {
       return this._startOfYearFast();
     }
-    const code = normalizeUnitCode(unit);
+    const code = narrowCode >= 0 ? narrowCode : normalizeUnitCode(unit);
     if (code < 0) {
       return this;
     }
@@ -2245,27 +2330,29 @@ export class MomentLite {
   /** Fast path for endOf('month') after startOf('month') (D=1, H=0, …). */
   private _endOfMonthFromStartFast(): void {
     const p = this._p;
-    const endDay = daysInMonthFast(p.y, p.M);
     if (p.isUTC) {
+      const endDay = daysInMonthFast(p.y, p.M);
       p.t = (ymdToEpochDays(p.y, p.M, endDay) + 1) * DAY_MS - 1;
       p.d = undefined;
+      p.D = endDay;
     } else if (p.d != null) {
-      p.d.setDate(endDay);
+      p.d.setFullYear(p.y, p.M + 1, 0);
       p.d.setHours(23, 59, 59, 999);
       p.t = p.d.getTime();
       p.offset = -p.d.getTimezoneOffset();
+      p.D = p.d.getDate();
     } else {
-      const d = new Date(p.y, p.M, endDay, 23, 59, 59, 999);
+      const d = new Date(p.y, p.M + 1, 0, 23, 59, 59, 999);
       p.t = d.getTime();
       p.d = d;
       p.offset = -d.getTimezoneOffset();
+      p.D = d.getDate();
     }
-    p.D = endDay;
     p.H = 23;
     p.m = 59;
     p.s = 59;
     p.ms = 999;
-    p.W = _dayOfWeek(p.y, p.M, endDay);
+    p.W = _dayOfWeek(p.y, p.M, p.D);
   }
 
   private _endOfYear(): void {
@@ -2291,23 +2378,24 @@ export class MomentLite {
 
   private _endOfMonth(): void {
     const p = this._p;
-    const _eomMaxDay = daysInMonthFast(p.y, p.M);
     if (p.isUTC) {
+      const _eomMaxDay = daysInMonthFast(p.y, p.M);
       p.t = (ymdToEpochDays(p.y, p.M, _eomMaxDay) + 1) * DAY_MS - 1;
       p.d = undefined;
+      p.D = _eomMaxDay;
     } else {
       const d = this._getDNoEnsure();
-      d.setFullYear(p.y, p.M, _eomMaxDay);
+      d.setFullYear(p.y, p.M + 1, 0);
       d.setHours(23, 59, 59, 999);
       p.t = d.getTime();
       p.offset = -d.getTimezoneOffset();
+      p.D = d.getDate();
     }
-    p.D = _eomMaxDay;
     p.H = 23;
     p.m = 59;
     p.s = 59;
     p.ms = 999;
-    p.W = _dayOfWeek(p.y, p.M, _eomMaxDay);
+    p.W = _dayOfWeek(p.y, p.M, p.D);
   }
 
   private _endOfDay(): void {
