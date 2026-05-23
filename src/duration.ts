@@ -137,20 +137,6 @@ function bubbleMillisecondsOnly(d: Duration, milliseconds: number): Duration {
   return d;
 }
 
-function bubbleDaysOnly(d: Duration, days: number): Duration {
-  d._milliseconds = 0;
-  d._days = days;
-  d._months = 0;
-  d._bdMilliseconds = 0;
-  d._bdSeconds = 0;
-  d._bdMinutes = 0;
-  d._bdHours = 0;
-  d._bdDays = days;
-  d._bdMonths = 0;
-  d._bdYears = 0;
-  return d;
-}
-
 function createDurationShell(locale = "en", isValid = true): Duration {
   const d = Object.create(Duration.prototype) as Duration;
   d._milliseconds = 0;
