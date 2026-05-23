@@ -8,6 +8,7 @@ import {
   createDateSafe,
   createUTCDate,
 } from "../utils";
+import { daysInMonthFast } from "../units";
 import { getLiteLocale, getLiteCurrentLocale } from "../locale-lite";
 import type { ParseLocale } from "../parse-locale";
 import { parseString, isCustomFormatParsingEnabled } from "../parse-lite";
@@ -195,6 +196,59 @@ function createFromString(
     }) as unknown as MomentLite;
   }
 
+  // Fast path: charCode-based YYYY-MM-DD — no alloc, no parseString, no _refreshFields
+  if (!fmt && str.length === 10 && str.charCodeAt(4) === 45 && str.charCodeAt(7) === 45) {
+    const y0 = str.charCodeAt(0) - 48;
+    if (y0 >= 0 && y0 <= 9) {
+      const y1 = str.charCodeAt(1) - 48;
+      if (y1 >= 0 && y1 <= 9) {
+        const y2 = str.charCodeAt(2) - 48;
+        if (y2 >= 0 && y2 <= 9) {
+          const y3 = str.charCodeAt(3) - 48;
+          if (y3 >= 0 && y3 <= 9) {
+            const year = y0 * 1000 + y1 * 100 + y2 * 10 + y3;
+            const m0 = str.charCodeAt(5) - 48;
+            if (m0 >= 0 && m0 <= 9) {
+              const m1 = str.charCodeAt(6) - 48;
+              if (m1 >= 0 && m1 <= 9) {
+                const month01 = m0 * 10 + m1;
+                if (month01 >= 1 && month01 <= 12) {
+                  const d0 = str.charCodeAt(8) - 48;
+                  if (d0 >= 0 && d0 <= 9) {
+                    const d1 = str.charCodeAt(9) - 48;
+                    if (d1 >= 0 && d1 <= 9) {
+                      const day = d0 * 10 + d1;
+                      const monthIdx = month01 - 1;
+                      if (day >= 1 && day <= daysInMonthFast(year, monthIdx)) {
+                        const d = createDateSafe(year, monthIdx, day, 0, 0, 0, 0, false);
+                        if (!isNaN(d.getTime())) {
+                          return new MomentLite({
+                            _d: d,
+                            _dClone: false,
+                            _i: str,
+                            _presetFields: {
+                              y: year,
+                              M: monthIdx,
+                              D: day,
+                              H: 0,
+                              m: 0,
+                              s: 0,
+                              ms: 0,
+                            },
+                          });
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   const parsed = parseString(
     str,
     undefined,
@@ -261,7 +315,21 @@ export function moment(
     return (input as MomentLite).clone();
   }
   if (isDate(input)) {
-    return new MomentLite({ _dClone: false, _d: new Date(input.getTime()), _i: input });
+    const d = new Date(input.getTime());
+    return new MomentLite({
+      _dClone: false,
+      _d: d,
+      _i: input,
+      _presetFields: {
+        y: d.getFullYear(),
+        M: d.getMonth(),
+        D: d.getDate(),
+        H: d.getHours(),
+        m: d.getMinutes(),
+        s: d.getSeconds(),
+        ms: d.getMilliseconds(),
+      },
+    });
   }
   if (isNumber(input)) {
     const n = input;

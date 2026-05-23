@@ -11,6 +11,7 @@ import {
   createDateSafe,
   createUTCDate,
 } from "../utils";
+import { daysInMonthFast } from "../units";
 import { getLocale, getCurrentLocale, localeHasMissingParent } from "../locale-runtime";
 import type { ParseLocale } from "../parse-locale";
 
@@ -68,7 +69,16 @@ export type FactoryDeps = {
   nowFn: () => number;
 };
 
-function parseFixedISOZ(str: string): Date | null {
+function parseFixedISOZ(str: string): {
+  d: Date;
+  y: number;
+  M: number;
+  D: number;
+  H: number;
+  m: number;
+  s: number;
+  ms: number;
+} | null {
   if (str.length !== 24) {
     return null;
   }
@@ -83,60 +93,160 @@ function parseFixedISOZ(str: string): Date | null {
   ) {
     return null;
   }
-  const year = Number(str.slice(0, 4));
-  const month = Number(str.slice(5, 7));
-  const day = Number(str.slice(8, 10));
-  const hour = Number(str.slice(11, 13));
-  const minute = Number(str.slice(14, 16));
-  const second = Number(str.slice(17, 19));
-  const millisecond = Number(str.slice(20, 23));
-  if (
-    !Number.isInteger(year) ||
-    !Number.isInteger(month) ||
-    !Number.isInteger(day) ||
-    !Number.isInteger(hour) ||
-    !Number.isInteger(minute) ||
-    !Number.isInteger(second) ||
-    !Number.isInteger(millisecond)
-  ) {
+  // charCode arithmetic
+  const y0 = str.charCodeAt(0) - 48;
+  if (y0 < 0 || y0 > 9) {
     return null;
   }
-  if (
-    month < 1 ||
-    month > 12 ||
-    day < 1 ||
-    day > 31 ||
-    hour < 0 ||
-    hour > 23 ||
-    minute < 0 ||
-    minute > 59 ||
-    second < 0 ||
-    second > 59 ||
-    millisecond < 0 ||
-    millisecond > 999
-  ) {
+  const y1 = str.charCodeAt(1) - 48;
+  if (y1 < 0 || y1 > 9) {
     return null;
   }
-  return createUTCDate(year, month - 1, day, hour, minute, second, millisecond);
+  const y2 = str.charCodeAt(2) - 48;
+  if (y2 < 0 || y2 > 9) {
+    return null;
+  }
+  const y3 = str.charCodeAt(3) - 48;
+  if (y3 < 0 || y3 > 9) {
+    return null;
+  }
+  const year = y0 * 1000 + y1 * 100 + y2 * 10 + y3;
+  const m0 = str.charCodeAt(5) - 48;
+  if (m0 < 0 || m0 > 9) {
+    return null;
+  }
+  const m1 = str.charCodeAt(6) - 48;
+  if (m1 < 0 || m1 > 9) {
+    return null;
+  }
+  const month = m0 * 10 + m1;
+  if (month < 1 || month > 12) {
+    return null;
+  }
+  const d0 = str.charCodeAt(8) - 48;
+  if (d0 < 0 || d0 > 9) {
+    return null;
+  }
+  const d1 = str.charCodeAt(9) - 48;
+  if (d1 < 0 || d1 > 9) {
+    return null;
+  }
+  const day = d0 * 10 + d1;
+  const monthIdx = month - 1;
+  if (day < 1 || day > daysInMonthFast(year, monthIdx)) {
+    return null;
+  }
+  const h0 = str.charCodeAt(11) - 48;
+  if (h0 < 0 || h0 > 9) {
+    return null;
+  }
+  const h1 = str.charCodeAt(12) - 48;
+  if (h1 < 0 || h1 > 9) {
+    return null;
+  }
+  const hour = h0 * 10 + h1;
+  if (hour < 0 || hour > 23) {
+    return null;
+  }
+  const mi0 = str.charCodeAt(14) - 48;
+  if (mi0 < 0 || mi0 > 9) {
+    return null;
+  }
+  const mi1 = str.charCodeAt(15) - 48;
+  if (mi1 < 0 || mi1 > 9) {
+    return null;
+  }
+  const minute = mi0 * 10 + mi1;
+  if (minute < 0 || minute > 59) {
+    return null;
+  }
+  const s0 = str.charCodeAt(17) - 48;
+  if (s0 < 0 || s0 > 9) {
+    return null;
+  }
+  const s1 = str.charCodeAt(18) - 48;
+  if (s1 < 0 || s1 > 9) {
+    return null;
+  }
+  const second = s0 * 10 + s1;
+  if (second < 0 || second > 59) {
+    return null;
+  }
+  const ms0 = str.charCodeAt(20) - 48;
+  if (ms0 < 0 || ms0 > 9) {
+    return null;
+  }
+  const ms1 = str.charCodeAt(21) - 48;
+  if (ms1 < 0 || ms1 > 9) {
+    return null;
+  }
+  const ms2 = str.charCodeAt(22) - 48;
+  if (ms2 < 0 || ms2 > 9) {
+    return null;
+  }
+  const ms = ms0 * 100 + ms1 * 10 + ms2;
+  const d = createUTCDate(year, monthIdx, day, hour, minute, second, ms);
+  if (isNaN(d.getTime())) {
+    return null;
+  }
+  return { d, y: year, M: monthIdx, D: day, H: hour, m: minute, s: second, ms };
 }
 
-function parseFixedLocalDate(str: string): Date | null {
+function parseFixedLocalDate(str: string): { d: Date; y: number; M: number; D: number } | null {
   if (str.length !== 10) {
     return null;
   }
   if (str.charCodeAt(4) !== 45 || str.charCodeAt(7) !== 45) {
     return null;
   }
-  const year = Number(str.slice(0, 4));
-  const month = Number(str.slice(5, 7));
-  const day = Number(str.slice(8, 10));
-  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) {
+  // charCode arithmetic — no slice, no Number()
+  const y0 = str.charCodeAt(0) - 48;
+  if (y0 < 0 || y0 > 9) {
     return null;
   }
-  if (month < 1 || month > 12 || day < 1 || day > 31) {
+  const y1 = str.charCodeAt(1) - 48;
+  if (y1 < 0 || y1 > 9) {
     return null;
   }
-  return createDateSafe(year, month - 1, day, 0, 0, 0, 0, false);
+  const y2 = str.charCodeAt(2) - 48;
+  if (y2 < 0 || y2 > 9) {
+    return null;
+  }
+  const y3 = str.charCodeAt(3) - 48;
+  if (y3 < 0 || y3 > 9) {
+    return null;
+  }
+  const year = y0 * 1000 + y1 * 100 + y2 * 10 + y3;
+  const m0 = str.charCodeAt(5) - 48;
+  if (m0 < 0 || m0 > 9) {
+    return null;
+  }
+  const m1 = str.charCodeAt(6) - 48;
+  if (m1 < 0 || m1 > 9) {
+    return null;
+  }
+  const month01 = m0 * 10 + m1;
+  if (month01 < 1 || month01 > 12) {
+    return null;
+  }
+  const d0 = str.charCodeAt(8) - 48;
+  if (d0 < 0 || d0 > 9) {
+    return null;
+  }
+  const d1 = str.charCodeAt(9) - 48;
+  if (d1 < 0 || d1 > 9) {
+    return null;
+  }
+  const day = d0 * 10 + d1;
+  const monthIdx = month01 - 1;
+  if (day < 1 || day > daysInMonthFast(year, monthIdx)) {
+    return null;
+  }
+  const d = createDateSafe(year, monthIdx, day, 0, 0, 0, 0, false);
+  if (isNaN(d.getTime())) {
+    return null;
+  }
+  return { d, y: year, M: monthIdx, D: day };
 }
 
 export function createMomentFactory(deps: FactoryDeps) {
@@ -329,42 +439,50 @@ export function createMomentFactory(deps: FactoryDeps) {
   ): Moment {
     const directFormat = typeof format === "string" ? format : undefined;
     if (directFormat === "YYYY-MM-DDTHH:mm:ss.SSSZ" || directFormat === "YYYY-MM-DDTHH:mm:ssZ") {
-      const fixedIsoZ = parseFixedISOZ(str);
-      if (fixedIsoZ) {
-        return createMomentFromDate({
-          _d: fixedIsoZ,
+      const z = parseFixedISOZ(str);
+      if (z) {
+        return new Moment({
+          _d: z.d,
+          _dClone: false,
           _isUTC: true,
           _offset: 0,
           _i: str,
           _f: directFormat,
-          _dClone: false,
+          _presetFields: { y: z.y, M: z.M, D: z.D, H: z.H, m: z.m, s: z.s, ms: z.ms },
         });
       }
     }
     if (directFormat === "YYYY-MM-DD") {
-      const fixedLocalDate = parseFixedLocalDate(str);
-      if (fixedLocalDate) {
-        return createMomentFromDate({
-          _d: fixedLocalDate,
+      const p = parseFixedLocalDate(str);
+      if (p) {
+        return new Moment({
+          _d: p.d,
+          _dClone: false,
           _i: str,
           _f: directFormat,
-          _dClone: false,
+          _presetFields: { y: p.y, M: p.M, D: p.D, H: 0, m: 0, s: 0, ms: 0 },
         });
       }
     }
-    const fixedIsoZ = format === undefined ? parseFixedISOZ(str) : null;
-    if (fixedIsoZ) {
-      return createMomentFromDate({
-        _d: fixedIsoZ,
+    const z = format === undefined ? parseFixedISOZ(str) : null;
+    if (z) {
+      return new Moment({
+        _d: z.d,
+        _dClone: false,
         _isUTC: true,
         _offset: 0,
         _i: str,
-        _dClone: false,
+        _presetFields: { y: z.y, M: z.M, D: z.D, H: z.H, m: z.m, s: z.s, ms: z.ms },
       });
     }
-    const fixedLocalDate = format === undefined ? parseFixedLocalDate(str) : null;
-    if (fixedLocalDate) {
-      return createMomentFromDate({ _d: fixedLocalDate, _i: str, _dClone: false });
+    const p = format === undefined ? parseFixedLocalDate(str) : null;
+    if (p) {
+      return new Moment({
+        _d: p.d,
+        _dClone: false,
+        _i: str,
+        _presetFields: { y: p.y, M: p.M, D: p.D, H: 0, m: 0, s: 0, ms: 0 },
+      });
     }
     const supportsFormattedInput =
       typeof deps.supportsFormattedInput === "function"

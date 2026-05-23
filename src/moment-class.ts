@@ -100,6 +100,7 @@ function setDate28_UTC(p: _P & CleanUTC, val: OrdinaryDate28): void {
   p.W = (((p.W - p.D + val) % 7) + 7) % 7;
   p.t = ymdToEpochDays(p.y, p.M, val) * DAY_MS + _tod(p);
   p.D = val;
+  p.d = undefined;
 }
 /** date = any valid d on CleanUTC → civil arithmetic with month-boundary handling. */
 function setDateUTC(p: _P & CleanUTC, val: number): void {
@@ -107,6 +108,7 @@ function setDateUTC(p: _P & CleanUTC, val: number): void {
   const totalDays = Math.floor(p.t / DAY_MS);
   [p.y, p.M, p.D] = Moment._epochDaysToYMD(totalDays);
   p.W = (((totalDays + 4) % 7) + 7) % 7;
+  p.d = undefined;
 }
 /** startOf('year') on CleanUTC → civil arithmetic. */
 function startOfYearUTC(p: _P & CleanUTC): void {
@@ -2025,24 +2027,6 @@ export class Moment {
     if (y !== undefined) {
       if (y === "" || (typeof y === "object" && !(y instanceof Date))) {
         return this;
-      }
-      if (typeof y === "number" && !this._p.dirty) {
-        const p = this._p;
-        if (y !== p.y && p.D <= 28) {
-          p.y = y;
-          p.d = undefined;
-          if (p.isUTC) {
-            p.t = ymdToEpochDays(y, p.M, p.D) * DAY_MS + _tod(p);
-            p.W = _dayOfWeek(y, p.M, p.D);
-            p._tStale = false;
-          } else {
-            p._tStale = true;
-          }
-          if (updateOffsetCallback) {
-            this._updateOffset(true);
-          }
-          return this;
-        }
       }
       const num = Number(y);
       if (isNaN(num)) {
@@ -3996,7 +3980,15 @@ export class Moment {
         return t || 0;
       }
       case WEEK: {
-        // ...
+        const a = isUTC ? p.t - p.offset * 60000 : p.t;
+        const b = otherUTC ? op.t - op.offset * 60000 : op.t;
+        const zoneDelta = isUTC || otherUTC ? 0 : (op.offset - p.offset) * 60000;
+        if (float) {
+          return (a - b - zoneDelta) / (DAY_MS * 7);
+        }
+        const r = (a - b - zoneDelta) / (DAY_MS * 7);
+        const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
+        return t || 0;
       }
       case YEAR:
       case MONTH:
@@ -4747,11 +4739,29 @@ export function createMomentFromDate(config: {
   m._p.t = t;
   if (isValid) {
     m._p._tStale = false;
-
-    m._p.dirty = true;
-    if (!isUTC) {
+    // Pre-populate fields from Date to avoid _refreshFields() on first access.
+    // UTC offset is preserved from shell (set via config._offset in createMomentShell).
+    if (isUTC) {
+      m._p.y = d.getUTCFullYear();
+      m._p.M = d.getUTCMonth();
+      m._p.D = d.getUTCDate();
+      m._p.W = d.getUTCDay();
+      m._p.H = d.getUTCHours();
+      m._p.m = d.getUTCMinutes();
+      m._p.s = d.getUTCSeconds();
+      m._p.ms = d.getUTCMilliseconds();
+    } else {
+      m._p.y = d.getFullYear();
+      m._p.M = d.getMonth();
+      m._p.D = d.getDate();
+      m._p.W = d.getDay();
+      m._p.H = d.getHours();
+      m._p.m = d.getMinutes();
+      m._p.s = d.getSeconds();
+      m._p.ms = d.getMilliseconds();
       m._p.offset = -d.getTimezoneOffset();
     }
+    m._p.dirty = false;
   }
   initMomentMeta(m, config);
   return m;
