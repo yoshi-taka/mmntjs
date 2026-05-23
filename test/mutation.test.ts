@@ -129,7 +129,12 @@ makeMutations([
   {
     name: "valueOf: off by +1ms",
     file: "src/moment-class.ts",
-    patterns: [[/    return this\._p\.t;\n/g, "    return this._p.t + 1;\n"]],
+    patterns: [
+      [
+        /p\.isUTC \? p\.t - p\.offset \* 60000 : p\.t;/g,
+        "p.isUTC ? p.t - p.offset * 60000 : p.t + 1;",
+      ],
+    ],
     inputs: fc.date({ noInvalidDate: true }),
     testFn: (input: unknown) => {
       return mutatedMoment(input).valueOf() === originalMoment(input as Date).valueOf();
@@ -826,7 +831,12 @@ makeMutations([
   {
     name: "clone: shared _p reference (no copy)",
     file: "src/moment-class.ts",
-    patterns: [[/m\._p = \{ \.\.\.p, d: p\.d \? new Date\(p\.t\) : undefined \};/g, "m._p = p;"]],
+    patterns: [
+      [
+        /m\._p = \{\n\s+t: p\.t,\n\s+d: p\.d \? new Date\(p\.t\) : undefined,\n\s+dirty: p\.dirty,\n\s+_tStale: false,/g,
+        "m._p = p;",
+      ],
+    ],
     inputs: fc.date({ noInvalidDate: true }),
     testFn: (input: unknown) => {
       const d = input as Date;
@@ -917,8 +927,8 @@ makeMutations([
     file: "src/moment-class.ts",
     patterns: [
       [
-        /daysInMonth\(\): number \{\n\s*if \(this\._p\.dirty\) \{\n\s*this\._ensureFields\(\);\n\s*\}\n\s*return daysInMonthFast\(this\._p\.y, this\._p\.M\);/g,
-        "daysInMonth(): number { return 30;",
+        /if \(p\.dirty\) \{\n\s+p\.dirty = false;\n\s+this\._refreshFields\(\);\n\s+\}\n\s+return daysInMonthFast\(p\.y, p\.M\);/g,
+        "return 30;",
       ],
     ],
     inputs: fc.constantFrom("2024-01-15", "2024-02-15", "2024-03-15", "2023-02-15"),
