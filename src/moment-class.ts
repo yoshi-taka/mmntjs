@@ -3201,7 +3201,7 @@ export class Moment {
       case "w":
       case "week":
       case "weeks":
-        this._addDay(amount * 7);
+        this._addDayFast(amount * 7);
         return this;
       case "Q":
       case "quarter":
@@ -3306,19 +3306,19 @@ export class Moment {
         this._addMonth(amount * 3);
         return this;
       case WEEK:
-        this._addDay(amount * 7);
+        this._addDayFast(amount * 7);
         return this;
       case HOUR:
-        this._addTime(amount, 3600000);
+        this._addTime(amount, HOUR_MS);
         return this;
       case MINUTE:
-        this._addTime(amount, 60000);
+        this._addTime(amount, MINUTE_MS);
         return this;
       case SECOND:
-        this._addTime(amount, 1000);
+        this._addTime(amount, SECOND_MS);
         return this;
       case MILLISECOND:
-        this._addTime(amount, 1);
+        this._addMsFast(amount);
         return this;
       default:
         this._addSimple(amount, code);
@@ -3397,7 +3397,7 @@ export class Moment {
       case "w":
       case "week":
       case "weeks":
-        this._addDay(-amount * 7);
+        this._addDayFast(-amount * 7);
         return this;
       case "Q":
       case "quarter":
