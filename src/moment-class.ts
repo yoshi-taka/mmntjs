@@ -3273,7 +3273,7 @@ export class Moment {
 
   private _startOfSlow(unit: string): this {
     const p = this._p;
-    const code = fastNormalizeBoundaryUnit(unit);
+    const code = normalizeUnitCode(unit);
     if (code < 0) {
       return this;
     }
@@ -3444,7 +3444,7 @@ export class Moment {
   }
 
   private _endOfSlow(unit: string): this {
-    const code = fastNormalizeBoundaryUnit(unit);
+    const code = normalizeUnitCode(unit);
     if (code < 0) {
       return this;
     }
@@ -4494,42 +4494,6 @@ Object.defineProperty(Moment.prototype, "_isUTC", {
   enumerable: true,
   configurable: true,
 });
-
-function fastNormalizeBoundaryUnit(unit: string): UnitCode {
-  switch (unit) {
-    case "year":
-    case "years":
-      return YEAR;
-    case "month":
-    case "months":
-      return MONTH;
-    case "week":
-    case "weeks":
-      return WEEK;
-    case "isoWeek":
-      return ISO_WEEK;
-    case "day":
-    case "days":
-      return DAY;
-    case "date":
-    case "dates":
-      return DATE;
-    case "hour":
-    case "hours":
-      return HOUR;
-    case "minute":
-    case "minutes":
-      return MINUTE;
-    case "second":
-    case "seconds":
-      return SECOND;
-    case "quarter":
-    case "quarters":
-      return QUARTER;
-    default:
-      return normalizeUnitCode(unit);
-  }
-}
 
 function createMomentShell(
   l: string | undefined,

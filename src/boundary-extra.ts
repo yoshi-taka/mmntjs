@@ -1,8 +1,5 @@
 // -------------------------------------------------------------------------
 // COMPATIBILITY BOUNDARY — extra startOf/endOf unit handlers
-// These are only reachable via callback from moment-class.ts for units
-// (isoWeek, quarter) that the core Moment class cannot handle inline.
-// UnitCode is used internally; no runtime overhead.
 // -------------------------------------------------------------------------
 
 import { ISO_WEEK, QUARTER, WEEK, daysInMonth } from "./units";
@@ -30,13 +27,59 @@ export type BoundaryAwareMoment = Moment & {
   _getLocale: () => Locale;
 };
 
+// ---------- UTC/local Date operation helpers ----------
+
+function setUDate(d: Date, utc: boolean, v: number): void {
+  if (utc) {
+    d.setUTCDate(v);
+  } else {
+    d.setDate(v);
+  }
+}
+function shiftDateBy(d: Date, utc: boolean, diff: number): void {
+  setUDate(d, utc, (utc ? d.getUTCDate() : d.getDate()) + diff);
+}
+function getUDate(d: Date, utc: boolean): number {
+  return utc ? d.getUTCDate() : d.getDate();
+}
+function getUMonth(d: Date, utc: boolean): number {
+  return utc ? d.getUTCMonth() : d.getMonth();
+}
+function getUYear(d: Date, utc: boolean): number {
+  return utc ? d.getUTCFullYear() : d.getFullYear();
+}
+function getUDay(d: Date, utc: boolean): number {
+  return utc ? d.getUTCDay() : d.getDay();
+}
+
+function getWeekDow(m: BoundaryAwareMoment): number {
+  return m._p.locale === undefined && (m._l === undefined || m._l === "en")
+    ? 0
+    : (
+        ((m._getLocale()._config as Record<string, unknown>).week as
+          | { dow: number; doy?: number }
+          | undefined) ?? { dow: 0 }
+      ).dow;
+}
+
+function syncFields(d: Date, m: BoundaryAwareMoment, utc: boolean): void {
+  m._p.D = getUDate(d, utc);
+  m._p.M = getUMonth(d, utc);
+  m._p.y = getUYear(d, utc);
+  m._p.H = utc ? d.getUTCHours() : d.getHours();
+  m._p.m = utc ? d.getUTCMinutes() : d.getMinutes();
+  m._p.s = utc ? d.getUTCSeconds() : d.getSeconds();
+  m._p.ms = utc ? d.getUTCMilliseconds() : d.getMilliseconds();
+  m._p.W = getUDay(d, utc);
+  m._p.t = d.getTime();
+}
+
+// ---------- Day of week (Tomohiko Sakamoto, 0-indexed months) ----------
+
 function dayOfWeek(y: number, m: number, d: number): number {
   const t = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
-  let year = y;
-  year -= m < 2 ? 1 : 0;
-  return (
-    (year + Math.floor(year / 4) - Math.floor(year / 100) + Math.floor(year / 400) + t[m] + d) % 7
-  );
+  y -= m < 2 ? 1 : 0;
+  return (y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) + t[m] + d) % 7;
 }
 
 export function startOfExtraMoment(m: BoundaryAwareMoment, code: UnitCode): void {
@@ -54,61 +97,27 @@ export function startOfExtraMoment(m: BoundaryAwareMoment, code: UnitCode): void
       }
       m._p.M = Math.floor(m._p.M / 3) * 3;
       m._p.D = 1;
-      m._p.H = 0;
-      m._p.m = 0;
-      m._p.s = 0;
-      m._p.ms = 0;
       m._p.W = dayOfWeek(m._p.y, m._p.M, m._p.D);
-      m._p.t = d.getTime();
+      syncFields(d, m, utc);
       break;
-    case WEEK: {
-      const dow =
-        m._p.locale === undefined && (m._l === undefined || m._l === "en")
-          ? 0
-          : (
-              ((m._getLocale()._config as Record<string, unknown>).week as
-                | { dow: number; doy?: number }
-                | undefined) ?? { dow: 0 }
-            ).dow;
-      const day = utc ? d.getUTCDay() : d.getDay();
-      const diff = (day - dow + 7) % 7;
+    case WEEK:
+      shiftDateBy(d, utc, -((getUDay(d, utc) - getWeekDow(m) + 7) % 7));
       if (utc) {
-        d.setUTCDate(d.getUTCDate() - diff);
         d.setUTCHours(0, 0, 0, 0);
       } else {
-        d.setDate(d.getDate() - diff);
         d.setHours(0, 0, 0, 0);
       }
-      m._p.D = utc ? d.getUTCDate() : d.getDate();
-      m._p.M = utc ? d.getUTCMonth() : d.getMonth();
-      m._p.y = utc ? d.getUTCFullYear() : d.getFullYear();
-      m._p.H = 0;
-      m._p.m = 0;
-      m._p.s = 0;
-      m._p.ms = 0;
-      m._p.W = utc ? d.getUTCDay() : d.getDay();
-      m._p.t = d.getTime();
+      syncFields(d, m, utc);
       break;
-    }
     case ISO_WEEK: {
-      const day = utc ? d.getUTCDay() : d.getDay();
-      const diff = day === 0 ? -6 : 1 - day;
+      const day = getUDay(d, utc);
+      shiftDateBy(d, utc, day === 0 ? -6 : 1 - day);
       if (utc) {
-        d.setUTCDate(d.getUTCDate() + diff);
         d.setUTCHours(0, 0, 0, 0);
       } else {
-        d.setDate(d.getDate() + diff);
         d.setHours(0, 0, 0, 0);
       }
-      m._p.D = utc ? d.getUTCDate() : d.getDate();
-      m._p.M = utc ? d.getUTCMonth() : d.getMonth();
-      m._p.y = utc ? d.getUTCFullYear() : d.getFullYear();
-      m._p.H = 0;
-      m._p.m = 0;
-      m._p.s = 0;
-      m._p.ms = 0;
-      m._p.W = utc ? d.getUTCDay() : d.getDay();
-      m._p.t = d.getTime();
+      syncFields(d, m, utc);
       break;
     }
   }
@@ -129,62 +138,28 @@ export function endOfExtraMoment(m: BoundaryAwareMoment, code: UnitCode): void {
       }
       m._p.M = endMonth;
       m._p.D = endDay;
-      m._p.H = 23;
-      m._p.m = 59;
-      m._p.s = 59;
-      m._p.ms = 999;
       m._p.W = dayOfWeek(m._p.y, endMonth, endDay);
-      m._p.t = d.getTime();
+      syncFields(d, m, utc);
       break;
     }
-    case WEEK: {
-      const dow =
-        m._p.locale === undefined && (m._l === undefined || m._l === "en")
-          ? 0
-          : (
-              ((m._getLocale()._config as Record<string, unknown>).week as
-                | { dow: number; doy?: number }
-                | undefined) ?? { dow: 0 }
-            ).dow;
-      const weekDay = utc ? d.getUTCDay() : d.getDay();
-      const diff = (weekDay - dow + 7) % 7;
+    case WEEK:
+      shiftDateBy(d, utc, -((getUDay(d, utc) - getWeekDow(m) + 7) % 7) + 6);
       if (utc) {
-        d.setUTCDate(d.getUTCDate() - diff + 6);
         d.setUTCHours(23, 59, 59, 999);
       } else {
-        d.setDate(d.getDate() - diff + 6);
         d.setHours(23, 59, 59, 999);
       }
-      m._p.D = utc ? d.getUTCDate() : d.getDate();
-      m._p.M = utc ? d.getUTCMonth() : d.getMonth();
-      m._p.y = utc ? d.getUTCFullYear() : d.getFullYear();
-      m._p.H = 23;
-      m._p.m = 59;
-      m._p.s = 59;
-      m._p.ms = 999;
-      m._p.W = utc ? d.getUTCDay() : d.getDay();
-      m._p.t = d.getTime();
+      syncFields(d, m, utc);
       break;
-    }
     case ISO_WEEK: {
-      const weekDay = utc ? d.getUTCDay() : d.getDay();
-      const diff = weekDay === 0 ? -6 : 1 - weekDay;
+      const day = getUDay(d, utc);
+      shiftDateBy(d, utc, (day === 0 ? -6 : 1 - day) + 6);
       if (utc) {
-        d.setUTCDate(d.getUTCDate() + diff + 6);
         d.setUTCHours(23, 59, 59, 999);
       } else {
-        d.setDate(d.getDate() + diff + 6);
         d.setHours(23, 59, 59, 999);
       }
-      m._p.D = utc ? d.getUTCDate() : d.getDate();
-      m._p.M = utc ? d.getUTCMonth() : d.getMonth();
-      m._p.y = utc ? d.getUTCFullYear() : d.getFullYear();
-      m._p.H = 23;
-      m._p.m = 59;
-      m._p.s = 59;
-      m._p.ms = 999;
-      m._p.W = utc ? d.getUTCDay() : d.getDay();
-      m._p.t = d.getTime();
+      syncFields(d, m, utc);
       break;
     }
   }
