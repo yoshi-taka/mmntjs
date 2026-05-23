@@ -1,3 +1,3 @@
-export function endOfMonth(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
-}
+import { _endOfMonth } from "./_kernel";
+
+export const endOfMonth = _endOfMonth;

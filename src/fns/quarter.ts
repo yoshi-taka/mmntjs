@@ -1,3 +1,3 @@
-export function quarter(d: Date): number {
-  return ((d.getMonth() / 3) | 0) + 1;
-}
+import { _quarter } from "./_kernel";
+
+export const quarter = _quarter;

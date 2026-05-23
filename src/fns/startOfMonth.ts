@@ -1,3 +1,3 @@
-export function startOfMonth(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth(), 1);
-}
+import { _startOfMonth } from "./_kernel";
+
+export const startOfMonth = _startOfMonth;

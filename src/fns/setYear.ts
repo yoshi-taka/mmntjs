@@ -1,11 +1,6 @@
+import { _setYear } from "./_kernel";
+import type { YearNumber } from "./_types";
+
 export function setYear(d: Date, year: number): Date {
-  return new Date(
-    year,
-    d.getMonth(),
-    d.getDate(),
-    d.getHours(),
-    d.getMinutes(),
-    d.getSeconds(),
-    d.getMilliseconds(),
-  );
+  return _setYear(d, year as YearNumber);
 }

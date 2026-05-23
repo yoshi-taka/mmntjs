@@ -1,11 +1,6 @@
+import { _setMilliseconds } from "./_kernel";
+import type { Millisecond } from "./_types";
+
 export function setMilliseconds(d: Date, ms: number): Date {
-  return new Date(
-    d.getFullYear(),
-    d.getMonth(),
-    d.getDate(),
-    d.getHours(),
-    d.getMinutes(),
-    d.getSeconds(),
-    ms,
-  );
+  return _setMilliseconds(d, ms as Millisecond);
 }

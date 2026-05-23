@@ -1,11 +1,6 @@
+import { _setMinutes } from "./_kernel";
+import type { MinuteSecond } from "./_types";
+
 export function setMinutes(d: Date, minutes: number): Date {
-  return new Date(
-    d.getFullYear(),
-    d.getMonth(),
-    d.getDate(),
-    d.getHours(),
-    minutes,
-    d.getSeconds(),
-    d.getMilliseconds(),
-  );
+  return _setMinutes(d, minutes as MinuteSecond);
 }

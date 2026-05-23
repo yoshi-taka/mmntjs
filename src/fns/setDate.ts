@@ -1,11 +1,6 @@
+import { _setDate } from "./_kernel";
+import type { DayOfMonth } from "./_types";
+
 export function setDate(d: Date, date: number): Date {
-  return new Date(
-    d.getFullYear(),
-    d.getMonth(),
-    date,
-    d.getHours(),
-    d.getMinutes(),
-    d.getSeconds(),
-    d.getMilliseconds(),
-  );
+  return _setDate(d, date as DayOfMonth);
 }
