@@ -506,10 +506,26 @@ export class MomentLite {
   /** Fast clone — no _cold copy, no _i/_f/_strict copy.
    *  Safe when caller does not need _cold metadata. */
   _cloneFast(): this {
+    const p = this._p;
     const m = Object.create(MomentLite.prototype) as this;
     m._isAMomentObject = true;
     m._l = this._l;
-    m._p = { ...this._p, d: undefined, dirty: false };
+    m._p = {
+      t: p.t,
+      d: p.d ? new Date(p.t) : undefined,
+      dirty: false,
+      isUTC: p.isUTC,
+      offset: p.offset,
+      locale: p.locale,
+      y: p.y,
+      M: p.M,
+      D: p.D,
+      W: p.W,
+      H: p.H,
+      m: p.m,
+      s: p.s,
+      ms: p.ms,
+    };
     m._isValid = this._isValid;
     m._i = this._i;
     m._f = this._f;
@@ -2454,17 +2470,21 @@ export class MomentLite {
   }
 
   isLeapYear(): boolean {
-    if (this._p.dirty) {
-      this._ensureFields();
+    const p = this._p;
+    if (p.dirty) {
+      p.dirty = false;
+      this._refreshFields();
     }
-    return this._isValid && isLeapYear(this._p.y);
+    return this._isValid && isLeapYear(p.y);
   }
 
   daysInMonth(): number {
-    if (this._p.dirty) {
-      this._ensureFields();
+    const p = this._p;
+    if (p.dirty) {
+      p.dirty = false;
+      this._refreshFields();
     }
-    return daysInMonthFast(this._p.y, this._p.M);
+    return daysInMonthFast(p.y, p.M);
   }
 
   quarter(): number;

@@ -1947,7 +1947,23 @@ export class Moment {
     const m = Object.create(Moment.prototype) as this;
     m._isAMomentObject = true;
     m._l = this._l;
-    m._p = { ...p, d: p.d ? new Date(p.t) : undefined };
+    m._p = {
+      t: p.t,
+      d: p.d ? new Date(p.t) : undefined,
+      dirty: p.dirty,
+      _tStale: false,
+      isUTC: p.isUTC,
+      offset: p.offset,
+      locale: p.locale,
+      y: p.y,
+      M: p.M,
+      D: p.D,
+      W: p.W,
+      H: p.H,
+      m: p.m,
+      s: p.s,
+      ms: p.ms,
+    };
     m._isValid = this._isValid;
     m._i = this._i;
     m._f = this._f;
@@ -1965,7 +1981,23 @@ export class Moment {
     const m = Object.create(Moment.prototype) as this;
     m._isAMomentObject = true;
     m._l = this._l;
-    m._p = { ...p, d: p.d ? new Date(p.t) : undefined };
+    m._p = {
+      t: p.t,
+      d: p.d ? new Date(p.t) : undefined,
+      dirty: p.dirty,
+      _tStale: p._tStale,
+      isUTC: p.isUTC,
+      offset: p.offset,
+      locale: p.locale,
+      y: p.y,
+      M: p.M,
+      D: p.D,
+      W: p.W,
+      H: p.H,
+      m: p.m,
+      s: p.s,
+      ms: p.ms,
+    };
     m._isValid = this._isValid;
     m._i = this._i;
     m._f = this._f;
@@ -4080,10 +4112,12 @@ export class Moment {
   }
 
   daysInMonth(): number {
-    if (this._p.dirty) {
-      this._ensureFields();
+    const p = this._p;
+    if (p.dirty) {
+      p.dirty = false;
+      this._refreshFields();
     }
-    return daysInMonthFast(this._p.y, this._p.M);
+    return daysInMonthFast(p.y, p.M);
   }
 
   toDate(): Date {
@@ -4316,10 +4350,12 @@ export class Moment {
   }
 
   isLeapYear(): boolean {
-    if (this._p.dirty) {
-      this._ensureFields();
+    const p = this._p;
+    if (p.dirty) {
+      p.dirty = false;
+      this._refreshFields();
     }
-    return this._isValid && isLeapYear(this._p.y);
+    return this._isValid && isLeapYear(p.y);
   }
 
   isDST(): boolean {
