@@ -32,4 +32,16 @@ const hasDist = existsSync(new URL("index.js", distDir).pathname);
     expect(typeof mod.default).toBe("function");
     expect(typeof mod.tz).toBe("function");
   });
+
+  test("esm import 10-year-range entry", async () => {
+    const mod = await import(dist("10-year-range.js"));
+    expect(typeof mod.default).toBe("function");
+    expect(typeof mod.tz).toBe("function");
+  });
+
+  test("cjs require 10-year-range entry", () => {
+    const mod = require(dist("10-year-range.cjs"));
+    expect(typeof mod.default).toBe("function");
+    expect(typeof mod.tz).toBe("function");
+  });
 });

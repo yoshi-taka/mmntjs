@@ -21,9 +21,23 @@
       "types": "./dist/1970-2030.d.ts",
       "import": "./dist/1970-2030.js",
       "require": "./dist/1970-2030.cjs"
+    },
+    "./10-year-range": {
+      "types": "./dist/10-year-range.d.ts",
+      "import": "./dist/10-year-range.js",
+      "require": "./dist/10-year-range.cjs"
     }
   },
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/index.js",
+    "./dist/index.cjs",
+    "./dist/logic.js",
+    "./dist/logic.cjs",
+    "./dist/1970-2030.js",
+    "./dist/1970-2030.cjs",
+    "./dist/10-year-range.js",
+    "./dist/10-year-range.cjs"
+  ],
   "files": ["dist", "!dist/**/*.map"],
   "scripts": {
     "prepublishOnly": "bun run build && TZ=UTC bun test ./test/runtime-smoke.test.ts",

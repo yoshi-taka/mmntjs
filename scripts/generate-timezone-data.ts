@@ -426,3 +426,19 @@ writeBlobFile(
   countries,
   "1970-2030",
 );
+
+// 10-year rolling range (current year ± 5)
+const now = new Date();
+const rangeStart10year = Date.UTC(now.getFullYear() - 5, 0, 1);
+const rangeEnd10year = Date.UTC(now.getFullYear() + 5, 11, 31, 23, 59, 59, 999);
+const tenYearZones = collectZoneStrings(tz._zones!, {
+  from: rangeStart10year - BUFFER,
+  to: rangeEnd10year + BUFFER,
+});
+writeBlobFile(
+  join(srcDir, "builtin-data-10-year-range.generated.ts"),
+  tenYearZones,
+  links,
+  countries,
+  "10-year-range",
+);
