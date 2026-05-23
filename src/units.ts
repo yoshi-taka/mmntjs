@@ -255,3 +255,93 @@ export function daysInMonth(year: number, month: number): number {
   }
   return daysInMonthFast(year, month);
 }
+
+function daysInYear(year: number): number {
+  return isLeapYear(year) ? 366 : 365;
+}
+
+function firstWeekOffset(year: number, dow: number, doy: number, utc: boolean): number {
+  const fwd = 7 + dow - doy;
+  const janFwd = utc ? new Date(Date.UTC(year, 0, fwd)) : new Date(year, 0, fwd);
+  const janFwdDay = utc ? janFwd.getUTCDay() : janFwd.getDay();
+  const fwdlw = (7 + janFwdDay - dow) % 7;
+  return -fwdlw + fwd - 1;
+}
+
+export function weeksInYear(year: number, dow: number, doy: number, utc: boolean): number {
+  const weekOffset = firstWeekOffset(year, dow, doy, utc);
+  const weekOffsetNext = firstWeekOffset(year + 1, dow, doy, utc);
+  return (daysInYear(year) - weekOffset + weekOffsetNext) / 7;
+}
+
+const _nonLeapLadder = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+const _leapLadder = [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
+
+export function getDayOfYear(d: Date, utc: boolean): number {
+  const month = utc ? d.getUTCMonth() : d.getMonth();
+  const day = utc ? d.getUTCDate() : d.getDate();
+  const year = utc ? d.getUTCFullYear() : d.getFullYear();
+  return day + (isLeapYear(year) ? _leapLadder : _nonLeapLadder)[month];
+}
+
+export function getISOWeekNumber(d: Date, utc: boolean): number {
+  const getYear = utc ? (x: Date) => x.getUTCFullYear() : (x: Date) => x.getFullYear();
+  const year = getYear(d);
+  const weekOffset = firstWeekOffset(year, 1, 4, utc);
+  const dayOfYear = getDayOfYear(d, utc);
+  let week = Math.floor((dayOfYear - weekOffset - 1) / 7) + 1;
+  if (week < 1) {
+    week += weeksInYear(year - 1, 1, 4, utc);
+  } else {
+    const yearWeeks = weeksInYear(year, 1, 4, utc);
+    if (week > yearWeeks) {
+      return 1;
+    }
+  }
+  return week;
+}
+
+export function getISOWeekYear(d: Date, utc: boolean): number {
+  const getYear = utc ? (x: Date) => x.getUTCFullYear() : (x: Date) => x.getFullYear();
+  const year = getYear(d);
+  const weekOffset = firstWeekOffset(year, 1, 4, utc);
+  const dayOfYear = getDayOfYear(d, utc);
+  const week = Math.floor((dayOfYear - weekOffset - 1) / 7) + 1;
+  if (week < 1) {
+    return year - 1;
+  }
+  if (week > weeksInYear(year, 1, 4, utc)) {
+    return year + 1;
+  }
+  return year;
+}
+
+export function getLocaleWeek(d: Date, utc: boolean, dow: number, doy: number): number {
+  const year = utc ? d.getUTCFullYear() : d.getFullYear();
+  const weekOffset = firstWeekOffset(year, dow, doy, utc);
+  const dayOfYear = getDayOfYear(d, utc);
+  let week = Math.floor((dayOfYear - weekOffset - 1) / 7) + 1;
+  if (week < 1) {
+    week += weeksInYear(year - 1, dow, doy, utc);
+  } else {
+    const yearWeeks = weeksInYear(year, dow, doy, utc);
+    if (week > yearWeeks) {
+      week = 1;
+    }
+  }
+  return week;
+}
+
+export function getLocaleWeekYear(d: Date, utc: boolean, dow: number, doy: number): number {
+  const year = utc ? d.getUTCFullYear() : d.getFullYear();
+  const weekOffset = firstWeekOffset(year, dow, doy, utc);
+  const dayOfYear = getDayOfYear(d, utc);
+  const week = Math.floor((dayOfYear - weekOffset - 1) / 7) + 1;
+  if (week < 1) {
+    return year - 1;
+  }
+  if (week > weeksInYear(year, dow, doy, utc)) {
+    return year + 1;
+  }
+  return year;
+}

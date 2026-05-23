@@ -1,5 +1,5 @@
 import type { Moment } from "./moment-class";
-import { isLeapYear } from "./units";
+import { weeksInYear, getISOWeekNumber, getISOWeekYear, isLeapYear } from "./units";
 
 export type CalendarAwareMoment = Moment & {
   _p: { isUTC: boolean; t: number; y: number; M: number; D: number; W: number };
@@ -8,63 +8,6 @@ export type CalendarAwareMoment = Moment & {
   _updateOffset: (keepTime?: boolean) => void;
   _getD: () => Date;
 };
-
-function firstWeekOffset(year: number, dow: number, doy: number, _utc: boolean): number {
-  const fwd = 7 + dow - doy;
-  const janFwd = new Date(Date.UTC(year, 0, fwd));
-  const janFwdDay = janFwd.getUTCDay();
-  const fwdlw = (7 + janFwdDay - dow) % 7;
-  return -fwdlw + fwd - 1;
-}
-
-function daysInYear(year: number): number {
-  return isLeapYear(year) ? 366 : 365;
-}
-
-function weeksInYear(year: number, dow: number, doy: number, utc: boolean): number {
-  const weekOffset = firstWeekOffset(year, dow, doy, utc);
-  const weekOffsetNext = firstWeekOffset(year + 1, dow, doy, utc);
-  return (daysInYear(year) - weekOffset + weekOffsetNext) / 7;
-}
-
-function getDayOfYear(d: Date, utc: boolean): number {
-  const month = utc ? d.getUTCMonth() : d.getMonth();
-  const day = utc ? d.getUTCDate() : d.getDate();
-  const year = utc ? d.getUTCFullYear() : d.getFullYear();
-  const nonLeap = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
-  const leap = [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
-  return day + (isLeapYear(year) ? leap : nonLeap)[month];
-}
-
-function getISOWeekNumber(d: Date, utc: boolean): number {
-  const getYear = utc ? (x: Date) => x.getUTCFullYear() : (x: Date) => x.getFullYear();
-  const year = getYear(d);
-  const weekOffset = firstWeekOffset(year, 1, 4, utc);
-  const dayOfYear = getDayOfYear(d, utc);
-  let week = Math.floor((dayOfYear - weekOffset - 1) / 7) + 1;
-  if (week < 1) {
-    week += weeksInYear(year - 1, 1, 4, utc);
-  } else {
-    const yearWeeks = weeksInYear(year, 1, 4, utc);
-    if (week > yearWeeks) {
-      return 1;
-    }
-  }
-  return week;
-}
-
-function getISOWeekYear(d: Date, utc: boolean): number {
-  const getDow = utc ? (x: Date) => x.getUTCDay() : (x: Date) => x.getDay();
-  const getDate = utc ? (x: Date) => x.getUTCDate() : (x: Date) => x.getDate();
-  const getFullYear = utc ? (x: Date) => x.getUTCFullYear() : (x: Date) => x.getFullYear();
-  const setDate = utc
-    ? (x: Date, v: number) => x.setUTCDate(v)
-    : (x: Date, v: number) => x.setDate(v);
-  const clone = new Date(d.getTime());
-  const isoDow = getDow(clone) || 7;
-  setDate(clone, getDate(clone) + 4 - isoDow);
-  return getFullYear(clone);
-}
 
 export function isoWeekdayMoment(m: CalendarAwareMoment, d?: unknown): number | Moment {
   m._ensureFields();

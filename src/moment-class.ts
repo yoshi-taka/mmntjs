@@ -664,6 +664,7 @@ import {
   daysInMonthFast,
   isLeapYear,
   ymdToEpochDays,
+  weeksInYear,
 } from "./units";
 import { parseString, parseArray, parseObject, type ParsedData } from "./parse";
 import type { FormattableMoment } from "./display/types";
@@ -804,20 +805,6 @@ export interface MomentConstructionConfig {
   _tooBusyWith?: string;
 }
 
-function firstWeekOffset(year: number, dow: number, doy: number, utc: boolean): number {
-  const fwd = 7 + dow - doy;
-  const janFwd = utc ? new Date(Date.UTC(year, 0, fwd)) : new Date(year, 0, fwd);
-  const janFwdDay = utc ? janFwd.getUTCDay() : janFwd.getDay();
-  const fwdlw = (7 + janFwdDay - dow) % 7;
-  return -fwdlw + fwd - 1;
-}
-
-function weeksInYear(year: number, dow: number, doy: number, utc: boolean): number {
-  const weekOffset = firstWeekOffset(year, dow, doy, utc);
-  const weekOffsetNext = firstWeekOffset(year + 1, dow, doy, utc);
-  return (daysInYear(year) - weekOffset + weekOffsetNext) / 7;
-}
-
 enum DMethod {
   FullYear,
   Month,
@@ -887,10 +874,6 @@ function _dayOfWeek(y: number, m: number, d: number): number {
     (y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) + t[m] + d) | 0,
     7,
   );
-}
-
-function daysInYear(year: number): number {
-  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0 ? 366 : 365;
 }
 
 export interface MomentCold {
