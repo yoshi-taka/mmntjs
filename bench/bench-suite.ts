@@ -50,7 +50,7 @@ const match = (group: string): boolean => !filter || filter.has(group);
 
 // ── Help ──
 if (filterArg === "help" || filterArg === "--help") {
-  console.log("Usage: BENCH=parse,format,locale,add,startof,setter,diff bun test/bench-suite.ts");
+  console.log("Usage: BENCH=parse,format,locale,add,startof,setter,diff bun bench/bench-suite.ts");
   console.log("Groups: parse, format, locale, add, startof, setter, diff");
   process.exit(0);
 }

@@ -1,6 +1,6 @@
 // Micro A/B tests for setter overhead in Moment class.
 // Tests alternative implementation strategies for hot-path setters.
-// Run: bun test/bench-setter-ab.ts
+// Run: bun bench/bench-setter-ab.ts
 /* eslint-disable @typescript-eslint/no-explicit-any, no-unused-vars, prefer-template, curly */
 
 import mmntjs from "../dist/index.cjs";

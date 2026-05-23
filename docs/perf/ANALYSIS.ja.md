@@ -125,7 +125,7 @@ this._t =
 
 重要なのは次の2点。
 - UTC の month/year 変更で `Date` 生成や `Date.UTC(...)` 呼び出しを避けられる
-- `floorUnitEpoch` / `endOfUnitEpoch` により、UTC `startOf/endOf` を負の epoch でも安全に扱える。ここは `test/bench-regression.ts` で回帰監視している
+- `floorUnitEpoch` / `endOfUnitEpoch` により、UTC `startOf/endOf` を負の epoch でも安全に扱える。ここは `bench/bench-regression.ts` で回帰監視している
 
 ## 3. String Representation と直接 digit parsing
 

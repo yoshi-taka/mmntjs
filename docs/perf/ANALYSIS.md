@@ -122,7 +122,7 @@ this._t =
 
 This matters for two reasons:
 - no `Date` allocation or `Date.UTC(...)` call in UTC month/year mutations
-- shared helpers (`floorUnitEpoch`, `endOfUnitEpoch`) make UTC `startOf/endOf` correct even for negative epochs, which is now guarded by `test/bench-regression.ts`
+- shared helpers (`floorUnitEpoch`, `endOfUnitEpoch`) make UTC `startOf/endOf` correct even for negative epochs, which is now guarded by `bench/bench-regression.ts`
 
 ## 3. String Representation and Direct Digit Parsing
 

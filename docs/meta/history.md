@@ -139,7 +139,7 @@ date-fns 比は 25 項目中 23 項目で勝ち。`moment() / new Date()` は負
 | `bf6a64a` | inline _addMonths into _addSimple, fast-path day clamp for $D<=28 |
 | (current) | fix: restore !float fast path for diff(YEAR/MONTH/QUARTER), fix bench-datefns2 all mutation chained |
 
-ベンチマーク: `bun test/bench-datefns2.ts`（date-fns 比較）, `bun run bench`（moment.js 比較）
+ベンチマーク: `bun bench/bench-datefns2.ts`（date-fns 比較）, `bun run bench`（moment.js 比較）
 
 ## 注意: 作業ツリー破壊の反省
 

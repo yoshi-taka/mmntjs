@@ -76,7 +76,7 @@ set year                                48ns       99ns  ~206.2%
 
 (`%` = df / m2 × 100. Higher = mmntjs faster. `>100` = mmntjs wins.)
 
-`~` は短すぎてノイズが大きい計測を示す。`test/bench-datefns2.ts` は単発値ではなく、繰り返し実行の median を出すようにした。
+`~` は短すぎてノイズが大きい計測を示す。`bench/bench-datefns2.ts` は単発値ではなく、繰り返し実行の median を出すようにした。
 
 **mmntjs は 25 項目中 24 項目で勝ち。** 負けは `moment() / new Date()`（約86%、ラッパー確保コスト）のみ。
 
@@ -124,20 +124,40 @@ mmntjs wins on both runtimes. Absolute speeds differ slightly (V8 vs JSC), but t
 
 | File | Harness | Purpose |
 |------|---------|---------|
-| `test/bench.ts` | custom (hrtime) | moment.js vs mmntjs, cold+warm |
-| `test/bench-datefns2.ts` | custom (hrtime) | mmntjs vs date-fns, cold+warm |
-| `test/bench-regression.ts` | custom (hrtime) | 負の epoch の UTC 演算、invalid parse の伸び、巨大 month 正規化の回帰ガード |
-| `test/bench-suite.ts` | benchmark.js | mmntjs vs date-fns, locale format, ops/sec |
-| `test/bench-mem.ts` | custom | memory footprint (heapUsed/rss) |
-| `test/bench-cold-warm.ts` | custom | cold start analysis |
-| `test/bench-temporal.ts` | custom (hrtime) | mmntjs vs native Temporal, cold+warm |
+| `bench/bench.ts` | custom (hrtime) | moment.js vs mmntjs, cold+warm |
+
+| `bench/bench-datefns2.ts` | custom (hrtime) | mmntjs vs date-fns, cold+warm |
+
+| `bench/bench-regression.ts` | custom (hrtime) | 負の epoch の UTC 演算、invalid parse の伸び、巨大 month 正規化の回帰ガード |
+
+| `bench/bench-suite.ts` | benchmark.js | mmntjs vs date-fns, locale format, ops/sec |
+
+| `bench/bench-mem.ts` | custom | memory footprint (heapUsed/rss) |
+
+| `bench/bench-cold-warm.ts` | custom | cold start analysis |
+
+| `bench/bench-temporal.ts` | custom (hrtime) | mmntjs vs native Temporal, cold+warm |
 
 よく使うコマンド:
-- `bun run bench` -> 主ベンチマーク表 (`test/bench.ts`)
-- `bun run bench:guard` -> 回帰閾値チェック (`test/bench-regression.ts`)
-- `bun run bench:mem` -> モジュールのメモリ footprint (`test/bench-mem.ts`)
-- `bun test test/bench-cold-warm.ts` -> locale cold/warm 挙動
-- `node test/bench-temporal.ts` -> Temporal 比較（Node.js 26+ の native Temporal が必要）
+- `bun run bench` -> 主ベンチマーク表 (`bench/bench.ts`)
+
+- `bun run bench:guard` -> 回帰閾値チェック (`bench/bench-regression.ts`)
+
+- `bun run bench:mem` -> モジュールのメモリ footprint (`bench/bench-mem.ts`)
+
+- `bun bench/bench-cold-warm.ts` -> locale cold/warm 挙動
+
+- `node bench/bench-temporal.ts` -> Temporal 比較（Node.js 26+ の native Temporal が必要）
+
+## 公式ベンチマーク (定期実行対象)
+
+| # | 系統 | ファイル | 実行 |
+|---|------|---------|------|
+| A | moment.js vs mmntjs | `bench/bench.ts` | `bun run bench` |
+| B | mmntjs vs date-fns | `bench/bench-datefns2.ts` | `bun bench/bench-datefns2.ts` |
+| C | mmntjs-tz vs moment-tz | `packages/timezone/test/bench-timezone.ts` | `bun packages/timezone/test/bench-timezone.ts` |
+| D | Regression guard | `bench/bench-regression.ts` etc | `bun run bench:guard` |
+| E | Temporal (参考) | `bench/bench-temporal.ts` | `node bench/bench-temporal.ts` |
 
 ## mmntjs vs native Temporal (Node.js 26)
 

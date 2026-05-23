@@ -136,20 +136,32 @@ mmntjs wins on both runtimes. Absolute speeds differ slightly (V8 vs JSC), but t
 
 | File | Harness | Purpose |
 |------|---------|---------|
-| `test/bench.ts` | custom (hrtime) | moment.js vs mmntjs, cold+warm |
-| `test/bench-datefns2.ts` | custom (hrtime) | mmntjs vs date-fns, cold+warm |
-| `test/bench-regression.ts` | custom (hrtime) | regression guard for negative-epoch UTC math, invalid-parse growth, large month normalization |
-| `test/bench-suite.ts` | benchmark.js | mmntjs vs date-fns, locale format, ops/sec |
-| `test/bench-mem.ts` | custom | memory footprint (heapUsed/rss) |
-| `test/bench-cold-warm.ts` | custom | cold start analysis |
-| `test/bench-temporal.ts` | custom (hrtime) | mmntjs vs native Temporal, cold+warm |
+| `bench/bench.ts` | custom (hrtime) | moment.js vs mmntjs, cold+warm |
+| `bench/bench-datefns2.ts` | custom (hrtime) | mmntjs vs date-fns, cold+warm |
+| `bench/bench-regression.ts` | custom (hrtime) | regression guard for negative-epoch UTC math, invalid-parse growth, large month normalization |
+| `bench/bench-suite.ts` | benchmark.js | mmntjs vs date-fns, locale format, ops/sec |
+| `bench/bench-mem.ts` | custom | memory footprint (heapUsed/rss) |
+| `bench/bench-cold-warm.ts` | custom | cold start analysis |
+| `bench/bench-temporal.ts` | custom (hrtime) | mmntjs vs native Temporal, cold+warm |
 
 Useful commands:
-- `bun run bench` -> main moment.js vs mmntjs table (`test/bench.ts`)
-- `bun run bench:guard` -> regression guard thresholds (`test/bench-regression.ts`)
-- `bun run bench:mem` -> module footprint (`test/bench-mem.ts`)
-- `bun test test/bench-cold-warm.ts` -> locale cold/warm behavior
-- `node test/bench-temporal.ts` -> Temporal comparison (requires Node.js 26+ with native Temporal)
+- `bun run bench` -> main moment.js vs mmntjs table (`bench/bench.ts`)
+- `bun run bench:guard` -> regression guard thresholds (`bench/bench-regression.ts`)
+- `bun run bench:mem` -> module footprint (`bench/bench-mem.ts`)
+- `bun bench/bench-cold-warm.ts` -> locale cold/warm behavior
+- `node bench/bench-temporal.ts` -> Temporal comparison (requires Node.js 26+ with native Temporal)
+
+## Official benchmarks (定期実行対象)
+
+The following are designated as the canonical benchmark suite for mmntjs:
+
+| # | 系統 | ファイル | 実行 |
+|---|------|---------|------|
+| A | moment.js vs mmntjs | `bench/bench.ts` | `bun run bench` |
+| B | mmntjs vs date-fns | `bench/bench-datefns2.ts` | `bun bench/bench-datefns2.ts` |
+| C | mmntjs-tz vs moment-tz | `packages/timezone/test/bench-timezone.ts` | `bun packages/timezone/test/bench-timezone.ts` |
+| D | Regression guard | `bench/bench-regression.ts` etc | `bun run bench:guard` |
+| E | Temporal (参考) | `bench/bench-temporal.ts` | `node bench/bench-temporal.ts`
 
 ## mmntjs vs native Temporal (Node.js 26)
 

@@ -234,7 +234,7 @@ Both paths are now input-determined. The exact same ISO string always takes the 
 
 ### 6.1 Benchmark harness
 
-The benchmark at `test/bench.ts` uses `process.hrtime.bigint()` which is monotonic and deterministic per run. However, the cold/warm measurement has inherent noise from JIT compilation, GC, and OS scheduling.
+The benchmark at `bench/bench.ts` uses `process.hrtime.bigint()` which is monotonic and deterministic per run. However, the cold/warm measurement has inherent noise from JIT compilation, GC, and OS scheduling.
 
 **Sources of non-determinacy in benchmarks**:
 | Source | Mitigation |

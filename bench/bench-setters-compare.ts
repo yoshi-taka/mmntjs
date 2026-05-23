@@ -4,8 +4,8 @@
 // 3) pure arithmetic + offset verification (DST guard)
 //
 // Usage:
-//   bun test/bench-setters-compare.ts
-//   node test/bench-setters-compare.ts
+//   bun bench/bench-setters-compare.ts
+//   node bench/bench-setters-compare.ts
 
 import mmntjs from "mmntjs";
 
