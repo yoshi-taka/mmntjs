@@ -166,7 +166,7 @@ makeMutations([
   {
     name: "add days: _t sign flipped",
     file: "src/moment-class.ts",
-    patterns: [[/this\._p\.t \+= rounded \* 86400000;/g, "this._p.t -= rounded * 86400000;"]],
+    patterns: [[/this\._p\.t \+= rounded \* (86400000|DAY_MS);/g, "this._p.t -= rounded * $1;"]],
     inputs: fc.tuple(fc.date({ noInvalidDate: true }), nonZeroInt(-100, 100)),
     testFn: (input: unknown) => {
       const [date, n] = input as [unknown, unknown];

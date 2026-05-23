@@ -212,7 +212,7 @@ function startOfDay_CLFD(p: _P & CleanLocalFreshWithDate): void {
 }
 /** Add `amount` days in UTC mode.  Civil arithmetic for safe D, dirty-defer for boundary. */
 function addDayUTC(p: _P & CleanUTC, amount: number): void {
-  p.t += amount * 86400000;
+  p.t += amount * DAY_MS;
   p.d = undefined;
   if (p.D + amount >= 1 && p.D + amount <= 28) {
     // No month boundary → cheap arithmetic, fields stay fresh
@@ -226,7 +226,7 @@ function addDayUTC(p: _P & CleanUTC, amount: number): void {
 /** add(1, "day") on CleanLocalFreshWithDate, D+amount ∈ [1,28] → arithmetic-only, allocation-free. */
 function addDay_CLFD_safe(p: _P & CleanLocalFreshWithDate, amount: number): void {
   p.D += amount;
-  p.t += amount * 86400000;
+  p.t += amount * DAY_MS;
   (p as { d: Date | undefined }).d = undefined;
   (p as { _tStale: boolean })._tStale = true;
 }
@@ -243,7 +243,7 @@ function addDay_CLFD_overflow(p: _P & CleanLocalFreshWithDate, amount: number): 
 /** add(1, "day") on CleanLocalFreshNoDate, D+amount safe in [1,28] → arithmetic. */
 function addDay_CLFN_safe(p: _P & CleanLocalFreshNoDate, amount: number): void {
   p.D += amount;
-  p.t += amount * 86400000;
+  p.t += amount * DAY_MS;
   (p as { _tStale: boolean })._tStale = true;
 }
 /** add(1, "day") on CleanLocalFreshNoDate, D+amount outside [1,28] → allocate Date + setDate. */
@@ -2782,7 +2782,7 @@ export class Moment {
   private _addDay(amount: number): void {
     const p = this._p;
     if (p.isUTC) {
-      p.t += Number.isInteger(amount) ? amount * 86400000 : Math.round(amount * 86400000);
+      p.t += Number.isInteger(amount) ? amount * DAY_MS : Math.round(amount * DAY_MS);
       p.d = undefined;
       if (p.D + amount >= 1 && p.D + amount <= 28) {
         p.D += amount;
@@ -2888,7 +2888,7 @@ export class Moment {
       }
     }
     if (p.isUTC) {
-      p.t = ymdToEpochDays(y, m, d_) * 86400000 + p.H * 3600000 + p.m * 60000 + p.s * 1000 + p.ms;
+      p.t = ymdToEpochDays(y, m, d_) * DAY_MS + _tod(p);
       p.d = undefined;
       p._tStale = false;
 
@@ -2941,12 +2941,7 @@ export class Moment {
           }
         }
         if (utc) {
-          this._p.t =
-            ymdToEpochDays(y, m, d_) * 86400000 +
-            this._p.H * 3600000 +
-            this._p.m * 60000 +
-            this._p.s * 1000 +
-            this._p.ms;
+          this._p.t = ymdToEpochDays(y, m, d_) * DAY_MS + _tod(this._p);
           this._p.d = undefined;
           this._p._tStale = false;
 
@@ -2978,7 +2973,7 @@ export class Moment {
             : Math.round(raw);
         if (rounded !== 0) {
           if (utc) {
-            this._p.t += rounded * 86400000;
+            this._p.t += rounded * DAY_MS;
             this._p.d = undefined;
           } else {
             const dt = this._p.d ?? (this._p.d = new Date(this._p.t));
@@ -3120,17 +3115,17 @@ export class Moment {
       case "h":
       case "hour":
       case "hours":
-        this._addTime(amount, 3600000);
+        this._addTime(amount, HOUR_MS);
         return this;
       case "m":
       case "minute":
       case "minutes":
-        this._addTime(amount, 60000);
+        this._addTime(amount, MINUTE_MS);
         return this;
       case "s":
       case "second":
       case "seconds":
-        this._addTime(amount, 1000);
+        this._addTime(amount, SECOND_MS);
         return this;
       case "ms":
       case "millisecond":
@@ -3278,7 +3273,10 @@ export class Moment {
     }
   }
 
-  subtract(amount: number | string | object, unit?: string): this {
+  subtract(amount: number, unit?: string): this;
+  subtract(amount: DurationInput): this;
+  subtract(amount: string, unit?: string): this;
+  subtract(amount: number | DurationInput | string, unit?: string): this {
     if (!this._isValid) {
       return this;
     }
@@ -4438,8 +4436,8 @@ export class Moment {
       case "date":
       default: {
         if (this._p.isUTC && other._p.isUTC) {
-          const thisDays = Math.floor((this._p.t - this._p.offset * 60000) / 86400000);
-          const otherDays = Math.floor((other._p.t - other._p.offset * 60000) / 86400000);
+          const thisDays = Math.floor((this._p.t - this._p.offset * 60000) / DAY_MS);
+          const otherDays = Math.floor((other._p.t - other._p.offset * 60000) / DAY_MS);
           if (thisDays !== otherDays) {
             return thisDays - otherDays;
           }
