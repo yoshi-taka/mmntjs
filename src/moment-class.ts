@@ -3491,6 +3491,37 @@ export class Moment {
       p._tStale = false;
       return this;
     }
+    // Clean local no Date → offset probing from t (fields master)
+    if (!updateOffsetCallback && !p.dirty && !p._tStale && !p.isUTC && p.d == null) {
+      const phase = euclideanModulo(p.t + p.offset * 60000, DAY_MS);
+      const candidateT = p.t - phase;
+      const offAtTarget = _tzOffsetAt(candidateT);
+      if (offAtTarget === p.offset) {
+        p.t = candidateT;
+      } else {
+        p.t = candidateT + (offAtTarget - p.offset) * 60000;
+        p.offset = offAtTarget;
+      }
+      p.H = 0;
+      p.m = 0;
+      p.s = 0;
+      p.ms = 0;
+      p._tStale = false;
+      return this;
+    }
+    // Clean local stale → recompute t from fields with offset probe
+    if (!updateOffsetCallback && !p.dirty && p._tStale && !p.isUTC) {
+      const utcMidnight = ymdToEpochDays(p.y, p.M, p.D) * DAY_MS;
+      const offMidnight = _tzOffsetAt(utcMidnight);
+      p.t = utcMidnight - offMidnight * 60000;
+      p.offset = offMidnight;
+      p.H = 0;
+      p.m = 0;
+      p.s = 0;
+      p.ms = 0;
+      p._tStale = false;
+      return this;
+    }
     // Dirty + Date: set Date directly, then populate all fields from Date.
     if (!updateOffsetCallback && p.dirty && p.d != null && !p._tStale && !p.isUTC) {
       p.d.setHours(0, 0, 0, 0);
