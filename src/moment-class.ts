@@ -550,7 +550,7 @@ function diffDaysUTC(a: _P & CleanUTC, b: _P & CleanUTC, float?: boolean): numbe
   if (float) {
     return (a.t - b.t) / DAY_MS;
   }
-  const days = Math.floor(a.t / DAY_MS) - Math.floor(b.t / DAY_MS);
+  const days = absFloor((a.t - b.t) / DAY_MS);
   return days || 0;
 }
 
@@ -638,7 +638,16 @@ import {
 } from "./utc-extra";
 import type { UtcMoment, MomentFactory } from "./utc-extra";
 import { getCurrentLocale, getLocale, hasLocale } from "./locale-runtime";
-import { isArray, isObject, isDate, isMoment, hasOwnProp, zeroFill, createDateSafe } from "./utils";
+import {
+  isArray,
+  isObject,
+  isDate,
+  isMoment,
+  hasOwnProp,
+  zeroFill,
+  createDateSafe,
+  absFloor,
+} from "./utils";
 import {
   DATE,
   DAY,
