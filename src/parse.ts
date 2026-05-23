@@ -363,41 +363,60 @@ function parseCommonISOExtended(str: string): InternalParsedData | null {
   return null;
 }
 
-function parse4Digits(str: string, i: number): number | null {
-  const c0 = str.charCodeAt(i) - 48,
-    c1 = str.charCodeAt(i + 1) - 48;
-  const c2 = str.charCodeAt(i + 2) - 48,
-    c3 = str.charCodeAt(i + 3) - 48;
-  if ((c0 | c1 | c2 | c3) & ~9) {
+function parseCommonISO(str: string): InternalParsedData | null {
+  const len = str.length;
+  if (len !== 10 && (len < 19 || len > 29)) {
     return null;
   }
-  return (c0 * 10 + c1) * 100 + (c2 * 10 + c3);
-}
+  if (str.charCodeAt(4) !== 45 || str.charCodeAt(7) !== 45) {
+    return null;
+  }
 
-function parse2Digits(str: string, i: number): number | null {
-  const c0 = str.charCodeAt(i) - 48,
-    c1 = str.charCodeAt(i + 1) - 48;
-  if ((c0 | c1) & ~9) {
+  // ── year (4 digits at 0-3) ──
+  let c = str.charCodeAt(0) - 48;
+  let y0 = c;
+  c = str.charCodeAt(1) - 48;
+  let y1 = c;
+  c = str.charCodeAt(2) - 48;
+  let y2 = c;
+  c = str.charCodeAt(3) - 48;
+  let y3 = c;
+  if ((y0 | y1 | y2 | y3) & ~9) {
     return null;
   }
-  return c0 * 10 + c1;
-}
+  const year = (y0 * 10 + y1) * 100 + (y2 * 10 + y3);
 
-function _parseCommonISODate(str: string, len: number, year: number): InternalParsedData | null {
-  const month1 = parse2Digits(str, 5);
-  if (month1 === null) {
+  // ── month (2 digits at 5-6) ──
+  c = str.charCodeAt(5) - 48;
+  const m0 = c;
+  c = str.charCodeAt(6) - 48;
+  const m1 = c;
+  if ((m0 | m1) & ~9) {
     return null;
   }
-  const day = parse2Digits(str, 8);
-  if (day === null) {
+  const month1 = m0 * 10 + m1;
+  if (month1 < 1 || month1 > 12) {
     return null;
   }
+
+  // ── day (2 digits at 8-9) ──
+  c = str.charCodeAt(8) - 48;
+  const d0 = c;
+  c = str.charCodeAt(9) - 48;
+  const d1 = c;
+  if ((d0 | d1) & ~9) {
+    return null;
+  }
+  const day = d0 * 10 + d1;
+  if (day < 1 || day > 31) {
+    return null;
+  }
+
   if (len === 10) {
-    if (month1 < 1 || month1 > 12 || day < 1 || day > 31) {
-      return null;
-    }
     return { year, month: month1 - 1, day, _hasDate: true, _hasTime: false };
   }
+
+  // ── time ──
   const sep = str.charCodeAt(10);
   if (sep !== 84 && sep !== 32) {
     return null;
@@ -405,22 +424,53 @@ function _parseCommonISODate(str: string, len: number, year: number): InternalPa
   if (str.charCodeAt(13) !== 58 || str.charCodeAt(16) !== 58) {
     return null;
   }
-  const hour = parse2Digits(str, 11);
-  if (hour === null) {
+
+  // hour (11-12)
+  c = str.charCodeAt(11) - 48;
+  const h0 = c;
+  c = str.charCodeAt(12) - 48;
+  const h1 = c;
+  if ((h0 | h1) & ~9) {
     return null;
   }
-  const minute = parse2Digits(str, 14);
-  if (minute === null) {
+  const hour = h0 * 10 + h1;
+  if (hour < 0 || hour > 24) {
     return null;
   }
-  const second = parse2Digits(str, 17);
-  if (second === null) {
+
+  // minute (14-15)
+  c = str.charCodeAt(14) - 48;
+  const mi0 = c;
+  c = str.charCodeAt(15) - 48;
+  const mi1 = c;
+  if ((mi0 | mi1) & ~9) {
     return null;
   }
+  const minute = mi0 * 10 + mi1;
+  if (minute < 0 || minute > 59) {
+    return null;
+  }
+
+  // second (17-18)
+  c = str.charCodeAt(17) - 48;
+  const s0 = c;
+  c = str.charCodeAt(18) - 48;
+  const s1 = c;
+  if ((s0 | s1) & ~9) {
+    return null;
+  }
+  const second = s0 * 10 + s1;
+  if (second < 0 || second > 59) {
+    return null;
+  }
+
   let millisecond: number | undefined;
+  let offset: number | undefined;
   let pos = 19;
+
   if (pos < len && str.charCodeAt(pos) === 46) {
-    millisecond = 0;
+    // ── fractional seconds ──
+    let ms = 0;
     let scale = 100;
     pos++;
     const fracStart = pos;
@@ -430,7 +480,7 @@ function _parseCommonISODate(str: string, len: number, year: number): InternalPa
         break;
       }
       if (scale > 0) {
-        millisecond += (code - 48) * scale;
+        ms += (code - 48) * scale;
         scale = Math.floor(scale / 10);
       }
       pos++;
@@ -438,8 +488,10 @@ function _parseCommonISODate(str: string, len: number, year: number): InternalPa
     if (pos === fracStart) {
       return null;
     }
+    millisecond = ms;
   }
-  let offset: number | undefined;
+
+  // ── timezone ──
   if (pos < len) {
     const tz = str.charCodeAt(pos);
     if (tz === 90) {
@@ -447,46 +499,25 @@ function _parseCommonISODate(str: string, len: number, year: number): InternalPa
       pos++;
     } else if (tz === 43 || tz === 45) {
       const offLen = len - pos;
-      if (offLen === 6) {
-        if (str.charCodeAt(pos + 3) !== 58) {
+      if (offLen === 6 && str.charCodeAt(pos + 3) === 58) {
+        const oh0 = str.charCodeAt(pos + 1) - 48,
+          oh1 = str.charCodeAt(pos + 2) - 48;
+        const om0 = str.charCodeAt(pos + 4) - 48,
+          om1 = str.charCodeAt(pos + 5) - 48;
+        if ((oh0 | oh1 | om0 | om1) & ~9) {
           return null;
         }
-        const offH0 = str.charCodeAt(pos + 1) - 48,
-          offH1 = str.charCodeAt(pos + 2) - 48;
-        const offM0 = str.charCodeAt(pos + 4) - 48,
-          offM1 = str.charCodeAt(pos + 5) - 48;
-        if (
-          offH0 < 0 ||
-          offH0 > 9 ||
-          offH1 < 0 ||
-          offH1 > 9 ||
-          offM0 < 0 ||
-          offM0 > 9 ||
-          offM1 < 0 ||
-          offM1 > 9
-        ) {
-          return null;
-        }
-        offset = (tz === 43 ? 1 : -1) * ((offH0 * 10 + offH1) * 60 + (offM0 * 10 + offM1));
+        offset = (tz === 43 ? 1 : -1) * ((oh0 * 10 + oh1) * 60 + (om0 * 10 + om1));
         pos += 6;
       } else if (offLen === 5) {
-        const offH0 = str.charCodeAt(pos + 1) - 48,
-          offH1 = str.charCodeAt(pos + 2) - 48;
-        const offM0 = str.charCodeAt(pos + 3) - 48,
-          offM1 = str.charCodeAt(pos + 4) - 48;
-        if (
-          offH0 < 0 ||
-          offH0 > 9 ||
-          offH1 < 0 ||
-          offH1 > 9 ||
-          offM0 < 0 ||
-          offM0 > 9 ||
-          offM1 < 0 ||
-          offM1 > 9
-        ) {
+        const oh0 = str.charCodeAt(pos + 1) - 48,
+          oh1 = str.charCodeAt(pos + 2) - 48;
+        const om0 = str.charCodeAt(pos + 3) - 48,
+          om1 = str.charCodeAt(pos + 4) - 48;
+        if ((oh0 | oh1 | om0 | om1) & ~9) {
           return null;
         }
-        offset = (tz === 43 ? 1 : -1) * ((offH0 * 10 + offH1) * 60 + (offM0 * 10 + offM1));
+        offset = (tz === 43 ? 1 : -1) * ((oh0 * 10 + oh1) * 60 + (om0 * 10 + om1));
         pos += 5;
       } else {
         return null;
@@ -495,6 +526,7 @@ function _parseCommonISODate(str: string, len: number, year: number): InternalPa
       return null;
     }
   }
+
   if (pos !== len) {
     return null;
   }
@@ -510,21 +542,6 @@ function _parseCommonISODate(str: string, len: number, year: number): InternalPa
     _hasDate: true,
     _hasTime: true,
   };
-}
-
-function parseCommonISO(str: string): InternalParsedData | null {
-  const len = str.length;
-  if (len !== 10 && (len < 19 || len > 29)) {
-    return null;
-  }
-  if (str.charCodeAt(4) !== 45 || str.charCodeAt(7) !== 45) {
-    return null;
-  }
-  const year = parse4Digits(str, 0);
-  if (year === null) {
-    return null;
-  }
-  return _parseCommonISODate(str, len, year);
 }
 
 function getSeenUnusedTokens(ctx: ParseCtx): Set<string> {
