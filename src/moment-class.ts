@@ -4006,7 +4006,7 @@ export class Moment {
         other._ensureFields();
 
         // Narrow fast path for diff('months'): same day-of-month, same offset semantics
-        if (code === MONTH && !float && p.D === op.D && p.isUTC === otherUTC) {
+        if (code === MONTH && !float && p.D === op.D && p.H === op.H && p.m === op.m && p.s === op.s && p.ms === op.ms && p.isUTC === otherUTC) {
           if (
             (p.isUTC && p.offset === 0 && op.offset === 0) ||
             (!p.isUTC && p.offset === op.offset)
