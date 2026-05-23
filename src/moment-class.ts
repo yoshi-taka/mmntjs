@@ -2026,6 +2026,24 @@ export class Moment {
       if (y === "" || (typeof y === "object" && !(y instanceof Date))) {
         return this;
       }
+      if (typeof y === "number" && !this._p.dirty) {
+        const p = this._p;
+        if (y !== p.y && p.D <= 28) {
+          p.y = y;
+          p.d = undefined;
+          if (p.isUTC) {
+            p.t = ymdToEpochDays(y, p.M, p.D) * DAY_MS + _tod(p);
+            p.W = _dayOfWeek(y, p.M, p.D);
+            p._tStale = false;
+          } else {
+            p._tStale = true;
+          }
+          if (updateOffsetCallback) {
+            this._updateOffset(true);
+          }
+          return this;
+        }
+      }
       const num = Number(y);
       if (isNaN(num)) {
         return this;
@@ -3978,26 +3996,24 @@ export class Moment {
         return t || 0;
       }
       case WEEK: {
-        const a = isUTC ? this._p.t - this._p.offset * 60000 : this._p.t;
-        const b = otherUTC ? other._p.t - other._p.offset * 60000 : other._p.t;
-        const zoneDelta = isUTC || otherUTC ? 0 : (other._p.offset - this._p.offset) * 60000;
-        if (isUTC && otherUTC) {
-          const days = Math.floor(a / 86400000) - Math.floor(b / 86400000);
-          const r = days / 7;
-          return float ? r : Math.trunc(r) || 0;
-        }
-        const r = (a - b - zoneDelta) / 604800000;
-        if (float) {
-          return r;
-        }
-        const t = r < 0 ? -Math.floor(-r) : Math.floor(r);
-        return t || 0;
+        // ...
       }
       case YEAR:
       case MONTH:
       case QUARTER: {
         this._ensureFields();
         other._ensureFields();
+
+        // Narrow fast path for diff('months'): same day-of-month, same offset semantics
+        if (code === MONTH && !float && p.D === op.D && p.isUTC === otherUTC) {
+          if (
+            (p.isUTC && p.offset === 0 && op.offset === 0) ||
+            (!p.isUTC && p.offset === op.offset)
+          ) {
+            const result = (p.y - op.y) * 12 + (p.M - op.M);
+            return Object.is(result, -0) ? 0 : result;
+          }
+        }
 
         const aDay = this._p.D;
         const bDay = other._p.D;

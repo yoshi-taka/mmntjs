@@ -1799,6 +1799,17 @@ export class MomentLite {
         this._ensureFields();
         other._ensureFields();
 
+        // Narrow fast path for diff('months'): same day-of-month, same offset semantics
+        if (code === MONTH && !float && this._p.D === other._p.D) {
+          if (
+            (this._p.isUTC && other._p.isUTC) ||
+            (!this._p.isUTC && !other._p.isUTC && this._p.offset === other._p.offset)
+          ) {
+            const result = (this._p.y - other._p.y) * 12 + (this._p.M - other._p.M);
+            return Object.is(result, -0) ? 0 : result;
+          }
+        }
+
         const aDay = this._p.D;
         const bDay = other._p.D;
         const swap = aDay < bDay;
