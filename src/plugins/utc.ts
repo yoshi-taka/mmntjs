@@ -157,12 +157,8 @@ export function registerUtcApi<C extends MomentCtor>(
     }
     if (!m._p.isUTC && isString(input)) {
       if (!m._isValid) {
-        const utcDate = new Date(`${input} UTC`);
-        if (!isNaN(utcDate.getTime())) {
-          m._p.d = utcDate;
-        } else {
-          m._p.d = new Date(absTime);
-        }
+        const utcDate = new Date(`${input}Z`);
+        m._p.d = !isNaN(utcDate.getTime()) ? utcDate : new Date(NaN);
       } else if (m._cold !== undefined) {
         const parts = m._cold._parsedDateParts;
         if (parts && parts.length > 0) {
@@ -176,13 +172,12 @@ export function registerUtcApi<C extends MomentCtor>(
             parts[6] ?? 0,
           );
         } else {
-          m._p.d = new Date(absTime);
+          const utcDate = new Date(`${input}Z`);
+          m._p.d = !isNaN(utcDate.getTime()) ? utcDate : new Date(absTime);
         }
       } else {
-        const utcDate = new Date(`${input} UTC`);
-        if (!isNaN(utcDate.getTime())) {
-          m._p.d = utcDate;
-        }
+        const utcDate = new Date(`${input}Z`);
+        m._p.d = !isNaN(utcDate.getTime()) ? utcDate : new Date(absTime);
       }
     } else {
       m._p.d = new Date(absTime);
