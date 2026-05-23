@@ -1869,7 +1869,7 @@ export class MomentLite {
   }
 
   startOf(unit: string): this {
-    if (unit === "year" && !this._p.dirty) {
+    if ((unit === "year" || unit === "years" || unit === "y") && !this._p.dirty) {
       return this._startOfYearFast();
     }
     const code = normalizeUnitCode(unit);
@@ -2117,8 +2117,15 @@ export class MomentLite {
   }
 
   endOf(unit: string): this {
-    if (unit === "year" && !this._p.dirty) {
+    if ((unit === "year" || unit === "years" || unit === "y") && !this._p.dirty) {
       return this._endOfYearFast();
+    }
+    if (unit === "month" && !this._p.dirty) {
+      const p = this._p;
+      if (p.D === 1 && p.H === 0 && p.m === 0 && p.s === 0 && p.ms === 0) {
+        this._endOfMonthFromStartFast();
+        return this;
+      }
     }
     const code = normalizeUnitCode(unit);
     if (code < 0) {
@@ -2183,6 +2190,32 @@ export class MomentLite {
     p.ms = 999;
     p.W = _dayOfWeek(p.y, 11, 31);
     return this;
+  }
+
+  /** Fast path for endOf('month') after startOf('month') (D=1, H=0, …). */
+  private _endOfMonthFromStartFast(): void {
+    const p = this._p;
+    const endDay = daysInMonthFast(p.y, p.M);
+    if (p.isUTC) {
+      p.t = (ymdToEpochDays(p.y, p.M, endDay) + 1) * DAY_MS - 1;
+      p.d = undefined;
+    } else if (p.d != null) {
+      p.d.setDate(endDay);
+      p.d.setHours(23, 59, 59, 999);
+      p.t = p.d.getTime();
+      p.offset = -p.d.getTimezoneOffset();
+    } else {
+      const d = new Date(p.y, p.M, endDay, 23, 59, 59, 999);
+      p.t = d.getTime();
+      p.d = d;
+      p.offset = -d.getTimezoneOffset();
+    }
+    p.D = endDay;
+    p.H = 23;
+    p.m = 59;
+    p.s = 59;
+    p.ms = 999;
+    p.W = _dayOfWeek(p.y, p.M, endDay);
   }
 
   private _endOfYear(): void {

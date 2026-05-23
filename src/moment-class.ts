@@ -3160,7 +3160,7 @@ export class Moment {
     if (!this._isValid) {
       return this;
     }
-    if (unit === "year") {
+    if (unit === "year" || unit === "years" || unit === "y") {
       return this._startOfYearFast();
     }
     if (unit === "day") {
@@ -3197,6 +3197,24 @@ export class Moment {
         return this;
       }
     }
+    // Dirty + Date: set Date directly, populate all fields.
+    if (!updateOffsetCallback && p.dirty && p.d != null && !p._tStale && !p.isUTC) {
+      p.d.setMonth(0, 1);
+      p.d.setHours(0, 0, 0, 0);
+      p.t = p.d.getTime();
+      p.y = p.d.getFullYear();
+      p.M = 0;
+      p.D = 1;
+      p.W = p.d.getDay();
+      p.H = 0;
+      p.m = 0;
+      p.s = 0;
+      p.ms = 0;
+      p.offset = -p.d.getTimezoneOffset();
+      p._tStale = false;
+      p.dirty = false;
+      return this;
+    }
     return this._startOfSlow("year");
   }
 
@@ -3232,6 +3250,24 @@ export class Moment {
         endOfYearStale(p);
         return this;
       }
+    }
+    // Dirty + Date: set Date directly, populate all fields.
+    if (!updateOffsetCallback && p.dirty && p.d != null && !p._tStale && !p.isUTC) {
+      p.d.setMonth(11, 31);
+      p.d.setHours(23, 59, 59, 999);
+      p.t = p.d.getTime();
+      p.y = p.d.getFullYear();
+      p.M = 11;
+      p.D = 31;
+      p.W = p.d.getDay();
+      p.H = 23;
+      p.m = 59;
+      p.s = 59;
+      p.ms = 999;
+      p.offset = -p.d.getTimezoneOffset();
+      p._tStale = false;
+      p.dirty = false;
+      return this;
     }
     this._ensureFields();
     if (p.isUTC) {
@@ -3428,6 +3464,19 @@ export class Moment {
       unit.charCodeAt(3) === 116 &&
       unit.charCodeAt(4) === 104
     ) {
+      // Fast path: endOf('month') after startOf('month') → D=1, H=0, m=0, s=0, ms=0
+      if (
+        !updateOffsetCallback &&
+        !p.dirty &&
+        p.D === 1 &&
+        p.H === 0 &&
+        p.m === 0 &&
+        p.s === 0 &&
+        p.ms === 0
+      ) {
+        this._endOfMonthFromStartFast();
+        return this;
+      }
       if (!updateOffsetCallback && !p.dirty) {
         if (p.isUTC && p.H === 23 && p.m === 59 && p.s === 59 && p.ms === 999) {
           const eom = daysInMonthFast(p.y, p.M);
@@ -3460,7 +3509,7 @@ export class Moment {
       }
       return this;
     }
-    if (unit === "year") {
+    if (unit === "year" || unit === "years" || unit === "y") {
       return this._endOfYearFast();
     }
     return this._endOfSlow(unit);
@@ -3650,6 +3699,50 @@ export class Moment {
     this._p.offset = -d.getTimezoneOffset();
     if (updateOffsetCallback) {
       this._updateOffset(true);
+    }
+  }
+
+  /**
+   * Fast kernel for endOf('month') when the moment is in startOfMonth state
+   * (D=1, H=0, m=0, s=0, ms=0, !dirty). Called from the shape-check fast
+   * entrance at the top of endOf("month") — no branded dispatch, no
+   * _ensureFields, no switch.
+   */
+  private _endOfMonthFromStartFast(): void {
+    const p = this._p;
+    const endDay = daysInMonthFast(p.y, p.M);
+    if (p.isUTC) {
+      p.t = (ymdToEpochDays(p.y, p.M, endDay) + 1) * DAY_MS - 1;
+      p.d = undefined;
+      p.D = endDay;
+      p.H = 23;
+      p.m = 59;
+      p.s = 59;
+      p.ms = 999;
+      p.W = _dayOfWeek(p.y, p.M, endDay);
+    } else if (p.d != null && !p._tStale) {
+      p.d.setDate(endDay);
+      p.d.setHours(23, 59, 59, 999);
+      p.t = p.d.getTime();
+      p.D = endDay;
+      p.H = 23;
+      p.m = 59;
+      p.s = 59;
+      p.ms = 999;
+      p.W = p.d.getDay();
+      p.offset = -p.d.getTimezoneOffset();
+    } else {
+      const d = new Date(p.y, p.M, endDay, 23, 59, 59, 999);
+      p.t = d.getTime();
+      p.d = d;
+      p.D = endDay;
+      p.H = 23;
+      p.m = 59;
+      p.s = 59;
+      p.ms = 999;
+      p.W = d.getDay();
+      p.offset = -d.getTimezoneOffset();
+      p._tStale = false;
     }
   }
 
