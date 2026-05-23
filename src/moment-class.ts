@@ -2069,33 +2069,24 @@ export class Moment {
   month(m?: unknown): number | this {
     if (m !== undefined) {
       const p = this._p;
-      // Numeric fast path: clean + no callback → direct field arithmetic
-      if (typeof m === "number" && !p.dirty && !updateOffsetCallback) {
+      // Numeric fast path: clean + D <= 28 + no callback → direct field arithmetic
+      if (typeof m === "number" && !p.dirty && !updateOffsetCallback && p.D <= 28) {
         const targetM = ((m % 12) + 12) % 12;
         const yearDelta = Math.floor(m / 12);
         const y = p.y + yearDelta;
         if (y === p.y && targetM === p.M) {
           return this;
         }
-        if (p.D <= 28) {
-          // D ∈ [1,28] → safe arithmetic, no overflow risk
-          if (p.isUTC) {
-            p.t = ymdToEpochDays(y, targetM, p.D) * DAY_MS + _tod(p);
-            p.d = undefined;
-          } else {
-            p.d = undefined;
-            p._tStale = true;
-          }
-          p.y = y;
-          p.M = targetM;
-          p.W = _dayOfWeek(y, targetM, p.D);
+        if (p.isUTC) {
+          p.t = ymdToEpochDays(y, targetM, p.D) * DAY_MS + _tod(p);
+          p.d = undefined;
         } else {
-          // D > 28 → defer to _syncT for auto-clamping
-          p.y = y;
-          p.M = targetM;
           p.d = undefined;
           p._tStale = true;
         }
+        p.y = y;
+        p.M = targetM;
+        p.W = _dayOfWeek(y, targetM, p.D);
         return this;
       }
       if (p.dirty) {
