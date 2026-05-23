@@ -3,6 +3,7 @@ import type { ParseLocale } from "./parse-locale";
 import type { InternalParsedData } from "./types";
 import { localeIsPM, localeLongDateFormat } from "./locale-runtime";
 import type { ParsedData, ParseCtx, Op } from "./parse-shared";
+import { daysInMonth } from "./units";
 import { compileFormatToOpcodes, expandedFormatCache, WEEKDAY_NAMES_MAP } from "./parse-shared";
 
 export { parseTwoDigitYear } from "./utils";
@@ -365,7 +366,7 @@ function parseCommonISOExtended(str: string): InternalParsedData | null {
 
 function parseCommonISO(str: string): InternalParsedData | null {
   const len = str.length;
-  if (len !== 10 && (len < 19 || len > 29)) {
+  if (len !== 10 && (len < 19 || len > 29) && len !== 28) {
     return null;
   }
   if (str.charCodeAt(4) !== 45 || str.charCodeAt(7) !== 45) {
@@ -374,26 +375,38 @@ function parseCommonISO(str: string): InternalParsedData | null {
 
   // ── year (4 digits at 0-3) ──
   let c = str.charCodeAt(0) - 48;
-  let y0 = c;
-  c = str.charCodeAt(1) - 48;
-  let y1 = c;
-  c = str.charCodeAt(2) - 48;
-  let y2 = c;
-  c = str.charCodeAt(3) - 48;
-  let y3 = c;
-  if ((y0 | y1 | y2 | y3) & ~9) {
+  if (c < 0 || c > 9) {
     return null;
   }
-  const year = (y0 * 10 + y1) * 100 + (y2 * 10 + y3);
+  const y0 = c;
+  c = str.charCodeAt(1) - 48;
+  if (c < 0 || c > 9) {
+    return null;
+  }
+  const y1 = c;
+  c = str.charCodeAt(2) - 48;
+  if (c < 0 || c > 9) {
+    return null;
+  }
+  const y2 = c;
+  c = str.charCodeAt(3) - 48;
+  if (c < 0 || c > 9) {
+    return null;
+  }
+  const y3 = c;
+  const year = y0 * 1000 + y1 * 100 + y2 * 10 + y3;
 
   // ── month (2 digits at 5-6) ──
   c = str.charCodeAt(5) - 48;
-  const m0 = c;
-  c = str.charCodeAt(6) - 48;
-  const m1 = c;
-  if ((m0 | m1) & ~9) {
+  if (c < 0 || c > 9) {
     return null;
   }
+  const m0 = c;
+  c = str.charCodeAt(6) - 48;
+  if (c < 0 || c > 9) {
+    return null;
+  }
+  const m1 = c;
   const month1 = m0 * 10 + m1;
   if (month1 < 1 || month1 > 12) {
     return null;
@@ -401,14 +414,17 @@ function parseCommonISO(str: string): InternalParsedData | null {
 
   // ── day (2 digits at 8-9) ──
   c = str.charCodeAt(8) - 48;
-  const d0 = c;
-  c = str.charCodeAt(9) - 48;
-  const d1 = c;
-  if ((d0 | d1) & ~9) {
+  if (c < 0 || c > 9) {
     return null;
   }
+  const d0 = c;
+  c = str.charCodeAt(9) - 48;
+  if (c < 0 || c > 9) {
+    return null;
+  }
+  const d1 = c;
   const day = d0 * 10 + d1;
-  if (day < 1 || day > 31) {
+  if (day < 1 || day > daysInMonth(year, month1 - 1)) {
     return null;
   }
 
@@ -416,7 +432,7 @@ function parseCommonISO(str: string): InternalParsedData | null {
     return { year, month: month1 - 1, day, _hasDate: true, _hasTime: false };
   }
 
-  // ── time ──
+  // ── time separator ──
   const sep = str.charCodeAt(10);
   if (sep !== 84 && sep !== 32) {
     return null;
@@ -427,121 +443,341 @@ function parseCommonISO(str: string): InternalParsedData | null {
 
   // hour (11-12)
   c = str.charCodeAt(11) - 48;
+  if (c < 0 || c > 9) {
+    return null;
+  }
   const h0 = c;
   c = str.charCodeAt(12) - 48;
+  if (c < 0 || c > 9) {
+    return null;
+  }
   const h1 = c;
-  if ((h0 | h1) & ~9) {
-    return null;
-  }
   const hour = h0 * 10 + h1;
-  if (hour < 0 || hour > 24) {
-    return null;
-  }
 
   // minute (14-15)
   c = str.charCodeAt(14) - 48;
+  if (c < 0 || c > 9) {
+    return null;
+  }
   const mi0 = c;
   c = str.charCodeAt(15) - 48;
+  if (c < 0 || c > 9) {
+    return null;
+  }
   const mi1 = c;
-  if ((mi0 | mi1) & ~9) {
-    return null;
-  }
   const minute = mi0 * 10 + mi1;
-  if (minute < 0 || minute > 59) {
-    return null;
-  }
 
   // second (17-18)
   c = str.charCodeAt(17) - 48;
+  if (c < 0 || c > 9) {
+    return null;
+  }
   const s0 = c;
   c = str.charCodeAt(18) - 48;
+  if (c < 0 || c > 9) {
+    return null;
+  }
   const s1 = c;
-  if ((s0 | s1) & ~9) {
-    return null;
-  }
   const second = s0 * 10 + s1;
-  if (second < 0 || second > 59) {
-    return null;
-  }
 
-  let millisecond: number | undefined;
-  let offset: number | undefined;
-  let pos = 19;
-
-  if (pos < len && str.charCodeAt(pos) === 46) {
-    // ── fractional seconds ──
-    let ms = 0;
-    let scale = 100;
-    pos++;
-    const fracStart = pos;
-    while (pos < len) {
-      const code = str.charCodeAt(pos);
-      if (code < 48 || code > 57) {
-        break;
-      }
-      if (scale > 0) {
-        ms += (code - 48) * scale;
-        scale = Math.floor(scale / 10);
-      }
-      pos++;
+  // ── length-specific tail ──
+  switch (len) {
+    case 19: {
+      // YYYY-MM-DD<sep>HH:mm:ss  — no ms, no tz
+      return {
+        year,
+        month: month1 - 1,
+        day,
+        hour,
+        minute,
+        second,
+        _hasDate: true,
+        _hasTime: true,
+      };
     }
-    if (pos === fracStart) {
-      return null;
-    }
-    millisecond = ms;
-  }
-
-  // ── timezone ──
-  if (pos < len) {
-    const tz = str.charCodeAt(pos);
-    if (tz === 90) {
-      offset = 0;
-      pos++;
-    } else if (tz === 43 || tz === 45) {
-      const offLen = len - pos;
-      if (offLen === 6 && str.charCodeAt(pos + 3) === 58) {
-        const oh0 = str.charCodeAt(pos + 1) - 48,
-          oh1 = str.charCodeAt(pos + 2) - 48;
-        const om0 = str.charCodeAt(pos + 4) - 48,
-          om1 = str.charCodeAt(pos + 5) - 48;
-        if ((oh0 | oh1 | om0 | om1) & ~9) {
-          return null;
-        }
-        offset = (tz === 43 ? 1 : -1) * ((oh0 * 10 + oh1) * 60 + (om0 * 10 + om1));
-        pos += 6;
-      } else if (offLen === 5) {
-        const oh0 = str.charCodeAt(pos + 1) - 48,
-          oh1 = str.charCodeAt(pos + 2) - 48;
-        const om0 = str.charCodeAt(pos + 3) - 48,
-          om1 = str.charCodeAt(pos + 4) - 48;
-        if ((oh0 | oh1 | om0 | om1) & ~9) {
-          return null;
-        }
-        offset = (tz === 43 ? 1 : -1) * ((oh0 * 10 + oh1) * 60 + (om0 * 10 + om1));
-        pos += 5;
-      } else {
+    case 20: {
+      // YYYY-MM-DD<sep>HH:mm:ssZ
+      if (str.charCodeAt(19) !== 90) {
         return null;
       }
-    } else {
+      return {
+        year,
+        month: month1 - 1,
+        day,
+        hour,
+        minute,
+        second,
+        offset: 0,
+        _hasDate: true,
+        _hasTime: true,
+      };
+    }
+    case 23: {
+      // YYYY-MM-DD<sep>HH:mm:ss.SSS  (3-digit fraction)
+      if (str.charCodeAt(19) !== 46) {
+        return null;
+      }
+      c = str.charCodeAt(20) - 48;
+      if (c < 0 || c > 9) {
+        return null;
+      }
+      const ms0 = c;
+      c = str.charCodeAt(21) - 48;
+      if (c < 0 || c > 9) {
+        return null;
+      }
+      const ms1 = c;
+      c = str.charCodeAt(22) - 48;
+      if (c < 0 || c > 9) {
+        return null;
+      }
+      const ms2 = c;
+      return {
+        year,
+        month: month1 - 1,
+        day,
+        hour,
+        minute,
+        second,
+        millisecond: ms0 * 100 + ms1 * 10 + ms2,
+        _hasDate: true,
+        _hasTime: true,
+      };
+    }
+    case 24: {
+      // YYYY-MM-DD<sep>HH:mm:ss.SSSZ  (dot at 19, Z at 23)
+      // or YYYY-MM-DD<sep>HH:mm:ss+HHMM  (sign at 19, no colon)
+      const c19 = str.charCodeAt(19);
+      if (c19 === 46) {
+        // .SSSZ
+        c = str.charCodeAt(20) - 48;
+        if (c < 0 || c > 9) {
+          return null;
+        }
+        const ms0 = c;
+        c = str.charCodeAt(21) - 48;
+        if (c < 0 || c > 9) {
+          return null;
+        }
+        const ms1 = c;
+        c = str.charCodeAt(22) - 48;
+        if (c < 0 || c > 9) {
+          return null;
+        }
+        const ms2 = c;
+        if (str.charCodeAt(23) !== 90) {
+          return null;
+        }
+        return {
+          year,
+          month: month1 - 1,
+          day,
+          hour,
+          minute,
+          second,
+          millisecond: ms0 * 100 + ms1 * 10 + ms2,
+          offset: 0,
+          _hasDate: true,
+          _hasTime: true,
+        };
+      }
+      if (c19 === 43 || c19 === 45) {
+        // +HHMM (no colon)
+        c = str.charCodeAt(20) - 48;
+        if (c < 0 || c > 9) {
+          return null;
+        }
+        const oh0 = c;
+        c = str.charCodeAt(21) - 48;
+        if (c < 0 || c > 9) {
+          return null;
+        }
+        const oh1 = c;
+        c = str.charCodeAt(22) - 48;
+        if (c < 0 || c > 9) {
+          return null;
+        }
+        const om0 = c;
+        c = str.charCodeAt(23) - 48;
+        if (c < 0 || c > 9) {
+          return null;
+        }
+        const om1 = c;
+        return {
+          year,
+          month: month1 - 1,
+          day,
+          hour,
+          minute,
+          second,
+          offset: (c19 === 43 ? 1 : -1) * ((oh0 * 10 + oh1) * 60 + (om0 * 10 + om1)),
+          _hasDate: true,
+          _hasTime: true,
+        };
+      }
       return null;
     }
+    case 25: {
+      // YYYY-MM-DD<sep>HH:mm:ss+HH:MM  (colon in offset)
+      const c19 = str.charCodeAt(19);
+      if (c19 !== 43 && c19 !== 45) {
+        return null;
+      }
+      if (str.charCodeAt(22) !== 58) {
+        return null;
+      }
+      c = str.charCodeAt(20) - 48;
+      if (c < 0 || c > 9) {
+        return null;
+      }
+      const oh0 = c;
+      c = str.charCodeAt(21) - 48;
+      if (c < 0 || c > 9) {
+        return null;
+      }
+      const oh1 = c;
+      c = str.charCodeAt(23) - 48;
+      if (c < 0 || c > 9) {
+        return null;
+      }
+      const om0 = c;
+      c = str.charCodeAt(24) - 48;
+      if (c < 0 || c > 9) {
+        return null;
+      }
+      const om1 = c;
+      return {
+        year,
+        month: month1 - 1,
+        day,
+        hour,
+        minute,
+        second,
+        offset: (c19 === 43 ? 1 : -1) * ((oh0 * 10 + oh1) * 60 + (om0 * 10 + om1)),
+        _hasDate: true,
+        _hasTime: true,
+      };
+    }
+    case 28: {
+      // YYYY-MM-DD<sep>HH:mm:ss.SSS+HHMM  (no colon in offset)
+      if (str.charCodeAt(19) !== 46) {
+        return null;
+      }
+      c = str.charCodeAt(20) - 48;
+      if (c < 0 || c > 9) {
+        return null;
+      }
+      const ms0 = c;
+      c = str.charCodeAt(21) - 48;
+      if (c < 0 || c > 9) {
+        return null;
+      }
+      const ms1 = c;
+      c = str.charCodeAt(22) - 48;
+      if (c < 0 || c > 9) {
+        return null;
+      }
+      const ms2 = c;
+      const c23 = str.charCodeAt(23);
+      if (c23 !== 43 && c23 !== 45) {
+        return null;
+      }
+      c = str.charCodeAt(24) - 48;
+      if (c < 0 || c > 9) {
+        return null;
+      }
+      const oh0 = c;
+      c = str.charCodeAt(25) - 48;
+      if (c < 0 || c > 9) {
+        return null;
+      }
+      const oh1 = c;
+      c = str.charCodeAt(26) - 48;
+      if (c < 0 || c > 9) {
+        return null;
+      }
+      const om0 = c;
+      c = str.charCodeAt(27) - 48;
+      if (c < 0 || c > 9) {
+        return null;
+      }
+      const om1 = c;
+      return {
+        year,
+        month: month1 - 1,
+        day,
+        hour,
+        minute,
+        second,
+        millisecond: ms0 * 100 + ms1 * 10 + ms2,
+        offset: (c23 === 43 ? 1 : -1) * ((oh0 * 10 + oh1) * 60 + (om0 * 10 + om1)),
+        _hasDate: true,
+        _hasTime: true,
+      };
+    }
+    case 29: {
+      // YYYY-MM-DD<sep>HH:mm:ss.SSS+HH:MM  (colon in offset)
+      if (str.charCodeAt(19) !== 46) {
+        return null;
+      }
+      c = str.charCodeAt(20) - 48;
+      if (c < 0 || c > 9) {
+        return null;
+      }
+      const ms0 = c;
+      c = str.charCodeAt(21) - 48;
+      if (c < 0 || c > 9) {
+        return null;
+      }
+      const ms1 = c;
+      c = str.charCodeAt(22) - 48;
+      if (c < 0 || c > 9) {
+        return null;
+      }
+      const ms2 = c;
+      const c23 = str.charCodeAt(23);
+      if (c23 !== 43 && c23 !== 45) {
+        return null;
+      }
+      if (str.charCodeAt(26) !== 58) {
+        return null;
+      }
+      c = str.charCodeAt(24) - 48;
+      if (c < 0 || c > 9) {
+        return null;
+      }
+      const oh0 = c;
+      c = str.charCodeAt(25) - 48;
+      if (c < 0 || c > 9) {
+        return null;
+      }
+      const oh1 = c;
+      c = str.charCodeAt(27) - 48;
+      if (c < 0 || c > 9) {
+        return null;
+      }
+      const om0 = c;
+      c = str.charCodeAt(28) - 48;
+      if (c < 0 || c > 9) {
+        return null;
+      }
+      const om1 = c;
+      return {
+        year,
+        month: month1 - 1,
+        day,
+        hour,
+        minute,
+        second,
+        millisecond: ms0 * 100 + ms1 * 10 + ms2,
+        offset: (c23 === 43 ? 1 : -1) * ((oh0 * 10 + oh1) * 60 + (om0 * 10 + om1)),
+        _hasDate: true,
+        _hasTime: true,
+      };
+    }
+    default:
+      return null;
   }
-
-  if (pos !== len) {
-    return null;
-  }
-  return {
-    year,
-    month: month1 - 1,
-    day,
-    hour,
-    minute,
-    second,
-    millisecond,
-    offset,
-    _hasDate: true,
-    _hasTime: true,
-  };
 }
 
 function getSeenUnusedTokens(ctx: ParseCtx): Set<string> {
