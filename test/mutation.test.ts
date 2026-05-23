@@ -468,12 +468,7 @@ makeMutations([
   {
     name: "boundary-extra: startOf ISO_WEEK $W = 0 constant",
     file: "src/boundary-extra.ts",
-    patterns: [
-      [
-        /syncFields\(d, m, utc\);\n\s*break;\n\s*\}/g,
-        "m._p.W = 0;\n      break;\n    }",
-      ],
-    ],
+    patterns: [[/syncFields\(d, m, utc\);\n\s*break;\n\s*\}/g, "m._p.W = 0;\n      break;\n    }"]],
     inputs: fc.date({
       min: new Date("2000-01-01"),
       max: new Date("2030-12-31"),
@@ -510,12 +505,7 @@ makeMutations([
   {
     name: "boundary-extra: endOf ISO_WEEK $W = 0 constant",
     file: "src/boundary-extra.ts",
-    patterns: [
-      [
-        /syncFields\(d, m, utc\);\n\s*break;\n\s*\}/g,
-        "m._p.W = 0;\n      break;\n    }",
-      ],
-    ],
+    patterns: [[/syncFields\(d, m, utc\);\n\s*break;\n\s*\}/g, "m._p.W = 0;\n      break;\n    }"]],
     inputs: fc.date({
       min: new Date("2000-01-01"),
       max: new Date("2030-12-31"),
