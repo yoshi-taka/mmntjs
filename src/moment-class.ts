@@ -2057,7 +2057,10 @@ export class Moment {
     if (!this._isValid) {
       return NaN;
     }
-    this._ensureFreshFields();
+    if (this._p.dirty) {
+      this._p.dirty = false;
+      this._refreshFields();
+    }
     return this._p.y;
   }
 
@@ -2065,7 +2068,28 @@ export class Moment {
   month(m: unknown): this;
   month(m?: unknown): number | this {
     if (m !== undefined) {
-      if (this._p.dirty) {
+      const p = this._p;
+      // Numeric fast path: clean + D <= 28 + no callback → direct field arithmetic
+      if (typeof m === "number" && !p.dirty && !updateOffsetCallback && p.D <= 28) {
+        const targetM = ((m % 12) + 12) % 12;
+        const yearDelta = Math.floor(m / 12);
+        const y = p.y + yearDelta;
+        if (y === p.y && targetM === p.M) {
+          return this;
+        }
+        if (p.isUTC) {
+          p.t = ymdToEpochDays(y, targetM, p.D) * DAY_MS + _tod(p);
+          p.d = undefined;
+        } else {
+          p.d = undefined;
+          p._tStale = true;
+        }
+        p.y = y;
+        p.M = targetM;
+        p.W = _dayOfWeek(y, targetM, p.D);
+        return this;
+      }
+      if (p.dirty) {
         this._p.dirty = false;
         this._refreshFields();
       }
@@ -2107,7 +2131,10 @@ export class Moment {
     if (!this._isValid) {
       return NaN;
     }
-    this._ensureFreshFields();
+    if (this._p.dirty) {
+      this._p.dirty = false;
+      this._refreshFields();
+    }
     return this._p.M;
   }
 
@@ -2168,7 +2195,10 @@ export class Moment {
     if (!this._isValid) {
       return NaN;
     }
-    this._ensureFreshFields();
+    if (this._p.dirty) {
+      this._p.dirty = false;
+      this._refreshFields();
+    }
     return this._p.D;
   }
 
@@ -2237,7 +2267,10 @@ export class Moment {
     if (!this._isValid) {
       return NaN;
     }
-    this._ensureFreshFields();
+    if (this._p.dirty) {
+      this._p.dirty = false;
+      this._refreshFields();
+    }
     return this._p.W;
   }
 
@@ -2256,7 +2289,10 @@ export class Moment {
     if (!this._isValid) {
       return d !== undefined ? this : NaN;
     }
-    this._ensureFreshFields();
+    if (this._p.dirty) {
+      this._p.dirty = false;
+      this._refreshFields();
+    }
     // oxlint-disable-next-line typescript/no-explicit-any
     return isoWeekdayMoment(_cast<CalendarAwareMoment>(this), d) as number | this;
   }
@@ -2267,7 +2303,10 @@ export class Moment {
     if (!this._isValid) {
       return d !== undefined ? this : NaN;
     }
-    this._ensureFreshFields();
+    if (this._p.dirty) {
+      this._p.dirty = false;
+      this._refreshFields();
+    }
     return dayOfYearMoment(_cast<CalendarAwareMoment>(this), d) as number | this;
   }
 
@@ -2315,7 +2354,10 @@ export class Moment {
     if (!this._isValid) {
       return NaN;
     }
-    this._ensureFreshFields();
+    if (this._p.dirty) {
+      this._p.dirty = false;
+      this._refreshFields();
+    }
     return this._p.H;
   }
 
@@ -2358,7 +2400,10 @@ export class Moment {
     if (!this._isValid) {
       return NaN;
     }
-    this._ensureFreshFields();
+    if (this._p.dirty) {
+      this._p.dirty = false;
+      this._refreshFields();
+    }
     return this._p.m;
   }
 
@@ -2401,7 +2446,10 @@ export class Moment {
     if (!this._isValid) {
       return NaN;
     }
-    this._ensureFreshFields();
+    if (this._p.dirty) {
+      this._p.dirty = false;
+      this._refreshFields();
+    }
     return this._p.s;
   }
 
@@ -2444,7 +2492,10 @@ export class Moment {
     if (!this._isValid) {
       return NaN;
     }
-    this._ensureFreshFields();
+    if (this._p.dirty) {
+      this._p.dirty = false;
+      this._refreshFields();
+    }
     return this._p.ms;
   }
 
@@ -3197,21 +3248,76 @@ export class Moment {
     if (!this._isValid) {
       return this;
     }
-    if (typeof amount === "number") {
-      if (unit !== undefined) {
-        return this.add(-amount, unit);
+    if (typeof amount !== "number") {
+      const parsed = this._parseDurationInput(amount, unit);
+      if (!parsed) {
+        return this;
       }
-      return this.add(-amount);
-    }
-    const parsed = this._parseDurationInput(amount, unit);
-    if (!parsed) {
+      this._applyDuration(parsed.ms, parsed.days, parsed.months, -1);
+      if (isNaN(this._p.t)) {
+        this._isValid = false;
+      }
       return this;
     }
-    this._applyDuration(parsed.ms, parsed.days, parsed.months, -1);
-    if (isNaN(this._p.t)) {
-      this._isValid = false;
+    if (amount === 0) {
+      return this;
     }
-    return this;
+    if (unit === undefined) {
+      this._addSimple(-amount, MILLISECOND);
+      if (isNaN(this._p.t)) {
+        this._isValid = false;
+      }
+      return this;
+    }
+    switch (unit) {
+      case "d":
+      case "day":
+      case "days":
+      case "date":
+        this._addDayFast(-amount);
+        return this;
+      case "h":
+      case "hour":
+      case "hours":
+        this._addTime(-amount, HOUR_MS);
+        return this;
+      case "m":
+      case "minute":
+      case "minutes":
+        this._addTime(-amount, MINUTE_MS);
+        return this;
+      case "s":
+      case "second":
+      case "seconds":
+        this._addTime(-amount, SECOND_MS);
+        return this;
+      case "ms":
+      case "millisecond":
+      case "milliseconds":
+        this._addTime(-amount, 1);
+        return this;
+      case "M":
+      case "month":
+      case "months":
+        this._addMonthFast(-amount);
+        return this;
+      case "y":
+      case "year":
+      case "years":
+        this._addYearFast(-amount);
+        return this;
+      case "w":
+      case "week":
+      case "weeks":
+        this._addDay(-amount * 7);
+        return this;
+      case "Q":
+      case "quarter":
+      case "quarters":
+        this._addQuarterFast(-amount);
+        return this;
+    }
+    return this._addSlow(-amount, unit);
   }
 
   startOf(unit: string): this {
@@ -4006,7 +4112,16 @@ export class Moment {
         other._ensureFields();
 
         // Narrow fast path for diff('months'): same day-of-month, same offset semantics
-        if (code === MONTH && !float && p.D === op.D && p.H === op.H && p.m === op.m && p.s === op.s && p.ms === op.ms && p.isUTC === otherUTC) {
+        if (
+          code === MONTH &&
+          !float &&
+          p.D === op.D &&
+          p.H === op.H &&
+          p.m === op.m &&
+          p.s === op.s &&
+          p.ms === op.ms &&
+          p.isUTC === otherUTC
+        ) {
           if (
             (p.isUTC && p.offset === 0 && op.offset === 0) ||
             (!p.isUTC && p.offset === op.offset)

@@ -1800,7 +1800,15 @@ export class MomentLite {
         other._ensureFields();
 
         // Narrow fast path for diff('months'): same day-of-month, same offset semantics
-        if (code === MONTH && !float && this._p.D === other._p.D && this._p.H === other._p.H && this._p.m === other._p.m && this._p.s === other._p.s && this._p.ms === other._p.ms) {
+        if (
+          code === MONTH &&
+          !float &&
+          this._p.D === other._p.D &&
+          this._p.H === other._p.H &&
+          this._p.m === other._p.m &&
+          this._p.s === other._p.s &&
+          this._p.ms === other._p.ms
+        ) {
           if (
             (this._p.isUTC && other._p.isUTC) ||
             (!this._p.isUTC && !other._p.isUTC && this._p.offset === other._p.offset)

@@ -145,6 +145,162 @@ function createMomentFromParsed(
   });
 }
 
+/** CharCode-based fast path for common zoned ISO forms, returns MomentLite or null. */
+function tryParseZonedISO(str: string): MomentLite | null {
+  const len = str.length;
+  if (len !== 20 && len !== 24 && len !== 25 && len !== 29) {
+    return null;
+  }
+  if (str.charCodeAt(4) !== 45 || str.charCodeAt(7) !== 45) {
+    return null;
+  }
+  const y0 = str.charCodeAt(0) - 48;
+  const y1 = str.charCodeAt(1) - 48;
+  const y2 = str.charCodeAt(2) - 48;
+  const y3 = str.charCodeAt(3) - 48;
+  if (y0 < 0 || y0 > 9 || y1 < 0 || y1 > 9 || y2 < 0 || y2 > 9 || y3 < 0 || y3 > 9) {
+    return null;
+  }
+  const year = y0 * 1000 + y1 * 100 + y2 * 10 + y3;
+  const m0 = str.charCodeAt(5) - 48;
+  const m1 = str.charCodeAt(6) - 48;
+  if (m0 < 0 || m0 > 9 || m1 < 0 || m1 > 9) {
+    return null;
+  }
+  const month01 = m0 * 10 + m1;
+  if (month01 < 1 || month01 > 12) {
+    return null;
+  }
+  const d0 = str.charCodeAt(8) - 48;
+  const d1 = str.charCodeAt(9) - 48;
+  if (d0 < 0 || d0 > 9 || d1 < 0 || d1 > 9) {
+    return null;
+  }
+  const day = d0 * 10 + d1;
+  const monthIdx = month01 - 1;
+  const c10 = str.charCodeAt(10);
+  if ((c10 !== 84 && c10 !== 116) || day < 1 || day > daysInMonthFast(year, monthIdx)) {
+    return null;
+  }
+  const h0 = str.charCodeAt(11) - 48;
+  const h1 = str.charCodeAt(12) - 48;
+  if (h0 < 0 || h0 > 9 || h1 < 0 || h1 > 9 || str.charCodeAt(13) !== 58) {
+    return null;
+  }
+  const hour = h0 * 10 + h1;
+  if (hour < 0 || hour > 23) {
+    return null;
+  }
+  const n0 = str.charCodeAt(14) - 48;
+  const n1 = str.charCodeAt(15) - 48;
+  if (n0 < 0 || n0 > 9 || n1 < 0 || n1 > 9 || str.charCodeAt(16) !== 58) {
+    return null;
+  }
+  const minute = n0 * 10 + n1;
+  if (minute < 0 || minute > 59) {
+    return null;
+  }
+  const s0 = str.charCodeAt(17) - 48;
+  const s1 = str.charCodeAt(18) - 48;
+  if (s0 < 0 || s0 > 9 || s1 < 0 || s1 > 9) {
+    return null;
+  }
+  const second = s0 * 10 + s1;
+  if (second < 0 || second > 59) {
+    return null;
+  }
+  let ms = 0;
+  let offset: number | undefined;
+  if (len === 20 && str.charCodeAt(19) === 90) {
+    offset = 0;
+  } else if (len === 24 && str.charCodeAt(19) === 46) {
+    const ms0 = str.charCodeAt(20) - 48;
+    const ms1 = str.charCodeAt(21) - 48;
+    const ms2 = str.charCodeAt(22) - 48;
+    if (
+      ms0 >= 0 &&
+      ms0 <= 9 &&
+      ms1 >= 0 &&
+      ms1 <= 9 &&
+      ms2 >= 0 &&
+      ms2 <= 9 &&
+      str.charCodeAt(23) === 90
+    ) {
+      ms = ms0 * 100 + ms1 * 10 + ms2;
+      offset = 0;
+    }
+  } else if (len === 25) {
+    const sign = str.charCodeAt(19);
+    if ((sign === 43 || sign === 45) && str.charCodeAt(22) === 58) {
+      const zh0 = str.charCodeAt(20) - 48;
+      const zh1 = str.charCodeAt(21) - 48;
+      const zm0 = str.charCodeAt(23) - 48;
+      const zm1 = str.charCodeAt(24) - 48;
+      if (
+        zh0 >= 0 &&
+        zh0 <= 9 &&
+        zh1 >= 0 &&
+        zh1 <= 9 &&
+        zm0 >= 0 &&
+        zm0 <= 9 &&
+        zm1 >= 0 &&
+        zm1 <= 9
+      ) {
+        const tzHour = zh0 * 10 + zh1;
+        const tzMin = zm0 * 10 + zm1;
+        if (tzHour >= 0 && tzHour <= 23 && tzMin >= 0 && tzMin <= 59) {
+          offset = (tzHour * 60 + tzMin) * (sign === 45 ? -1 : 1);
+        }
+      }
+    }
+  } else if (len === 29 && str.charCodeAt(19) === 46) {
+    const ms0 = str.charCodeAt(20) - 48;
+    const ms1 = str.charCodeAt(21) - 48;
+    const ms2 = str.charCodeAt(22) - 48;
+    if (ms0 >= 0 && ms0 <= 9 && ms1 >= 0 && ms1 <= 9 && ms2 >= 0 && ms2 <= 9) {
+      const sign = str.charCodeAt(23);
+      if ((sign === 43 || sign === 45) && str.charCodeAt(26) === 58) {
+        const zh0 = str.charCodeAt(24) - 48;
+        const zh1 = str.charCodeAt(25) - 48;
+        const zm0 = str.charCodeAt(27) - 48;
+        const zm1 = str.charCodeAt(28) - 48;
+        if (
+          zh0 >= 0 &&
+          zh0 <= 9 &&
+          zh1 >= 0 &&
+          zh1 <= 9 &&
+          zm0 >= 0 &&
+          zm0 <= 9 &&
+          zm1 >= 0 &&
+          zm1 <= 9
+        ) {
+          const tzHour = zh0 * 10 + zh1;
+          const tzMin = zm0 * 10 + zm1;
+          if (tzHour >= 0 && tzHour <= 23 && tzMin >= 0 && tzMin <= 59) {
+            ms = ms0 * 100 + ms1 * 10 + ms2;
+            offset = (tzHour * 60 + tzMin) * (sign === 45 ? -1 : 1);
+          }
+        }
+      }
+    }
+  }
+  if (offset === undefined) {
+    return null;
+  }
+  const d = createUTCDate(year, monthIdx, day, hour, minute, second, ms);
+  if (isNaN(d.getTime())) {
+    return null;
+  }
+  return new MomentLite({
+    _d: d,
+    _dClone: false,
+    _i: str,
+    _offset: offset,
+    _isUTC: true,
+    _presetFields: { y: year, M: monthIdx, D: day, H: hour, m: minute, s: second, ms },
+  });
+}
+
 function createFromString(
   str: string,
   format?: unknown,
@@ -246,6 +402,14 @@ function createFromString(
           }
         }
       }
+    }
+  }
+
+  // Fast path: zoned ISO forms — YYYY-MM-DDTHH:mm:ss(.SSS)?(Z|[+-]HH:mm)
+  if (!fmt) {
+    const zoned = tryParseZonedISO(str);
+    if (zoned) {
+      return zoned;
     }
   }
 
