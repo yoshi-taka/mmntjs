@@ -2459,12 +2459,31 @@ export class Moment {
     if (ms !== undefined) {
       const p = this._p;
       const refined = refineMs(ms);
-      if (refined !== null && isCleanLocalFreshWithDate(p)) {
+      if (refined !== null && !p.dirty) {
         if (refined === p.ms) {
           return this;
         }
-        setMsFast(p, refined);
-        return this;
+        if (!updateOffsetCallback) {
+          if (p.isUTC) {
+            p.t += refined - p.ms;
+            p.ms = refined;
+            p.d = undefined;
+            p._tStale = false;
+            return this;
+          }
+          if (p.d == null) {
+            p.ms = refined;
+            p._tStale = true;
+            return this;
+          }
+          // CleanLocalFreshWithDate: known !dirty, !p._tStale, !isUTC, d != null
+          if (!p._tStale) {
+            p.t += refined - p.ms;
+            p.ms = refined;
+            p.d.setTime(p.t);
+            return this;
+          }
+        }
       }
       const num = refined ?? Number(ms);
       if (isNaN(num)) {
@@ -2820,6 +2839,21 @@ export class Moment {
     }
   }
 
+  /** Hot-path helper for add(number, "ms") — skips _syncT when t is fresh. */
+  private _addMsFast(amount: number): void {
+    const p = this._p;
+    if (!p._tStale) {
+      p.t += Number.isInteger(amount) ? amount : Math.round(amount);
+      p.d = undefined;
+      p.dirty = true;
+      if (isNaN(p.t)) {
+        this._isValid = false;
+      }
+      return;
+    }
+    this._addTime(amount, 1);
+  }
+
   /** Hot-path helper — inlined by V8 for add(number, "hour"/"minute"/"second"/"ms") */
   private _addTime(amount: number, unitMs: number): void {
     this._syncT();
@@ -3101,7 +3135,7 @@ export class Moment {
       case "ms":
       case "millisecond":
       case "milliseconds":
-        this._addTime(amount, 1);
+        this._addMsFast(amount);
         return this;
       case "M":
       case "month":
@@ -3294,7 +3328,7 @@ export class Moment {
       case "ms":
       case "millisecond":
       case "milliseconds":
-        this._addTime(-amount, 1);
+        this._addMsFast(-amount);
         return this;
       case "M":
       case "month":
@@ -3446,6 +3480,17 @@ export class Moment {
     const p = this._p;
     if (!updateOffsetCallback && isCleanLocalFreshWithDate(p)) {
       startOfDay_CLFD(p);
+      return this;
+    }
+    // Clean UTC (any offset) → civil arithmetic, no Date allocation
+    if (!updateOffsetCallback && isCleanUTC(p)) {
+      p.t = ymdToEpochDays(p.y, p.M, p.D) * DAY_MS;
+      p.H = 0;
+      p.m = 0;
+      p.s = 0;
+      p.ms = 0;
+      p.d = undefined;
+      p._tStale = false;
       return this;
     }
     // Dirty + Date: set Date directly, then populate all fields from Date.
@@ -4025,7 +4070,13 @@ export class Moment {
     let code: number;
     if (!unit) {
       code = INVALID_UNIT;
-    } else if (unit === "day" || unit === "days" || unit === "date" || unit === "dates") {
+    } else if (
+      unit === "day" ||
+      unit === "days" ||
+      unit === "d" ||
+      unit === "date" ||
+      unit === "dates"
+    ) {
       code = DATE;
       // Typed morphism dispatch for DAY diff on clean pair
       // diffDaysUTC is only valid for pure UTC (offset === 0).
