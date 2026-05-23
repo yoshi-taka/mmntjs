@@ -29,6 +29,7 @@
     "test/pbt-counterexamples.test.ts",
     "test/dst-guard.test.ts",
     "bench/fns.ts",
+    "bench/fns-setters.ts",
     "packages/timezone/src/index.ts",
     "packages/timezone/test/basic.test.ts",
     "packages/timezone/test/compat.test.ts",

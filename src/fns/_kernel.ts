@@ -1,8 +1,10 @@
 import type {
   MonthIndex,
   DayOfMonth,
+  Date28,
   Hour,
   MinuteSecond,
+  Minute,
   Millisecond,
   IntegerAmount,
   YearNumber,
@@ -115,6 +117,29 @@ export function _setMilliseconds(d: Date, ms: Millisecond): Date {
     d.getSeconds(),
     ms,
   );
+}
+
+// ── Fast kernels: one allocation + one setter, no overflow ──────────────────
+
+/** _setDate28 — day ∈ [1,28], no month overflow possible */
+export function _setDate28Fast(d: Date, day: Date28): Date {
+  const out = new Date(d.getTime());
+  out.setDate(day);
+  return out;
+}
+
+/** _setMinutesFast — minute ∈ [0,59], no overflow */
+export function _setMinutesFast(d: Date, minute: Minute): Date {
+  const out = new Date(d.getTime());
+  out.setMinutes(minute);
+  return out;
+}
+
+/** _setMillisecondsFast — ms ∈ [0,999], no overflow */
+export function _setMillisecondsFast(d: Date, ms: Millisecond): Date {
+  const out = new Date(d.getTime());
+  out.setMilliseconds(ms);
+  return out;
 }
 
 // ── Add / Sub ───────────────────────────────────────────────────────────────

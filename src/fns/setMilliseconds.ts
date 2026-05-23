@@ -1,6 +1,11 @@
-import { _setMilliseconds } from "./_kernel";
-import type { Millisecond } from "./_types";
+import { _setMilliseconds, _setMillisecondsFast } from "./_kernel";
+import { asMillisecond } from "./_types";
 
 export function setMilliseconds(d: Date, ms: number): Date {
-  return _setMilliseconds(d, ms as Millisecond);
+  if (ms >= 0 && ms <= 999) {
+    return _setMillisecondsFast(d, asMillisecond(ms));
+  }
+  const out = new Date(d.getTime());
+  out.setMilliseconds(ms);
+  return out;
 }
