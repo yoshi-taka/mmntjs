@@ -2234,6 +2234,7 @@ export class Moment {
         return this;
       }
       // ---- Mid/slow path ----
+      // ---- Mid/slow path ----
       if (p.dirty) {
         p.dirty = false;
         this._refreshFields();
@@ -2244,7 +2245,6 @@ export class Moment {
       if (!updateOffsetCallback) {
         p.H = num;
         p._tStale = true;
-        // Normalize out-of-range (e.g. 24 → 0 + day+1) to match moment.js
         if (num < 0 || num > 23) {
           this._syncT();
         }
@@ -3048,6 +3048,12 @@ export class Moment {
         return;
       }
     }
+    // Dirty + Date: inline the Date path (avoids _addDay dispatch overhead, keeps dirty=true)
+    if (p.dirty && p.d != null && Number.isInteger(amount)) {
+      p.t = p.d.setDate(p.d.getDate() + amount);
+      p._tStale = false;
+      return;
+    }
     this._addDay(amount);
   }
 
@@ -3240,6 +3246,23 @@ export class Moment {
     const p = this._p;
     if (!updateOffsetCallback && isCleanLocalFreshWithDate(p)) {
       startOfDay_CLFD(p);
+      return this;
+    }
+    // Dirty + Date: set Date directly, then populate all fields from Date.
+    if (!updateOffsetCallback && p.dirty && p.d != null && !p._tStale && !p.isUTC) {
+      p.d.setHours(0, 0, 0, 0);
+      p.t = p.d.getTime();
+      p.offset = -p.d.getTimezoneOffset();
+      p.y = p.d.getFullYear();
+      p.M = p.d.getMonth();
+      p.D = p.d.getDate();
+      p.W = p.d.getDay();
+      p.H = 0;
+      p.m = 0;
+      p.s = 0;
+      p.ms = 0;
+      p._tStale = false;
+      p.dirty = false;
       return this;
     }
     return this._startOfSlow("day");
