@@ -3598,6 +3598,86 @@ export class Moment {
     return this._startOfSlow("day");
   }
 
+  /** Fast endOf('day') — branded-state dispatch, symmetric to _startOfDayFast. */
+  private _endOfDayFast(): this {
+    const p = this._p;
+    // Idempotency: already at end of day → no-op
+    if (!p.dirty && p.H === 23 && p.m === 59 && p.s === 59 && p.ms === 999) {
+      return this;
+    }
+    if (!updateOffsetCallback && isCleanLocalFreshWithDate(p)) {
+      p.d.setHours(23, 59, 59, 999);
+      p.t = p.d.getTime();
+      p.offset = -p.d.getTimezoneOffset();
+      p.H = 23;
+      p.m = 59;
+      p.s = 59;
+      p.ms = 999;
+      return this;
+    }
+    // Clean UTC (any offset) → civil arithmetic
+    if (!updateOffsetCallback && isCleanUTC(p)) {
+      p.t = (ymdToEpochDays(p.y, p.M, p.D) + 1) * DAY_MS - 1;
+      p.H = 23;
+      p.m = 59;
+      p.s = 59;
+      p.ms = 999;
+      p.d = undefined;
+      p._tStale = false;
+      return this;
+    }
+    // Clean local no Date → offset probe from t
+    if (!updateOffsetCallback && !p.dirty && !p._tStale && !p.isUTC && p.d == null) {
+      const utcEnd = (ymdToEpochDays(p.y, p.M, p.D) + 1) * DAY_MS - 1;
+      const offAtEnd = _tzOffsetAt(utcEnd);
+      p.t = utcEnd - offAtEnd * MINUTE_MS;
+      p.offset = offAtEnd;
+      p.H = 23;
+      p.m = 59;
+      p.s = 59;
+      p.ms = 999;
+      p._tStale = false;
+      return this;
+    }
+    // Clean local stale → recompute from fields
+    if (!updateOffsetCallback && !p.dirty && p._tStale && !p.isUTC) {
+      const utcEnd = (ymdToEpochDays(p.y, p.M, p.D) + 1) * DAY_MS - 1;
+      const offAtEnd = _tzOffsetAt(utcEnd);
+      p.t = utcEnd - offAtEnd * MINUTE_MS;
+      p.offset = offAtEnd;
+      p.H = 23;
+      p.m = 59;
+      p.s = 59;
+      p.ms = 999;
+      p._tStale = false;
+      return this;
+    }
+    // Dirty + Date: set Date directly
+    if (!updateOffsetCallback && p.dirty && p.d != null && !p._tStale && !p.isUTC) {
+      p.d.setHours(23, 59, 59, 999);
+      p.t = p.d.getTime();
+      p.offset = -p.d.getTimezoneOffset();
+      p.y = p.d.getFullYear();
+      p.M = p.d.getMonth();
+      p.D = p.d.getDate();
+      p.W = p.d.getDay();
+      p.H = 23;
+      p.m = 59;
+      p.s = 59;
+      p.ms = 999;
+      p._tStale = false;
+      p.dirty = false;
+      return this;
+    }
+    this._ensureFields();
+    if (p.isUTC) {
+      this._endOfUTC(DAY);
+    } else {
+      this._endOfLocal(DAY);
+    }
+    return this;
+  }
+
   private _startOfMonthFast(): this {
     const p = this._p;
     if (!updateOffsetCallback && !p.dirty) {
@@ -3741,13 +3821,7 @@ export class Moment {
       unit.charCodeAt(1) === 97 &&
       unit.charCodeAt(2) === 121
     ) {
-      this._ensureFields();
-      if (p.isUTC) {
-        this._endOfUTC(DAY);
-      } else {
-        this._endOfLocal(DAY);
-      }
-      return this;
+      return this._endOfDayFast();
     }
     // — month: charCodeAt fast entrance, refined dispatch —
     if (
