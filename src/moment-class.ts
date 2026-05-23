@@ -4058,24 +4058,24 @@ export class Moment {
   }
 
   valueOf(): number {
-    if (this._p._tStale) {
+    const p = this._p;
+    if (p._tStale) {
       this._syncT();
     }
-    return this._valueOfFast();
-  }
-
-  /** Fast valueOf — skips _syncT (caller must guarantee !_p._tStale). */
-  _valueOfFast(): number {
     if (!this._isValid) {
       return NaN;
     }
-    if (this._p.isUTC) {
-      return this._p.t - this._p.offset * 60000;
-    }
-    return this._p.t;
+    return p.isUTC ? p.t - p.offset * 60000 : p.t;
   }
 
   unix(): number {
+    const p = this._p;
+    if (!p._tStale) {
+      if (!this._isValid) {
+        return NaN;
+      }
+      return Math.floor((p.isUTC ? p.t - p.offset * 60000 : p.t) / 1000);
+    }
     return Math.floor(this.valueOf() / 1000);
   }
 
