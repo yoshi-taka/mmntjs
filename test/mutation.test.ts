@@ -445,12 +445,12 @@ makeMutations([
 
   // === Phase 3: boundary-extra.ts ===
   {
-    name: "boundary-extra: startOf WEEK $W = 0 constant (was dow)",
+    name: "boundary-extra: startOf WEEK $W = 0 constant",
     file: "src/boundary-extra.ts",
     patterns: [
       [
-        /m\._p\.W = utc \? d\.getUTCDay\(\) : d\.getDay\(\);\n\s*m\._p\.t = d\.getTime\(\);\n\s*break;\n\s*\}\n\s*case ISO_WEEK:/g,
-        "m._p.W = 0;\n      m._p.t = d.getTime();\n      break;\n    }\n    case ISO_WEEK:",
+        /syncFields\(d, m, utc\);\n\s*break;\n\s*case ISO_WEEK:/g,
+        "m._p.W = 0;\n      break;\n    case ISO_WEEK:",
       ],
     ],
     inputs: fc.date({
@@ -466,12 +466,12 @@ makeMutations([
     },
   },
   {
-    name: "boundary-extra: startOf ISO_WEEK $W = 0 constant (was 1)",
+    name: "boundary-extra: startOf ISO_WEEK $W = 0 constant",
     file: "src/boundary-extra.ts",
     patterns: [
       [
-        /m\._p\.W = utc \? d\.getUTCDay\(\) : d\.getDay\(\);\n\s*m\._p\.t = d\.getTime\(\);\n\s*break;\n\s*\}\n\s*\}/g,
-        "m._p.W = 0;\n      m._p.t = d.getTime();\n      break;\n    }\n  }",
+        /syncFields\(d, m, utc\);\n\s*break;\n\s*\}/g,
+        "m._p.W = 0;\n      break;\n    }",
       ],
     ],
     inputs: fc.date({
@@ -487,12 +487,12 @@ makeMutations([
     },
   },
   {
-    name: "boundary-extra: endOf WEEK $W = 0 constant (was d.getDay)",
+    name: "boundary-extra: endOf WEEK $W = 0 constant",
     file: "src/boundary-extra.ts",
     patterns: [
       [
-        /m\._p\.W = utc \? d\.getUTCDay\(\) : d\.getDay\(\);\n\s*m\._p\.t = d\.getTime\(\);\n\s*break;\n\s*\}\n\s*case ISO_WEEK:/g,
-        "m._p.W = 0;\n      m._p.t = d.getTime();\n      break;\n    }\n    case ISO_WEEK:",
+        /syncFields\(d, m, utc\);\n\s*break;\n\s*case ISO_WEEK:/g,
+        "m._p.W = 0;\n      break;\n    case ISO_WEEK:",
       ],
     ],
     inputs: fc.date({
@@ -508,12 +508,12 @@ makeMutations([
     },
   },
   {
-    name: "boundary-extra: endOf ISO_WEEK $W = 0 constant (was d.getDay)",
+    name: "boundary-extra: endOf ISO_WEEK $W = 0 constant",
     file: "src/boundary-extra.ts",
     patterns: [
       [
-        /m\._p\.W = utc \? d\.getUTCDay\(\) : d\.getDay\(\);\n\s*m\._p\.t = d\.getTime\(\);\n\s*break;\n\s*\}\n\s*\}/g,
-        "m._p.W = 0;\n      m._p.t = d.getTime();\n      break;\n    }\n  }",
+        /syncFields\(d, m, utc\);\n\s*break;\n\s*\}/g,
+        "m._p.W = 0;\n      break;\n    }",
       ],
     ],
     inputs: fc.date({
@@ -531,7 +531,7 @@ makeMutations([
   {
     name: "boundary-extra: startOf WEEK locale dow ignored (constant 0)",
     file: "src/boundary-extra.ts",
-    patterns: [[/const dow =[\s\S]*?\n\s*\)\.dow;/g, "const dow = 0;"]],
+    patterns: [[/getWeekDow\(m\)/g, "0"]],
     inputs: fc.date({
       min: new Date("2000-01-01"),
       max: new Date("2030-12-31"),
@@ -551,7 +551,7 @@ makeMutations([
   {
     name: "boundary-extra: endOf WEEK locale dow ignored (constant 0)",
     file: "src/boundary-extra.ts",
-    patterns: [[/const dow =[\s\S]*?\n\s*\)\.dow;/g, "const dow = 0;"]],
+    patterns: [[/getWeekDow\(m\)/g, "0"]],
     inputs: fc.date({
       min: new Date("2000-01-01"),
       max: new Date("2030-12-31"),
