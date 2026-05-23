@@ -121,21 +121,31 @@ export function registerUtcApi<C extends MomentCtor>(
     }
     if (isArray(input)) {
       const arr = input;
-      const d = createUTCDate(
-        arr[0] != null ? Number(arr[0]) : 0,
-        arr[1] != null ? Number(arr[1]) : 0,
-        arr[2] != null ? Number(arr[2]) : 1,
-        arr[3] != null ? Number(arr[3]) : 0,
-        arr[4] != null ? Number(arr[4]) : 0,
-        arr[5] != null ? Number(arr[5]) : 0,
-        arr[6] != null ? Number(arr[6]) : 0,
-      );
+      const y = Number(arr[0]);
+      const M = arr[1] != null ? Number(arr[1]) : 0;
+      const D = arr[2] != null ? Number(arr[2]) : 1;
+      const H = arr[3] != null ? Number(arr[3]) : 0;
+      const min = arr[4] != null ? Number(arr[4]) : 0;
+      const s = arr[5] != null ? Number(arr[5]) : 0;
+      const ms = arr[6] != null ? Number(arr[6]) : 0;
+      const d = createUTCDate(y, M, D, H, min, s, ms);
+      if (isNaN(d.getTime())) {
+        return new C({
+          _d: d,
+          _dClone: false,
+          _isUTC: true,
+          _offset: 0,
+          _i: input,
+          _isValid: false,
+        }) as InstanceType<C>;
+      }
       return new C({
         _d: d,
         _dClone: false,
         _isUTC: true,
         _offset: 0,
         _i: input,
+        _presetFields: H === 24 ? undefined : { y, M, D, H, m: min, s, ms },
       }) as InstanceType<C>;
     }
     const m = target(input, format, localeOrStrict, fourthArg);

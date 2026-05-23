@@ -6,7 +6,12 @@ MODE="${1:-bench}"
 case "$MODE" in
   bench)
     echo "=== Bench: moment.js vs mmntjs ==="
-    bun test/bench.ts
+    echo "  bun run bench       — public table + detailed appendix"
+    echo "  bun run bench:date-fns — date-fns comparison"
+    echo "  bun run bench:cold     — first-call latency"
+    echo "  bun run bench:micro    — developer microbenchmarks"
+    echo "  bun run bench:temporal — Temporal comparison"
+    bun bench/moment-compat.ts
     ;;
   test)
     echo "=== Property tests: moment.js vs mmntjs ==="

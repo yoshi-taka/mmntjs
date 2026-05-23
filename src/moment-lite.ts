@@ -152,6 +152,7 @@ export interface MomentConstructionConfig {
   _charsLeftOver?: number;
   _userInvalidated?: boolean;
   _t?: number;
+  _presetFields?: { y: number; M: number; D: number; H: number; m: number; s: number; ms: number };
 }
 
 const _DOW_OFFSET = new Uint8Array([0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4]);
@@ -364,7 +365,19 @@ export class MomentLite {
       this._p.d = undefined;
     }
     this._isValid = c._isValid ?? !isNaN(this._p.t);
-    if (this._isValid) {
+    if (c._presetFields) {
+      const f = c._presetFields;
+      this._p.y = f.y;
+      this._p.M = f.M;
+      this._p.D = f.D;
+      this._p.W = this._p.d ? (this._p.isUTC ? this._p.d.getUTCDay() : this._p.d.getDay()) : 0;
+      this._p.H = f.H;
+      this._p.m = f.m;
+      this._p.s = f.s;
+      this._p.ms = f.ms;
+      this._p.offset = this._p.d ? (this._p.isUTC ? 0 : -this._p.d.getTimezoneOffset()) : 0;
+      this._p.dirty = false;
+    } else if (this._isValid) {
       this._p.dirty = false;
       this._refreshFields();
     } else {
@@ -393,6 +406,7 @@ export class MomentLite {
           "_f",
           "_l",
           "_strict",
+          "_presetFields",
         ].includes(key),
     );
     if (

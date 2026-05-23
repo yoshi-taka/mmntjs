@@ -1,5 +1,26 @@
 # Benchmarks
 
+## Design Principles
+
+1. **Compare equivalent semantics only.**
+   - moment.js = Moment compatibility comparison (`bench/moment-compat.ts`)
+   - date-fns = native Date utility comparison (`bench/date-fns.ts`)
+   - Temporal = immutable semantic engine comparison (`bench/temporal.ts`)
+
+2. **Separate benchmark intent.**
+   - **Public-facing** — representative operations, small table, simple ratios
+   - **First-call latency** — diagnostic only, not marketing
+   - **Developer microbenchmarks** — internal code-path optimization workbench
+
+3. **Public tables prioritize readability over exhaustiveness.**
+
+4. **Avoid designs that accidentally favor mmntjs.**
+   - Mutating operations (add, subtract, setters, startOf, endOf) use **fresh objects per iteration** to prevent accumulated state bias
+   - Read-only operations (format, getters, valueOf, diff, comparison) may reuse instances
+   - The comparison is slightly conservative / mildly unfavorable to mmntjs by design
+
+5. **Fresh-object workloads** for all mutating operations ensure accumulated state does not compound across iterations.
+
 ## Methodology
 
 | Item | Detail |
@@ -8,187 +29,206 @@
 | OS | macOS (arm64) |
 | Default runtime | Bun 1.x (JavaScriptCore) — see cross-runtime section for Node.js 26 (V8) validation |
 | Harness | `process.hrtime.bigint()` |
-| Measurement | Cold = 1st call from module load. Warm = median of 5 runs × 5000 iterations, preceded by 1000-iteration warmup |
+| Measurement | Warm = median of 5 runs × 5000 iterations, preceded by 1000-iteration warmup. First-call = median of 20 isolated single-invocation samples |
 | Result consumption | All results are consumed (e.g. `format()` output is `JSON.stringify`-ed to prevent DCE) |
-| TurboFan / JIT | Enabled (default). Warming paths reach TurboFan-optimized code by ~1000 calls. Cold values capture Ignition-tier performance |
-| Variance | Typical CV < 5% for warm measurements. Cold measurements have higher variance (~20-30%) due to JIT compilation, Shape allocation, and cache priming |
+| TurboFan / JIT | Enabled (default). Warming paths reach turbo-optimized code by ~1000 calls |
+| Variance | Typical CV < 5% for warm measurements. First-call measurements have higher variance (~20-30%) due to JIT compilation, Shape allocation, and cache priming |
+| Fresh objects | All mutating operations (add, subtract, setters, startOf, endOf) create a new instance per iteration. Read-only operations (format, getters, diff, comparison) may reuse a shared instance |
 | Format fast path | `format()` numbers reflect en-locale fast path where applicable |
-| Date | 2026-05-16 |
+| Date | 2026-05-23 |
 
-Unless noted, tables below use **Bun** as the runtime. Bun's JSC engine contributes to absolute speed; the relative advantage over date-fns and moment.js is cross-validated on Node.js 26 (V8) in the [cross-runtime section](#runtime-comparison-bun-vs-node-26).
+## Benchmark Files
 
-## moment vs mmntjs
+| File | Purpose | Run command |
+|------|---------|-------------|
+| `bench/moment-compat.ts` | mmntjs vs moment.js — public table + detailed appendix | `bun run bench` |
+| `bench/date-fns.ts` | mmntjs vs date-fns — semantically equivalent ops only | `bun run bench:date-fns` |
+| `bench/temporal.ts` | mmntjs vs Temporal — PlainDateTime + ZonedDateTime | `node bench/temporal.ts` |
+| `bench/cold.ts` | First-call latency — diagnostic only | `bun run bench:cold` |
+| `bench/micro.ts` | Developer microbenchmarks — optimization workbench | `bun run bench:micro` |
+| `bench/bench-suite.ts` | mmntjs vs date-fns suite using benchmark.js library | `bun run bench:suite` |
+| `bench/bench-regression.ts` | Regression guard — negative-epoch UTC, parse growth, large month | `bun run bench:guard` |
+| `bench/bench-mem.ts` | Memory footprint (heapUsed/rss) | `bun run bench:mem` |
+| `bench/bench-setters-compare.ts` | Setter strategy comparison (Date.set* vs epoch delta vs arith+guard) | direct `bun` |
+| `bench/bench-setter-ab.ts` | Micro A/B tests (typeof check, isInteger, hour() strategies) | direct `bun` |
+| `bench/bench-lookup.ts` | Lookup latency guard (format token dispatch, timezone zone lookup, locale data access) | `bun run bench:guard` |
+| `bench/bench-parse-eval.ts` | Parse-eval regression guard (ISO parse+format, array/object parse, chained ops) | `bun run bench:guard` |
+
+## mmntjs vs moment.js — Public Table
 
 ```
-Operation                           warm mom    warm m2       %
-moment()                                311ns       54ns   17.3%
-moment([y,M,d])                         702ns      284ns   40.5%
-moment([y,M,d,h,m,s,ms])                 316ns      186ns   58.9%
-moment('ISO string')                   4.20us      310ns    7.4%
-moment(Date)                            221ns       42ns   18.8%
-format('YYYY-MM-DD')                    420ns       33ns    7.9%
-format('dddd, MMMM Do YYYY, h:mm:ss a') 976ns      815ns   83.6%
-format('LL')                            469ns       48ns   10.1%
-getters (year,month,date,hour,min,sec,ms)      230ns       37ns   16.0%
-setters (year,month,date)               253ns      141ns   55.5%
-add(1,'day')                            312ns       49ns   15.6%
-add(1,'month')                          688ns      382ns   55.5%
-subtract(7,'days').add(1,'month')       642ns      169ns   26.3%
-isBefore/isAfter/isSame                 187ns       30ns   15.8%
-isBetween                              1.29us      118ns    9.1%
-diff('days')                            491ns       18ns    3.6%
-diff('months')                         1.78us       79ns    4.4%
-startOf('month').endOf('month')         417ns      318ns   76.3%
-startOf('week').startOf('year')         423ns      161ns   38.2%
-clone                                    83ns       41ns   50.1%
-moment.duration(12345)                  170ns       87ns   51.1%
-moment.duration(7,'days')               154ns       65ns   42.1%
-valueOf / unix                           17ns        8ns   46.8%
-daysInMonth / isLeapYear                117ns       17ns   14.7%
-startOf('year')                         124ns       69ns   55.6%
-endOf('year')                           278ns       72ns   25.9%
-moment('ISO string') with format       4.05us     1.17us   29.0%
-moment.utc('ISO string')               2.45us      348ns   14.2%
-format('HH:mm:ss')                      398ns       43ns   10.8%
-add(1,'year')                           659ns      353ns   53.7%
+Operation                              mmntjs     moment    ratio
+moment()                                325ns      327ns     1.0x faster
+moment(Date)                             79ns      220ns     2.8x faster
+moment('ISO string')                    387ns     4.09us    10.6x faster
+format('YYYY-MM-DD')                     52ns      435ns     8.4x faster
+format('HH:mm:ss')                       68ns      410ns     6.0x faster
+format('LL')                             81ns      700ns     8.7x faster
+add(1,'day') [fresh]                    399ns     2.64us     6.6x faster
+add(1,'month') [fresh]                  383ns     2.49us     6.5x faster
+startOf('day') [fresh]                  285ns     2.10us     7.4x faster
+startOf('month') [fresh]                475ns     2.18us     4.6x faster
+diff('days')                             22ns      489ns    21.7x faster
+diff('months')                          105ns     1.62us    15.4x faster
+isBefore / isAfter / isSame              41ns      209ns     5.1x faster
+startOf('month').endOf('month') [fresh] 539ns     2.41us     4.5x faster
 ```
 
-(`%` = mmntjs / mom x 100. Lower = mmntjs faster)
+`[fresh]` = fresh object created per iteration. Ratio = moment / mmntjs. Higher = mmntjs faster.
 
-**mmntjs wins all 31 operations.** Typical gains: **5-60x**.
+## Detailed Appendix
+
+Full warm-table for all operations measured in `bench/moment-compat.ts`, including cold-path setters, UTC/local variants, and chained mutation workloads.
+
+```
+Operation                                     mmntjs     moment    ratio
+moment([y,M,d])                                525ns      292ns   ~55.6%
+moment([y,M,d,h,m,s,ms])                       597ns      267ns   ~44.8%
+format('dddd, MMMM Do YYYY, h:mm:ss a')       1.23us      128ns   ~10.4%
+getters (y+M+d+H+m+s+ms)                       256ns       39ns   ~15.1%
+setters (year+month+date) [fresh]             2.48us      371ns   ~15.0%
+subtract(7,'days').add(1,'month') [fresh]     2.62us      372ns    14.2%
+isBetween                                     1.18us      179ns   ~15.1%
+startOf('week').startOf('year') [fresh]       2.45us      578ns   ~23.6%
+clone                                          100ns       55ns   ~55.3%
+moment.duration(12345)                         227ns       73ns   ~32.3%
+moment.duration(7,'days')                      432ns      223ns   ~51.6%
+valueOf / unix                                  30ns       49ns  ~164.2%
+daysInMonth / isLeapYear                        99ns       14ns   ~13.8%
+startOf('year') [fresh]                       2.06us      453ns   ~22.0%
+endOf('year') [fresh]                         4.29us      704ns   ~16.4%
+moment('ISO string') with format              5.82us      394ns    ~6.8%
+moment.utc('ISO string')                      2.89us      412ns   ~14.3%
+add(1,'year') [fresh]                         3.65us      682ns   ~18.7%
+startOf('day') UTC [fresh]                    2.57us      615ns   ~23.9%
+startOf('day') local [fresh]                  3.21us      285ns    ~8.9%
+set year UTC [fresh]                          2.46us      401ns   ~16.3%
+set year local D<=28 [fresh]                  2.36us      368ns   ~15.6%
+set year local D>28 (Jan31→Feb) [fresh]       2.42us      309ns   ~12.8%
+set month UTC [fresh]                         2.15us      365ns    17.0%
+set month local D<=28 [fresh]                 2.14us      315ns    14.7%
+set date D<=28 UTC [fresh]                    2.15us      344ns   ~16.0%
+set date D<=28 local [fresh]                  2.11us      285ns   ~13.5%
+set date D>28 UTC [fresh]                     2.21us      391ns    17.7%
+set date D>28 local [fresh]                   2.47us      279ns   ~11.3%
+set hour UTC (p.d hot) [fresh]                2.22us      357ns    16.1%
+set hour local (p.d hot) [fresh]              2.08us      252ns    12.1%
+chained y+M+d (3 setters) local [fresh]       2.72us      315ns    11.6%
+chained y+M+d+H+m+s (6 setters) local [fresh] 4.50us     2.50us   ~55.5%
+```
+
+(`%` = mmntjs / moment × 100. Lower = mmntjs faster. `~` = noisy, spread >25%.)
+
+### First-call latency (cold)
+
+```
+Operation                              moment     mmntjs    ratio
+moment()                               4.67us     3.13us     67.0%
+format('YYYY-MM-DD')                   8.21us     2.50us     30.5%
+add(1,'day')                          24.71us     6.00us     24.3%
+startOf('day')                         8.17us     1.96us     24.0%
+set year                               7.29us     2.17us     29.7%
+diff('days')                           3.92us      625ns     16.0%
+clone                                   459ns      708ns    154.2%
+duration(12345)                        2.83us     1.42us     50.0%
+moment.utc('ISO string')               8.38us     2.71us     32.3%
+format('LL')                           5.42us     2.17us     40.0%
+```
+
+(`%` = mmntjs / moment × 100. Lower = mmntjs faster. Median of 20 isolated first-call samples.)
 
 ## mmntjs vs date-fns
 
-```
-Operation                           warm m2      warm df       %
-parse ISO string                       363ns     1.30us ~358.3%
-get day of year                         17ns     1.38us ~7903.9%
-add 1 day                               48ns       77ns ~158.7%
-format YYYY-MM-DD                       56ns     1.31us ~2324.6%
-lightFormat YYYY-MM-DD                  36ns      651ns ~1795.9%
-isAfter                                 16ns      160ns ~1000.3%
-startOf month                           17ns       75ns  ~453.6%
-diff in days                            20ns      935ns ~4611.0%
-moment() / new Date()                   40ns       35ns   ~85.6%
-startOf year                            70ns       82ns  ~117.6%
-endOf month                             75ns       83ns  ~110.5%
-add 1 month                             92ns      242ns  ~262.9%
-add 1 second                            15ns      108ns  ~721.1%
-add 1 ms                                13ns       79ns  ~591.7%
-sub 1 day                               46ns       76ns  ~166.2%
-diff in months                          86ns       94ns  ~108.5%
-format HH:mm:ss                         50ns      939ns ~1877.6%
-lightFormat HH:mm:ss                    61ns      452ns ~737.8%
-isBefore                                11ns      131ns ~1143.7%
-daysInMonth                             13ns      264ns ~2044.3%
-isLeapYear                               6ns       36ns  ~593.1%
-set year                                48ns       99ns  ~206.2%
-```
+Only semantically equivalent operations are compared.
 
-(`%` = df / m2 x 100. Higher = mmntjs faster. `>100` = mmntjs wins.)
+**Note:** date-fns operates on native Date utilities (immutable style), while mmntjs preserves Moment-compatible mutable object semantics. Each date-fns function creates a new Date instance; mmntjs mutates in-place. This structural difference means mmntjs pays object-creation cost for fresh-object workloads, which this benchmark uses for mutating operations.
 
-`~` marks noisy short runs. `test/bench-datefns2.ts` now reports medians from repeated runs instead of single samples.
-
-**mmntjs wins 24/25 operations.** Only loss: `moment() / new Date()` (~86%, wrapper allocation overhead).
-
-For `month`/`quarter`/`year` comparisons, note that date-fns uses `differenceInCalendar*` helpers while mmntjs matches moment.js's truncated fractional diff semantics. Those rows compare implementation cost, not identical behavior.
-
-## mmntjs vs native Intl.DateTimeFormat
+Not compared: clone (no date-fns equivalent), locale-heavy Moment features, mutable chain semantics.
 
 ```
-Operation                           warm m2   warm Intl       %
-Intl.DateTimeFormat YYYY-MM-DD (sv-SE)  31ns       609ns 1938.1%
-Intl.DateTimeFormat YYYY-MM-DD (ar-SA)  33ns       664ns 1990.1%
-Intl.DateTimeFormat HH:mm:ss (en-US)    59ns       585ns  988.1%
-Intl.DateTimeFormat HH:mm:ss (ar-SA)    40ns       670ns 1681.8%
+Operation                              mmntjs    date-fns    ratio
+parse ISO string                         544ns      981ns   1.8x faster
+moment() / new Date()                    181ns       43ns   4.2x slower
+moment([y,M,d]) / new Date(y,m,d)        484ns       41ns  11.9x slower
+format YYYY-MM-DD                         89ns     1.50us  16.9x faster
+lightFormat YYYY-MM-DD                    54ns      747ns  13.9x faster
+format HH:mm:ss                           80ns      899ns  11.3x faster
+add 1 day [fresh]                        424ns      103ns   4.1x slower
+add 1 month [fresh]                      400ns      194ns   2.1x slower
+add 1 second [fresh]                    2.95us      126ns  23.3x slower
+add 1 ms [fresh]                        2.29us      119ns  19.2x slower
+sub 1 day [fresh]                        367ns      188ns   1.9x slower
+isAfter                                   19ns      146ns   7.5x faster
+isBefore                                  18ns      164ns   9.1x faster
+diff in days                              19ns     1.12us  57.3x faster
+diff in months                            97ns      115ns   1.2x faster
+startOf month [fresh]                    590ns      284ns   2.1x slower
+startOf year [fresh]                     534ns      266ns   2.0x slower
+startOf day [fresh]                     2.33us       94ns  25.0x slower
+endOf month [fresh]                      465ns      171ns   2.7x slower
+dayOfYear                                 24ns     1.14us  48.4x faster
+daysInMonth                               11ns      253ns  24.0x faster
+isLeapYear                                17ns       51ns   3.0x faster
+set year [fresh]                         686ns      602ns   1.1x slower
+set month [fresh]                        300ns     1.28us   4.3x faster
+set date [fresh]                         267ns      101ns   2.6x slower
+set hour [fresh]                        2.27us       94ns  24.4x slower
+set minute [fresh]                      2.85us       89ns  32.3x slower
+set second [fresh]                      2.15us       93ns  23.3x slower
+set millisecond [fresh]                 2.33us      100ns  23.3x slower
 ```
 
-(`%` = Intl / m2 x 100. Higher = mmntjs faster.)
+Ratio = date-fns / mmntjs. Higher = mmntjs faster.
 
-`ar-SA` (Arabic-Saudi Arabia) was chosen as non-English Intl comparison point because:
-- **Arabic-Indic digits**: Intl must convert Arabic-Indic digit output, adding ICU digit-transformation cost
-- **RTL context**: ICU resolves bidirectional formatting rules
-- **Calendar**: Islamic Umm al-Qura calendar, month/day mapping differs from Gregorian
-- **Script shaping**: Arabic contextual glyph shaping adds ICU processing overhead
+Key observation: with fresh-object workloads, date-fns wins on operations where total cost is dominated by mmntjs's object construction overhead (`add`, `startOf`, setters on freshly parsed strings). mmntjs wins on read-heavy operations (format, diff, dayOfYear, daysInMonth) where its cached field access outperforms date-fns's native Date API calls.
 
-These factors make `ar-SA` a worst-case Intl locale. Even then, Intl is **10-22x slower** than mmntjs for formatting.
+## mmntjs vs Temporal
 
-## Runtime comparison: Bun vs Node 26
+Temporal prioritizes immutable correctness and semantic richness. Every Temporal operation creates new objects; mmntjs mutates in-place. This comparison is informative, not adversarial.
 
-All tables above use Bun. To verify results aren't Bun-specific (JavaScriptCore vs V8), key operations on Node 26 (via tsx):
+**Note:** Temporal's strength is its semantic model, not raw speed. Results are shown for reference only.
 
-| Operation | Bun warm m2 | Node warm m2 | Bun ratio (m2/df) | Node ratio (m2/df) |
-|-----------|------------|-------------|-------------------|-------------------|
-| parse ISO string | 281ns | 346ns | **3.4x** | **2.9x** |
-| format YYYY-MM-DD | 46ns | 37ns | **25x** | **29x** |
-| diff days | 21ns | 35ns | **41x** | **24x** |
-| diff months | 28ns | 53ns | **3.2x** | **5.4x** |
-| add 1 day | 64ns | 89ns | **125%** | **129%** |
-| add 1 month | 90ns | 111ns | **2.3x** | **2.3x** |
-| startOf month | 13ns | 15ns | **6.1x** | **9.2x** |
-| isLeapYear | 7ns | 8ns | **5.5x** | **5.9x** |
-| moment() / new Date() | 38ns | 48ns | **89%** | **114%** |
-| Intl YYYY-MM-DD (ar-SA) | 33ns | 42ns | **20x** | **15x** |
-
-mmntjs wins on both runtimes. Absolute speeds differ slightly (V8 vs JSC), but the relative advantage over date-fns and Intl is consistent.
-
-## Benchmark files
-
-| File | Harness | Purpose |
-|------|---------|---------|
-| `bench/bench.ts` | custom (hrtime) | moment.js vs mmntjs, cold+warm |
-| `bench/bench-datefns2.ts` | custom (hrtime) | mmntjs vs date-fns, cold+warm |
-| `bench/bench-regression.ts` | custom (hrtime) | regression guard for negative-epoch UTC math, invalid-parse growth, large month normalization |
-| `bench/bench-suite.ts` | benchmark.js | mmntjs vs date-fns, locale format, ops/sec |
-| `bench/bench-mem.ts` | custom | memory footprint (heapUsed/rss) |
-| `bench/bench-cold-warm.ts` | custom | cold start analysis |
-| `bench/bench-temporal.ts` | custom (hrtime) | mmntjs vs native Temporal, cold+warm |
-
-Useful commands:
-- `bun run bench` -> main moment.js vs mmntjs table (`bench/bench.ts`)
-- `bun run bench:guard` -> regression guard thresholds (`bench/bench-regression.ts`)
-- `bun run bench:mem` -> module footprint (`bench/bench-mem.ts`)
-- `bun bench/bench-cold-warm.ts` -> locale cold/warm behavior
-- `node bench/bench-temporal.ts` -> Temporal comparison (requires Node.js 26+ with native Temporal)
-
-## Official benchmarks (定期実行対象)
-
-The following are designated as the canonical benchmark suite for mmntjs:
-
-| # | 系統 | ファイル | 実行 |
-|---|------|---------|------|
-| A | moment.js vs mmntjs | `bench/bench.ts` | `bun run bench` |
-| B | mmntjs vs date-fns | `bench/bench-datefns2.ts` | `bun bench/bench-datefns2.ts` |
-| C | mmntjs-tz vs moment-tz | `packages/timezone/test/bench-timezone.ts` | `bun packages/timezone/test/bench-timezone.ts` |
-| D | Regression guard | `bench/bench-regression.ts` etc | `bun run bench:guard` |
-| E | Temporal (参考) | `bench/bench-temporal.ts` | `node bench/bench-temporal.ts`
-
-## mmntjs vs native Temporal (Node.js 26)
+### A) PlainDateTime (civil arithmetic)
 
 ```
-Operation                           warm m2   warm tmp       %
-now/create                              70ns       657ns  934.2%
-parse ISO string                       424ns       177ns   41.8%
-parse [y,M,d]                          322ns       100ns   31.0%
-get year                                 8ns        12ns  151.9%
-add 1 day                               89ns       537ns  603.1%
-add 1 month                            203ns       454ns  223.6%
-diff in days                            26ns       348ns 1331.0%
-format YYYY-MM-DD                       64ns       132ns  205.4%
-startOf month                           14ns       284ns 1992.9%
-daysInMonth                             16ns        14ns   85.9%
+Operation                              mmntjs    Temporal   ratio
+now (create)                            334ns      822ns   2.5x faster
+parse date-only ISO                     676ns      265ns   2.6x slower
+parse datetime ISO                     2.50us      279ns   9.0x slower
+parse [y,M,d]                           446ns      103ns   4.3x slower
+get year                                 91ns       26ns   3.5x slower
+get year+month+day (3 reads)             58ns       56ns   1.0x slower
+add 1 day                                77ns      536ns   7.0x faster
+add 1 month                             424ns      516ns   1.2x faster
+add 1 day (immutable both)              546ns      505ns   1.1x slower
+diff in days                             26ns      402ns  15.4x faster
+toISOString                             347ns      398ns   1.1x faster
+startOf month (mut vs immutable)         19ns      281ns  14.9x faster
+daysInMonth (method vs property)         10ns       15ns   1.5x faster
+set year                                391ns      383ns   1.0x slower
+set month+day                           407ns      310ns   1.3x slower
 ```
 
-(`%` = tmp / m2 x 100. `<100` = Temporal faster, `>100` = mmntjs faster.)
+### B) ZonedDateTime (timezone semantics)
 
-**mmntjs wins 7/10, Temporal wins 3/10.**
+```
+Operation                              mmntjs    Temporal   ratio
+parse ISO to zoned                     2.52us      414ns   6.1x slower
+add 1 day (zoned)                      2.20us      714ns   3.1x slower
+startOf day (zoned)                    2.23us      318ns   7.0x slower
+get offset string                        25ns       98ns   3.9x faster
+```
 
-Temporal wins at parsing (C++ `PlainDate.from` and constructor are fast) and `daysInMonth` (C++ property read vs mmntjs's function call). mmntjs wins everywhere else because:
+Ratio = Temporal / mmntjs. Higher = mmntjs faster.
 
-- **Object allocation**: Every Temporal operation (`add`, `since`, `with`) creates a new PlainDate/Duration object. mmntjs mutates cached fields in-place.
-- **Cached fields**: mmntjs's `$y/$M/$D` are plain JS numbers. Temporal's `.year`/`.month`/`.day` go through C++ getter calls.
-- **Format**: Temporal `toString()` goes through C++ serialization; mmntjs is a template literal on cached ints.
+## Cross-reference: Benchmark evolution
 
-The gap widens for mutation-heavy operations: `diff days` (12x), `startOf month` (20x), `now` (7x). Temporal's all-objects-are-immutable design trades allocation cost for safety.
+Previous benchmark files (retained for reproducibility):
 
-These are microbenchmark observations, not a critique of Temporal's design. Temporal prioritizes correctness, timezone handling, and API ergonomics over raw speed — a different trade-off from mmntjs's drop-in compatibility focus.
+| Old file | Status | Replacement |
+|----------|--------|-------------|
+| `bench/bench.ts` | retained | split into `moment-compat.ts` + `cold.ts` + `micro.ts` |
+| `bench/bench-datefns2.ts` | retained | replaced by `date-fns.ts` |
+| `bench/bench-datefns.ts` | retained (early version) | superseded |
+| `bench/bench-cold-warm.ts` | retained | superseded by `cold.ts` + `micro.ts` |
+| `bench/bench-temporal.ts` | retained | replaced by `temporal.ts` |

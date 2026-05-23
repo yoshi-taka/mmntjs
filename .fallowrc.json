@@ -46,7 +46,7 @@
     "bench/bench-datefns.ts",
     "test/locale-helper.ts",
     "scripts/**",
-    "bench/bench-*",
+    "bench/bench*",
     "test/bench*.ts",
     "test/bench*.mjs",
     "test/debug_*",

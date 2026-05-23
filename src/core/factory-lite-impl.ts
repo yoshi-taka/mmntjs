@@ -1,5 +1,13 @@
 import { MomentLite } from "../moment-lite";
-import { isMoment, isDate, isString, isNumber, createDateSafe, createUTCDate } from "../utils";
+import {
+  isMoment,
+  isDate,
+  isString,
+  isNumber,
+  isArray,
+  createDateSafe,
+  createUTCDate,
+} from "../utils";
 import { getLiteLocale, getLiteCurrentLocale } from "../locale-lite";
 import type { ParseLocale } from "../parse-locale";
 import { parseString, isCustomFormatParsingEnabled } from "../parse-lite";
@@ -277,6 +285,40 @@ export function moment(
       });
     }
     return new MomentLite({ _dClone: false, _d: new Date(n), _i: input });
+  }
+  if (isArray(input)) {
+    const arr = input;
+    if (arr.length === 0) {
+      return new MomentLite({ _t: nowFn(), _i: input });
+    }
+    for (const val of arr) {
+      if (val === null || val === undefined) {
+        return new MomentLite({ _dClone: false, _d: new Date(NaN), _isValid: false, _i: input });
+      }
+      if (isNaN(Number(val))) {
+        return new MomentLite({ _dClone: false, _d: new Date(NaN), _isValid: false, _i: input });
+      }
+    }
+    const y = Number(arr[0]);
+    if (isNaN(y)) {
+      return new MomentLite({ _dClone: false, _d: new Date(NaN), _isValid: false, _i: input });
+    }
+    const M = arr[1] !== undefined ? Number(arr[1]) : 0;
+    const D = arr[2] !== undefined ? Number(arr[2]) : 1;
+    const H = arr[3] !== undefined ? Number(arr[3]) : 0;
+    const min = arr[4] !== undefined ? Number(arr[4]) : 0;
+    const s = arr[5] !== undefined ? Number(arr[5]) : 0;
+    const ms = arr[6] !== undefined ? Number(arr[6]) : 0;
+    const d = createDateSafe(y, M, D, H, min, s, ms, false);
+    if (isNaN(d.getTime())) {
+      return new MomentLite({ _dClone: false, _d: d, _isValid: false, _i: input });
+    }
+    return new MomentLite({
+      _d: d,
+      _dClone: false,
+      _i: input,
+      _presetFields: H === 24 ? undefined : { y, M, D, H: H, m: min, s, ms },
+    });
   }
   if (isString(input)) {
     return createFromString(input, format, localeOrStrict, fourthArg);

@@ -803,6 +803,7 @@ export interface MomentConstructionConfig {
   _isParseZone?: boolean;
   _invalidEra?: number;
   _tooBusyWith?: string;
+  _presetFields?: { y: number; M: number; D: number; H: number; m: number; s: number; ms: number };
 }
 
 enum DMethod {
@@ -849,6 +850,7 @@ function isCoreMomentConstructionConfigKey(key: string): boolean {
     case "_f":
     case "_l":
     case "_strict":
+    case "_presetFields":
       return true;
     default:
       return false;
@@ -1673,7 +1675,19 @@ export class Moment {
       this._p.d = undefined;
     }
     this._isValid = c._isValid ?? !isNaN(this._p.t);
-    if (this._isValid) {
+    if (c._presetFields) {
+      const f = c._presetFields;
+      this._p.y = f.y;
+      this._p.M = f.M;
+      this._p.D = f.D;
+      this._p.W = this._p.d ? (this._p.isUTC ? this._p.d.getUTCDay() : this._p.d.getDay()) : 0;
+      this._p.H = f.H;
+      this._p.m = f.m;
+      this._p.s = f.s;
+      this._p.ms = f.ms;
+      this._p.offset = this._p.d ? (this._p.isUTC ? 0 : -this._p.d.getTimezoneOffset()) : 0;
+      this._p.dirty = false;
+    } else if (this._isValid) {
       this._p.dirty = false;
       this._refreshFields();
     } else {
