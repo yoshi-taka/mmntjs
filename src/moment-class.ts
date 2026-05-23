@@ -2032,7 +2032,7 @@ export class Moment {
     if (!this._isValid) {
       return NaN;
     }
-    this._ensureFields();
+    this._ensureFreshFields();
     return this._p.y;
   }
 
@@ -2082,7 +2082,7 @@ export class Moment {
     if (!this._isValid) {
       return NaN;
     }
-    this._ensureFields();
+    this._ensureFreshFields();
     return this._p.M;
   }
 
@@ -2212,7 +2212,7 @@ export class Moment {
     if (!this._isValid) {
       return NaN;
     }
-    this._ensureFields();
+    this._ensureFreshFields();
     return this._p.W;
   }
 
@@ -2231,7 +2231,7 @@ export class Moment {
     if (!this._isValid) {
       return d !== undefined ? this : NaN;
     }
-    this._ensureFields();
+    this._ensureFreshFields();
     // oxlint-disable-next-line typescript/no-explicit-any
     return isoWeekdayMoment(_cast<CalendarAwareMoment>(this), d) as number | this;
   }
@@ -2242,7 +2242,7 @@ export class Moment {
     if (!this._isValid) {
       return d !== undefined ? this : NaN;
     }
-    this._ensureFields();
+    this._ensureFreshFields();
     return dayOfYearMoment(_cast<CalendarAwareMoment>(this), d) as number | this;
   }
 
@@ -2920,7 +2920,7 @@ export class Moment {
   }
 
   _applyDuration(ms: number, days: number, months: number, sign: 1 | -1): void {
-    this._ensureFields();
+    this._ensureFreshFields();
     const d = this._getDNoEnsure();
     const utc = this._p.isUTC;
     if (months) {
