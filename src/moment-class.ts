@@ -2069,24 +2069,33 @@ export class Moment {
   month(m?: unknown): number | this {
     if (m !== undefined) {
       const p = this._p;
-      // Numeric fast path: clean + D <= 28 + no callback → direct field arithmetic
-      if (typeof m === "number" && !p.dirty && !updateOffsetCallback && p.D <= 28) {
+      // Numeric fast path: clean + no callback → direct field arithmetic
+      if (typeof m === "number" && !p.dirty && !updateOffsetCallback) {
         const targetM = ((m % 12) + 12) % 12;
         const yearDelta = Math.floor(m / 12);
         const y = p.y + yearDelta;
         if (y === p.y && targetM === p.M) {
           return this;
         }
-        if (p.isUTC) {
-          p.t = ymdToEpochDays(y, targetM, p.D) * DAY_MS + _tod(p);
-          p.d = undefined;
+        if (p.D <= 28) {
+          // D ∈ [1,28] → safe arithmetic, no overflow risk
+          if (p.isUTC) {
+            p.t = ymdToEpochDays(y, targetM, p.D) * DAY_MS + _tod(p);
+            p.d = undefined;
+          } else {
+            p.d = undefined;
+            p._tStale = true;
+          }
+          p.y = y;
+          p.M = targetM;
+          p.W = _dayOfWeek(y, targetM, p.D);
         } else {
+          // D > 28 → defer to _syncT for auto-clamping
+          p.y = y;
+          p.M = targetM;
           p.d = undefined;
           p._tStale = true;
         }
-        p.y = y;
-        p.M = targetM;
-        p.W = _dayOfWeek(y, targetM, p.D);
         return this;
       }
       if (p.dirty) {
@@ -2178,6 +2187,29 @@ export class Moment {
       const num = refined ?? Number(d);
       if (num <= 0 || isNaN(num)) {
         return this;
+      }
+      // Mid-path: clean + no callback → direct field write (avoids _applyOp dispatch)
+      if (!updateOffsetCallback && !p.dirty) {
+        if (isCleanUTC(p) && !refined) {
+          // Delegate to setDateUTC for >28 UTC (same logic, avoids _applyOp)
+          setDateUTC(p, num);
+          return this;
+        }
+        if (!p.isUTC) {
+          if (p.d != null) {
+            p.d.setDate(num);
+            p.t = p.d.getTime();
+            p.y = p.d.getFullYear();
+            p.M = p.d.getMonth();
+            p.D = p.d.getDate();
+            p.W = p.d.getDay();
+            p.offset = -p.d.getTimezoneOffset();
+          } else {
+            p.D = num;
+            p._tStale = true;
+          }
+          return this;
+        }
       }
       if (p.dirty) {
         p.dirty = false;
@@ -2367,11 +2399,23 @@ export class Moment {
     if (m !== undefined) {
       const p = this._p;
       const refined = refineMinute(m);
-      if (refined !== null && isCleanLocalFreshWithDate(p)) {
+      if (refined !== null && !p.dirty && !updateOffsetCallback) {
         if (refined === p.m) {
           return this;
         }
-        setMinuteFast(p, refined);
+        if (p.isUTC) {
+          p.t += (refined - p.m) * MINUTE_MS;
+          p.m = refined;
+          p.d = undefined;
+          p._tStale = false;
+          return this;
+        }
+        if (isCleanLocalFreshWithDate(p)) {
+          setMinuteFast(p, refined);
+          return this;
+        }
+        p.m = refined;
+        p._tStale = true;
         return this;
       }
       const num = refined ?? Number(m);
@@ -2413,11 +2457,23 @@ export class Moment {
     if (s !== undefined) {
       const p = this._p;
       const refined = refineSecond(s);
-      if (refined !== null && isCleanLocalFreshWithDate(p)) {
+      if (refined !== null && !p.dirty && !updateOffsetCallback) {
         if (refined === p.s) {
           return this;
         }
-        setSecondFast(p, refined);
+        if (p.isUTC) {
+          p.t += (refined - p.s) * SECOND_MS;
+          p.s = refined;
+          p.d = undefined;
+          p._tStale = false;
+          return this;
+        }
+        if (isCleanLocalFreshWithDate(p)) {
+          setSecondFast(p, refined);
+          return this;
+        }
+        p.s = refined;
+        p._tStale = true;
         return this;
       }
       const num = refined ?? Number(s);
