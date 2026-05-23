@@ -275,6 +275,214 @@ export function _quarter(d: Date): number {
   return ((d.getMonth() / 3) | 0) + 1;
 }
 
+// ── Getters ──
+
+export function _year(d: Date): number {
+  return d.getFullYear();
+}
+
+export function _month(d: Date): number {
+  return d.getMonth();
+}
+
+export function _date(d: Date): number {
+  return d.getDate();
+}
+
+export function _day(d: Date): number {
+  return d.getDay();
+}
+
+export function _hour(d: Date): number {
+  return d.getHours();
+}
+
+export function _minute(d: Date): number {
+  return d.getMinutes();
+}
+
+export function _second(d: Date): number {
+  return d.getSeconds();
+}
+
+export function _millisecond(d: Date): number {
+  return d.getMilliseconds();
+}
+
+export function _valueOf(d: Date): number {
+  return d.getTime();
+}
+
+export function _unix(d: Date): number {
+  return Math.floor(d.getTime() / 1000);
+}
+
+// ── Comparison ──
+
+export function _isBefore(a: Date, b: Date): boolean {
+  return a.getTime() < b.getTime();
+}
+
+export function _isAfter(a: Date, b: Date): boolean {
+  return a.getTime() > b.getTime();
+}
+
+export function _isSame(a: Date, b: Date): boolean {
+  return a.getTime() === b.getTime();
+}
+
+export function _isSameOrBefore(a: Date, b: Date): boolean {
+  return a.getTime() <= b.getTime();
+}
+
+export function _isSameOrAfter(a: Date, b: Date): boolean {
+  return a.getTime() >= b.getTime();
+}
+
+export function _isBetween(d: Date, from: Date, to: Date): boolean {
+  const t = d.getTime();
+  return t > from.getTime() && t < to.getTime();
+}
+
+// ── Diff (convenience aliases + new) ──
+
+export function _diffMilliseconds(a: Date, b: Date): number {
+  return a.getTime() - b.getTime();
+}
+
+export function _diffSeconds(a: Date, b: Date): number {
+  return (a.getTime() - b.getTime()) / 1000;
+}
+
+export function _diffMinutes(a: Date, b: Date): number {
+  return (a.getTime() - b.getTime()) / 60000;
+}
+
+export function _diffHours(a: Date, b: Date): number {
+  return (a.getTime() - b.getTime()) / 3600000;
+}
+
+export function _diffDays(a: Date, b: Date): number {
+  return _differenceInDays(a, b);
+}
+
+export function _diffMonths(a: Date, b: Date): number {
+  return _differenceInMonths(a, b);
+}
+
+export function _diffYears(a: Date, b: Date): number {
+  return (a.getTime() - b.getTime()) / 31557600000;
+}
+
+// ── Add time helpers ──
+
+export function _addHours(d: Date, n: IntegerAmount): Date {
+  return new Date(d.getTime() + n * 3600000);
+}
+
+export function _addMinutes(d: Date, n: IntegerAmount): Date {
+  return new Date(d.getTime() + n * 60000);
+}
+
+export function _addSeconds(d: Date, n: IntegerAmount): Date {
+  return new Date(d.getTime() + n * 1000);
+}
+
+export function _addMilliseconds(d: Date, n: IntegerAmount): Date {
+  return new Date(d.getTime() + n);
+}
+
+// ── More boundaries ──
+
+export function _startOfYear(d: Date): Date {
+  return new Date(d.getFullYear(), 0, 1);
+}
+
+export function _endOfDay(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+}
+
+export function _endOfWeek(d: Date): Date {
+  const day = d.getDay();
+  const end = new Date(d.getTime());
+  end.setDate(end.getDate() + (6 - day));
+  return _endOfDay(end);
+}
+
+export function _endOfYear(d: Date): Date {
+  return new Date(d.getFullYear(), 11, 31, 23, 59, 59, 999);
+}
+
+// ── Calendar helpers ──
+
+function _firstWeekOffset(year: number, dow: number, doy: number): number {
+  const fwd = 7 + dow - doy;
+  const fwdlw = (7 + new Date(Date.UTC(year, 0, fwd)).getUTCDay() - dow) % 7;
+  return -fwdlw + fwd - 1;
+}
+
+function _weeksInYear(year: number): number {
+  return (
+    ((_isLeapYear(year) ? 366 : 365) -
+      _firstWeekOffset(year, 0, 6) +
+      _firstWeekOffset(year + 1, 0, 6)) /
+    7
+  );
+}
+
+export function _week(d: Date): number {
+  const doy = _dayOfYear(d);
+  const weekOffset = _firstWeekOffset(d.getFullYear(), 0, 6);
+  let week = Math.floor((doy - weekOffset - 1) / 7) + 1;
+  if (week < 1) {
+    week += _weeksInYear(d.getFullYear() - 1);
+  } else if (week > _weeksInYear(d.getFullYear())) {
+    week -= _weeksInYear(d.getFullYear());
+  }
+  return week;
+}
+
+export function _isoWeek(d: Date): number {
+  const dow = d.getDay() || 7;
+  const doy = _dayOfYear(d);
+  const w = Math.floor((doy - dow + 10) / 7);
+  if (w < 1) {
+    const prev = new Date(d.getFullYear() - 1, 11, 31);
+    return _isoWeek(prev);
+  }
+  if (w >= 53) {
+    const nextJan1 = new Date(d.getFullYear() + 1, 0, 1);
+    const nd = nextJan1.getDay() || 7;
+    if (nd <= 3 && doy >= 359) {
+      return 1;
+    }
+  }
+  return Math.min(w, 53);
+}
+
+export function _weekday(d: Date): number {
+  return d.getDay();
+}
+
+export function _isoWeekday(d: Date): number {
+  const day = d.getDay();
+  return day === 0 ? 7 : day;
+}
+
+// ── Conversion ──
+
+export function _toDate(d: Date): Date {
+  return new Date(d.getTime());
+}
+
+export function _toISOString(d: Date): string {
+  try {
+    return d.toISOString();
+  } catch {
+    return "Invalid Date";
+  }
+}
+
 // ── Parse ISO ───────────────────────────────────────────────────────────────
 
 export function _parseISO(s: string): FastISOResult {
