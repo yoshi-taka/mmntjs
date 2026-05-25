@@ -189,12 +189,12 @@ In the current public `moment` comparison table, mmntjs wins every tracked row. 
 
 | Operation | mmntjs | date-fns | vs moment.js |
 |-----------|--------:|---------:|-------------:|
-| format YYYY-MM-DD | **63 ns** | 1.55 us (24.4x) | 445 ns (4.9x) |
-| parse ISO string | **317 ns** | 1.26 us (4.0x) | 6.09 us (23.3x) |
-| diff in days | **22 ns** | 872 ns (40.3x) | 462 ns (13.2x) |
-| add 1 day | **387 ns** | 93 ns (0.24x) | 2.67 us (6.9x) |
-| startOf day | **189 ns** | 87 ns (0.46x) | 2.13 us (11.2x) |
-| moment() / new Date() | **199 ns** | 36 ns (0.18x) | 670 ns (3.4x) |
+| format YYYY-MM-DD | **57 ns** | 1.41 us (24.7x) | 395 ns (8.2x) |
+| parse ISO string | **275 ns** | 1.02 us (3.7x) | 3.97 us (17.9x) |
+| diff in days | **22 ns** | 850 ns (39.2x) | 421 ns (13.0x) |
+| add 1 day | **296 ns** | 99 ns (3.0x slower) | 2.34 us (9.0x) |
+| startOf day | **253 ns** | 91 ns (2.8x slower) | 2.22 us (10.8x) |
+| moment() / new Date() | **147 ns** | 35 ns (4.2x slower) | 260 ns (1.6x) |
 | `mmntjs/fns` format YYYY-MM-DD | **507 B gzip** | — | single-import bundle |
 
 The losses against date-fns on fresh-object rows are structural, not implementation gaps. Every `moment()` call allocates a wrapper object around a `Date` — this is the cost of preserving moment-compatible mutability, method chaining, `.fn`/`.prototype` extensibility, and locale context. `date-fns` operates on bare `Date` instances and skips that overhead entirely. The `[fresh]` benchmark marker amplifies the difference because it creates and discards a wrapper per iteration; real applications amortize it by reusing Moment objects. If you want date-fns-style standalone helpers without the wrapper, `mmntjs/fns` is the closer comparison point — it wins 19 of 26 direct Date-helper rows.
