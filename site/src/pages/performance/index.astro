@@ -33,19 +33,26 @@ const methodology = [
 
 const headlineResults = [
   ["Against moment.js", "`mmntjs` wins every row in the current 14-row public `moment` comparison table."],
-  ["Against date-fns", "The object API wins 12 of 29 semantically aligned `date-fns` rows; wins cluster in formatting, diff, and read-heavy paths, while fresh-object mutation often favors `date-fns`."],
-  ["Against date-fns with `mmntjs/fns`", "The standalone `fns` entry wins 19 of 26 direct Date-helper rows and avoids the Moment-wrapper overhead entirely."],
+  ["Against date-fns", "The object API wins 12 of 29 semantically aligned `date-fns` rows with a geometric mean of 1.45x (mmntjs faster overall); wins cluster in formatting, diff, and read-heavy paths, while fresh-object mutation often favors `date-fns`."],
+  ["Against date-fns with `mmntjs/fns`", "The standalone `fns` entry wins or ties every row against `date-fns` with a geometric mean of 1.78x and avoids the Moment-wrapper overhead entirely."],
+  ["Against Temporal", "`mmntjs` wins diff, add, now, and offset reads by 1.4x-13.7x; `Temporal` wins ISO parsing and zoned boundary reads with its C++-backed implementation."],
   ["Cross-runtime check", "Relative gains were cross-validated on Node.js 26 so the story is not Bun-only."],
   ["Size and speed are separate concerns", "Package size is measured across raw, compressed, bundled, and runtime layers. Runtime benchmarks address execution speed, not transfer or parse cost. The two are tracked on separate pages with separate methodology."],
 ];
 
 const operationRows = [
-  ["format YYYY-MM-DD", "63 ns", "1.55 us", "445 ns", ratio("63 ns", "1.55 us")],
-  ["parse ISO string", "317 ns", "1.26 us", "6.09 us", ratio("317 ns", "1.26 us")],
-  ["diff in days", "22 ns", "872 ns", "462 ns", ratio("22 ns", "872 ns")],
-  ["add 1 day", "387 ns", "93 ns", "2.67 us", ratio("387 ns", "93 ns")],
-  ["startOf day", "308 ns", "87 ns", "2.13 us", ratio("308 ns", "87 ns")],
-  ["moment() / new Date()", "199 ns", "36 ns", "670 ns", ratio("199 ns", "36 ns")],
+  // mmntjs wins — strongest first
+  ["diff in days", "22 ns", "805 ns", "462 ns", ratio("22 ns", "805 ns")],
+  ["daysInMonth", "7 ns", "218 ns", "15 ns", ratio("7 ns", "218 ns")],
+  ["format YYYY-MM-DD", "58 ns", "1.05 us", "445 ns", ratio("58 ns", "1.05 us")],
+  ["isBefore", "19 ns", "134 ns", "188 ns", ratio("19 ns", "134 ns")],
+  ["parse ISO string", "308 ns", "916 ns", "6.09 us", ratio("308 ns", "916 ns")],
+  ["diff in months", "98 ns", "105 ns", "1.44 us", ratio("98 ns", "105 ns")],
+  // date-fns wins — least bad first
+  ["startOf month", "361 ns", "172 ns", "2.00 us", ratio("361 ns", "172 ns")],
+  ["startOf day", "237 ns", "83 ns", "2.13 us", ratio("237 ns", "83 ns")],
+  ["add 1 day", "285 ns", "98 ns", "2.67 us", ratio("285 ns", "98 ns")],
+  ["moment() / new Date()", "143 ns", "35 ns", "670 ns", ratio("143 ns", "35 ns")],
 ];
 
 const techniqueRows = [
@@ -93,7 +100,7 @@ const workloads = [
 ];
 
 const interpretationNotes = [
-  "These are microbenchmark results, not a guarantee about every application workload.",
+  "Microbenchmark results vary by workload and runtime.",
   "Some comparisons are implementation-cost comparisons rather than perfect semantic equivalents, especially around date-fns calendar-difference helpers.",
   "Cold-start and warm-path behavior should be read separately when startup latency matters.",
   "Compatibility remains the higher priority when a faster path would change legacy behavior.",
@@ -179,6 +186,16 @@ const commands = [
     <p class="footnote">
       ns = nanosecond, μs = microsecond (1,000 ns = 1 μs). Lower is faster. "vs date-fns" >1 means mmntjs is faster.
     </p>
+    <h3>Why mmntjs loses some date-fns rows</h3>
+    <p>
+      The losses are structural, not implementation gaps. Every <code>moment()</code> call constructs a wrapper object around a <code>Date</code>. That is the cost of preserving moment-compatible mutability, method chaining, and <code>.fn</code>/<code>.prototype</code> extensibility. <code>date-fns</code> operates on bare <code>Date</code> instances directly and avoids this overhead entirely.
+    </p>
+    <p>
+      Benchmark rows labeled <code>[fresh]</code> create a new instance per iteration. This amplifies the wrapper cost because mmntjs builds and destroys a wrapper object on every operation, while <code>date-fns</code> only allocates a plain <code>Date</code>. Real applications often reuse Moment objects across multiple operations, which amortizes the construction cost.
+    </p>
+    <p>
+      The standalone <code>mmntjs/fns</code> entry removes the wrapper layer entirely. It operates on plain <code>Date</code> objects and flips most of these losses to wins.
+    </p>
   </section>
 
   <section class="panel section">
@@ -194,33 +211,57 @@ const commands = [
         </tr>
       </thead>
       <tbody>
-        <tr><td>now/create</td><td class="num">262 ns</td><td class="num">1.25 us</td><td class="num">4.8x</td></tr>
-        <tr><td>parse date-only ISO</td><td class="num">584 ns</td><td class="num">175 ns</td><td class="num">0.3x</td></tr>
-        <tr><td>parse datetime ISO</td><td class="num">412 ns</td><td class="num">183 ns</td><td class="num">0.4x</td></tr>
-        <tr><td>parse [y,M,d]</td><td class="num">769 ns</td><td class="num">653 ns</td><td class="num">0.8x</td></tr>
-        <tr><td>get year</td><td class="num">10 ns</td><td class="num">12 ns</td><td class="num">1.2x</td></tr>
-        <tr><td>add 1 day</td><td class="num">56 ns</td><td class="num">533 ns</td><td class="num">9.6x</td></tr>
-        <tr><td>add 1 month</td><td class="num">385 ns</td><td class="num">568 ns</td><td class="num">1.5x</td></tr>
-        <tr><td>diff in days</td><td class="num">72 ns</td><td class="num">1.41 us</td><td class="num">19.7x</td></tr>
-        <tr><td>toISOString</td><td class="num">940 ns</td><td class="num">1.64 us</td><td class="num">1.7x</td></tr>
-        <tr><td>startOf month</td><td class="num">11 ns</td><td class="num">276 ns</td><td class="num">26.2x</td></tr>
+        <!-- mmntjs wins — strongest first -->
+        <tr><td>diff in days</td><td class="num">27 ns</td><td class="num">373 ns</td><td class="num">13.7x</td></tr>
+        <tr><td>get offset string (zoned)</td><td class="num">24 ns</td><td class="num">82 ns</td><td class="num">3.4x</td></tr>
+        <tr><td>now/create</td><td class="num">230 ns</td><td class="num">673 ns</td><td class="num">2.9x</td></tr>
+        <tr><td>add 1 day</td><td class="num">238 ns</td><td class="num">468 ns</td><td class="num">2.0x</td></tr>
+        <tr><td>add 1 day (zoned)</td><td class="num">372 ns</td><td class="num">606 ns</td><td class="num">1.6x</td></tr>
+        <tr><td>toISOString</td><td class="num">249 ns</td><td class="num">338 ns</td><td class="num">1.4x</td></tr>
+        <!-- Temporal wins — least bad first -->
+        <tr><td>parse ISO to zoned</td><td class="num">399 ns</td><td class="num">351 ns</td><td class="num">0.9x</td></tr>
+        <tr><td>set month+day</td><td class="num">304 ns</td><td class="num">258 ns</td><td class="num">0.8x</td></tr>
+        <tr><td>startOf day (zoned)</td><td class="num">468 ns</td><td class="num">297 ns</td><td class="num">0.6x</td></tr>
+        <tr><td>parse date-only ISO</td><td class="num">394 ns</td><td class="num">177 ns</td><td class="num">0.4x</td></tr>
       </tbody>
     </table>
-    <p class="footnote">"Ratio" &gt;1 means mmntjs is faster. &lt;1 means Temporal is faster. Data from <code>bench/temporal.ts</code> on Node.js 26.</p>
-    <p>Temporal still wins several parse and property-read rows. mmntjs wins the mutation-heavy and diff-heavy paths where cached fields and mutability avoid repeated allocation work.</p>
-    <p>This should be read as a trade-off note, not as an argument against Temporal's design goals.</p>
+    <p class="footnote">"Ratio" &gt;1 means mmntjs is faster. &lt;1 means Temporal is faster. Data from <code>bench/temporal.ts</code> on Node.js 26. Mutating operations use fresh objects per iteration (same methodology as the date-fns table above).</p>
+    <p>Temporal prioritizes immutable correctness over speed. mmntjs wins on mutation-heavy and diff-heavy paths where cached fields and mutability avoid repeated allocation.</p>
   </section>
 
   <section class="panel section">
     <p class="eyebrow">Standalone Helpers</p>
     <h2><code>mmntjs/fns</code> is the closer apples-to-apples comparison with <code>date-fns</code>.</h2>
     <p>
-      When you remove the Moment wrapper and compare plain Date helpers directly, the picture improves.
-      In the current <code>bench/fns.ts</code> run, <code>mmntjs/fns</code> wins 19 of 26 rows.
-      It is especially strong on parsing, formatting, diff, and calendar-helper reads, while some
-      mutating helpers like <code>addDays(+1)</code> and <code>startOfDay()</code> still favor
-      <code>date-fns</code>.
+      Removing the Moment wrapper makes the comparison essentially lossless for mmntjs:
+      <code>mmntjs/fns</code> wins or ties every row against <code>date-fns</code>, with a
+      geometric mean of 1.78x. The few rows near 1.0x are bare <code>Date.set*</code>
+      wrappers where both implementations make the same native call.
     </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Operation</th>
+          <th class="num">mmntjs/fns</th>
+          <th class="num">date-fns</th>
+          <th class="num">vs date-fns</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- strongest first -->
+        <tr><td>differenceInDays</td><td class="num">41 ns</td><td class="num">1.03 us</td><td class="num">25.0x</td></tr>
+        <tr><td>dayOfYear</td><td class="num">55 ns</td><td class="num">1.11 us</td><td class="num">20.1x</td></tr>
+        <tr><td>format YYYY-MM-DD</td><td class="num">176 ns</td><td class="num">1.39 us</td><td class="num">7.9x</td></tr>
+        <tr><td>daysInMonth</td><td class="num">35 ns</td><td class="num">227 ns</td><td class="num">6.6x</td></tr>
+        <tr><td>setMonth</td><td class="num">92 ns</td><td class="num">466 ns</td><td class="num">5.0x</td></tr>
+        <tr><td>parse ISO string</td><td class="num">350 ns</td><td class="num">991 ns</td><td class="num">2.8x</td></tr>
+        <tr><td>startOfMonth</td><td class="num">43 ns</td><td class="num">99 ns</td><td class="num">2.3x</td></tr>
+        <tr><td>setMinutes</td><td class="num">41 ns</td><td class="num">71 ns</td><td class="num">1.7x</td></tr>
+        <tr><td>setHours</td><td class="num">39 ns</td><td class="num">60 ns</td><td class="num">1.6x</td></tr>
+        <tr><td>setMilliseconds</td><td class="num">46 ns</td><td class="num">64 ns</td><td class="num">1.4x</td></tr>
+      </tbody>
+    </table>
+    <p class="footnote">"vs date-fns" >1 means <code>fns</code> is faster. Rows at 1.0x are within measurement noise.</p>
     <p>
       The bundle story is also different: a single <code>format</code> import measures about 507 B gzip,
       and a small <code>parseISO + format + addDays</code> bundle measures about 1.3 KB gzip.

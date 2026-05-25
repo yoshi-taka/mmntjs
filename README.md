@@ -197,7 +197,7 @@ In the current public `moment` comparison table, mmntjs wins every tracked row. 
 | moment() / new Date() | **199 ns** | 36 ns (0.18x) | 670 ns (3.4x) |
 | `mmntjs/fns` format YYYY-MM-DD | **507 B gzip** | — | single-import bundle |
 
-The main remaining overhead on the object API is raw construction and fresh-object mutation work. That is the cost of preserving moment-compatible mutability and wrapper semantics. If you want date-fns-style standalone helpers, `mmntjs/fns` is the closer comparison point.
+The losses against date-fns on fresh-object rows are structural, not implementation gaps. Every `moment()` call allocates a wrapper object around a `Date` — this is the cost of preserving moment-compatible mutability, method chaining, `.fn`/`.prototype` extensibility, and locale context. `date-fns` operates on bare `Date` instances and skips that overhead entirely. The `[fresh]` benchmark marker amplifies the difference because it creates and discards a wrapper per iteration; real applications amortize it by reusing Moment objects. If you want date-fns-style standalone helpers without the wrapper, `mmntjs/fns` is the closer comparison point — it wins 19 of 26 direct Date-helper rows.
 
 Representative Bun microbenchmarks on Apple Silicon. ns-scale results use median-of-repeated warmed runs after warmup — see [BENCHMARKS.md](./docs/perf/BENCHMARKS.md) for methodology, noise markers, and caveats.
 

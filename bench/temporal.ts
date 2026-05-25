@@ -116,10 +116,9 @@ const PLAIN_DT_CASES: BenchCase[] = [
     name: "add 1 day",
     run: () => {
       const T = getTemporal();
-      const m = mmntjs(dateA);
       let pd: any = new T.PlainDateTime(2024, 6, 15, 10, 30, 0, 0);
       return [
-        () => m.add(1, "day"),
+        () => mmntjs(dateA).add(1, "day"),
         () => { pd = pd.add({ days: 1 }); },
       ];
     },
@@ -176,9 +175,11 @@ const PLAIN_DT_CASES: BenchCase[] = [
     name: "startOf month (mut vs immutable)",
     run: () => {
       const T = getTemporal();
-      const m = mmntjs("2024-06-15");
       const pd: any = new T.PlainDate(2024, 6, 15);
-      return [() => m.startOf("month"), () => pd.with({ day: 1 })];
+      return [
+        () => mmntjs("2024-06-15").startOf("month"),
+        () => pd.with({ day: 1 }),
+      ];
     },
   },
 

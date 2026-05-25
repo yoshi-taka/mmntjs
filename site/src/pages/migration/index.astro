@@ -7,7 +7,7 @@ import { withBase } from "../../lib/urls";
 
 const cliCommands = [
   ["mmntjs migrate --check [dir]", "Analyzes API usage, detects moment-timezone imports, and suggests the best entry point (full, lite, or fns)."],
-  ["mmntjs migrate --mode=alias [dir]", "Analyzes + sets npm alias in package.json (zero code change — safe first step)."],
+  ["mmntjs migrate --mode=alias [dir]", "Analyzes + sets npm alias in package.json (zero code change, safe first step)."],
   ["mmntjs migrate --apply [dir]", "Auto-rewrites imports: moment → mmntjs (<code>/lite</code>/<code>/fns</code>) and moment-timezone → mmntjs + <code>import 'mmntjs-timezone'</code>."],
   ["mmntjs migrate --apply --fns [dir]", "Force rewrites to 'mmntjs/fns' (standalone functions)."],
   ["mmntjs migrate --apply --dry [dir]", "Preview changes without writing files."],

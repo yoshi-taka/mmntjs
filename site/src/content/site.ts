@@ -86,7 +86,7 @@ export const docsPages: DocPage[] = [
   {
     slug: "basic-usage",
     title: "Basic Usage",
-    summary: "Formatting, parsing, manipulation, and duration examples using `mmntjs/lite` — the recommended entry point for most teams.",
+    summary: "Formatting, parsing, manipulation, and duration examples using `mmntjs/lite`, the recommended entry point for most teams.",
     purpose: "Help evaluators confirm that common moment patterns still read naturally with `mmntjs/lite`.",
     focus: [
       "Creation and formatting with `mmntjs/lite`",
@@ -314,9 +314,9 @@ export const performancePrinciples = [
 
 export const migrationPhases = [
   ["Phase 0", "Inventory current moment usage with `mmntjs migrate --check`. Identify timezone, locale, and parsing hotspots."],
-  ["Phase 0.5", "Optionally set npm alias with `mmntjs migrate --mode=alias` — zero code change, lets your build tool resolve `moment` → `mmntjs` at install time."],
+  ["Phase 0.5", "Optionally set npm alias with `mmntjs migrate --mode=alias`: zero code change, lets your build tool resolve `moment` → `mmntjs` at install time."],
   ["Phase 1", "Run `mmntjs migrate --apply` to auto-rewrite imports. For full-only codebases, start with `mmntjs` (full compat). For lite-compatible code, switch directly to `mmntjs/lite`."],
-  ["Phase 2", "If your code only uses basic formatting/manipulation, `mmntjs/fns` is an option — standalone functions with tree-shakeable cost. Run `mmntjs migrate --apply --fns --dry` to preview."],
+  ["Phase 2", "If your code only uses basic formatting/manipulation, `mmntjs/fns` is an option: standalone functions with tree-shakeable cost. Run `mmntjs migrate --apply --fns --dry` to preview."],
   ["Phase 3", "Run compatibility checks and review known differences for the APIs your codebase uses. Compare production-like behavior, especially invalid dates, offsets, and custom parsing."],
   ["Phase 4", "Replace imports in a low-risk module or service and run the existing test suite. Expand rollout module by module with ownership and rollback clarity."],
   ["Phase 5", "Use the bridge period to guide new code toward modern date/time APIs, including Temporal where it fits."],
@@ -480,7 +480,7 @@ export const faqAnswers = [
   {
     question: "Is mmntjs faster than moment.js?",
     answer:
-      "In the current public moment.js comparison table, yes. mmntjs wins every tracked row, with especially large wins in ISO parsing, common formatting, diff, and simple arithmetic. Against date-fns the story is mixed: mmntjs wins read-heavy rows, while date-fns often wins fresh-object mutation rows. Treat this as benchmark evidence, not a promise about every workload.",
+      "In the current public moment.js comparison table, yes. mmntjs wins every tracked row, with especially large wins in ISO parsing, common formatting, diff, and simple arithmetic. Against date-fns the story is mixed: mmntjs wins read-heavy rows, while date-fns often wins fresh-object mutation rows.",
   },
   {
     question: "How are benchmarks run?",
@@ -495,7 +495,7 @@ export const faqAnswers = [
   {
     question: "Which entry point should browser apps use?",
     answer:
-      "Start with `mmntjs/lite` at 55.2KB raw bundled — it is moment-compatible with method chaining and is the recommended default. If you prefer standalone functions, `mmntjs/fns` is also an option and scales with imports. The main `mmntjs` entry (179.5KB raw bundled) is for full moment.js compatibility during migration.",
+      "Start with `mmntjs/lite` at 55.2KB raw bundled. It is moment-compatible with method chaining and is the recommended default. If you prefer standalone functions, `mmntjs/fns` is also an option and scales with imports. The main `mmntjs` entry (179.5KB raw bundled) is for full moment.js compatibility during migration.",
   },
   {
     question: "Can mmntjs coexist with dayjs, date-fns, Luxon, or Temporal?",

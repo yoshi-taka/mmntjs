@@ -71,75 +71,53 @@ export function _setDate(d: Date, day: DayOfMonth): Date {
   );
 }
 
+/** _setHours — epoch delta with DST fallback */
 export function _setHours(d: Date, h: Hour): Date {
-  return new Date(
-    d.getFullYear(),
-    d.getMonth(),
-    d.getDate(),
-    h,
-    d.getMinutes(),
-    d.getSeconds(),
-    d.getMilliseconds(),
-  );
+  const delta = (h - d.getHours()) * 3600000;
+  const newT = d.getTime() + delta;
+  const temp = new Date(newT);
+  if (d.getTimezoneOffset() === temp.getTimezoneOffset()) {
+    return temp;
+  }
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, d.getMinutes(), d.getSeconds(), d.getMilliseconds());
 }
 
 export function _setMinutes(d: Date, m: MinuteSecond): Date {
-  return new Date(
-    d.getFullYear(),
-    d.getMonth(),
-    d.getDate(),
-    d.getHours(),
-    m,
-    d.getSeconds(),
-    d.getMilliseconds(),
-  );
+  return new Date(d.getTime() + (m - d.getMinutes()) * 60000);
 }
 
 export function _setSeconds(d: Date, s: MinuteSecond): Date {
-  return new Date(
-    d.getFullYear(),
-    d.getMonth(),
-    d.getDate(),
-    d.getHours(),
-    d.getMinutes(),
-    s,
-    d.getMilliseconds(),
-  );
+  return new Date(d.getTime() + (s - d.getSeconds()) * 1000);
 }
 
 export function _setMilliseconds(d: Date, ms: Millisecond): Date {
-  return new Date(
-    d.getFullYear(),
-    d.getMonth(),
-    d.getDate(),
-    d.getHours(),
-    d.getMinutes(),
-    d.getSeconds(),
-    ms,
-  );
+  return new Date(d.getTime() + (ms - d.getMilliseconds()));
 }
 
 // ── Fast kernels: one allocation + one setter, no overflow ──────────────────
 
-/** _setDate28 — day ∈ [1,28], no month overflow possible */
+/** _setDate28 — day ∈ [1,28], no month overflow possible.
+ *  Uses epoch delta with DST fallback (same strategy as _addDays). */
 export function _setDate28Fast(d: Date, day: Date28): Date {
+  const delta = (day - d.getDate()) * 86400000;
+  const newT = d.getTime() + delta;
+  const temp = new Date(newT);
+  if (d.getTimezoneOffset() === temp.getTimezoneOffset()) {
+    return temp;
+  }
   const out = new Date(d.getTime());
   out.setDate(day);
   return out;
 }
 
-/** _setMinutesFast — minute ∈ [0,59], no overflow */
+/** _setMinutesFast — minute ∈ [0,59], no overflow, no DST concern */
 export function _setMinutesFast(d: Date, minute: Minute): Date {
-  const out = new Date(d.getTime());
-  out.setMinutes(minute);
-  return out;
+  return new Date(d.getTime() + (minute - d.getMinutes()) * 60000);
 }
 
 /** _setMillisecondsFast — ms ∈ [0,999], no overflow */
 export function _setMillisecondsFast(d: Date, ms: Millisecond): Date {
-  const out = new Date(d.getTime());
-  out.setMilliseconds(ms);
-  return out;
+  return new Date(d.getTime() + (ms - d.getMilliseconds()));
 }
 
 // ── Add / Sub ───────────────────────────────────────────────────────────────

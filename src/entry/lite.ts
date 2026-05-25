@@ -1,6 +1,6 @@
 import { isMoment, isDate } from "../utils";
 import {
-  moment,
+  moment as baseMoment,
   momentUTC,
   getMomentNowFunction,
   setMomentNowFunction,
@@ -9,18 +9,18 @@ import {
   parseTwoDigitYear as parseTwoDigitYearInternal,
   setParseTwoDigitYear,
 } from "../parse-lite";
-import { registerLiteCoreApi } from "../plugins/core-lite";
+import { createLiteCoreApi } from "../plugins/core-lite";
 import type { LiteMomentStatic } from "./types";
 
 export type { MomentConstructionConfig } from "../moment-lite";
 
-registerLiteCoreApi(moment as never, {
+const moment = createLiteCoreApi(baseMoment as never, {
   getMomentNowFunction,
   setMomentNowFunction,
   parseTwoDigitYearInternal,
   setParseTwoDigitYear,
   momentUTC,
-});
+}) as unknown as LiteMomentStatic;
 
-export default moment as unknown as LiteMomentStatic;
+export default moment;
 export { moment, isMoment, isDate };
