@@ -79,7 +79,15 @@ export function _setHours(d: Date, h: Hour): Date {
   if (d.getTimezoneOffset() === temp.getTimezoneOffset()) {
     return temp;
   }
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, d.getMinutes(), d.getSeconds(), d.getMilliseconds());
+  return new Date(
+    d.getFullYear(),
+    d.getMonth(),
+    d.getDate(),
+    h,
+    d.getMinutes(),
+    d.getSeconds(),
+    d.getMilliseconds(),
+  );
 }
 
 export function _setMinutes(d: Date, m: MinuteSecond): Date {
