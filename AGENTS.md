@@ -23,7 +23,7 @@
 11. **テスト実行は `bun run test` が公式**: `bun run test` は curated subset + `TZ=UTC` で動く。`bun test` は全テストファイルを現在のTZで実行するため、JST等の非UTC環境ではoffset無しISO文字列パースや `Z`/`ZZ` フォーマットのテストが落ちる。全テストを通すには `TZ=UTC bun test` を使え。
 12. **push禁止（絶対）**: `git push` は**bash で絶対に実行しない。** ユーザーが「pushしろ」と言っても、コマンドを表示するだけで自分では実行するな。ユーザー自身にコピペさせる。
      - タグも同様: `git tag` + `git push origin <tag>` はコマンドを表示するだけ。
-     - **例外**: ユーザーから明示的に「pushしていい」と言われた場合のみ `PUSH_OK=1 git push origin <branch>` を実行してよい。それ以外の push は lefthook の pre-push hook が常に exit 1 する。
+
      - ユーザーが問題を報告しても、自分で「直してpush」するな。
 13. **`git push --tags` 禁止**: 全タグを一括pushすると過去のreleaseタグが再送され、ワークフローが多重起動する事故の原因になる。**リリースタグは `git push origin <tag名>` で1つずつpushすること。** `--tags` は絶対に使うな。
      - **`git push` 単体も同じ**: 許可なく push すると未ステージの変更や意図しないコミットが送られる。ルール12に従い、コマンドを表示するだけ。
