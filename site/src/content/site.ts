@@ -522,4 +522,9 @@ export const faqAnswers = [
     answer:
       "The long-term goal is to get teams off unmaintained moment.js usage without forcing a risky rewrite. mmntjs is a bridge: keep old behavior stable first, then move new code toward better APIs such as Temporal where that makes sense.",
   },
+  {
+    question: "How do you pronounce mmntjs?",
+    answer:
+      "Some writing systems omit vowels entirely. Ancient Egyptian hieroglyphs are a classic example. Consider this an invitation to reconstruct it yourself.",
+  },
 ];
