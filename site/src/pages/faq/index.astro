@@ -4,6 +4,12 @@ import { renderInlineCodeHTML } from "../../lib/inline-code";
 import { faqAnswers, faqGroups } from "../../content/site";
 import { withBase } from "../../lib/urls";
 
+const localFaq = {
+  question: "How do you pronounce mmntjs?",
+  answer:
+    "Some writing systems omit vowels entirely. Ancient Egyptian hieroglyphs are a classic example. Consider this an invitation to reconstruct it yourself.",
+};
+
 const reviewAdvice = [
   "Use this page to reduce uncertainty before a migration review or technical design discussion.",
   "If a question affects production correctness, follow the answer through to Compatibility, Quality, or Migration rather than stopping at a summary.",
@@ -48,7 +54,7 @@ const reviewAdvice = [
   <section class="panel section">
     <p class="eyebrow">Direct Answers</p>
     <div class="cards">
-      {faqAnswers.map((item) => (
+      {[...faqAnswers, localFaq].map((item) => (
         <article class="card">
           <h3 set:html={renderInlineCodeHTML(item.question)} />
           <p set:html={renderInlineCodeHTML(item.answer)} />
