@@ -58,7 +58,7 @@
     "test/kibana-compat/**",
      "docs/**"
    ],
-  "ignoreDependencies": ["acorn", "benchmark", "date-fns", "dayjs", "fast-check", "luxon", "moment-timezone", "@date-fns/tz", "@date-fns/utc", "date-fns-tz", "mmntjs"],
+  "ignoreDependencies": ["acorn", "benchmark", "date-fns", "dayjs", "fast-check", "luxon", "moment-timezone", "@date-fns/tz", "@date-fns/utc", "date-fns-tz", "mmntjs", "shiki"],
   "duplicates": {
     "mode": "mild",
     "minLines": 5,
