@@ -84,11 +84,11 @@ mmntjs v1.0.0 — Migration CLI
 
 Commands:
   mmntjs migrate --check [dir]           Analyze moment usage & suggest best target
-  mmntjs migrate --check --fns [dir]     Include lite/fns recommendation
+  mmntjs migrate --check --fns [dir]     Include fns recommendation
   mmntjs migrate --mode=alias [dir]      Set npm alias (zero code change)
   mmntjs migrate --mode=rewrite [dir]    Auto-rewrite imports (default)
   mmntjs migrate --mode=rewrite --dry [dir] Preview changes without writing
-  mmntjs migrate --mode=rewrite --fns [dir] Force rewrite to 'mmntjs/lite/fns'
+  mmntjs migrate --mode=rewrite --fns [dir] Force rewrite to 'mmntjs/fns'
   mmntjs audit [--output=(text|markdown)] [dir]  Analyze moment usage
   mmntjs stats [dir]                              Show migration stats
   mmntjs report [--output=(text|markdown)] [dir]  Generate migration report

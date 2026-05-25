@@ -67,7 +67,9 @@ import {
   toDate,
   toISOString,
   parseISO,
+  parseMoment,
   format,
+  formatMoment,
 } from "../src/fns";
 
 const safeMin = new Date("1900-01-01");
@@ -329,6 +331,97 @@ describe("format vs mmntjs", () => {
 
   test("Invalid Date", () => {
     expect(format(new Date(NaN), "YYYY-MM-DD")).toBe("Invalid date");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// formatMoment vs moment.js
+// ---------------------------------------------------------------------------
+describe("formatMoment vs moment.js", () => {
+  const d = local(2024, 0, 15, 10, 5, 3, 456);
+
+  test("full datetime", () => {
+    expect(formatMoment(d, "YYYY-MM-DD HH:mm:ss.SSS")).toBe(
+      moment(d).format("YYYY-MM-DD HH:mm:ss.SSS"),
+    );
+  });
+
+  test("MMMM (locale-aware month name)", () => {
+    expect(formatMoment(d, "MMMM")).toBe(moment(d).format("MMMM"));
+  });
+
+  test("dddd (locale-aware day name)", () => {
+    expect(formatMoment(d, "dddd")).toBe(moment(d).format("dddd"));
+  });
+
+  test("LL (locale-aware date)", () => {
+    expect(formatMoment(d, "LL")).toBe(moment(d).format("LL"));
+  });
+
+  test("LTS (locale-aware time)", () => {
+    expect(formatMoment(d, "LTS")).toBe(moment(d).format("LTS"));
+  });
+
+  test("h:mm A (12-hour)", () => {
+    expect(formatMoment(d, "h:mm A")).toBe(moment(d).format("h:mm A"));
+  });
+
+  test("ordinal Do", () => {
+    expect(formatMoment(d, "Do")).toBe(moment(d).format("Do"));
+  });
+
+  test("timezone Z", () => {
+    const d2 = new Date();
+    expect(formatMoment(d2, "Z")).toBe(moment(d2).format("Z"));
+  });
+
+  test("timezone ZZ", () => {
+    const d2 = new Date();
+    expect(formatMoment(d2, "ZZ")).toBe(moment(d2).format("ZZ"));
+  });
+
+  test("Invalid Date", () => {
+    expect(formatMoment(new Date(NaN), "YYYY-MM-DD")).toBe("Invalid date");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseMoment vs moment.js
+// ---------------------------------------------------------------------------
+describe("parseMoment vs moment.js", () => {
+  test("YYYY-MM-DD", () => {
+    const r = parseMoment("2024-06-15", "YYYY-MM-DD");
+    expect(r.getTime()).toBe(moment("2024-06-15", "YYYY-MM-DD").valueOf());
+  });
+
+  test("MMMM DD, YYYY", () => {
+    const r = parseMoment("January 15, 2024", "MMMM DD, YYYY");
+    expect(r.getTime()).toBe(moment("January 15, 2024", "MMMM DD, YYYY").valueOf());
+  });
+
+  test("DD/MM/YYYY", () => {
+    const r = parseMoment("15/06/2024", "DD/MM/YYYY");
+    expect(r.getTime()).toBe(moment("15/06/2024", "DD/MM/YYYY").valueOf());
+  });
+
+  test("MM/DD/YYYY h:mm A", () => {
+    const r = parseMoment("06/15/2024 10:30 AM", "MM/DD/YYYY h:mm A");
+    expect(r.getTime()).toBe(moment("06/15/2024 10:30 AM", "MM/DD/YYYY h:mm A").valueOf());
+  });
+
+  test("strict mode", () => {
+    const r = parseMoment("2024-06-15", "YYYY-MM-DD", true);
+    expect(r.getTime()).toBe(moment("2024-06-15", "YYYY-MM-DD", true).valueOf());
+  });
+
+  test("MMMM D, YYYY (short day)", () => {
+    const r = parseMoment("January 5, 2024", "MMMM D, YYYY");
+    expect(r.getTime()).toBe(moment("January 5, 2024", "MMMM D, YYYY").valueOf());
+  });
+
+  test("MMM D, YYYY", () => {
+    const r = parseMoment("Jan 5, 2024", "MMM D, YYYY");
+    expect(r.getTime()).toBe(moment("Jan 5, 2024", "MMM D, YYYY").valueOf());
   });
 });
 

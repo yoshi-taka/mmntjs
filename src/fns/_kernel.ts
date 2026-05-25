@@ -657,6 +657,693 @@ function _digits(s: string, start: number, len: number): number {
   return n;
 }
 
+// ── Helpers for formatMoment ───────────────────────────────────────────────
+
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+const MONTH_SHORT = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+const DAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+const DAY_MIN = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+const LOCALE_FORMATS: Record<string, string> = {
+  LT: "h:mm A",
+  LTS: "h:mm:ss A",
+  L: "MM/DD/YYYY",
+  l: "M/D/YYYY",
+  LL: "MMMM D, YYYY",
+  ll: "MMM D, YYYY",
+  LLL: "MMMM D, YYYY LT",
+  lll: "MMM D, YYYY LT",
+  LLLL: "dddd, MMMM D, YYYY LT",
+  llll: "ddd, MMM D, YYYY LT",
+};
+
+const LOCALE_KEYS = ["LLLL", "llll", "LLL", "lll", "LL", "ll", "LTS", "LT", "l"];
+
+function _h12(d: Date): number {
+  const h = d.getHours();
+  return h === 0 ? 12 : h > 12 ? h - 12 : h;
+}
+
+function _tzOffset(d: Date): string {
+  const o = -d.getTimezoneOffset();
+  const oh = Math.floor(Math.abs(o) / 60);
+  const om = Math.abs(o) % 60;
+  const sign = o >= 0 ? "+" : "-";
+  return `${sign}${_pad2(oh)}${_pad2(om)}`;
+}
+
+function _tzOffsetColon(d: Date): string {
+  const o = -d.getTimezoneOffset();
+  const oh = Math.floor(Math.abs(o) / 60);
+  const om = Math.abs(o) % 60;
+  const sign = o >= 0 ? "+" : "-";
+  return `${sign}${_pad2(oh)}:${_pad2(om)}`;
+}
+
+function _ordinal(n: number): string {
+  if (n > 10 && n < 20) {
+    return `${n}th`;
+  }
+  const r = n % 10;
+  return `${n}${r === 1 ? "st" : r === 2 ? "nd" : r === 3 ? "rd" : "th"}`;
+}
+
+// ── formatMoment ───────────────────────────────────────────────────────────
+
+export function _formatMoment(d: Date, fmt: string): string {
+  if (isNaN(d.getTime())) {
+    return "Invalid date";
+  }
+
+  // First pass: expand locale tokens
+  let expanded = "";
+  for (let i = 0; i < fmt.length; ) {
+    let matched = false;
+    for (const key of LOCALE_KEYS) {
+      if (fmt.startsWith(key, i)) {
+        expanded += LOCALE_FORMATS[key];
+        i += key.length;
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) {
+      expanded += fmt[i];
+      i++;
+    }
+  }
+
+  // Second pass: format
+  let out = "";
+  for (let i = 0; i < expanded.length; ) {
+    const ch = expanded[i];
+    if (ch === "\\" && i + 1 < expanded.length) {
+      out += expanded[i + 1];
+      i += 2;
+      continue;
+    }
+    let tokenLen = 0;
+    switch (ch) {
+      case "Y":
+        if (expanded.startsWith("YYYY", i)) {
+          out += _padYear(d.getFullYear());
+          tokenLen = 4;
+        } else if (expanded.startsWith("YY", i)) {
+          out += _pad2(d.getFullYear() % 100);
+          tokenLen = 2;
+        }
+        break;
+      case "M":
+        if (expanded.startsWith("MMMM", i)) {
+          out += MONTH_NAMES[d.getMonth()];
+          tokenLen = 4;
+        } else if (expanded.startsWith("MMM", i)) {
+          out += MONTH_SHORT[d.getMonth()];
+          tokenLen = 3;
+        } else if (expanded.startsWith("MM", i)) {
+          out += _pad2(d.getMonth() + 1);
+          tokenLen = 2;
+        } else if (expanded.startsWith("M", i)) {
+          out += String(d.getMonth() + 1);
+          tokenLen = 1;
+        }
+        break;
+      case "D":
+        if (expanded.startsWith("Do", i)) {
+          out += _ordinal(d.getDate());
+          tokenLen = 2;
+        } else if (expanded.startsWith("DD", i)) {
+          out += _pad2(d.getDate());
+          tokenLen = 2;
+        } else if (expanded.startsWith("D", i)) {
+          out += String(d.getDate());
+          tokenLen = 1;
+        }
+        break;
+      case "d":
+        if (expanded.startsWith("dddd", i)) {
+          out += DAY_NAMES[d.getDay()];
+          tokenLen = 4;
+        } else if (expanded.startsWith("ddd", i)) {
+          out += DAY_SHORT[d.getDay()];
+          tokenLen = 3;
+        } else if (expanded.startsWith("dd", i)) {
+          out += DAY_MIN[d.getDay()];
+          tokenLen = 2;
+        } else if (expanded.startsWith("d", i)) {
+          out += String(d.getDay());
+          tokenLen = 1;
+        }
+        break;
+      case "H":
+        if (expanded.startsWith("HH", i)) {
+          out += _pad2(d.getHours());
+          tokenLen = 2;
+        } else if (expanded.startsWith("H", i)) {
+          out += String(d.getHours());
+          tokenLen = 1;
+        }
+        break;
+      case "h":
+        if (expanded.startsWith("hh", i)) {
+          out += _pad2(_h12(d));
+          tokenLen = 2;
+        } else if (expanded.startsWith("h", i)) {
+          out += String(_h12(d));
+          tokenLen = 1;
+        }
+        break;
+      case "m":
+        if (expanded.startsWith("mm", i)) {
+          out += _pad2(d.getMinutes());
+          tokenLen = 2;
+        } else if (expanded.startsWith("m", i)) {
+          out += String(d.getMinutes());
+          tokenLen = 1;
+        }
+        break;
+      case "s":
+        if (expanded.startsWith("ss", i)) {
+          out += _pad2(d.getSeconds());
+          tokenLen = 2;
+        } else if (expanded.startsWith("s", i)) {
+          out += String(d.getSeconds());
+          tokenLen = 1;
+        }
+        break;
+      case "S":
+        if (expanded.startsWith("SSS", i)) {
+          out += _pad3(d.getMilliseconds());
+          tokenLen = 3;
+        } else if (expanded.startsWith("SS", i)) {
+          out += String(Math.floor(d.getMilliseconds() / 10));
+          tokenLen = 2;
+        } else if (expanded.startsWith("S", i)) {
+          out += String(Math.floor(d.getMilliseconds() / 100));
+          tokenLen = 1;
+        }
+        break;
+      case "A":
+        out += d.getHours() < 12 ? "AM" : "PM";
+        tokenLen = 1;
+        break;
+      case "a":
+        out += d.getHours() < 12 ? "am" : "pm";
+        tokenLen = 1;
+        break;
+      case "Z":
+        if (expanded.startsWith("ZZ", i)) {
+          out += _tzOffset(d);
+          tokenLen = 2;
+        } else if (expanded.startsWith("Z", i)) {
+          out += _tzOffsetColon(d);
+          tokenLen = 1;
+        }
+        break;
+    }
+    if (tokenLen > 0) {
+      i += tokenLen;
+    } else {
+      out += expanded[i];
+      i++;
+    }
+  }
+  return out;
+}
+
+// ── parseMoment ────────────────────────────────────────────────────────────
+
+interface _ParsedParts {
+  year: number | null;
+  month: number | null;
+  day: number | null;
+  hour: number;
+  minute: number;
+  second: number;
+  ms: number;
+  isPM: boolean | null;
+  offset: number | null;
+}
+
+function _parseToken(s: string, pos: number, len: number): string {
+  return s.slice(pos, pos + len);
+}
+
+function _tryParseNum(s: string, pos: number, len: number): number | null {
+  if (pos + len > s.length) {
+    return null;
+  }
+  const val = Number.parseInt(s.slice(pos, pos + len), 10);
+  if (isNaN(val)) {
+    return null;
+  }
+  return val;
+}
+
+function _readDigits(s: string, pos: number): { val: number; len: number } | null {
+  let end = pos;
+  while (end < s.length && s[end] >= "0" && s[end] <= "9") {
+    end++;
+  }
+  if (end === pos) {
+    return null;
+  }
+  return { val: Number.parseInt(s.slice(pos, end), 10), len: end - pos };
+}
+
+function _matchString(s: string, pos: number, candidates: string[]): [string, number] | null {
+  for (const c of candidates) {
+    if (s.slice(pos, pos + c.length).toLowerCase() === c.toLowerCase()) {
+      return [c, pos + c.length];
+    }
+  }
+  return null;
+}
+
+export function _parseMoment(s: string, fmt: string, strict?: boolean): Date {
+  // First pass: expand locale tokens in format
+  let expandedFmt = "";
+  for (let i = 0; i < fmt.length; ) {
+    let matched = false;
+    for (const key of LOCALE_KEYS) {
+      if (fmt.startsWith(key, i)) {
+        expandedFmt += LOCALE_FORMATS[key];
+        i += key.length;
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) {
+      expandedFmt += fmt[i];
+      i++;
+    }
+  }
+
+  const parts: _ParsedParts = {
+    year: null,
+    month: null,
+    day: null,
+    hour: 0,
+    minute: 0,
+    second: 0,
+    ms: 0,
+    isPM: null,
+    offset: null,
+  };
+
+  let fp = 0; // format position
+  let sp = 0; // string position
+
+  while (fp < expandedFmt.length && sp < s.length) {
+    const ch = expandedFmt[fp];
+
+    // Skip whitespace in both
+    if (ch === " ") {
+      // Skip spaces in format and any whitespace in input
+      fp++;
+      while (sp < s.length && s[sp] === " ") {
+        sp++;
+      }
+      continue;
+    }
+
+    // Skip non-token characters (they must match literally unless it's a token start)
+    let isToken = false;
+    const tokenChars = "YMDdHhmsSAaZX";
+    if (tokenChars.includes(ch)) {
+      isToken = true;
+    }
+
+    if (!isToken) {
+      // Literal character match
+      if (s[sp] === ch) {
+        fp++;
+        sp++;
+      } else {
+        if (strict) {
+          return new Date(NaN);
+        }
+        // Skip non-matching in input (fuzzy)
+        fp++;
+        continue;
+      }
+      continue;
+    }
+
+    // Token matching
+    switch (ch) {
+      case "Y": {
+        if (expandedFmt.startsWith("YYYY", fp)) {
+          const val = _tryParseNum(s, sp, 4);
+          if (val !== null) {
+            parts.year = val;
+            fp += 4;
+            sp += 4;
+            break;
+          }
+          fp += 4;
+          break;
+        }
+        if (expandedFmt.startsWith("YY", fp)) {
+          const val = _tryParseNum(s, sp, 2);
+          if (val !== null) {
+            parts.year = val + (val > 50 ? 1900 : 2000);
+            fp += 2;
+            sp += 2;
+            break;
+          }
+          fp += 2;
+          break;
+        }
+        fp++;
+        break;
+      }
+      case "M": {
+        if (expandedFmt.startsWith("MMMM", fp)) {
+          const m = _matchString(s, sp, MONTH_NAMES);
+          if (m) {
+            parts.month = MONTH_NAMES.indexOf(m[0]);
+            fp += 4;
+            sp = m[1];
+            break;
+          }
+          fp += 4;
+          break;
+        }
+        if (expandedFmt.startsWith("MMM", fp)) {
+          const m = _matchString(s, sp, MONTH_SHORT);
+          if (m) {
+            parts.month = MONTH_SHORT.indexOf(m[0]);
+            fp += 3;
+            sp = m[1];
+            break;
+          }
+          fp += 3;
+          break;
+        }
+        if (expandedFmt.startsWith("MM", fp)) {
+          const val = _tryParseNum(s, sp, 2);
+          if (val !== null && val >= 1 && val <= 12) {
+            parts.month = val - 1;
+            fp += 2;
+            sp += 2;
+            break;
+          }
+          fp += 2;
+          break;
+        }
+        if (expandedFmt.startsWith("M", fp)) {
+          const r = _readDigits(s, sp);
+          if (r && r.val >= 1 && r.val <= 12) {
+            parts.month = r.val - 1;
+            fp += 1;
+            sp += r.len;
+            break;
+          }
+          fp += 1;
+          break;
+        }
+        fp++;
+        break;
+      }
+      case "D": {
+        if (expandedFmt.startsWith("Do", fp)) {
+          const r = _readDigits(s, sp);
+          if (r) {
+            parts.day = r.val;
+            fp += 2;
+            sp = r.len + 2;
+            break;
+          }
+          fp += 2;
+          break;
+        }
+        if (expandedFmt.startsWith("DD", fp)) {
+          const val = _tryParseNum(s, sp, 2);
+          if (val !== null && val >= 1 && val <= 31) {
+            parts.day = val;
+            fp += 2;
+            sp += 2;
+            break;
+          }
+          fp += 2;
+          break;
+        }
+        if (expandedFmt.startsWith("D", fp)) {
+          const r = _readDigits(s, sp);
+          if (r && r.val >= 1 && r.val <= 31) {
+            parts.day = r.val;
+            fp += 1;
+            sp += r.len;
+            break;
+          }
+          fp += 1;
+          break;
+        }
+        fp++;
+        break;
+      }
+      case "H":
+      case "h": {
+        const isH = ch === "H";
+        if (expandedFmt.startsWith(isH ? "HH" : "hh", fp)) {
+          const val = _tryParseNum(s, sp, 2);
+          if (val !== null) {
+            parts.hour = val;
+            fp += 2;
+            sp += 2;
+            break;
+          }
+          fp += 2;
+          break;
+        }
+        if (expandedFmt.startsWith(isH ? "H" : "h", fp)) {
+          const r = _readDigits(s, sp);
+          if (r) {
+            parts.hour = r.val;
+            fp += 1;
+            sp += r.len;
+            break;
+          }
+          fp += 1;
+          break;
+        }
+        fp++;
+        break;
+      }
+      case "m": {
+        if (expandedFmt.startsWith("mm", fp)) {
+          const val = _tryParseNum(s, sp, 2);
+          if (val !== null) {
+            parts.minute = val;
+            fp += 2;
+            sp += 2;
+            break;
+          }
+          fp += 2;
+          break;
+        }
+        if (expandedFmt.startsWith("m", fp)) {
+          const r = _readDigits(s, sp);
+          if (r) {
+            parts.minute = r.val;
+            fp += 1;
+            sp += r.len;
+            break;
+          }
+          fp += 1;
+          break;
+        }
+        fp++;
+        break;
+      }
+      case "s": {
+        if (expandedFmt.startsWith("ss", fp)) {
+          const val = _tryParseNum(s, sp, 2);
+          if (val !== null) {
+            parts.second = val;
+            fp += 2;
+            sp += 2;
+            break;
+          }
+          fp += 2;
+          break;
+        }
+        if (expandedFmt.startsWith("s", fp)) {
+          const r = _readDigits(s, sp);
+          if (r) {
+            parts.second = r.val;
+            fp += 1;
+            sp += r.len;
+            break;
+          }
+          fp += 1;
+          break;
+        }
+        fp++;
+        break;
+      }
+      case "S": {
+        if (expandedFmt.startsWith("SSS", fp)) {
+          const val = _tryParseNum(s, sp, 3);
+          if (val !== null) {
+            parts.ms = val;
+            fp += 3;
+            sp += 3;
+            break;
+          }
+          fp += 3;
+          break;
+        }
+        if (expandedFmt.startsWith("SS", fp)) {
+          const val = _tryParseNum(s, sp, 2);
+          if (val !== null) {
+            parts.ms = val * 10;
+            fp += 2;
+            sp += 2;
+            break;
+          }
+          fp += 2;
+          break;
+        }
+        if (expandedFmt.startsWith("S", fp)) {
+          const r = _readDigits(s, sp);
+          if (r) {
+            parts.ms = r.val * 100;
+            fp += 1;
+            sp += r.len;
+            break;
+          }
+          fp += 1;
+          break;
+        }
+        fp++;
+        break;
+      }
+      case "A":
+      case "a": {
+        const upper = s.slice(sp, sp + 2).toUpperCase();
+        if (upper === "AM") {
+          parts.isPM = false;
+          fp++;
+          sp += 2;
+          break;
+        }
+        if (upper === "PM") {
+          parts.isPM = true;
+          fp++;
+          sp += 2;
+          break;
+        }
+        fp++;
+        break;
+      }
+      case "Z": {
+        if (expandedFmt.startsWith("ZZ", fp)) {
+          const sign = s[sp] === "+" ? 1 : s[sp] === "-" ? -1 : null;
+          if (sign !== null) {
+            const oh = _tryParseNum(s, sp + 1, 2);
+            const om = _tryParseNum(s, sp + 3, 2);
+            if (oh !== null && om !== null) {
+              parts.offset = -(oh * 60 + om) * sign;
+              fp += 2;
+              sp += 5;
+              break;
+            }
+          }
+          fp += 2;
+          break;
+        }
+        if (expandedFmt.startsWith("Z", fp)) {
+          const sign = s[sp] === "+" ? 1 : s[sp] === "-" ? -1 : null;
+          if (sign !== null) {
+            if (s[sp + 3] === ":") {
+              const oh = _tryParseNum(s, sp + 1, 2);
+              const om = _tryParseNum(s, sp + 4, 2);
+              if (oh !== null && om !== null) {
+                parts.offset = -(oh * 60 + om) * sign;
+                fp += 1;
+                sp += 6;
+                break;
+              }
+            } else {
+              const oh = _tryParseNum(s, sp + 1, 2);
+              const om = _tryParseNum(s, sp + 3, 2);
+              if (oh !== null && om !== null) {
+                parts.offset = -(oh * 60 + om) * sign;
+                fp += 1;
+                sp += 5;
+                break;
+              }
+            }
+          }
+          fp += 1;
+          break;
+        }
+        fp++;
+        break;
+      }
+      default:
+        fp++;
+        break;
+    }
+  }
+
+  // Adjust 12-hour clock
+  if (parts.isPM !== null) {
+    if (parts.isPM && parts.hour !== 12) {
+      parts.hour += 12;
+    }
+    if (!parts.isPM && parts.hour === 12) {
+      parts.hour = 0;
+    }
+  }
+
+  // Build date
+  const now = new Date();
+  const y = parts.year ?? now.getFullYear();
+  const m = parts.month ?? now.getMonth();
+  const d = parts.day ?? 1;
+
+  if (parts.offset !== null) {
+    const utcMs = Date.UTC(y, m, d, parts.hour, parts.minute, parts.second, parts.ms);
+    return new Date(utcMs - parts.offset * 60000);
+  }
+
+  return new Date(y, m, d, parts.hour, parts.minute, parts.second, parts.ms);
+}
+
 // ── Format ──────────────────────────────────────────────────────────────────
 
 function _pad2(n: number): string {

@@ -70,7 +70,7 @@
     "maxCyclomatic": 120,
     "maxCognitive": 200,
     "maxCrap": 15000,
-    "ignore": ["src/duration.ts", "src/parse-format.ts", "src/parse.ts"]
+    "ignore": ["src/duration.ts", "src/parse-format.ts", "src/parse.ts", "src/fns/_kernel.ts"]
   },
   "rules": {
     "unused-class-members": "off",

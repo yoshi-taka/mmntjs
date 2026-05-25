@@ -37,7 +37,7 @@ const FULL_ONLY_RE = [
   { re: /moment\.weekdays\s*\(/, name: "moment.weekdays()" },
 ];
 
-// API patterns available in lite/fns (standalone functions)
+// API patterns available in mmntjs/fns (standalone functions)
 const FNS_OK_RE = [
   { re: /\.format\s*\(/, name: "format" },
   { re: /\.startOf\s*\(/, name: "startOf" },
@@ -60,9 +60,26 @@ const FNS_OK_RE = [
   { re: /\.second\s*\(/, name: "second" },
   { re: /\.millisecond\s*\(/, name: "millisecond" },
   { re: /\.day\s*\(/, name: "day" },
+  { re: /\.unix\s*\(/, name: "unix" },
   { re: /\.valueOf\s*\(/, name: "valueOf" },
+  { re: /\.toDate\s*\(/, name: "toDate" },
   { re: /\.toISOString\s*\(/, name: "toISOString" },
   { re: /\.toJSON\s*\(/, name: "toJSON" },
+  { re: /\.setYear\s*\(/, name: "setYear" },
+  { re: /\.setMonth\s*\(/, name: "setMonth" },
+  { re: /\.setDate\s*\(/, name: "setDate" },
+  { re: /\.setHours\s*\(/, name: "setHours" },
+  { re: /\.setMinutes\s*\(/, name: "setMinutes" },
+  { re: /\.setSeconds\s*\(/, name: "setSeconds" },
+  { re: /\.setMilliseconds\s*\(/, name: "setMilliseconds" },
+  { re: /\.isLeapYear\s*\(/, name: "isLeapYear" },
+  { re: /\.dayOfYear\s*\(/, name: "dayOfYear" },
+  { re: /\.daysInMonth\s*\(/, name: "daysInMonth" },
+  { re: /\.quarter\s*\(/, name: "quarter" },
+  { re: /\.week\s*\(/, name: "week" },
+  { re: /\.isoWeek\s*\(/, name: "isoWeek" },
+  { re: /\.weekday\s*\(/, name: "weekday" },
+  { re: /\.isoWeekday\s*\(/, name: "isoWeekday" },
 ];
 
 // API patterns available in lite entry but NOT in fns (need moment object)
@@ -188,7 +205,7 @@ export function runCheck(dir = ".", showFns = false) {
     return;
   }
   if (fnsOnlyFiles.length === results.files) {
-    console.log(`  ✅ All files can use 'mmntjs/lite/fns' → ~1KB`);
+    console.log(`  ✅ All files can use 'mmntjs/fns' → ~1KB`);
     if (!showFns) {
       console.log(`  💡 Run with --fns to see fns migration details.`);
     }
@@ -205,13 +222,13 @@ export function runCheck(dir = ".", showFns = false) {
     );
     if (showFns && fnsOnlyFiles.length > 0) {
       console.log(
-        `  💡 ${fnsOnlyFiles.length}/${results.files} file(s) can use 'mmntjs/lite/fns' → ~1KB`,
+        `  💡 ${fnsOnlyFiles.length}/${results.files} file(s) can use 'mmntjs/fns' → ~1KB`,
       );
     }
     if (needFull > 0 && needFull < results.files) {
       console.log(`  ⚠  Mixed entries bundle both 'mmntjs' and 'mmntjs/lite'.`);
       console.log(`  → Defaulting all files to 'mmntjs' (full) to avoid duplicate bundle.`);
-      console.log(`  → Use --fns to force 'mmntjs/lite/fns' (may break full-only APIs).`);
+      console.log(`  → Use --fns to force 'mmntjs/fns' (may break full-only APIs).`);
     }
   }
 
@@ -243,7 +260,7 @@ export function runCheck(dir = ".", showFns = false) {
     console.log("  Will have import + defineLocale injected at file top.\n");
   }
   console.log(`Run \`mmntjs migrate --apply\` to auto-migrate to best target.`);
-  console.log(`    → fns-compatible files: 'mmntjs/lite/fns' (1KB)`);
+  console.log(`    → fns-compatible files: 'mmntjs/fns' (1KB)`);
   console.log(`    → lite-compatible files: 'mmntjs/lite' (42KB)`);
   console.log(`    → full-only files:       'mmntjs' (141KB)`);
   if (results.tzFiles.length > 0) {
@@ -258,7 +275,7 @@ export function runCheck(dir = ".", showFns = false) {
 const IMPORT_TARGETS: Record<string, string> = {
   full: "mmntjs",
   lite: "mmntjs/lite",
-  fns: "mmntjs/lite/fns",
+  fns: "mmntjs/fns",
 };
 
 export function runApply(dir = ".", target = "auto", dry = false) {

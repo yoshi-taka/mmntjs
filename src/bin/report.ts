@@ -51,7 +51,7 @@ function buildMarkdownReport(
   const entryRecommendation =
     fullFiles.length === 0
       ? fnsOnlyFiles.length === results.modifiedFiles.length
-        ? "`mmntjs/lite/fns` (~1KB)"
+        ? "`mmntjs/fns` (~1KB)"
         : "`mmntjs/lite` (~42KB)"
       : "`mmntjs` (~141KB, mixed with lite-compatible files)";
 
@@ -74,7 +74,7 @@ ${fullFiles.length > 0 ? fileList(fullFiles, dir) : "  (none)"}
 ### Files compatible with lite (\`mmntjs/lite\`, ~42KB)
 ${liteOnlyFiles.length > 0 ? fileList(liteOnlyFiles, dir) : "  (none)"}
 
-### Files compatible with fns (\`mmntjs/lite/fns\`, ~1KB)
+### Files compatible with fns (\`mmntjs/fns\`, ~1KB)
 ${fnsOnlyFiles.length > 0 ? fileList(fnsOnlyFiles, dir) : "  (none)"}
 
 ${

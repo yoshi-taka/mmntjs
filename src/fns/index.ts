@@ -81,4 +81,6 @@ export { toISOString } from "./toISOString";
 
 // ── Parse / Format ──
 export { parseISO } from "./parseISO";
+export { parseMoment } from "./parseMoment";
 export { format } from "./format";
+export { formatMoment } from "./formatMoment";
