@@ -94,6 +94,14 @@ async function main() {
       name: "mmntjs/temporal",
       entryCode: `import { toTemporal, fromTemporal } from "${escapePath(join(projectRoot, "src/temporal-entry.ts"))}"; console.log(typeof toTemporal);`,
     },
+    {
+      name: "mmntjs/fns format",
+      entryCode: `import { format } from "${escapePath(join(projectRoot, "src/fns/index.ts"))}"; console.log(format(new Date(2024, 5, 15), "YYYY-MM-DD"));`,
+    },
+    {
+      name: "mmntjs/fns parseISO+format+addDays",
+      entryCode: `import { parseISO, format, addDays } from "${escapePath(join(projectRoot, "src/fns/index.ts"))}"; const d = addDays(parseISO("2024-01-15T10:30:45.123Z"), 1); console.log(format(d, "YYYY-MM-DD"));`,
+    },
   ];
 
   // Locale scenario: import moment + locale
@@ -170,6 +178,7 @@ async function main() {
     { name: "dist/index.js (full)", path: join(projectRoot, "dist/index.js") },
     { name: "dist/full.js", path: join(projectRoot, "dist/full.js") },
     { name: "dist/temporal-entry.js", path: join(projectRoot, "dist/temporal-entry.js") },
+    { name: "dist/fns/index.js", path: join(projectRoot, "dist/fns/index.js") },
     { name: "dist/mmntjs.min.js", path: join(projectRoot, "dist/mmntjs.min.js") },
     { name: "dist/plugin/utc.js", path: join(projectRoot, "dist/plugin/utc.js") },
     { name: "dist/plugin/format-parse.js", path: join(projectRoot, "dist/plugin/format-parse.js") },

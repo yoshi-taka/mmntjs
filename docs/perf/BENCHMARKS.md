@@ -58,84 +58,27 @@
 
 ```
 Operation                              mmntjs     moment    ratio
-moment()                                325ns      327ns     1.0x faster
-moment(Date)                             79ns      220ns     2.8x faster
-moment('ISO string')                    387ns     4.09us    10.6x faster
-format('YYYY-MM-DD')                     52ns      435ns     8.4x faster
-format('HH:mm:ss')                       68ns      410ns     6.0x faster
-format('LL')                             81ns      700ns     8.7x faster
-add(1,'day') [fresh]                    399ns     2.64us     6.6x faster
-add(1,'month') [fresh]                  383ns     2.49us     6.5x faster
-startOf('day') [fresh]                  285ns     2.10us     7.4x faster
-startOf('month') [fresh]                475ns     2.18us     4.6x faster
-diff('days')                             22ns      489ns    21.7x faster
-diff('months')                          105ns     1.62us    15.4x faster
-isBefore / isAfter / isSame              41ns      209ns     5.1x faster
-startOf('month').endOf('month') [fresh] 539ns     2.41us     4.5x faster
+moment()                                527ns      670ns     1.3x faster
+moment(Date)                             94ns      345ns     3.7x faster
+moment('ISO string')                    259ns     6.09us    23.3x faster
+format('YYYY-MM-DD')                     91ns      445ns     4.9x faster
+format('HH:mm:ss')                       55ns      499ns     9.0x faster
+format('LL')                             58ns      541ns     9.3x faster
+add(1,'day') [fresh]                    286ns     2.67us     9.3x faster
+add(1,'month') [fresh]                  318ns     2.58us     8.1x faster
+startOf('day') [fresh]                  189ns     2.13us    11.2x faster
+startOf('month') [fresh]                400ns     2.00us     5.0x faster
+diff('days')                             35ns      462ns    13.2x faster
+diff('months')                           97ns     1.44us    14.9x faster
+isBefore / isAfter / isSame              39ns      188ns     4.8x faster
+startOf('month').endOf('month') [fresh] 479ns     2.15us     4.5x faster
 ```
 
 `[fresh]` = fresh object created per iteration. Ratio = moment / mmntjs. Higher = mmntjs faster.
 
 ## Detailed Appendix
 
-Full warm-table for all operations measured in `bench/moment-compat.ts`, including cold-path setters, UTC/local variants, and chained mutation workloads.
-
-```
-Operation                                     mmntjs     moment    ratio
-moment([y,M,d])                                525ns      292ns   ~55.6%
-moment([y,M,d,h,m,s,ms])                       597ns      267ns   ~44.8%
-format('dddd, MMMM Do YYYY, h:mm:ss a')       1.23us      128ns   ~10.4%
-getters (y+M+d+H+m+s+ms)                       256ns       39ns   ~15.1%
-setters (year+month+date) [fresh]             2.48us      371ns   ~15.0%
-subtract(7,'days').add(1,'month') [fresh]     2.62us      372ns    14.2%
-isBetween                                     1.18us      179ns   ~15.1%
-startOf('week').startOf('year') [fresh]       2.45us      578ns   ~23.6%
-clone                                          100ns       55ns   ~55.3%
-moment.duration(12345)                         227ns       73ns   ~32.3%
-moment.duration(7,'days')                      432ns      223ns   ~51.6%
-valueOf / unix                                  30ns       49ns  ~164.2%
-daysInMonth / isLeapYear                        99ns       14ns   ~13.8%
-startOf('year') [fresh]                       2.06us      453ns   ~22.0%
-endOf('year') [fresh]                         4.29us      704ns   ~16.4%
-moment('ISO string') with format              5.82us      394ns    ~6.8%
-moment.utc('ISO string')                      2.89us      412ns   ~14.3%
-add(1,'year') [fresh]                         3.65us      682ns   ~18.7%
-startOf('day') UTC [fresh]                    2.57us      615ns   ~23.9%
-startOf('day') local [fresh]                  3.21us      285ns    ~8.9%
-set year UTC [fresh]                          2.46us      401ns   ~16.3%
-set year local D<=28 [fresh]                  2.36us      368ns   ~15.6%
-set year local D>28 (Jan31→Feb) [fresh]       2.42us      309ns   ~12.8%
-set month UTC [fresh]                         2.15us      365ns    17.0%
-set month local D<=28 [fresh]                 2.14us      315ns    14.7%
-set date D<=28 UTC [fresh]                    2.15us      344ns   ~16.0%
-set date D<=28 local [fresh]                  2.11us      285ns   ~13.5%
-set date D>28 UTC [fresh]                     2.21us      391ns    17.7%
-set date D>28 local [fresh]                   2.47us      279ns   ~11.3%
-set hour UTC (p.d hot) [fresh]                2.22us      357ns    16.1%
-set hour local (p.d hot) [fresh]              2.08us      252ns    12.1%
-chained y+M+d (3 setters) local [fresh]       2.72us      315ns    11.6%
-chained y+M+d+H+m+s (6 setters) local [fresh] 4.50us     2.50us   ~55.5%
-```
-
-(`%` = mmntjs / moment × 100. Lower = mmntjs faster. `~` = noisy, spread >25%.)
-
-### First-call latency (cold)
-
-```
-Operation                              moment     mmntjs    ratio
-moment()                               4.67us     3.13us     67.0%
-format('YYYY-MM-DD')                   8.21us     2.50us     30.5%
-add(1,'day')                          24.71us     6.00us     24.3%
-startOf('day')                         8.17us     1.96us     24.0%
-set year                               7.29us     2.17us     29.7%
-diff('days')                           3.92us      625ns     16.0%
-clone                                   459ns      708ns    154.2%
-duration(12345)                        2.83us     1.42us     50.0%
-moment.utc('ISO string')               8.38us     2.71us     32.3%
-format('LL')                           5.42us     2.17us     40.0%
-```
-
-(`%` = mmntjs / moment × 100. Lower = mmntjs faster. Median of 20 isolated first-call samples.)
+`bench/moment-compat.ts` still prints the full warm appendix, cold-path diagnostics, and first-call tables. Keep the CLI output as the source of truth for the long tail of rows; copy representative numbers into docs only when they are used in a public-facing argument.
 
 ## mmntjs vs date-fns
 
@@ -147,40 +90,59 @@ Not compared: clone (no date-fns equivalent), locale-heavy Moment features, muta
 
 ```
 Operation                              mmntjs    date-fns    ratio
-parse ISO string                         544ns      981ns   1.8x faster
-moment() / new Date()                    181ns       43ns   4.2x slower
-moment([y,M,d]) / new Date(y,m,d)        484ns       41ns  11.9x slower
-format YYYY-MM-DD                         89ns     1.50us  16.9x faster
-lightFormat YYYY-MM-DD                    54ns      747ns  13.9x faster
-format HH:mm:ss                           80ns      899ns  11.3x faster
-add 1 day [fresh]                        424ns      103ns   4.1x slower
-add 1 month [fresh]                      400ns      194ns   2.1x slower
-add 1 second [fresh]                    2.95us      126ns  23.3x slower
-add 1 ms [fresh]                        2.29us      119ns  19.2x slower
-sub 1 day [fresh]                        367ns      188ns   1.9x slower
-isAfter                                   19ns      146ns   7.5x faster
-isBefore                                  18ns      164ns   9.1x faster
-diff in days                              19ns     1.12us  57.3x faster
-diff in months                            97ns      115ns   1.2x faster
-startOf month [fresh]                    590ns      284ns   2.1x slower
-startOf year [fresh]                     534ns      266ns   2.0x slower
-startOf day [fresh]                     2.33us       94ns  25.0x slower
-endOf month [fresh]                      465ns      171ns   2.7x slower
-dayOfYear                                 24ns     1.14us  48.4x faster
-daysInMonth                               11ns      253ns  24.0x faster
-isLeapYear                                17ns       51ns   3.0x faster
-set year [fresh]                         686ns      602ns   1.1x slower
-set month [fresh]                        300ns     1.28us   4.3x faster
-set date [fresh]                         267ns      101ns   2.6x slower
-set hour [fresh]                        2.27us       94ns  24.4x slower
-set minute [fresh]                      2.85us       89ns  32.3x slower
-set second [fresh]                      2.15us       93ns  23.3x slower
-set millisecond [fresh]                 2.33us      100ns  23.3x slower
+parse ISO string                         317ns     1.26us   4.0x faster
+moment() / new Date()                    199ns       36ns   5.5x slower
+moment([y,M,d]) / new Date(y,m,d)        358ns       44ns   8.2x slower
+format YYYY-MM-DD                         63ns     1.55us  24.4x faster
+lightFormat YYYY-MM-DD                    75ns      573ns   7.6x faster
+format HH:mm:ss                           73ns     1.04us  14.2x faster
+add 1 day [fresh]                        387ns       93ns   4.2x slower
+add 1 month [fresh]                      331ns      202ns   1.6x slower
+add 1 second [fresh]                     269ns      144ns   1.9x slower
+add 1 ms [fresh]                         288ns      123ns   2.3x slower
+sub 1 day [fresh]                        229ns      190ns   1.2x slower
+isAfter                                   18ns      131ns   7.3x faster
+isBefore                                  19ns      127ns   6.7x faster
+diff in days                              22ns      872ns  40.3x faster
+diff in months                            98ns      114ns   1.2x faster
+startOf month [fresh]                    384ns      172ns   2.2x slower
+startOf year [fresh]                     407ns      246ns   1.7x slower
+startOf day [fresh]                      308ns       87ns   3.6x slower
+endOf month [fresh]                      392ns      158ns   2.5x slower
+dayOfYear                                 25ns     1.04us  40.7x faster
+daysInMonth                                8ns      228ns  29.6x faster
+isLeapYear                                 9ns       36ns   4.1x faster
+set year [fresh]                         255ns      188ns   1.4x slower
+set month [fresh]                        224ns      506ns   2.3x faster
+set date [fresh]                         217ns       84ns   2.6x slower
+set hour [fresh]                         204ns       88ns   2.3x slower
+set minute [fresh]                       207ns       90ns   2.3x slower
+set second [fresh]                       196ns       85ns   2.3x slower
+set millisecond [fresh]                  210ns       85ns   2.5x slower
 ```
 
 Ratio = date-fns / mmntjs. Higher = mmntjs faster.
 
 Key observation: with fresh-object workloads, date-fns wins on operations where total cost is dominated by mmntjs's object construction overhead (`add`, `startOf`, setters on freshly parsed strings). mmntjs wins on read-heavy operations (format, diff, dayOfYear, daysInMonth) where its cached field access outperforms date-fns's native Date API calls.
+
+## mmntjs/fns vs date-fns
+
+`bench/fns.ts` removes the Moment wrapper and compares plain Date helpers directly. In the current run, `mmntjs/fns` wins 19 of 26 rows.
+
+Representative rows:
+
+```
+Operation                              mmntjs/fns  date-fns   ratio
+parse ISO string                           487ns     1.89us   3.9x faster
+format YYYY-MM-DD                          470ns     3.12us   6.6x faster
+addMonths +1                               95ns       278ns   2.9x faster
+differenceInDays                           59ns       966ns  16.3x faster
+dayOfYear                                 128ns      1.80us  14.1x faster
+startOfDay                                309ns        61ns   5.1x slower
+setSeconds                                339ns        69ns   4.9x slower
+```
+
+The bundled size story for `mmntjs/fns` is also different: a single `format` import is about 507 B gzip, while `parseISO + format + addDays` is about 1.3 KB gzip.
 
 ## mmntjs vs Temporal
 
@@ -192,31 +154,31 @@ Temporal prioritizes immutable correctness and semantic richness. Every Temporal
 
 ```
 Operation                              mmntjs    Temporal   ratio
-now (create)                            334ns      822ns   2.5x faster
-parse date-only ISO                     676ns      265ns   2.6x slower
-parse datetime ISO                     2.50us      279ns   9.0x slower
-parse [y,M,d]                           446ns      103ns   4.3x slower
-get year                                 91ns       26ns   3.5x slower
-get year+month+day (3 reads)             58ns       56ns   1.0x slower
-add 1 day                                77ns      536ns   7.0x faster
-add 1 month                             424ns      516ns   1.2x faster
-add 1 day (immutable both)              546ns      505ns   1.1x slower
-diff in days                             26ns      402ns  15.4x faster
-toISOString                             347ns      398ns   1.1x faster
-startOf month (mut vs immutable)         19ns      281ns  14.9x faster
-daysInMonth (method vs property)         10ns       15ns   1.5x faster
-set year                                391ns      383ns   1.0x slower
-set month+day                           407ns      310ns   1.3x slower
+now (create)                            262ns     1.25us   4.8x faster
+parse date-only ISO                     584ns      175ns   3.3x slower
+parse datetime ISO                      412ns      183ns   2.3x slower
+parse [y,M,d]                           769ns      653ns   1.2x slower
+get year                                 10ns       12ns   1.2x faster
+get year+month+day (3 reads)             36ns       70ns   1.9x faster
+add 1 day                                56ns      533ns   9.6x faster
+add 1 month                             385ns      568ns   1.5x faster
+add 1 day (immutable both)              458ns      498ns   1.1x faster
+diff in days                             72ns     1.41us  19.7x faster
+toISOString                             940ns     1.64us   1.7x faster
+startOf month (mut vs immutable)         11ns      276ns  26.2x faster
+daysInMonth (method vs property)         35ns       14ns   2.5x slower
+set year                                329ns      367ns   1.1x faster
+set month+day                           326ns      281ns   1.2x slower
 ```
 
 ### B) ZonedDateTime (timezone semantics)
 
 ```
 Operation                              mmntjs    Temporal   ratio
-parse ISO to zoned                     2.52us      414ns   6.1x slower
-add 1 day (zoned)                      2.20us      714ns   3.1x slower
-startOf day (zoned)                    2.23us      318ns   7.0x slower
-get offset string                        25ns       98ns   3.9x faster
+parse ISO to zoned                      431ns      370ns   1.2x slower
+add 1 day (zoned)                       414ns      650ns   1.6x faster
+startOf day (zoned)                     575ns      307ns   1.9x slower
+get offset string                        20ns       86ns   4.2x faster
 ```
 
 Ratio = Temporal / mmntjs. Higher = mmntjs faster.

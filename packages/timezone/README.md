@@ -112,27 +112,26 @@ MIT
 
 ## Bundle Size
 
-Comparison with original `moment-timezone` (all minified, `bunx tsup --minify`).
+Current measured outputs from this repo's build artifacts.
 
 ### Full data (all historical zones)
 
 | | raw | gzip |
 |---|---|---|
-| `moment-timezone-with-data.min.js` | 710KB | 38KB |
-| `mmntjs-timezone/index.js` (ESM) | **296KB** (−58%) | **35KB** (−8%) |
+| `builtin-data.generated.ts` | 293KB | 32.1KB |
+| `mmntjs-timezone/index.js` (ESM dist) | **318KB** | **39.0KB** |
+| bundled browser entry importing `mmntjs-timezone` | **477KB** | **81.1KB** |
 
 ### 1970–2030 subset
 
 | | raw | gzip |
 |---|---|---|
-| `moment-timezone-with-data-1970-2030.min.js` | 131KB | 20KB |
-| `mmntjs-timezone/1970-2030.js` (ESM) | **78KB** (−40%) | **22KB** (+10%) |
+| `mmntjs-timezone/1970-2030.js` (ESM dist) | **94.7KB** | **25.3KB** |
 
 ### Logic only (no tzdata, load-your-own)
 
 | | raw | gzip |
 |---|---|---|
-| `moment-timezone.min.js` | 7KB | 3KB |
-| `mmntjs-timezone/logic.js` (ESM) | **12KB** | **4.7KB** |
+| `mmntjs-timezone/logic.js` (ESM dist) | **30.0KB** | **7.3KB** |
 
-Both full and 1970–2030 use the same `!D|` delta-encoded binary blob format generated from the upstream `moment-timezone` npm package at build time. The 1970–2030 gzip is 2KB larger because the filter is mechanical (timestamp window) rather than hand-picked like the original.
+The full, 1970–2030, and 10-year-range entries all use the same packed blob format generated from the upstream `moment-timezone` npm package at build time. Dist outputs stay relatively compact because the zone blob remains packed until first access, while bundled browser entries grow further because they inline both core and timezone code together.

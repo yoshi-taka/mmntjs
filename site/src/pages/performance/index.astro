@@ -32,20 +32,20 @@ const methodology = [
 ];
 
 const headlineResults = [
-  ["Against moment.js", "`mmntjs` wins all 31 benchmarked operations in the current benchmark set."],
-  ["Against date-fns", "`mmntjs` wins 24 of 25 benchmarked operations; the main loss is raw constructor-style creation."],
-  ["Against native APIs", "Some hot paths beat native Intl and Temporal in the current focused benchmarks, especially simple formatting and mutation-heavy operations."],
+  ["Against moment.js", "`mmntjs` wins every row in the current 14-row public `moment` comparison table."],
+  ["Against date-fns", "The object API wins 12 of 29 semantically aligned `date-fns` rows; wins cluster in formatting, diff, and read-heavy paths, while fresh-object mutation often favors `date-fns`."],
+  ["Against date-fns with `mmntjs/fns`", "The standalone `fns` entry wins 19 of 26 direct Date-helper rows and avoids the Moment-wrapper overhead entirely."],
   ["Cross-runtime check", "Relative gains were cross-validated on Node.js 26 so the story is not Bun-only."],
   ["Size and speed are separate concerns", "Package size is measured across raw, compressed, bundled, and runtime layers. Runtime benchmarks address execution speed, not transfer or parse cost. The two are tracked on separate pages with separate methodology."],
 ];
 
 const operationRows = [
-  ["format YYYY-MM-DD", "56 ns", "1.31 us", "420 ns", ratio("56 ns", "1.31 us")],
-  ["parse ISO string", "363 ns", "1.30 us", "4.20 us", ratio("363 ns", "1.30 us")],
-  ["diff in days", "20 ns", "935 ns", "491 ns", ratio("20 ns", "935 ns")],
-  ["add 1 second", "15 ns", "108 ns", "-", ratio("15 ns", "108 ns")],
-  ["startOf month", "17 ns", "75 ns", "-", ratio("17 ns", "75 ns")],
-  ["moment() / new Date()", "40 ns", "35 ns", "221 ns", ratio("40 ns", "35 ns")],
+  ["format YYYY-MM-DD", "63 ns", "1.55 us", "445 ns", ratio("63 ns", "1.55 us")],
+  ["parse ISO string", "317 ns", "1.26 us", "6.09 us", ratio("317 ns", "1.26 us")],
+  ["diff in days", "22 ns", "872 ns", "462 ns", ratio("22 ns", "872 ns")],
+  ["add 1 day", "387 ns", "93 ns", "2.67 us", ratio("387 ns", "93 ns")],
+  ["startOf day", "308 ns", "87 ns", "2.13 us", ratio("308 ns", "87 ns")],
+  ["moment() / new Date()", "199 ns", "36 ns", "670 ns", ratio("199 ns", "36 ns")],
 ];
 
 const techniqueRows = [
@@ -102,18 +102,21 @@ const interpretationNotes = [
 ];
 
 const benchmarkFiles = [
-  ["test/bench.ts", "moment.js vs `mmntjs` main table"],
-  ["test/bench-datefns2.ts", "`mmntjs` vs date-fns comparisons"],
-  ["test/bench-regression.ts", "Regression guard thresholds"],
-  ["test/bench-mem.ts", "Memory footprint checks"],
-  ["test/bench-temporal.ts", "Native Temporal comparison"],
+  ["bench/moment-compat.ts", "moment.js vs `mmntjs` public table and appendix"],
+  ["bench/date-fns.ts", "object-API comparison against `date-fns`"],
+  ["bench/fns.ts", "standalone `mmntjs/fns` vs `date-fns` helpers"],
+  ["bench/bench-regression.ts", "Regression guard thresholds"],
+  ["bench/bench-mem.ts", "Memory footprint checks"],
+  ["bench/temporal.ts", "Native Temporal comparison"],
 ];
 
 const commands = [
   "bun run bench",
+  "bun run bench:date-fns",
+  "bun bench/fns.ts",
   "bun run bench:guard",
   "bun run bench:mem",
-  "node test/bench-temporal.ts       # Node.js 26+",
+  "bun run bench:temporal",
 ];
 ---
 
@@ -191,21 +194,37 @@ const commands = [
         </tr>
       </thead>
       <tbody>
-        <tr><td>now/create</td><td class="num">70 ns</td><td class="num">657 ns</td><td class="num">9.3x</td></tr>
-        <tr><td>parse ISO string</td><td class="num">424 ns</td><td class="num">177 ns</td><td class="num">0.4x</td></tr>
-        <tr><td>parse [y,M,d]</td><td class="num">322 ns</td><td class="num">100 ns</td><td class="num">0.3x</td></tr>
-        <tr><td>get year</td><td class="num">8 ns</td><td class="num">12 ns</td><td class="num">1.5x</td></tr>
-        <tr><td>add 1 day</td><td class="num">89 ns</td><td class="num">537 ns</td><td class="num">6.0x</td></tr>
-        <tr><td>add 1 month</td><td class="num">203 ns</td><td class="num">454 ns</td><td class="num">2.2x</td></tr>
-        <tr><td>diff in days</td><td class="num">26 ns</td><td class="num">348 ns</td><td class="num">13.3x</td></tr>
-        <tr><td>format YYYY-MM-DD</td><td class="num">64 ns</td><td class="num">132 ns</td><td class="num">2.1x</td></tr>
-        <tr><td>startOf month</td><td class="num">14 ns</td><td class="num">284 ns</td><td class="num">19.9x</td></tr>
-        <tr><td>daysInMonth</td><td class="num">16 ns</td><td class="num">14 ns</td><td class="num">0.9x</td></tr>
+        <tr><td>now/create</td><td class="num">262 ns</td><td class="num">1.25 us</td><td class="num">4.8x</td></tr>
+        <tr><td>parse date-only ISO</td><td class="num">584 ns</td><td class="num">175 ns</td><td class="num">0.3x</td></tr>
+        <tr><td>parse datetime ISO</td><td class="num">412 ns</td><td class="num">183 ns</td><td class="num">0.4x</td></tr>
+        <tr><td>parse [y,M,d]</td><td class="num">769 ns</td><td class="num">653 ns</td><td class="num">0.8x</td></tr>
+        <tr><td>get year</td><td class="num">10 ns</td><td class="num">12 ns</td><td class="num">1.2x</td></tr>
+        <tr><td>add 1 day</td><td class="num">56 ns</td><td class="num">533 ns</td><td class="num">9.6x</td></tr>
+        <tr><td>add 1 month</td><td class="num">385 ns</td><td class="num">568 ns</td><td class="num">1.5x</td></tr>
+        <tr><td>diff in days</td><td class="num">72 ns</td><td class="num">1.41 us</td><td class="num">19.7x</td></tr>
+        <tr><td>toISOString</td><td class="num">940 ns</td><td class="num">1.64 us</td><td class="num">1.7x</td></tr>
+        <tr><td>startOf month</td><td class="num">11 ns</td><td class="num">276 ns</td><td class="num">26.2x</td></tr>
       </tbody>
     </table>
-    <p class="footnote">"Ratio" >1 means mmntjs is faster. &lt;1 means Temporal is faster. Data from <code>node test/bench-temporal.ts</code> on Node.js 26.</p>
-    <p>mmntjs wins 7 of 10 operations. Temporal is faster on parsing (C++ <code>PlainDate.from</code>/constructor) and <code>daysInMonth</code> (C++ property read). mmntjs wins on mutation-heavy and formatting-heavy paths where its cached-fields + mutable-object design avoids the allocation cost of Temporal's immutable objects.</p>
+    <p class="footnote">"Ratio" &gt;1 means mmntjs is faster. &lt;1 means Temporal is faster. Data from <code>bench/temporal.ts</code> on Node.js 26.</p>
+    <p>Temporal still wins several parse and property-read rows. mmntjs wins the mutation-heavy and diff-heavy paths where cached fields and mutability avoid repeated allocation work.</p>
     <p>This should be read as a trade-off note, not as an argument against Temporal's design goals.</p>
+  </section>
+
+  <section class="panel section">
+    <p class="eyebrow">Standalone Helpers</p>
+    <h2><code>mmntjs/fns</code> is the closer apples-to-apples comparison with <code>date-fns</code>.</h2>
+    <p>
+      When you remove the Moment wrapper and compare plain Date helpers directly, the picture improves.
+      In the current <code>bench/fns.ts</code> run, <code>mmntjs/fns</code> wins 19 of 26 rows.
+      It is especially strong on parsing, formatting, diff, and calendar-helper reads, while some
+      mutating helpers like <code>addDays(+1)</code> and <code>startOfDay()</code> still favor
+      <code>date-fns</code>.
+    </p>
+    <p>
+      The bundle story is also different: a single <code>format</code> import measures about 507 B gzip,
+      and a small <code>parseISO + format + addDays</code> bundle measures about 1.3 KB gzip.
+    </p>
   </section>
 
   <section class="panel section">

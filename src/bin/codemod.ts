@@ -205,24 +205,24 @@ export function runCheck(dir = ".", showFns = false) {
     return;
   }
   if (fnsOnlyFiles.length === results.files) {
-    console.log(`  ✅ All files can use 'mmntjs/fns' → ~1KB`);
+    console.log(`  ✅ All files can use 'mmntjs/fns' → ~0.5-1.3KB gzip bundled`);
     if (!showFns) {
       console.log(`  💡 Run with --fns to see fns migration details.`);
     }
   } else if (liteOnlyFiles.length === results.files) {
-    console.log(`  ✅ All files can use 'mmntjs/lite' → ~42KB`);
+    console.log(`  ✅ All files can use 'mmntjs/lite' → ~14.8KB gzip bundled`);
     console.log(`  💡 Run with --fns to check fns compatibility.`);
   } else {
     const needFull = results.files - liteOnlyFiles.length;
     console.log(
-      `  ⚠  ${liteOnlyFiles.length < results.files ? String(needFull) : "0"} file(s) need 'mmntjs' (full) → ~141KB`,
+      `  ⚠  ${liteOnlyFiles.length < results.files ? String(needFull) : "0"} file(s) need 'mmntjs' (full) → ~45.1KB gzip bundled`,
     );
     console.log(
-      `  💡 ${liteOnlyFiles.length}/${results.files} file(s) can switch to 'mmntjs/lite' → ~42KB`,
+      `  💡 ${liteOnlyFiles.length}/${results.files} file(s) can switch to 'mmntjs/lite' → ~14.8KB gzip bundled`,
     );
     if (showFns && fnsOnlyFiles.length > 0) {
       console.log(
-        `  💡 ${fnsOnlyFiles.length}/${results.files} file(s) can use 'mmntjs/fns' → ~1KB`,
+        `  💡 ${fnsOnlyFiles.length}/${results.files} file(s) can use 'mmntjs/fns' → ~0.5-1.3KB gzip bundled`,
       );
     }
     if (needFull > 0 && needFull < results.files) {
@@ -260,9 +260,9 @@ export function runCheck(dir = ".", showFns = false) {
     console.log("  Will have import + defineLocale injected at file top.\n");
   }
   console.log(`Run \`mmntjs migrate --apply\` to auto-migrate to best target.`);
-  console.log(`    → fns-compatible files: 'mmntjs/fns' (1KB)`);
-  console.log(`    → lite-compatible files: 'mmntjs/lite' (42KB)`);
-  console.log(`    → full-only files:       'mmntjs' (141KB)`);
+  console.log(`    → fns-compatible files: 'mmntjs/fns' (~0.5-1.3KB gzip bundled)`);
+  console.log(`    → lite-compatible files: 'mmntjs/lite' (~14.8KB gzip bundled)`);
+  console.log(`    → full-only files:       'mmntjs' (~45.1KB gzip bundled)`);
   if (results.tzFiles.length > 0) {
     console.log(`    → timezone files:        plus 'mmntjs-timezone' side-effect import`);
   }

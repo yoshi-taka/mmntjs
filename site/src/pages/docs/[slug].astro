@@ -42,8 +42,8 @@ const docSections: Record<string, DocSection[]> = {
     {
       title: "Start With the Lite Entry Point",
       body: [
-        "`mmntjs/lite` is the recommended entry for most teams. It provides moment-compatible method chaining at 44KB — smaller than moment.js — and covers the common creation, formatting, add/subtract, diff, and comparison patterns that most codebases rely on.",
-        "Only reach for the default `mmntjs` entry (150KB) when your codebase explicitly depends on full-compat features such as `moment.utc()`, `moment.parseZone()`, duration helpers, or locale-aware display tokens like `MMMM` and `dddd` without loading them as plugins.",
+        "`mmntjs/lite` is the recommended entry for most teams. It provides moment-compatible method chaining at 55.2KB raw bundled / 14.8KB gzip bundled and covers the common creation, formatting, add/subtract, diff, and comparison patterns that most codebases rely on.",
+        "Only reach for the default `mmntjs` entry (179.5KB raw bundled / 45.1KB gzip bundled) when your codebase explicitly depends on full-compat features such as `moment.utc()`, `moment.parseZone()`, duration helpers, or locale-aware display tokens like `MMMM` and `dddd` without loading them as plugins.",
       ],
     },
   ],
@@ -58,7 +58,7 @@ const docSections: Record<string, DocSection[]> = {
     {
       title: "Prefer Lite By Default",
       body: [
-        "`mmntjs/lite` (44KB) is the recommended entry for most teams. Install it first, then only switch to the default `mmntjs` (150KB) if your codebase needs full-compat features like `moment.utc()`, `moment.parseZone()`, duration helpers, or locale-rich format tokens without plugin imports.",
+        "`mmntjs/lite` (55.2KB raw bundled) is the recommended entry for most teams. Install it first, then only switch to the default `mmntjs` (179.5KB raw bundled) if your codebase needs full-compat features like `moment.utc()`, `moment.parseZone()`, duration helpers, or locale-rich format tokens without plugin imports.",
       ],
       bullets: [
         "Start every new module or browser entry point with `mmntjs/lite`.",
@@ -107,13 +107,13 @@ const docSections: Record<string, DocSection[]> = {
     {
       title: "Use mmntjs/lite As The Default Entry Point",
       body: [
-        "`mmntjs/lite` is the recommended starting point for most teams. It provides method chaining, basic formatting (`YYYY-MM-DD`, `HH:mm:ss`), ISO parsing, add/subtract, startOf/endOf, diff, and comparison — enough to cover the majority of moment.js usage patterns at 44KB.",
+        "`mmntjs/lite` is the recommended starting point for most teams. It provides method chaining, basic formatting (`YYYY-MM-DD`, `HH:mm:ss`), ISO parsing, add/subtract, startOf/endOf, diff, and comparison — enough to cover the majority of moment.js usage patterns at 55.2KB raw bundled.",
         "Import additional capabilities explicitly when you need them: add `plugin/format-parse` for custom format strings, `plugin/utc` for UTC and parseZone support, or `locale/*` for localized output. This keeps your bundle lean and makes dependencies visible in review.",
       ],
       bullets: [
         "Start every new module or browser entry point with `mmntjs/lite`.",
         "Only switch to the default `mmntjs` entry when full-compat features and locale-rich formatting are required without explicit plugin imports.",
-        "Use `mmntjs/lite/fns` for standalone function style when tree-shaking matters most.",
+        "Use `mmntjs/fns` for standalone function style when tree-shaking matters most.",
       ],
     },
     {
@@ -235,13 +235,13 @@ const docSections: Record<string, DocSection[]> = {
     {
       title: "Timezone Package (mmntjs-timezone)",
       body: [
-        "`mmntjs/timezone` provides IANA timezone data and APIs as a separate package. It is compatible with moment-timezone: `moment.tz()`, `moment.tz.guess()`, `zone()`/`zoneName()`, and `.tz()` instance methods all work once the package is loaded.",
+        "`mmntjs-timezone` provides IANA timezone data and APIs as a separate package. It is compatible with moment-timezone: `moment.tz()`, `moment.tz.guess()`, `zone()`/`zoneName()`, and `.tz()` instance methods all work once the package is loaded.",
         "Core mmntjs covers only UTC and fixed-offset behavior; install the timezone package when your application depends on named zones like `America/New_York` or `Asia/Tokyo`.",
-        "The raw timezone data is packed from about 711 KB to about 293 KB using base-60 encoding, delta frequency dictionaries, and permutation-group index codecs. The distributed bundle is about 311 KB raw and 37.5 KB gzip.",
+        "The raw timezone data is packed into about 293 KB of generated source using base-60 encoding, delta frequency dictionaries, and permutation-group index codecs. The distributed bundle is about 318.3 KB raw and 39.0 KB gzip.",
       ],
       bullets: [
-        "Install: `npm install mmntjs-timezone` (about 37.5 KB gzip, 311 KB raw).",
-        "Import `import \"mmntjs/timezone\"` to attach timezone APIs to the `moment` factory.",
+        "Install: `npm install mmntjs-timezone` (about 39.0 KB gzip as dist output, 81.1 KB gzip in a bundled browser entry).",
+        "Import `import \"mmntjs-timezone\"` to attach timezone APIs to the `moment` factory.",
         "The timezone data is pre-packed; first access triggers a one-time lazy unpack.",
       ],
     },
@@ -270,8 +270,8 @@ const docSections: Record<string, DocSection[]> = {
         "The current source docs distinguish bundled measurements from raw dist output. That matters because browser teams usually care about bundler output first, while release engineering may care about shipped dist artifacts.",
       ],
       bullets: [
-        "Default mmntjs entry is about 39 KB gzip bundled and about 54 KB gzip as dist output.",
-        "Lite is about 12 KB gzip bundled and can add plugins or locales incrementally.",
+          "Default mmntjs entry is about 45.1 KB gzip bundled and about 63.4 KB gzip as dist output.",
+          "Lite is about 14.8 KB gzip bundled and can add plugins or locales incrementally.",
         "Timezone support is a separate package rather than silently bundled into core.",
       ],
     },
@@ -364,10 +364,10 @@ const docExamples: Record<string, DocExample[]> = {
     {
       title: "Zero-code alias trial",
       language: "sh",
-      code: `# recommended: start with lite (44KB)
+      code: `# recommended: start with lite (55.2KB raw bundled)
 npm install moment@npm:mmntjs/lite
 
-# switch to full compat (150KB) if needed
+# switch to full compat (179.5KB raw bundled) if needed
 npm install moment@npm:mmntjs`,
       note: "Start with the lite alias for the smallest evaluation surface, then switch to the default entry if your codebase needs full-compat features.",
     },
@@ -402,7 +402,7 @@ mmntjs migrate --apply path/to/module`,
       code: `npm install mmntjs
 # then import as:
 import moment from "mmntjs/lite";`,
-      note: "Start here. `mmntjs/lite` is 44KB, moment-compatible, covers common formatting, manipulation, and comparison needs.",
+      note: "Start here. `mmntjs/lite` is 55.2KB raw bundled / 14.8KB gzip bundled, moment-compatible, and covers common formatting, manipulation, and comparison needs.",
     },
     {
       title: "Lite — alias trial",
@@ -424,7 +424,7 @@ import "mmntjs/locale-auto/ja";`,
       code: `npm install mmntjs
 # then import as:
 import moment from "mmntjs";`,
-      note: "Use the default entry (150KB) when your codebase depends on full-compat features like `moment.utc()`, `moment.parseZone()`, or duration helpers without plugin imports.",
+      note: "Use the default entry (179.5KB raw bundled / 45.1KB gzip bundled) when your codebase depends on full-compat features like `moment.utc()`, `moment.parseZone()`, or duration helpers without plugin imports.",
     },
     {
       title: "Default entry — alias trial",
@@ -573,16 +573,16 @@ moment("2024-01-01").add(1, "day").format("YYYY-MM-DD");`,
       title: "Timezone package install",
       language: "sh",
       code: `npm install mmntjs-timezone`,
-      note: "About 37.5 KB gzip — much smaller than moment-timezone. Installs alongside mmntjs core.",
+      note: "About 39.0 KB gzip as dist output, or about 81.1 KB gzip in a bundled browser entry. Installs alongside mmntjs core.",
     },
     {
       title: "Timezone package import",
       language: "js",
       code: `import moment from "mmntjs";
-import "mmntjs/timezone";
+import "mmntjs-timezone";
 
 moment.tz("2024-01-01", "America/New_York").format();`,
-      note: "Compatible with moment-timezone: `tz()`, `zone()`, `tz.guess()`, and instance `.tz()` all work. Raw data packed from 711 KB to 293 KB; dist is 37.5 KB gzip.",
+      note: "Compatible with moment-timezone: `tz()`, `zone()`, `tz.guess()`, and instance `.tz()` all work. Raw data is about 293 KB in generated source; dist output is about 39.0 KB gzip.",
     },
     {
       title: "Core UTC and fixed-offset (no timezone package needed)",

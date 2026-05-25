@@ -51,9 +51,9 @@ function buildMarkdownReport(
   const entryRecommendation =
     fullFiles.length === 0
       ? fnsOnlyFiles.length === results.modifiedFiles.length
-        ? "`mmntjs/fns` (~1KB)"
-        : "`mmntjs/lite` (~42KB)"
-      : "`mmntjs` (~141KB, mixed with lite-compatible files)";
+        ? "`mmntjs/fns` (~0.5-1.3KB gzip bundled)"
+        : "`mmntjs/lite` (~14.8KB gzip bundled)"
+      : "`mmntjs` (~45.1KB gzip bundled, mixed with lite-compatible files)";
 
   return `# moment → mmntjs Migration Report
 
@@ -68,20 +68,20 @@ function buildMarkdownReport(
 
 Recommended: ${entryRecommendation}
 
-### Files needing full (\`mmntjs\`, ~141KB)
+### Files needing full (\`mmntjs\`, ~45.1KB gzip bundled)
 ${fullFiles.length > 0 ? fileList(fullFiles, dir) : "  (none)"}
 
-### Files compatible with lite (\`mmntjs/lite\`, ~42KB)
+### Files compatible with lite (\`mmntjs/lite\`, ~14.8KB gzip bundled)
 ${liteOnlyFiles.length > 0 ? fileList(liteOnlyFiles, dir) : "  (none)"}
 
-### Files compatible with fns (\`mmntjs/fns\`, ~1KB)
+### Files compatible with fns (\`mmntjs/fns\`, ~0.5-1.3KB gzip bundled)
 ${fnsOnlyFiles.length > 0 ? fileList(fnsOnlyFiles, dir) : "  (none)"}
 
 ${
   results.tzFiles.length > 0
     ? `### Timezone files
 ${results.tzFiles.map((f) => `  - \`${f.replace(dir, "").replace(/^\//, "")}\``).join("\n")}
-→ Will add \`import "mmntjs/timezone"\` side-effect import.
+→ Will add \`import "mmntjs-timezone"\` side-effect import.
 `
     : ""
 }

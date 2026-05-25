@@ -47,7 +47,7 @@ function statusClass(status: string): string {
 
     <div class="hero-code-card" aria-label="Installation and usage examples">
       <div class="code-step">
-        <p class="eyebrow">Recommended — lite (44KB, moment-compatible)</p>
+        <p class="eyebrow">Recommended — lite (55.2KB raw bundled, moment-compatible)</p>
         <CodeBlock code={`import moment from "mmntjs/lite";
 
 moment()
@@ -55,12 +55,12 @@ moment()
   .format("YYYY-MM-DD");`} lang="js" />
       </div>
       <div class="code-step">
-        <p class="eyebrow">Also available — lite/fns (standalone functions)</p>
+        <p class="eyebrow">Also available — fns (standalone functions)</p>
         <CodeBlock code={`import {
   format,
   startOf,
   add,
-} from "mmntjs/lite/fns";
+} from "mmntjs/fns";
 
 format(
   add(new Date(), 1, "day"),
@@ -68,7 +68,7 @@ format(
 );`} lang="js" />
       </div>
       <div class="code-step">
-        <p class="eyebrow">Full — moment.js compat (150KB)</p>
+        <p class="eyebrow">Full — moment.js compat (179.5KB raw bundled)</p>
         <CodeBlock code={`import moment from "mmntjs";
 
 moment
@@ -83,7 +83,7 @@ mmntjs migrate --mode=alias   # npm alias, zero code change
 
 mmntjs migrate --apply        # auto-choose best target
 
-mmntjs migrate --apply --fns  # force lite/fns`} lang="sh" />
+mmntjs migrate --apply --fns  # force fns`} lang="sh" />
       </div>
     </div>
   </section>
@@ -105,7 +105,7 @@ mmntjs migrate --apply --fns  # force lite/fns`} lang="sh" />
         Evaluate mmntjs in one module, run the tests you already trust, and expand only after
         checking compatibility-sensitive behavior.
       </p>
-      <CodeBlock code={`# recommended: lite (44KB, moment-compatible)
+      <CodeBlock code={`# recommended: lite (55.2KB raw bundled, moment-compatible)
 npm install mmntjs
 import moment from "mmntjs/lite";
 
@@ -117,9 +117,9 @@ moment()
 import {
   format,
   add,
-} from "mmntjs/lite/fns";
+} from "mmntjs/fns";
 
-# or full compat (150KB) for migration
+# or full compat (179.5KB raw bundled) for migration
 import moment from "mmntjs";
 
 moment

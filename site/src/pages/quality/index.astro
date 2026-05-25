@@ -12,11 +12,11 @@ const sections = [
 
 const currentMetrics = [
   ["Upstream compatibility", "630/630", "moment.js 2.30.1 official test suite"],
-  ["Hard suite", "5,989/5,989", "full test suite (oracle + property + fuzz + locale + timezone)"],
-  ["Timezone coverage", "582", "test cases across six timezones"],
+  ["Curated test suite", "2,063/2,063", "current `bun run test` suite"],
+  ["Timezone coverage", "3,846", "timezone, DST, and timezone-package cases across six timezones"],
   ["Coverage baseline", "86.03%", "line coverage after Phase 5 fixes"],
-  ["Mutation", "27/33", "81.8% of applicable operators killed"],
-  ["Fuzz harnesses", "12", "coverage-guided targets (1 grammar-based)"],
+  ["Mutation", "48/48", "current curated mutation suite killed"],
+  ["Fuzz harnesses", "11 + grammar", "coverage-guided targets plus grammar-based ISO generation"],
 ];
 
 const recentFixes = [
@@ -62,7 +62,7 @@ const qualityDocs = [
       </ul>
       <p class="footnote">
         The same quality process covers all entry points — <code>mmntjs/lite</code> (recommended),
-        <code>mmntjs/lite/fns</code>, and the default <code>mmntjs</code> entry — with the same
+        <code>mmntjs/fns</code>, and the default <code>mmntjs</code> entry — with the same
         oracle tests, regression fixtures, fuzz, and timezone checks.
       </p>
     </article>

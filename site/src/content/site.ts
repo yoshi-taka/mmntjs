@@ -57,12 +57,12 @@ export const docsPages: DocPage[] = [
   {
     slug: "installation",
     title: "Installation",
-    summary: "Install mmntjs and choose the right entry point: `mmntjs` (full compat, 150KB raw bundled), `mmntjs/lite` (recommended, 44KB raw bundled), or `mmntjs/lite/fns` (ultra-light, ~6KB).",
+    summary: "Install mmntjs and choose the right entry point: `mmntjs` (full compat, 179.5KB raw bundled), `mmntjs/lite` (recommended, 55.2KB raw bundled), or `mmntjs/fns` (tree-shakeable standalone helpers).",
     purpose: "Show the available entry points and when each is appropriate.",
     focus: [
       "Direct install and import replacement for moment.js",
       "Alias-based evaluation for low-friction trials",
-      "Entry points: full (150KB), lite (44KB), lite/fns (~6KB)",
+      "Entry points: full (179.5KB), lite (55.2KB), fns (tree-shakeable)",
       "When to use each entry point",
     ],
     related: [{ label: "Runtime Support", href: "/docs/runtime-support/" }],
@@ -70,10 +70,10 @@ export const docsPages: DocPage[] = [
   {
     slug: "lite-usage",
     title: "Lite and fns Usage",
-    summary: "`mmntjs/lite` (44KB raw bundled) is the recommended default: moment-compatible method chaining. `mmntjs/lite/fns` is an alternative for teams that prefer standalone functions.",
+    summary: "`mmntjs/lite` (55.2KB raw bundled) is the recommended default: moment-compatible method chaining. `mmntjs/fns` is an alternative for teams that prefer standalone functions.",
     purpose: "Explain when the lite and fns entries are a good fit and what teams must choose based on their API needs.",
     focus: [
-      "What the lite entry includes by default (44KB raw bundled, method chaining)",
+      "What the lite entry includes by default (55.2KB raw bundled, method chaining)",
       "What the fns entry offers (standalone functions, small base, tree-shaking scales with imports)",
       "Which plugins or locale modules must be imported explicitly",
       "How to evaluate lite vs fns before switching browser code",
@@ -225,8 +225,8 @@ export const compatibilitySnapshot = [
 
 export const compatibilityEvidence = [
   "630/630 moment.js 2.30.1 official test suite passing",
-  "5,989/5,989 full hard-test suite passing",
-  "582 timezone compatibility tests passing across six timezones",
+  "2,063/2,063 current curated `bun run test` suite passing",
+  "3,846 timezone, DST, and timezone-package test cases passing across six timezones",
   "112 property-style oracle tests with tens of thousands of assertions against upstream moment.js",
   "11 coverage-guided fuzz harnesses plus a grammar-based ISO generator",
 ];
@@ -316,7 +316,7 @@ export const migrationPhases = [
   ["Phase 0", "Inventory current moment usage with `mmntjs migrate --check`. Identify timezone, locale, and parsing hotspots."],
   ["Phase 0.5", "Optionally set npm alias with `mmntjs migrate --mode=alias` — zero code change, lets your build tool resolve `moment` → `mmntjs` at install time."],
   ["Phase 1", "Run `mmntjs migrate --apply` to auto-rewrite imports. For full-only codebases, start with `mmntjs` (full compat). For lite-compatible code, switch directly to `mmntjs/lite`."],
-  ["Phase 2", "If your code only uses basic formatting/manipulation, `mmntjs/lite/fns` is an option — standalone functions with a small base. Run `mmntjs migrate --apply --fns --dry` to preview."],
+  ["Phase 2", "If your code only uses basic formatting/manipulation, `mmntjs/fns` is an option — standalone functions with tree-shakeable cost. Run `mmntjs migrate --apply --fns --dry` to preview."],
   ["Phase 3", "Run compatibility checks and review known differences for the APIs your codebase uses. Compare production-like behavior, especially invalid dates, offsets, and custom parsing."],
   ["Phase 4", "Replace imports in a low-risk module or service and run the existing test suite. Expand rollout module by module with ownership and rollback clarity."],
   ["Phase 5", "Use the bridge period to guide new code toward modern date/time APIs, including Temporal where it fits."],
@@ -480,7 +480,7 @@ export const faqAnswers = [
   {
     question: "Is mmntjs faster than moment.js?",
     answer:
-      "In the current benchmark set, yes. mmntjs wins the tracked moment.js operations, with especially large wins in ISO parsing, common formatting, diff, getters, and simple arithmetic. Treat this as benchmark evidence, not a promise about every workload.",
+      "In the current public moment.js comparison table, yes. mmntjs wins every tracked row, with especially large wins in ISO parsing, common formatting, diff, and simple arithmetic. Against date-fns the story is mixed: mmntjs wins read-heavy rows, while date-fns often wins fresh-object mutation rows. Treat this as benchmark evidence, not a promise about every workload.",
   },
   {
     question: "How are benchmarks run?",
@@ -490,12 +490,12 @@ export const faqAnswers = [
     {
     question: "Is bundle size smaller?",
     answer:
-      "Yes. The main `mmntjs` entry (150KB raw bundled) is comparable to moment.js. The recommended `mmntjs/lite` (44KB) is smaller than moment.js (60KB). For users who prefer standalone functions, `mmntjs/lite/fns` offers a small base that scales with imports.",
+      "Yes, depending on the entry point. The main `mmntjs` entry is 179.5KB raw bundled, `mmntjs/lite` is 55.2KB raw bundled, and `mmntjs/fns` can stay under 1.3KB gzip for small helper sets because it tree-shakes aggressively. Locale and timezone costs stay separate from core.",
   },
   {
     question: "Which entry point should browser apps use?",
     answer:
-      "Start with `mmntjs/lite` at 44KB — it is moment-compatible with method chaining and is the recommended default. If you prefer standalone functions, `mmntjs/lite/fns` is also an option with a small base. The main `mmntjs` entry (150KB) is for full moment.js compatibility during migration.",
+      "Start with `mmntjs/lite` at 55.2KB raw bundled — it is moment-compatible with method chaining and is the recommended default. If you prefer standalone functions, `mmntjs/fns` is also an option and scales with imports. The main `mmntjs` entry (179.5KB raw bundled) is for full moment.js compatibility during migration.",
   },
   {
     question: "Can mmntjs coexist with dayjs, date-fns, Luxon, or Temporal?",

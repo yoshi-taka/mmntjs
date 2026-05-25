@@ -71,16 +71,18 @@ moment.duration(2, "hours").humanize();
 
 | Import | gzip (bundled) | gzip (dist) | Description |
 |--------|--------------:|------------:|-------------|
-| `mmntjs` | **39 KB** | 55 KB | Full compatibility (default) — core + display + utc + locale registry + format-parse |
-| `mmntjs/lite` | **12 KB** | 17 KB | ISO-centric, size-first — core-lite + strict parsing, no locale registry, no display extras |
-| `mmntjs/full` | **39 KB** | 55 KB | Same as default — explicit alias |
-| `mmntjs/temporal` | **47 KB** | 94 KB | Temporal bridge — `toTemporal(m)` / `fromTemporal(t)` |
+| `mmntjs` | **45.1 KB** | 63.4 KB | Full compatibility (default) — core + display + utc + locale registry + format-parse |
+| `mmntjs/lite` | **14.8 KB** | 20.5 KB | ISO-centric, size-first — core-lite + strict parsing, no locale registry, no display extras |
+| `mmntjs/full` | **45.1 KB** | 63.4 KB | Same as default — explicit alias |
+| `mmntjs/fns` | **0.5-1.3 KB*** | 6.8 KB | Tree-shakeable Date helpers — single `format` is 507 B gzip, `parseISO+format+addDays` is 1.3 KB gzip |
+| `mmntjs/temporal` | **46.7 KB** | 102.6 KB | Temporal bridge — `toTemporal(m)` / `fromTemporal(t)` |
 | `mmntjs/plugin/*` | — | +separate | Optional plugins (utc, format-parse) — self-contained, add features to lite |
 | `mmntjs/locale/*` | — | +1-5 KB | Individual locales (136 total) — tree-shakeable, each <2 KB gzip |
-| `mmntjs-timezone` | **75 KB** | — | Separate package — full IANA timezone data + `installTimezone(moment)` |
+| `mmntjs-timezone` | **81.1 KB** | 39.0 KB | Separate package — full IANA timezone data + `installTimezone(moment)` |
 
 > **bundled**: measured from source with `Bun.build({minify:true, target:"browser"})` — represents what consumer bundlers produce.
 > **dist**: raw tsup output with `splitting:false` — self-contained files, some code duplication across entries is expected.
+> `*` `mmntjs/fns` is fully tree-shakeable, so its bundled size depends on what you import.
 
 ```js
 // Use lite + plugins for smaller bundles
@@ -157,8 +159,8 @@ const moment = require("mmntjs");
 
 **moment.js's own test suite**: 630/630 pass (52 QUnit files via compat layer).  
 **Oracle comparison**: 112 properties, 45k+ assertions against upstream moment.js.  
-**Mutation**: 20 operators, 100% kill rate (12/12 applicable, 8 N/A).  
-**Fuzzing**: 9 coverage-guided harnesses + grammar-based ISO 8601 generator.
+**Mutation**: 48/48 killed in the current curated mutation suite.  
+**Fuzzing**: 11 coverage-guided harnesses + grammar-based ISO 8601 generator.
 
 The only known incompatibilities are malformed/edge-case strings discovered through fuzzing (e.g. sign-prefixed strings without delimiters). These are under active repair — see [REMAINING.md](./docs/meta/REMAINING.md) for the shortlist.
 
@@ -170,30 +172,32 @@ Runs on Node 16+, browsers (IIFE/CDN), Bun, and Deno. CJS and ESM both supported
 
 TypeScript types included — `import moment from "moment"` resolves to mmntjs's types automatically. No `@types/moment` needed.
 
-### 2. Modular & Smaller Than moment.js
+### 2. Modular And Measurable
 
-| Entry | gzip (bundled) | vs moment.js |
-|-------|---------------:|--------------|
-| `mmntjs` (full) | **39 KB** | vs 20.5 KB (moment from source) |
-| `mmntjs/lite` | **12 KB** | vs 20.5 KB (moment from source) |
+| Entry | gzip (bundled) | Notes |
+|-------|---------------:|-------|
+| `mmntjs` (full) | **45.1 KB** | Full compatibility entry for migration |
+| `mmntjs/lite` | **14.8 KB** | Recommended default when you do not need the full surface |
+| `mmntjs/fns` | **507 B - 1.3 KB** | Single helpers stay tiny; size scales with imports |
+| `mmntjs-timezone` | **81.1 KB** | Separate package; named-zone data is opt-in |
 
 `lite` drops locale registry, Temporal bridge, custom format parse, and marginal APIs — add them back via plugins only when needed.
 
-### 3. Faster Than date-fns in 24/25 Benchmarks
+### 3. Faster Than moment.js On The Main Compatibility Paths
 
-Also outperforms upstream moment.js in all 31 benchmarked operations. Several hot-path operations outperform current Temporal implementations in microbenchmarks.
+In the current public `moment` comparison table, mmntjs wins every tracked row. Against `date-fns`, the picture is mixed: the object-oriented `mmntjs` API wins read-heavy rows, while `date-fns` often wins fresh-object mutation rows. The standalone `mmntjs/fns` entry closes much of that gap and wins 19 of 26 direct Date-helper comparisons.
 
 | Operation | mmntjs | date-fns | vs moment.js |
 |-----------|--------:|---------:|-------------:|
-| format YYYY-MM-DD | **56 ns** | 1.31 us (23.4x) | 420 ns (12.7x) |
-| parse ISO string | **363 ns** | 1.30 us (3.6x) | 4.20 us (13.5x) |
-| diff in days | **20 ns** | 935 ns (46.8x) | 491 ns (27.3x) |
-| add 1 second | **15 ns** | 108 ns (7.2x) | — |
-| get day of year | **17 ns** | 1.38 us (81.2x) | — |
-| moment() / new Date() | **40 ns** | 35 ns (0.9x) | 221 ns (5.3x) |
-| startOf month | **17 ns** | 75 ns (4.4x) | — |
+| format YYYY-MM-DD | **63 ns** | 1.55 us (24.4x) | 445 ns (4.9x) |
+| parse ISO string | **317 ns** | 1.26 us (4.0x) | 6.09 us (23.3x) |
+| diff in days | **22 ns** | 872 ns (40.3x) | 462 ns (13.2x) |
+| add 1 day | **387 ns** | 93 ns (0.24x) | 2.67 us (6.9x) |
+| startOf day | **189 ns** | 87 ns (0.46x) | 2.13 us (11.2x) |
+| moment() / new Date() | **199 ns** | 36 ns (0.18x) | 670 ns (3.4x) |
+| `mmntjs/fns` format YYYY-MM-DD | **507 B gzip** | — | single-import bundle |
 
-The main remaining overhead is raw `moment()` construction from compatibility wrapping (wrapper overhead for moment.js API compatibility, negligible in real apps that reuse Moment objects).
+The main remaining overhead on the object API is raw construction and fresh-object mutation work. That is the cost of preserving moment-compatible mutability and wrapper semantics. If you want date-fns-style standalone helpers, `mmntjs/fns` is the closer comparison point.
 
 Representative Bun microbenchmarks on Apple Silicon. ns-scale results use median-of-repeated warmed runs after warmup — see [BENCHMARKS.md](./docs/perf/BENCHMARKS.md) for methodology, noise markers, and caveats.
 
