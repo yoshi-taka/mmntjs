@@ -533,28 +533,41 @@ Hot path: `year()`, `month()`, `date()` setters, `add()`, `startOf()`, `endOf()`
 
 **Problem**: After setting year/month, the day may exceed the new month's length (e.g., Jan 31 → Feb). A `daysInMonth` check + clamp is needed to avoid invalid dates. But every setter would pay this cost unconditionally.
 
-**Solution**: All months have at least 28 days. If `_p.D ≤ 28`, the day is guaranteed valid for any month — no `daysInMonth` check or clamping needed. This is a single `if (p.D <= 28)` guard before the expensive path.
+**Solution**: All months have at least 28 days. If `_p.D ≤ 28`, the day is guaranteed valid for any month — no `daysInMonth` check or clamping needed. This invariant is encoded at the type level with branded types `OrdinaryDate28` (`src/types.ts:299`) and `Date28` (`src/fns/_types.ts:8`), refined via `refineDate28()` / `asDate28()` which check `n >= 1 && n <= 28`:
 
 ```typescript
-// In year() setter, _applyOp path:
-if (p.D <= 28) {
-  p.y = val;            // direct field set, no daysInMonth check
-  p._tStale = true;
-  return this;
+// src/types.ts
+declare const __ordDate28: unique symbol;
+export type OrdinaryDate28 = number & { [__ordDate28]: true };
+
+export function refineDate28(v: unknown): OrdinaryDate28 | null {
+  return Number.isInteger(n) && n >= 1 && n <= 28 ? (n as OrdinaryDate28) : null;
 }
-// D > 28: need to clamp against new month's length
-const maxDay = daysInMonthFast(val, p.M);
-p.D = Math.min(p.D, maxDay);
+```
+
+Per-state morphisms accept `OrdinaryDate28` directly, eliminating the runtime clamp check:
+
+```typescript
+function setDate28_CLFD(p: _P & CleanLocalFreshWithDate, val: OrdinaryDate28): void {
+  p.d.setDate(val);   // no daysInMonth guard needed
+  p.t = p.d.getTime();
+  p.dirty = true;
+}
+function setDate28_UTC(p: _P & CleanUTC, val: OrdinaryDate28): void {
+  p.t = ymdToEpochDays(p.y, p.M, val) * DAY_MS + _tod(p);  // pure arithmetic
+  p.d = undefined;
+}
 ```
 
 The pattern appears in:
-- `year()` setter: skip clamp when D ≤ 28 (`moment-class.ts:1248,1260`)
-- `month()` setter: same (`moment-class.ts:1367,1374`)
-- `month()` setter public entry: numeric fast path checks D ≤ 28 (`moment-class.ts:2145`)
-- `addMonthUTC`, `addMonth_CLFD`, `addMonth_CLFN`: `d_ > 28` guards the clamp (`moment-class.ts:284,310,335`)
-- UTC month/year mutation kernel: `d_ > 28` before `daysInMonthFast` (`moment-class.ts:284`)
+- `year()` setter: skip clamp when D ≤ 28 (`src/moment-class.ts:1248,1260`)
+- `month()` setter: same (`src/moment-class.ts:1367,1374`)
+- `month()` setter public entry: numeric fast path checks D ≤ 28 (`src/moment-class.ts:2145`)
+- `setDate28_CLFD`, `setDate28_CLFN`, `setDate28_UTC` — per-state morphisms for date setters (`src/moment-class.ts:94-119`)
+- `addMonthUTC`, `addMonth_CLFD`, `addMonth_CLFN`: `d_ > 28` guards the clamp (`src/moment-class.ts:284,310,335`)
+- UTC month/year mutation kernel: `d_ > 28` before `daysInMonthFast` (`src/moment-class.ts:284`)
 
-**Effect**: For the majority of dates (1st–28th), the clamp branch is never taken. The branch predictor learns "strongly not-taken" → zero mispredictions. For D > 28 (29th–31st), the check is still cheap (integer compare + rare clamp).
+**Effect**: For the majority of dates (1st–28th), the clamp branch is never taken. The branch predictor learns "strongly not-taken" → zero mispredictions. For D > 28 (29th–31st), the check is still cheap (integer compare + rare clamp). The branded types also catch programming errors at compile time when a value outside [1,28] would be passed to a fast-path kernel.
 
 ## 22. `_ensureFreshFields()` — Skip `_syncT` Variant
 
