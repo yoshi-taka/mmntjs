@@ -223,11 +223,6 @@ Legacy moment.js codebase
 
 Each phase is independent. Start with audit to understand your legacy surface, then migrate to mmntjs at your own pace, and finally generate a Temporal migration report when ready.
 
-## FAQ
-
-**Q: How do you pronounce mmntjs?**  
-A: Some writing systems omit vowels entirely. Ancient Egyptian hieroglyphs are a classic example. Consider this an invitation to reconstruct it yourself.
-
 ## Development
 
 ```sh
