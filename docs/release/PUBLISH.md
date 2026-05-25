@@ -27,7 +27,25 @@ Use this unless there is a concrete reason to ship only one package.
 
 ### Tag
 
-- `release-v0.0.1`
+- `release-v1.0.0`
+
+### Local steps before tagging
+
+```bash
+# 1. バージョン更新（両方のpackage.json）
+sed -i '' 's/"version": "0.0.3"/"version": "1.0.0"/' package.json packages/timezone/package.json
+git add package.json packages/timezone/package.json
+git commit -m "chore: bump version to 1.0.0"
+
+# 2. コミットだけpush（タグはまだ）
+git push origin main
+
+# 3. リリースタグだけ個別にpush（--tags 禁止）
+git tag release-v1.0.0
+git push origin release-v1.0.0
+```
+
+> **注意**: `git push --tags` は絶対に使わない。過去のreleaseタグが再送されワークフローが多重起動する。
 
 ### What the workflow does
 

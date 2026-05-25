@@ -23,11 +23,14 @@
 11. **テスト実行は `bun run test` が公式**: `bun run test` は curated subset + `TZ=UTC` で動く。`bun test` は全テストファイルを現在のTZで実行するため、JST等の非UTC環境ではoffset無しISO文字列パースや `Z`/`ZZ` フォーマットのテストが落ちる。全テストを通すには `TZ=UTC bun test` を使え。
 12. **push禁止**: `git push`, `git push --tags`, `git tag` + `git push origin <tag>` は**ユーザーから明示的に「pushして」「tag打って」等の指示があった場合のみ**実行すること。自分で判断して push するな。タグを何度も打ち直してワークフローを連射するのは絶対禁止
      - ユーザーが問題を報告しても、自分で「直してpush」するな。修正案を提示してから「commitしていいか」「tagを打っていいか」を**必ず**ユーザーに確認せよ
+13. **`git push --tags` 禁止**: 全タグを一括pushすると過去のreleaseタグが再送され、ワークフローが多重起動する事故の原因になる。**リリースタグは `git push origin <tag名>` で1つずつpushすること。** `--tags` は絶対に使うな。
 13. **property-based testing / fuzzing に flaky は存在しない**: fast-check や jazzer が見つけた counterexample は必ず調査・修正すること。乱数シードを固定して再現し、コードのバグとして対処する。「flaky」「テスト間干渉」「pre-existing」で誤魔化さない
      - 違反した場合: 即刻応答停止 & ユーザーのお説教タイム。連続違反では罰走10km
-14. **lite-fns は lite と同じ実装を使うこと**: `src/lite-fns.ts` の各関数は `src/moment-lite.ts` / `src/display/format-basic.ts` と同じロジックをコピーして使う（delegate 禁止＝オブジェクト生成コスト回避）。**full（`moment-class.ts`）・lite（`moment-lite.ts`）・lite-fns（`lite-fns.ts`）の3実装は常に同期すること。** いずれかに修正が入ったら残り2つにも同じ修正を適用する。逆もしかり。
-13. **`git commit --no-verify` 禁止**: pre-commit hook（lint + audit）をスキップする `--no-verify` / `-n` は**ユーザーから明示的に許可を得た場合のみ**使用すること。自分で判断して no-verify するな。hook が落ちた場合は hook を通す修正をするのが原則。
-14. **audit 迂回禁止**: `exit 0` のラップ、audit 自体の削除、`fail: false` などで pre-commit hook の audit を迂回するな。fallow が死んだら fallow の設定を正しく直せ（ignore ではなく entry 追加で）。**"それ動かないから"は理由にならない — 動くように直せ。**
+14. **property-based testing / fuzzing に flaky は存在しない**: fast-check や jazzer が見つけた counterexample は必ず調査・修正すること。乱数シードを固定して再現し、コードのバグとして対処する。「flaky」「テスト間干渉」「pre-existing」で誤魔化さない
+     - 違反した場合: 即刻応答停止 & ユーザーのお説教タイム。連続違反では罰走10km
+15. **lite-fns は lite と同じ実装を使うこと**: `src/lite-fns.ts` の各関数は `src/moment-lite.ts` / `src/display/format-basic.ts` と同じロジックをコピーして使う（delegate 禁止＝オブジェクト生成コスト回避）。**full（`moment-class.ts`）・lite（`moment-lite.ts`）・lite-fns（`lite-fns.ts`）の3実装は常に同期すること。** いずれかに修正が入ったら残り2つにも同じ修正を適用する。逆もしかり。
+16. **`git commit --no-verify` 禁止**: pre-commit hook（lint + audit）をスキップする `--no-verify` / `-n` は**ユーザーから明示的に許可を得た場合のみ**使用すること。自分で判断して no-verify するな。hook が落ちた場合は hook を通す修正をするのが原則。
+17. **audit 迂回禁止**: `exit 0` のラップ、audit 自体の削除、`fail: false` などで pre-commit hook の audit を迂回するな。fallow が死んだら fallow の設定を正しく直せ（ignore ではなく entry 追加で）。**"それ動かないから"は理由にならない — 動くように直せ。**
 
 
 ---
