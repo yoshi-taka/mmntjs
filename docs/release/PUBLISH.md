@@ -38,11 +38,11 @@ git add package.json packages/timezone/package.json
 git commit -m "chore: bump version to 1.0.0"
 
 # 2. コミットだけpush（タグはまだ）
-git push origin main
+bash scripts/git-push.sh enable && git push origin main && bash scripts/git-push.sh disable
 
 # 3. リリースタグだけ個別にpush（--tags 禁止）
 git tag release-v1.0.0
-git push origin release-v1.0.0
+bash scripts/git-push.sh enable && git push origin release-v1.0.0 && bash scripts/git-push.sh disable
 ```
 
 > **注意**: `git push --tags` は絶対に使わない。過去のreleaseタグが再送されワークフローが多重起動する。

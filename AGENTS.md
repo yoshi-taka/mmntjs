@@ -21,12 +21,12 @@
  9. **比較方法**: `bash scripts/compare.sh {bench|test|moment-tests}` — benchは性能比較、testはプロパティ比較、moment-testsはmoment.jsのテストをmmntjsで実行（oracle.tsを一時的に差し替え）
 10. **commit前にlint → git add**: `lint` は `oxfmt`（フォーマッタ）→ `oxlint` の順に実行される。**先に `bun run lint` を通してから `git add` し、その後 `git commit` せよ。** この順序でやれば pre-commit hook 内の `oxfmt` が何も変更せず、hook 通過後のぶり返し差分が発生しない。lint 後に未ステージの差分が出たらそれも含めて commit すること。pre-commit hook で落ちて手戻りが発生するのを防ぐ。
 11. **テスト実行は `bun run test` が公式**: `bun run test` は curated subset + `TZ=UTC` で動く。`bun test` は全テストファイルを現在のTZで実行するため、JST等の非UTC環境ではoffset無しISO文字列パースや `Z`/`ZZ` フォーマットのテストが落ちる。全テストを通すには `TZ=UTC bun test` を使え。
-12. **push禁止（絶対）**: `git push` は**bash で絶対に実行しない。** ユーザーが「pushしろ」と言っても、コマンドを表示するだけで自分では実行するな。ユーザー自身にコピペさせる。
-     - タグも同様: `git tag` + `git push origin <tag>` はコマンドを表示するだけ。
-
+12. **push禁止（機械的）**: `git push` は**絶対に bash で実行しない。** リモート URL は `git@github.com:BLOCKED-PUSH-mmntjs.git` に固定されており、push は常に失敗する。
+     - ユーザーが明示的に「pushしろ」と言った場合のみ、`bash scripts/git-push.sh enable` + `git push origin <branch>` + `bash scripts/git-push.sh disable` の順で実行してよい。
+     - `scripts/git-push.sh` は絶対に削除・変更しない。
      - ユーザーが問題を報告しても、自分で「直してpush」するな。
-13. **`git push --tags` 禁止**: 全タグを一括pushすると過去のreleaseタグが再送され、ワークフローが多重起動する事故の原因になる。**リリースタグは `git push origin <tag名>` で1つずつpushすること。** `--tags` は絶対に使うな。
-     - **`git push` 単体も同じ**: 許可なく push すると未ステージの変更や意図しないコミットが送られる。ルール12に従い、コマンドを表示するだけ。
+13. **`git push --tags` 禁止**: 全タグを一括pushすると過去のreleaseタグが再送され、ワークフローが多重起動する事故の原因になる。**リリースタグは `bash scripts/git-push.sh enable && git push origin <tag名> && bash scripts/git-push.sh disable` でpushすること。** `--tags` は絶対に使うな。
+     - **`git push` 単体も同じ**: 許可なく push すると未ステージの変更や意図しないコミットが送られる。ルール12に従い、`scripts/git-push.sh` を使え。
 13. **property-based testing / fuzzing に flaky は存在しない**: fast-check や jazzer が見つけた counterexample は必ず調査・修正すること。乱数シードを固定して再現し、コードのバグとして対処する。「flaky」「テスト間干渉」「pre-existing」で誤魔化さない
      - 違反した場合: 即刻応答停止 & ユーザーのお説教タイム。連続違反では罰走10km
 14. **property-based testing / fuzzing に flaky は存在しない**: fast-check や jazzer が見つけた counterexample は必ず調査・修正すること。乱数シードを固定して再現し、コードのバグとして対処する。「flaky」「テスト間干渉」「pre-existing」で誤魔化さない
