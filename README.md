@@ -3,7 +3,7 @@
 Most teams don't keep using moment.js because they love it.
 They keep using it because rewriting date logic across a large codebase is risky, expensive, and never becomes this quarter's priority.
 
-mmntjs designed for that reality.
+mmntjs is designed for that reality.
 
 Drop-in replacement for moment.js — migration path to [Temporal API](https://tc39.es/proposal-temporal/).
 
