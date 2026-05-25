@@ -17,7 +17,8 @@
     "test/properties/api-pbt.test.ts",
     "test/properties/timezone-partition.test.ts",
     "test/properties/comparison-partition.test.ts",
-    "test/properties/short-chains.test.ts"
+    "test/properties/short-chains.test.ts",
+    "site/astro.config.mjs"
   ],
   "project": ["src/**", "test/**", "packages/timezone/src/**"],
   "ignore": [
@@ -60,7 +61,6 @@
     "@date-fns/utc",
     "date-fns-tz",
     "@types/benchmark",
-    "benchmark",
-    "@astrojs/sitemap"
+    "benchmark"
   ]
 }
