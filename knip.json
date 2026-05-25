@@ -60,6 +60,7 @@
     "@date-fns/utc",
     "date-fns-tz",
     "@types/benchmark",
-    "benchmark"
+    "benchmark",
+    "@astrojs/sitemap"
   ]
 }
