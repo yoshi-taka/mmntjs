@@ -42,17 +42,17 @@ const headlineResults = [
 
 const operationRows = [
   // mmntjs wins — strongest first
-  ["diff in days", "22 ns", "805 ns", "462 ns", ratio("22 ns", "805 ns")],
-  ["daysInMonth", "7 ns", "218 ns", "15 ns", ratio("7 ns", "218 ns")],
-  ["format YYYY-MM-DD", "58 ns", "1.05 us", "445 ns", ratio("58 ns", "1.05 us")],
-  ["isBefore", "19 ns", "134 ns", "188 ns", ratio("19 ns", "134 ns")],
-  ["parse ISO string", "308 ns", "916 ns", "6.09 us", ratio("308 ns", "916 ns")],
-  ["diff in months", "98 ns", "105 ns", "1.44 us", ratio("98 ns", "105 ns")],
+  ["diff in days", "22 ns", "850 ns", "421 ns", ratio("22 ns", "850 ns")],
+  ["daysInMonth", "8 ns", "230 ns", "130 ns", ratio("8 ns", "230 ns")],
+  ["format YYYY-MM-DD", "57 ns", "1.41 us", "395 ns", ratio("57 ns", "1.41 us")],
+  ["isBefore", "17 ns", "128 ns", "212 ns", ratio("17 ns", "128 ns")],
+  ["parse ISO string", "275 ns", "1.02 us", "3.97 us", ratio("275 ns", "1.02 us")],
+  ["diff in months", "109 ns", "107 ns", "1.57 us", ratio("109 ns", "107 ns")],
   // date-fns wins — least bad first
-  ["startOf month", "361 ns", "172 ns", "2.00 us", ratio("361 ns", "172 ns")],
-  ["startOf day", "237 ns", "83 ns", "2.13 us", ratio("237 ns", "83 ns")],
-  ["add 1 day", "285 ns", "98 ns", "2.67 us", ratio("285 ns", "98 ns")],
-  ["moment() / new Date()", "143 ns", "35 ns", "670 ns", ratio("143 ns", "35 ns")],
+  ["startOf month", "344 ns", "175 ns", "2.34 us", ratio("344 ns", "175 ns")],
+  ["startOf day", "253 ns", "91 ns", "2.22 us", ratio("253 ns", "91 ns")],
+  ["add 1 day", "296 ns", "99 ns", "2.34 us", ratio("296 ns", "99 ns")],
+  ["moment() / new Date()", "147 ns", "35 ns", "260 ns", ratio("147 ns", "35 ns")],
 ];
 
 const techniqueRows = [
@@ -249,16 +249,16 @@ const commands = [
       </thead>
       <tbody>
         <!-- strongest first -->
-        <tr><td>differenceInDays</td><td class="num">41 ns</td><td class="num">1.03 us</td><td class="num">25.0x</td></tr>
-        <tr><td>dayOfYear</td><td class="num">55 ns</td><td class="num">1.11 us</td><td class="num">20.1x</td></tr>
-        <tr><td>format YYYY-MM-DD</td><td class="num">176 ns</td><td class="num">1.39 us</td><td class="num">7.9x</td></tr>
-        <tr><td>daysInMonth</td><td class="num">35 ns</td><td class="num">227 ns</td><td class="num">6.6x</td></tr>
-        <tr><td>setMonth</td><td class="num">92 ns</td><td class="num">466 ns</td><td class="num">5.0x</td></tr>
-        <tr><td>parse ISO string</td><td class="num">350 ns</td><td class="num">991 ns</td><td class="num">2.8x</td></tr>
-        <tr><td>startOfMonth</td><td class="num">43 ns</td><td class="num">99 ns</td><td class="num">2.3x</td></tr>
-        <tr><td>setMinutes</td><td class="num">41 ns</td><td class="num">71 ns</td><td class="num">1.7x</td></tr>
-        <tr><td>setHours</td><td class="num">39 ns</td><td class="num">60 ns</td><td class="num">1.6x</td></tr>
-        <tr><td>setMilliseconds</td><td class="num">46 ns</td><td class="num">64 ns</td><td class="num">1.4x</td></tr>
+        <tr><td>differenceInDays</td><td class="num">47 ns</td><td class="num">1.10 us</td><td class="num">23.3x</td></tr>
+        <tr><td>dayOfYear</td><td class="num">70 ns</td><td class="num">1.11 us</td><td class="num">15.9x</td></tr>
+        <tr><td>format YYYY-MM-DD</td><td class="num">183 ns</td><td class="num">1.26 us</td><td class="num">6.9x</td></tr>
+        <tr><td>daysInMonth</td><td class="num">33 ns</td><td class="num">231 ns</td><td class="num">7.0x</td></tr>
+        <tr><td>setMonth</td><td class="num">80 ns</td><td class="num">446 ns</td><td class="num">5.6x</td></tr>
+        <tr><td>parse ISO string</td><td class="num">322 ns</td><td class="num">1.12 us</td><td class="num">3.5x</td></tr>
+        <tr><td>startOfMonth</td><td class="num">40 ns</td><td class="num">101 ns</td><td class="num">2.5x</td></tr>
+        <tr><td>setMinutes</td><td class="num">42 ns</td><td class="num">59 ns</td><td class="num">1.4x</td></tr>
+        <tr><td>setHours</td><td class="num">50 ns</td><td class="num">61 ns</td><td class="num">1.2x</td></tr>
+        <tr><td>setMilliseconds</td><td class="num">47 ns</td><td class="num">58 ns</td><td class="num">1.2x</td></tr>
       </tbody>
     </table>
     <p class="footnote">"vs date-fns" >1 means <code>fns</code> is faster. Rows at 1.0x are within measurement noise.</p>

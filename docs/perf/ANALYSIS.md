@@ -31,9 +31,9 @@ Representative techniques: field cache, `_cold` separation, constructor key-orde
 **Problem**: V8 assigns the same Hidden Class (Shape) to objects created with the same property order. Property access is optimized to index computation (like C struct access). Shape changes trigger deoptimization.
 
 **mmntjs's approach**:
-- Constructor always assigns properties in the same order: `_isAMomentObject -> _l -> _isUTC -> _offset -> (_d) -> _t -> _isValid -> _dirty -> (_i) -> (_f) -> (_strict) -> (_cold)`
+- Constructor always assigns properties in the same order: `_isAMomentObject -> _l -> _p -> _isValid -> (_i) -> (_f) -> (_strict) -> (_cold)`
+- The 8 decomposed fields (`y M D W H m s ms`) live inside a `_p` container object initialized with a fixed-key order at class field declaration — always stable
 - Conditional `_i/_f/_strict` assignments happen at fixed points in the constructor
-- `$y $M $D $W $H $m $s $ms` are class-field initialized at the top of the constructor — always stable
 
 **Past problem**: The old `_cold` object existed on every Moment, but its internal properties varied (some had `_overflow`, others didn't). Access to `_cold` properties became **megamorphic**, defeating V8's Inline Cache.
 
@@ -61,45 +61,44 @@ Representative techniques: `_ensureFields`, day fast path, UTC arithmetic fast p
 ### 2a. Getter Early Return
 
 ```typescript
-// Before: _cold access on every call
-year() { return this._isValid || (this._cold?._overflow ?? -1) < 0 ? this.$y : NaN; }
-
-// After: short-circuit
+// After: short-circuit, inline dirty check
 year() {
-  if (!this._isValid) return NaN;       // prediction: invalid is rare -> not taken
-  this._ensureFields();                 // prediction: _dirty=false after 1st -> taken
-  return this.$y;                       // prediction: always taken
+  if (!this._isValid) return NaN;                  // prediction: invalid is rare -> not taken
+  if (this._p.dirty) {                             // prediction: false after field init -> taken
+    this._p.dirty = false;
+    this._refreshFields();
+  }
+  return this._p.y;                                // prediction: always taken
 }
 ```
 
 Branch history stabilizes when getters are called sequentially (as in format: year/month/day/...), keeping mispredictions near zero.
 
-### 2b. `_ensureFields` `_dirty` Check
+### 2b. `_p.dirty` Post-Mutation Check
 
 ```typescript
-private _ensureFields(): void {
-  if (this._dirty) {   // true only once, then always false
-    this._dirty = false;
-    this._refreshFields();
-  }
+// in getter:
+if (this._p.dirty) {   // true after any mutation, then cleared
+  this._p.dirty = false;
+  this._refreshFields();
 }
 ```
 
-After first access, `_dirty` is always false. The branch predictor learns "strongly not-taken" -> zero mispredictions.
+After field init or post-mutation refresh, `_p.dirty` is false until the next mutation. Repeated getter reads hit the "taken" path. Branch predictor learns "strongly not-taken" -> zero mispredictions between mutations.
 
 ### 2c. DAY add/subtract stays on the timestamp fast path
 
 ```typescript
-if (this._isUTC) {
-  this._t += rounded * 86400000;
-  this._d = undefined;
+if (this._p.isUTC) {
+  this._p.t += rounded * 86400000;
+  this._p.d = undefined;
 } else {
-  const dt = this._d ?? (this._d = new Date(this._t));
+  const dt = this._p.d ?? (this._p.d = new Date(this._p.t));
   dt.setDate(dt.getDate() + rounded);
-  this._t = dt.getTime();
+  this._p.t = dt.getTime();
 }
 
-this._dirty = true;
+this._p.dirty = true;
 ```
 
 `add(1,'day')` is common enough that it gets its own direct path in `add()`: UTC moments do one integer add on `_t`, local moments use a single `Date#setDate`, and both only mark `_dirty` for deferred field refresh. This avoids the heavier generic unit-mutation machinery on the hottest calendar increment.
@@ -107,17 +106,17 @@ this._dirty = true;
 ### 2d. UTC calendar arithmetic avoids `Date.UTC` and negative-epoch traps
 
 ```typescript
-const tm = this.$y * 12 + this.$M + totalMonths;
+const tm = this._p.y * 12 + this._p.M + totalMonths;
 const y = Math.floor(tm / 12);
 const m = normalizeMonth(tm);
-const d_ = this.$D > 28 ? Math.min(this.$D, daysInMonthFast(y, m)) : this.$D;
+const d_ = this._p.D > 28 ? Math.min(this._p.D, daysInMonthFast(y, m)) : this._p.D;
 
-this._t =
+this._p.t =
   ymdToEpochDays(y, m, d_) * 86400000 +
-  this.$H * 3600000 +
-  this.$m * 60000 +
-  this.$s * 1000 +
-  this.$ms;
+  this._p.H * 3600000 +
+  this._p.m * 60000 +
+  this._p.s * 1000 +
+  this._p.ms;
 ```
 
 This matters for two reasons:
@@ -214,7 +213,7 @@ Combined with the `PAD2` table (pre-computed zero-padded strings), this outperfo
 ```typescript
 // PAD2 table lookup + template literal is faster than padStart(2, '0')
 const PAD2 = ["00","01","02",...,"99"];
-return `${PAD2[this.$H]}:${PAD2[this.$m]}:${PAD2[this.$s]}`;
+return `${pad2(this._p.H)}:${pad2(this._p.m)}:${pad2(this._p.s)}`;
 ```
 
 ## 7. Small, Inline-Friendly Helpers
@@ -236,25 +235,29 @@ Representative techniques: `_ensureFields`, `_dayOfWeek`, digit parsers
 - `_cold` property access: variable Shape prevented V8 from inlining
 - Function call argument objects: `checkOverflow(parsed)` receives `parsed` with potentially varying Shape
 
-## 8. Own-Property Hot Data
+## 8. Container-Object Hot Data
 
-Representative techniques: `$y/$M/$D/$W/$H/$m/$s/$ms` field cache
+Representative techniques: `_p` field cache (`y/M/D/W/H/m/s/ms`)
 
 **Problem**: Property access traversing instance -> prototype -> prototype requires a Shape check at each step.
 
 **mmntjs's design**:
-- `$y $M $D $W $H $m $s $ms` -> **Own Properties** (class field initializer)
-- Declared but unset fields (`_overflow`, etc.) -> don't exist on instance, return `undefined` (V8 fast path)
+- All 8 decomposed fields (`y M D W H m s ms`) + internal state (`t d dirty isUTC offset ...`) live inside a single `_p` container object with a fixed Shape
+- `_p` is an own property of every Moment, always present -> monomorphic access
+- Declared but unset fields (`_overflow`, `_empty`, etc.) -> don't exist on instance, return `undefined` (V8 fast path)
 - `_cold` -> own property (only when set)
 
 ```
 Access depth:
-  this.$y       -> own property (depth 0)      -> fastest
-  this._cold    -> own property (depth 0)      -> fast
-  this._cold._overflow -> own (depth 0) -> own (depth 1) -> 2-hop
-  this._i       -> own property (depth 0, always present) -> fast
-  this.year()   -> prototype method (depth 1)  -> near-zero cost with IC
+  this._p        -> own property (depth 0)      -> monomorphic
+  this._p.y      -> own (depth 0) -> own (depth 1) -> 2-hop, monomorphic
+  this._cold     -> own property (depth 0)       -> fast (rare)
+  this._cold._overflow -> own (depth 0) -> own (depth 1) -> megamorphic (error only)
+  this._i        -> own property (depth 0, always present) -> monomorphic
+  this.year()    -> prototype method (depth 1)   -> near-zero cost with IC
 ```
+
+The extra hop through `_p` is negligible in practice: V8 caches the `_p` pointer location after the first access, and subsequent `_p.y`, `_p.M`, `_p.D` reads are compiled to a fixed offset from the instance pointer.
 
 ## 9. Integer Arithmetic Instead of Calendar Objects
 
@@ -271,7 +274,7 @@ Representative techniques: `ymdToEpochDays`, `_epochDaysToYMD`, `_dayOfWeek`, fl
 **Maintaining Smi**:
 ```typescript
 Math.floor(tm / 12)        // result in Smi range
-(this.$D + rounded) | 0   // bitwise to force integer -> Smi
+(this._p.D + rounded) | 0   // bitwise to force integer -> Smi
 ```
 
 ## 10. Monomorphic Method Calls
@@ -403,7 +406,7 @@ const leapLadder = [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
 
 ```typescript
 dayOfYear(): number {
-  return this.$D + (isLeapYear(this.$y) ? leapLadder : nonLeapLadder)[this.$M];
+  return this._p.D + (isLeapYear(this._p.y) ? leapLadder : nonLeapLadder)[this._p.M];
 }
 ```
 
@@ -502,12 +505,12 @@ Representative techniques: switch dispatch, first-char classification, redundant
 ```typescript
 // | 0 forces integer -> guarantees Smi range
 const totalMonths = absRound(unit === YEAR ? amount * 12 : unit === QUARTER ? amount * 3 : amount);
-const tm = this.$y * 12 + this.$M + totalMonths;
+const tm = this._p.y * 12 + this._p.M + totalMonths;
 const y = Math.floor(tm / 12);   // Math.floor can maintain Smi
 const m = ((tm % 12) + 12) % 12; // modulo stays Smi
 ```
 
-All `$` fields are in 0-9999 range (`$ms` is 0-999), well within Smi range.
+All `_p` fields are in 0-9999 range (`ms` is 0-999), well within Smi range.
 
 ### 17b. Template Literal V8 Optimization
 
@@ -515,7 +518,7 @@ V8 detects Tagged Templates and pre-generates a "Template Object". Subsequent ca
 
 ```typescript
 // PAD2 table lookup + template literal = no branches, no function calls
-return `${PAD2[this.$H]}:${PAD2[this.$m]}:${PAD2[this.$s]}`;
+return `${pad2(this._p.H)}:${pad2(this._p.m)}:${pad2(this._p.s)}`;
 ```
 
 ### 17c. Redundant Load Elimination
@@ -530,12 +533,12 @@ this._getD().getTimezoneOffset();
 // Good: bind _getD() to local variable once
 const d = this._getD();
 d.setUTCHours(h);
-this.$H = d.getUTCHours();
-this._t = d.getTime();
-this._offset = -d.getTimezoneOffset();
+this._p.H = d.getUTCHours();
+this._p.t = d.getTime();
+this._p.offset = -d.getTimezoneOffset();
 ```
 
-`_getD()` includes `this._d` existence check + `_ensureFields()` + conditional `new Date()`. One variable binding eliminates redundant loads where V8's CSE (Common Subexpression Elimination) wouldn't apply.
+`_getD()` includes `this._p.d` existence check + `_ensureFields()` + conditional `new Date()`. One variable binding (`const d = this._getD()`) eliminates redundant loads where V8's CSE (Common Subexpression Elimination) wouldn't apply.
 
 ### 17d. Switch Dispatch Beats Generic Token Lookups
 
@@ -618,51 +621,60 @@ Layers are interdependent — **lower-layer optimizations accelerate upper layer
 
 ### 21a. Moment Object Memory Layout (V8)
 
+All 8 decomposed fields (`y M D W H m s ms`) plus internal state (`t d dirty _tStale isUTC offset locale`) are stored inside a single `_p` container object. The Moment instance itself has only ~6 own properties:
+
 ```
 Moment object (JSReceiver)
 +-- map (Hidden Class pointer)          // 8 bytes -> Shape pointer
 +-- properties (FixedArray pointer)     // 8 bytes -> property storage
 +-- elements (FixedArray pointer)       // 8 bytes -> numeric indices (unused)
-+-- in-object properties (max 4-8)
-|   +-- _isAMomentObject                // init order 1: boolean
-|   +-- _l                              // init order 2: string | undefined
-|   +-- _isUTC                          // init order 3: boolean
-|   +-- _offset                         // init order 4: number (Smi)
-|   +-- _d                              // init order 5: Date | undefined (pointer)
-|   +-- _t                              // init order 6: number (HeapNumber or Smi)
-|   +-- _isValid                        // init order 7: boolean
 +-- properties backing store (FixedArray)
-|   +-- $y, $M, $D, $W                  // class field initializer (Smi)
-|   +-- $H, $m, $s, $ms                 // class field initializer (Smi)
-|   +-- _dirty                          // boolean
+|   +-- _isAMomentObject                // boolean
+|   +-- _l                              // string | undefined
+|   +-- _p                              // container object (pointer)
+|   +-- _isValid                        // boolean
 |   +-- _i                              // conditional: unknown
-|   +-- _f                              // conditional: string | undefined
+|   +-- _f                              // conditional: string | string[] | undefined
 |   +-- _strict                         // conditional: boolean
 |   +-- _cold                           // error only: object | undefined
 ```
 
-**Key property**: The 8 `$` fields are initialized simultaneously by the class field initializer -> likely contiguous slots in the backing store.
-- 8 fields x 8 bytes (tagged pointer) = **64 bytes exactly** = **1 cache line**
-- Reading `$y` brings `$M`, `$D`, ... into L1 as well
-- `_d` pointing to a Date object is a separate allocation -> separate cache line -> `_getD()` is 2-hop
+The `_p` object has its own separate allocation and Shape:
+
+```
+_p object (JSReceiver)
++-- properties backing store (FixedArray)
+|   +-- t                              // number (HeapNumber)
+|   +-- d                              // Date | undefined (pointer)
+|   +-- dirty                          // boolean
+|   +-- _tStale                         // boolean
+|   +-- isUTC                          // boolean
+|   +-- offset                         // number (Smi)
+|   +-- locale                         // Locale | undefined (pointer)
+|   +-- y                              // number (Smi)
+|   +-- M                              // number (Smi)
+|   +-- D                              // number (Smi)
+|   +-- W                              // number (Smi)
+|   +-- H                              // number (Smi)
+|   +-- m                              // number (Smi)
+|   +-- s                              // number (Smi)
+|   +-- ms                             // number (Smi)
+```
+
+**Key property**: The 15 `_p` fields are contiguous in the backing store -> each `_p` property access is "instance → backing store → value" (2 memory accesses). Because the backing store is a FixedArray, subsequent field accesses are contiguous integer-index reads — V8's forte.
+
+**Cache line analysis**: 15 fields x 8 bytes (tagged pointer) = 120 bytes ≈ 2 cache lines. The first 8 fields (`t` through `isUTC`) fit in one cache line; `offset` through `ms` span the second. Accessing `y` brings `M, D, W, H, m, s, ms` into L1 simultaneously.
 
 **AoS vs SoA trade-off**:
-- Current: Array of Structures (AoS) — each Moment has all fields
-- Alternative: Structure of Arrays (SoA) — separate TypedArrays for `$y[]`, `$M[]`, `$D[]`
-- SoA would enable SIMD vectorization for bulk processing (e.g., 1M dayOfYear computations)
-- Not adopted — mmntjs is a general-purpose library, single-object operations dominate, and moment.js API compatibility must be maintained
+- Current: Array of Structures (AoS) — each Moment has a single `_p` container
+- SoA would enable SIMD vectorization for bulk processing
+- Not adopted — mmntjs is a general-purpose library, single-object operations dominate
 
-### 21b. Property Backing Store Expansion
+### 21b. `_p` Shape Stability
 
-V8 re-allocates the backing store when capacity is exceeded:
+The `_p` object's class field initializer always assigns keys in the same order (`t → d → dirty → _tStale → isUTC → offset → locale → y → M → D → W → H → m → s → ms`). Every `_p` instance shares the same Shape — monomorphic access to all fields.
 
-| Property count | State | Location |
-|---|---|---|
-| 0-4 | All in-object | Object header (fastest, 0-hop) |
-| 5-8 | Some in-object + backing store | Split |
-| 9+ | Backing store only | FixedArray (1-hop) |
-
-mmntjs has 15+ properties -> backing store. Each property access is "object -> backing store array -> value" (2 memory accesses). Since the backing store is a FixedArray (contiguous in memory), once the pointer is resolved, subsequent accesses are contiguous integer-index accesses — V8's forte.
+The Moment instance's Shape is also stable: `_isAMomentObject`, `_l`, `_p`, `_isValid` are always present. `_i` and `_f` are set in all constructors (may be `undefined`). This keeps Moment property access monomorphic for the common case.
 
 ### 21c. `_cold` Data Structure Problem
 
@@ -681,55 +693,60 @@ _cold = { _overflow: 2, _empty: true, _invalidMonth: "Feb", _nullInput: true, ..
 
 **Problem**: 10 error moments can produce 10 different Shapes. `isValid()` accessing `cold._overflow` becomes **megamorphic**. V8 gives up on IC after observing 4+ Shapes.
 
-**Unimplemented solutions**:
-- Represent `_cold` as a **fixed-length array** + bitmask. Numeric-indexed keys guarantee single Shape.
-- Or promote all cold fields to the Moment class directly (unset properties return `undefined`, Shape unchanged).
+**Current mitigation**: `_cold` is only created for error/invalid moments. Normal moments have `_cold === undefined`, so `isValid()` exits at the first null check without touching `_cold` properties. The megamorphic access only occurs on error paths, where it does not matter.
 
 ### 21d. Sparse vs Dense Representation
 
 | Data | Representation | Assessment |
 |--------|------|------|
-| `$y..$ms` (8 fields) | Dense via class field initializer | Always present, fixed Shape |
+| `_p` container (15 fields) | Dense via class field initializer | Always present, fixed Shape |
 | `_i`, `_f`, `_strict` | Conditional assignment in constructor | Always present (undefined or value), fixed Shape |
 | `_cold` internal keys | Varies by error type | Sparse, variable Shape |
-| `_d` | Set in constructor | Always present (Date or undefined) |
+| `_p.d` (Date) | Conditional creation | Lazy via `_getD()` |
 
 `declare` fields (`_overflow`, `_empty`, etc.) are erased by TypeScript compilation — they don't exist as instance properties. Access returns `undefined` without affecting Shape.
 
-### 21e. FixedArray Contiguity
+### 21e. `_p` Backing Store Contiguity
 
-The backing store FixedArray for `$y..$ms` fields:
+The backing store FixedArray for `_p` fields:
 
-| Index | Field |
-|-------|-------|
-| 0 | `$y` |
-| 1 | `$M` |
-| 2 | `$D` |
-| 3 | `$W` |
-| 4 | `$H` |
-| 5 | `$m` |
-| 6 | `$s` |
-| 7 | `$ms` |
+| Index | Field | Type |
+|-------|-------|------|
+| 0 | `t` | HeapNumber |
+| 1 | `d` | pointer |
+| 2 | `dirty` | boolean |
+| 3 | `_tStale` | boolean |
+| 4 | `isUTC` | boolean |
+| 5 | `offset` | Smi |
+| 6 | `locale` | pointer |
+| 7 | `y` | Smi |
+| 8 | `M` | Smi |
+| 9 | `D` | Smi |
+| 10 | `W` | Smi |
+| 11 | `H` | Smi |
+| 12 | `m` | Smi |
+| 13 | `s` | Smi |
+| 14 | `ms` | Smi |
 
-Contiguous in memory. Reading `$y` brings all 8 fields into the same cache line.
+Contiguous in memory. Accessing `y` (index 7) brings `M D W H m s ms` (indices 8-14) into the same cache line.
 
 ### 21f. `_getD()` Return Value Stability
 
 `_getD()` stabilizes to the same Date object after first call:
 
 ```typescript
-private _getD(): Date {
+_getD(): Date {
+  this._syncT();
   this._ensureFields();
-  if (!this._d) {
-    this._d = this._isUTC
-      ? new Date(this._t + this._offset * 60000)
-      : new Date(this._t);
-  }
-  return this._d;
+  if (this._p.d) { return this._p.d; }
+  this._p.d = new Date(this._p.t);
+  return this._p.d;
 }
 ```
 
-After first call, `this._d` is set -> subsequent calls skip the branch -> monomorphic. The Date object's Shape is also fixed (V8 ensures all Date instances share the same Shape).
+After first call, `this._p.d` is set -> subsequent calls skip the branch -> monomorphic. The Date object's Shape is also fixed (V8 ensures all Date instances share the same Shape).
+
+A faster variant `_getDNoEnsure()` exists for callers that have already ensured fields, skipping `_ensureFields()` entirely.
 
 ## 22. Memory Page Size Perspective
 
@@ -771,20 +788,16 @@ V8's garbage collector manages New Space (young generation) and Old Space:
 
 **mmntjs's GC footprint**:
 - `_cold` reduction: smaller Moment allocation size -> less GC copying
-- `_dirty` lazy init: `_refreshFields()` Date allocation skipped when unnecessary
+- `_p.dirty` post-mutation flag: field cache refresh on demand instead of every access
 - `clone` avoids `_d` sharing -> no `new Date()` equivalent on clone
 
 ### 22d. Cache Line Boundaries
 
 Cache line is typically **64 bytes**. V8's property backing store (FixedArray) is contiguous in memory, so cache line boundary management is internal to V8.
 
-**Key observation**: The 8 `$` fields (`$y $M $D $W $H $m $s $ms`) total 64 bytes:
-- Each field is a V8 tagged pointer (8 bytes)
-- 8 fields x 8 bytes = 64 bytes = **exactly 1 cache line**
+**Key observation**: The `_p` container object's 8 decomposed fields plus 7 internal state fields total 120 bytes (15 x 8 bytes ≈ 2 cache lines). Accessing `y` (index 7 in the backing store) brings indices 8-14 (`M D W H m s ms`) into L1 simultaneously.
 
-**-> Reading `$y` loads `$M $D $W $H $m $s $ms` into L1 simultaneously**
-
-This is not intentional design (it's a byproduct of class field initializers running at the same time), but the cache line alignment is highly efficient.
+**-> Reading `_p.y` loads `_p.M _p.D _p.W _p.H _p.m _p.s _p.ms` into L1 simultaneously**
 
 ## 23. Multi-Layer Cache Strategy
 
@@ -793,8 +806,8 @@ mmntjs uses multiple cache layers. Some are engine-agnostic application caches, 
 ```
 Layer 5: LRU Cache          LruMap (expandLocaleCache, tokenizeCache, expandedFormatCache)
 Layer 4: Locale Cache        _localeCache Map, _monthsCache, _weekdaysCache
-Layer 3: Field Cache         $y $M $D $W $H $m $s $ms (8 fields)
-Layer 2: JS Engine IC        Fixed Shape + Monomorphic property access
+Layer 3: Field Cache         _p.{y,M,D,W,H,m,s,ms} (8 fields inside _p container)
+Layer 2: JS Engine IC        Fixed Shape + Monomorphic property access (Moment + _p)
 Layer 1: CPU Cache           L1 (32KB), L2 (256KB-1MB), TLB (64 entry L1, 2048 L2)
 ```
 
@@ -816,22 +829,22 @@ IC effectiveness in mmntjs:
 | Polymorphic | 2-4 Shapes | Parse return objects (2 Shapes) | Acceptable |
 | Megamorphic | 5+ Shapes | `_cold` property access (error only) | Error-only, negligible impact |
 
-**Practical IC effect**: `this.$y` in getters compiles to a single Shape comparison + immediate load. Error-time `cold._overflow` is megamorphic but error rate is near zero.
+**Practical IC effect**: `this._p.y` in getters compiles to `this._p` (monomorphic shape) + fixed offset for `y`. Error-time `cold._overflow` is megamorphic but error rate is near zero.
 
-### 23c. Layer 3 — Field Cache (`$y..$ms`)
+### 23c. Layer 3 — Field Cache (`_p.{y,M,D,W,H,m,s,ms}`)
 
 **"Cache the results of Date API calls"** — the most direct caching.
 
 | Field | Source | Update Timing |
 |-----------|------------|----------------------|
-| `$y $M $D $W` | `getFullYear()`, `getMonth()`, `getDate()`, `getDay()` | constructor, setter, add, startOf, endOf |
-| `$H $m $s $ms` | `getHours()`, `getMinutes()`, `getSeconds()`, `getMilliseconds()` | same (time changes only) |
+| `_p.y _p.M _p.D _p.W` | `getFullYear()`, `getMonth()`, `getDate()`, `getDay()` | constructor, setter, add, startOf, endOf |
+| `_p.H _p.m _p.s _p.ms` | `getHours()`, `getMinutes()`, `getSeconds()`, `getMilliseconds()` | same (time changes only) |
 
-**Consistency guarantee**: All mutation methods (`add`, `startOf`, `set`, etc.) explicitly update all `$` fields. `_refreshFields()` does a full reload. `_dirty` lazy init means constructor doesn't populate them, but the first getter access triggers auto-loading.
+**Consistency guarantee**: All mutation methods (`add`, `startOf`, `set`, etc.) explicitly update all `_p` fields. `_refreshFields()` does a full reload. `_p.dirty` post-mutation flag means fields are only refreshed on demand after mutations, not on every getter access.
 
 **Historical cache miss**:
-- Old `clone()` copied uninitialized `$` fields -> fixed by adding `_ensureFields()`
-- External `_d` mutation (opt-in via `_dClone: false`)
+- Old `clone()` copied uninitialized `_p` fields -> fixed
+- External `_p.d` mutation (opt-in via `_dClone: false`)
 
 ### 23d. Layer 4 — Locale Cache
 
@@ -913,11 +926,11 @@ V8's TurboFan JIT compiles hot functions (~1000 calls) to optimized code. Key pa
 
 | Optimization Pass | Effect | mmntjs Benefit |
 |-----------|------|----------------|
-| Type Specialization | Fix variable types, eliminate dynamic dispatch | `$y` confirmed as Smi -> unboxed arithmetic |
+| Type Specialization | Fix variable types, eliminate dynamic dispatch | `_p.y` confirmed as Smi -> unboxed arithmetic |
 | Inlining | Expand callee code at call site | `_ensureFields()` reduces to 1-2 instructions |
 | Escape Analysis | Stack-allocate objects that don't escape | Heap allocation reduction |
 | Constant Folding | Pre-compute compile-time expressions | `Math.floor(5/2)` -> `2` |
-| CSE (Common Subexpression Elimination) | Remove redundant loads | Repeated `this.$y` reads reduced to one |
+| CSE (Common Subexpression Elimination) | Remove redundant loads | Repeated `this._p.y` reads reduced to one |
 | LICM (Loop Invariant Code Motion) | Hoist invariants out of loops | Benchmark loop string references |
 | Array Bounds Check Elimination | Remove bounds checks where provable | `PAD2[n]` with n proven 0-99 |
 | Branch Fusion | Replace branches with CMOV | `a ? b : c` becomes branchless |
@@ -941,8 +954,8 @@ If the Moment constructor is inlined and the instance doesn't escape (no externa
 | Trigger | Risk | mmntjs |
 |---------|--------|---------|
 | Shape change | New property added to object | `_cold` reduction mitigates. Error Moment creation still changes Shape -> deopt only then |
-| Type change | Smi becomes HeapNumber | `$y` with values >= 2^30 would trigger (impractical) |
-| Array index out of bounds | `PAD2[100]` etc. | `$H` etc. are 0-59, bounds guaranteed |
+| Type change | Smi becomes HeapNumber | `_p.y` with values >= 2^30 would trigger (impractical) |
+| Array index out of bounds | `pad2(100)` etc. | `_p.H` etc. are 0-59, bounds guaranteed |
 | try/catch reached | Optimized code needs exception handler | Rare locale fallback |
 | IC limit exceeded | >4 Shapes observed | `_cold` access in error case only |
 
@@ -955,12 +968,15 @@ V8 associates a feedback vector (type information log) with each call site:
 ```typescript
 // Call site:
 function year() {
-  return this._isValid ? this.$y : NaN;
+  if (!this._isValid) return NaN;
+  if (this._p.dirty) { this._p.dirty = false; this._refreshFields(); }
+  return this._p.y;
 }
 // feedback vector:
 //   [0] this: Shape(Moment)  <- Monomorphic
 //   [1] this._isValid: Boolean
-//   [2] this.$y: Smi
+//   [2] this._p: Shape(_p)   <- Monomorphic
+//   [3] this._p.y: Smi
 ```
 
 TurboFan generates type-specialized code based on this feedback. If a 1000-times monomorphic Shape suddenly changes, **deoptimization + re-optimization** occurs.
@@ -1055,7 +1071,7 @@ date-fns's per-function imports can produce smaller bundles if few functions are
 ## 26. Comparison With Other Libraries
 
 **dayjs**: Same field cache approach as mmntjs.
-- Internal `$y, $M, $D, $H, $m, $s, $ms` with direct getter reads
+- Internal `$y, $M, $D, $H, $m, $s, $ms` with direct getter reads (mmntjs uses `_p` container instead)
 - Lazy locale loading (`import()`)
 - Very similar design philosophy. Performance likely comparable.
 - Limited moment.js compatibility.
@@ -1087,9 +1103,9 @@ create:  60ns       80ns      35ns        80ns       280ns
 
 ### Wins Over date-fns
 
-**Getters / Field Access**: Cached fields are decisive. date-fns calls Date API every time; mmntjs reads `$y` property. **Fixed Shape + Own Property IC optimization** wins.
+**Getters / Field Access**: Cached fields are decisive. date-fns calls Date API every time; mmntjs reads `_p.y` property. **Fixed Shape + Monomorphic IC optimization** wins.
 
-**Formatting**: `formatCommonEn` switch fast path is extremely fast. Template literal + PAD2 table eliminates `padStart`. **Monomorphic Property Access + Pre-computed Tables** wins.
+**Formatting**: `formatCommonEn` lookup-table fast path is extremely fast. Template literal + `pad2()` table eliminates `padStart`. **Monomorphic Property Access + Pre-computed Tables** wins.
 
 **Diff / Compare**: `_t` subtraction only. **No Date valueOf()** -> direct native code execution.
 
