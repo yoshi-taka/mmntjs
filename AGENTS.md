@@ -21,9 +21,12 @@
  9. **比較方法**: `bash scripts/compare.sh {bench|test|moment-tests}` — benchは性能比較、testはプロパティ比較、moment-testsはmoment.jsのテストをmmntjsで実行（oracle.tsを一時的に差し替え）
 10. **commit前にlint → git add**: `lint` は `oxfmt`（フォーマッタ）→ `oxlint` の順に実行される。**先に `bun run lint` を通してから `git add` し、その後 `git commit` せよ。** この順序でやれば pre-commit hook 内の `oxfmt` が何も変更せず、hook 通過後のぶり返し差分が発生しない。lint 後に未ステージの差分が出たらそれも含めて commit すること。pre-commit hook で落ちて手戻りが発生するのを防ぐ。
 11. **テスト実行は `bun run test` が公式**: `bun run test` は curated subset + `TZ=UTC` で動く。`bun test` は全テストファイルを現在のTZで実行するため、JST等の非UTC環境ではoffset無しISO文字列パースや `Z`/`ZZ` フォーマットのテストが落ちる。全テストを通すには `TZ=UTC bun test` を使え。
-12. **push禁止**: `git push`, `git push --tags`, `git tag` + `git push origin <tag>` は**ユーザーから明示的に「pushして」「tag打って」等の指示があった場合のみ**実行すること。自分で判断して push するな。タグを何度も打ち直してワークフローを連射するのは絶対禁止
-     - ユーザーが問題を報告しても、自分で「直してpush」するな。修正案を提示してから「commitしていいか」「tagを打っていいか」を**必ず**ユーザーに確認せよ
+12. **push禁止（絶対）**: `git push` は**bash で絶対に実行しない。** ユーザーが「pushしろ」と言っても、コマンドを表示するだけで自分では実行するな。ユーザー自身にコピペさせる。
+     - タグも同様: `git tag` + `git push origin <tag>` はコマンドを表示するだけ。
+     - ルール逸脱防止のため lefthook に pre-push hook を設定済み（常に exit 1）。
+     - ユーザーが問題を報告しても、自分で「直してpush」するな。
 13. **`git push --tags` 禁止**: 全タグを一括pushすると過去のreleaseタグが再送され、ワークフローが多重起動する事故の原因になる。**リリースタグは `git push origin <tag名>` で1つずつpushすること。** `--tags` は絶対に使うな。
+     - **`git push` 単体も同じ**: 許可なく push すると未ステージの変更や意図しないコミットが送られる。ルール12に従い、コマンドを表示するだけ。
 13. **property-based testing / fuzzing に flaky は存在しない**: fast-check や jazzer が見つけた counterexample は必ず調査・修正すること。乱数シードを固定して再現し、コードのバグとして対処する。「flaky」「テスト間干渉」「pre-existing」で誤魔化さない
      - 違反した場合: 即刻応答停止 & ユーザーのお説教タイム。連続違反では罰走10km
 14. **property-based testing / fuzzing に flaky は存在しない**: fast-check や jazzer が見つけた counterexample は必ず調査・修正すること。乱数シードを固定して再現し、コードのバグとして対処する。「flaky」「テスト間干渉」「pre-existing」で誤魔化さない
