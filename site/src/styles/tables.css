@@ -36,18 +36,51 @@ th {
 
 .migration-approaches-table th {
   letter-spacing: 0.02em;
+  vertical-align: middle;
+  text-align: center;
 }
 
-.migration-approaches-table thead,
-.migration-approaches-table tbody {
+.migration-approaches-table {
+  display: table;
+  width: 100%;
   min-width: 980px;
-  table-layout: auto;
+  table-layout: fixed;
+}
+
+.migration-approaches-table thead {
+  display: table-header-group;
+}
+
+.migration-approaches-table tbody {
+  display: table-row-group;
+}
+
+.migration-approaches-table th,
+.migration-approaches-table td {
+  width: 13%;
+}
+.migration-approaches-table th:first-child,
+.migration-approaches-table td:first-child {
+  width: 35%;
 }
 
 .migration-approaches-table td,
 .migration-approaches-table th {
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+.migration-approaches-table td:first-child,
+.migration-approaches-table th:first-child {
+  border-left: none;
+}
+
+.migration-approaches-table td {
+  vertical-align: middle;
+}
+
+.migration-approaches-table td:not(:first-child) {
+  text-align: center;
 }
 
 .migration-approaches-table td code {

@@ -76,6 +76,10 @@
     hsl(var(--secondary) / 0.64);
 }
 
+.card:only-child {
+  grid-column: 1 / -1;
+}
+
 .button {
   display: inline-flex;
   align-items: center;
@@ -167,7 +171,7 @@
 
 .meta-row {
   display: grid;
-  grid-template-columns: 140px 1fr;
+  grid-template-columns: 380px 1fr;
   gap: 12px;
 }
 
@@ -184,5 +188,5 @@
   border-radius: 0.35rem;
   background: hsl(var(--secondary) / 0.7);
   color: hsl(var(--foreground));
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }

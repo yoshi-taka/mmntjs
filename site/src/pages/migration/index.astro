@@ -113,7 +113,7 @@ moment.locale("ja", jaLocale);`;
 
  mmntjs migrate --apply              # apply rewrite
 
-  mmntjs migrate --apply --fns        # switch to fns`} lang="sh" />
+ mmntjs migrate --apply --fns        # switch to fns`} lang="sh" />
     <div class="meta-list">
       {cliCommands.map(([cmd, desc]) => (
         <div class="meta-row">
@@ -183,15 +183,15 @@ moment.locale("ja", jaLocale);`;
     </p>
     <table class="table migration-approaches-table">
       <thead>
-        <tr><th>Approach</th><th>npm / yarn</th><th>pnpm</th><th>Jest / webpack</th><th>vitest</th><th>bun</th></tr>
+        <tr><th>Approach</th><th>npm /<br/>yarn</th><th>pnpm</th><th>Jest /<br/>webpack</th><th>vitest</th><th>bun</th></tr>
       </thead>
       <tbody>
         <tr>
           <td><strong>A: npm alias</strong><br/><code>"moment": "npm:mmntjs"</code></td>
-          <td>Works with one dependency alias.</td>
-          <td>Use root overrides when workspace resolution needs to be forced.<br/><code>"moment": "link:../mmntjs/dist"</code></td>
           <td>✅</td>
-          <td>Works; <code>pool: threads</code> is recommended.</td>
+          <td>✅*</td>
+          <td>✅</td>
+          <td>✅*</td>
           <td>✅</td>
         </tr>
         <tr>
@@ -204,14 +204,15 @@ moment.locale("ja", jaLocale);`;
         </tr>
         <tr>
           <td><strong>C: Preload alias</strong><br/><code>Module._resolveFilename</code> hook</td>
-          <td>Works with one setup file.</td>
-          <td>Use root overrides plus <code>link:</code>.</td>
-          <td>Works.</td>
-          <td>Use <code>pool: threads</code>; <code>forks</code> can fail to inherit resolution.</td>
-          <td>Use <code>--preload</code>.</td>
+          <td>✅</td>
+          <td>✅*</td>
+          <td>✅</td>
+          <td>✅*</td>
+          <td>✅*</td>
         </tr>
       </tbody>
     </table>
+    <p class="footnote"><sup>*</sup> See notes below for details.</p>
 
     <h4>pnpm + vitest notes from a real Ghost trial</h4>
     <ul>
@@ -250,9 +251,9 @@ moment.locale("ja", jaLocale);`;
       for which modules are worth evaluating for a Temporal path first.
     </p>
     <div class="meta-list">
-      {temporalMigrateSteps.map(([step, desc]) => (
+      {temporalMigrateSteps.map(([step, desc], i) => (
         <div class="meta-row">
-          <div class="label"><code>{step}</code></div>
+          <div class="label">{i === 0 ? <code>{step}</code> : step}</div>
           <div>{desc}</div>
         </div>
       ))}
