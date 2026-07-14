@@ -29,7 +29,7 @@
      - 違反した場合: 即刻応答停止 & ユーザーのお説教タイム。連続違反では罰走10km
 14. **property-based testing / fuzzing に flaky は存在しない**: fast-check や jazzer が見つけた counterexample は必ず調査・修正すること。乱数シードを固定して再現し、コードのバグとして対処する。「flaky」「テスト間干渉」「pre-existing」で誤魔化さない
      - 違反した場合: 即刻応答停止 & ユーザーのお説教タイム。連続違反では罰走10km
-15. **lite-fns は lite と同じ実装を使うこと**: `src/lite-fns.ts` の各関数は `src/moment-lite.ts` / `src/display/format-basic.ts` と同じロジックをコピーして使う（delegate 禁止＝オブジェクト生成コスト回避）。**full（`moment-class.ts`）・lite（`moment-lite.ts`）・lite-fns（`lite-fns.ts`）の3実装は常に同期すること。** いずれかに修正が入ったら残り2つにも同じ修正を適用する。逆もしかり。
+15. **`src/fns/*.ts` は moment-lite と同じ実装を使うこと**: `src/fns/*.ts` の各関数は `src/moment-lite.ts` / `src/display/format-basic.ts` と同じロジックをコピーして使う（delegate 禁止＝オブジェクト生成コスト回避）。**full（`moment-class.ts`）・lite（`moment-lite.ts`）・fns（`src/fns/*.ts`）の3実装は常に同期すること。** いずれかに修正が入ったら残り2つにも同じ修正を適用する。逆もしかり。
 16. **`git commit --no-verify` 禁止**: pre-commit hook（lint + audit）をスキップする `--no-verify` / `-n` は**ユーザーから明示的に許可を得た場合のみ**使用すること。自分で判断して no-verify するな。hook が落ちた場合は hook を通す修正をするのが原則。
 17. **audit 迂回禁止**: `exit 0` のラップ、audit 自体の削除、`fail: false` などで pre-commit hook の audit を迂回するな。fallow が死んだら fallow の設定を正しく直せ（ignore ではなく entry 追加で）。**"それ動かないから"は理由にならない — 動くように直せ。**
 
