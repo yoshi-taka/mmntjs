@@ -4,7 +4,12 @@ import type { InternalParsedData } from "./types";
 import { localeIsPM, localeLongDateFormat } from "./locale-runtime";
 import type { ParsedData, ParseCtx, Op } from "./parse-shared";
 import { daysInMonth } from "./units";
-import { compileFormatToOpcodes, expandedFormatCache, WEEKDAY_NAMES_MAP } from "./parse-shared";
+import {
+  compileFormatToOpcodes,
+  expandedFormatCache,
+  parseBasicDateTimeParts,
+  WEEKDAY_NAMES_MAP,
+} from "./parse-shared";
 
 export { parseTwoDigitYear } from "./utils";
 export type { ParsedData } from "./parse-shared";
@@ -833,11 +838,9 @@ function tryIsoFormatFastPath(
       break;
     }
     case "YYYYMMDD[T]HHmmss": {
-      if (str.length === 15) {
-        const fast = parseBasicISODateTime(str);
-        if (fast?.minute !== undefined && fast.second !== undefined && fast.offset === undefined) {
-          return wrapFastParseResult(fast);
-        }
+      const fast = parseBasicDateTimeParts(str);
+      if (fast) {
+        return wrapFastParseResult({ ...fast, _hasDate: true, _hasTime: true });
       }
       break;
     }
