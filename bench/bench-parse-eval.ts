@@ -64,6 +64,11 @@ const strFmtParse = sample("string + format parse + valueOf", () => {
   mmntjs("20240615T123045", "YYYYMMDD[T]HHmmss").valueOf();
 });
 
+// String + common slash format → get valueOf
+const slashFmtParse = sample("slash date + format parse + valueOf", () => {
+  mmntjs("2024/06/15", "YYYY/MM/DD").valueOf();
+});
+
 // Timestamp (number) → format
 const tsParseFmt = sample("timestamp ms + format", () => {
   mmntjs(1718469045123).format("YYYY-MM-DD HH:mm:ss");
@@ -101,6 +106,7 @@ const results = [
   arrParseFmt,
   objParseFmt,
   strFmtParse,
+  slashFmtParse,
   tsParseFmt,
   utcParseFmt,
   utcParseIso,
@@ -115,6 +121,7 @@ assertAtMost("ISO parse + get year", isoParseGet.nsPerOp, 4000);
 assertAtMost("array parse + format", arrParseFmt.nsPerOp, 12000);
 assertAtMost("object parse + format", objParseFmt.nsPerOp, 12000);
 assertAtMost("string+fmt parse + valueOf", strFmtParse.nsPerOp, 12000);
+assertAtMost("slash date+fmt parse + valueOf", slashFmtParse.nsPerOp, 12000);
 assertAtMost("timestamp + format", tsParseFmt.nsPerOp, 4000);
 assertAtMost("moment.utc ISO + format", utcParseFmt.nsPerOp, 7000);
 assertAtMost("moment.utc ISO + toISOString", utcParseIso.nsPerOp, 7000);

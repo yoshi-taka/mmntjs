@@ -190,11 +190,11 @@ function parseFixedISOZ(str: string): FastZonedISO | ParseFailed {
 }
 
 /** Typed fast parser: YYYY-MM-DD (fixed 10-char, local interpretation). */
-function parseFixedLocalDate(str: string): FastLocalISO | ParseFailed {
+function parseFixedLocalDate(str: string, separator = 45): FastLocalISO | ParseFailed {
   if (str.length !== 10) {
     return { kind: "fail" };
   }
-  if (str.charCodeAt(4) !== 45 || str.charCodeAt(7) !== 45) {
+  if (str.charCodeAt(4) !== separator || str.charCodeAt(7) !== separator) {
     return { kind: "fail" };
   }
   const y0 = str.charCodeAt(0) - 48;
@@ -513,6 +513,19 @@ export function createMomentFactory(deps: FactoryDeps) {
     }
     if (directFormat === "YYYY-MM-DD") {
       const p = parseFixedLocalDate(str);
+      if (p.kind === "local") {
+        const d = createDateSafe(p.y, p.M, p.D, 0, 0, 0, 0, false);
+        return new Moment({
+          _d: d,
+          _dClone: false,
+          _i: str,
+          _f: directFormat,
+          _presetFields: { y: p.y, M: p.M, D: p.D, H: 0, m: 0, s: 0, ms: 0 },
+        });
+      }
+    }
+    if (directFormat === "YYYY/MM/DD" && deps.isCustomFormatParsingEnabled()) {
+      const p = parseFixedLocalDate(str, 47);
       if (p.kind === "local") {
         const d = createDateSafe(p.y, p.M, p.D, 0, 0, 0, 0, false);
         return new Moment({
