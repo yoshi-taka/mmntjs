@@ -45,6 +45,81 @@ test("FIXED (parse): timezone without time in ISO week date stays invalid", () =
   expect(m2.isValid()).toBe(mo.isValid());
 });
 
+const BASIC_ISO_DATETIMES = [
+  "20240615T12",
+  "20240615T1230",
+  "20240615T123045.1Z",
+  "20240615T123045.123456+0900",
+  "20240615T123045,12-04:30",
+];
+
+const EXTENDED_ISO_VARIABLE_FRACTION_DATETIMES = [
+  "2024-06-15T12:30:45.1Z",
+  "2024-06-15T12:30:45.123456+0900",
+  "2024-06-15T12:30:45,12-04:30",
+];
+
+test.each(BASIC_ISO_DATETIMES)("basic ISO datetime scanner matches moment: %s", (input) => {
+  const m2 = moment(input);
+  const mo = originalMoment(input);
+  expect(m2.isValid()).toBe(mo.isValid());
+  if (m2.isValid() && mo.isValid()) {
+    expect(m2.valueOf()).toBe(mo.valueOf());
+  }
+});
+
+test.each(EXTENDED_ISO_VARIABLE_FRACTION_DATETIMES)(
+  "extended ISO fraction scanner matches moment: %s",
+  (input) => {
+    const m2 = moment(input);
+    const mo = originalMoment(input);
+    expect(m2.isValid()).toBe(mo.isValid());
+    if (m2.isValid() && mo.isValid()) {
+      expect(m2.valueOf()).toBe(mo.valueOf());
+    }
+  },
+);
+
+test("basic ISO format fast path matches moment", () => {
+  const input = "20240615T123045";
+  const format = "YYYYMMDD[T]HHmmss";
+  const m2 = moment(input, format);
+  const mo = originalMoment(input, format);
+  expect(m2.isValid()).toBe(mo.isValid());
+  expect(m2.valueOf()).toBe(mo.valueOf());
+});
+
+test("slash date format array fast path matches moment", () => {
+  const input = "2024/06/15";
+  const formats = ["YYYY-MM-DD", "YYYY/MM/DD", "DD/MM/YYYY"];
+  const m2 = moment(input, formats);
+  const mo = originalMoment(input, formats);
+  expect(m2.isValid()).toBe(mo.isValid());
+  expect(m2.valueOf()).toBe(mo.valueOf());
+});
+
+test("English month format fast path matches moment", () => {
+  const input = "15 January 2024";
+  const format = "DD MMMM YYYY";
+  const m2 = moment(input, format);
+  const mo = originalMoment(input, format);
+  expect(m2.isValid()).toBe(mo.isValid());
+  expect(m2.valueOf()).toBe(mo.valueOf());
+});
+
+test("invalid extended ISO datetime remains invalid", () => {
+  const input = "2024-99-99T25:61:61";
+  expect(moment(input).isValid()).toBe(originalMoment(input).isValid());
+});
+
+test("extended ISO end of day remains valid", () => {
+  const input = "2024-06-15T24:00:00";
+  const m2 = moment(input);
+  const mo = originalMoment(input);
+  expect(m2.isValid()).toBe(mo.isValid());
+  expect(m2.valueOf()).toBe(mo.valueOf());
+});
+
 const FIXED_UTC = [
   "constructoror.",
   "",

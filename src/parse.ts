@@ -60,6 +60,8 @@ const RFC_2822_REGEX =
   /^\s*((?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s)?(\d{1,2})\s(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s(\d{2,4})\s(\d{2}):(\d{2})(?::(\d{2}))?\s(?:([+-]\d{4})|(UTC|GMT|EST|EDT|CST|CDT|MST|MDT|PST|PDT|[A-IK-Za-ik-z]))?/;
 
 const JSON_DATE_REGEX = /^\/?Date\((-?\d+)(?:[+-]\d{4})?\)\/?$/;
+const EMPTY_STRING_ARRAY: string[] = [];
+const EMPTY_NUMBER_ARRAY: number[] = [];
 
 export function parseString(
   str: string,
@@ -108,7 +110,7 @@ function _parseWithFormat(
     ?.preparse;
 
   if (typeof format === "string" && !strict) {
-    const fast = tryIsoFormatFastPath(str, format);
+    const fast = tryIsoFormatFastPath(str, format, locale);
     if (fast) {
       _pc("parseString:format-fast-hit");
       return fast as unknown as ParsedData;
@@ -792,16 +794,20 @@ function getSeenUnusedTokens(ctx: ParseCtx): Set<string> {
 function wrapFastParseResult(data: InternalParsedData): ParsedData {
   return {
     ...data,
-    _unusedTokens: [],
-    _unusedInput: [],
+    _unusedTokens: EMPTY_STRING_ARRAY,
+    _unusedInput: EMPTY_STRING_ARRAY,
     _charsLeftOver: 0,
     _empty: false,
     _invalidMonth: null,
-    _parsedDateParts: [],
+    _parsedDateParts: EMPTY_NUMBER_ARRAY,
   } as unknown as ParsedData;
 }
 
-function tryIsoFormatFastPath(str: string, format: string): ParsedData | null {
+function tryIsoFormatFastPath(
+  str: string,
+  format: string,
+  locale?: ParseLocale,
+): ParsedData | null {
   switch (format) {
     case "YYYY-MM-DD":
     case "YYYY-MM-DDTHH:mm:ss":
@@ -826,8 +832,113 @@ function tryIsoFormatFastPath(str: string, format: string): ParsedData | null {
       }
       break;
     }
+    case "YYYYMMDD[T]HHmmss": {
+      if (str.length === 15) {
+        const fast = parseBasicISODateTime(str);
+        if (fast?.minute !== undefined && fast.second !== undefined && fast.offset === undefined) {
+          return wrapFastParseResult(fast);
+        }
+      }
+      break;
+    }
+    case "YYYY/MM/DD": {
+      const fast = parseFixedYMD(str, 47);
+      if (fast) {
+        return wrapFastParseResult(fast);
+      }
+      break;
+    }
+    case "DD MMMM YYYY": {
+      if ((locale?._abbr ?? "en") === "en") {
+        const fast = parseEnglishDayMonthYear(str);
+        if (fast) {
+          return wrapFastParseResult(fast);
+        }
+      }
+      break;
+    }
   }
   return null;
+}
+
+function parseEnglishDayMonthYear(str: string): InternalParsedData | null {
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+  if (str.length < 13 || str.charCodeAt(2) !== 32) {
+    return null;
+  }
+  const d0 = str.charCodeAt(0) - 48;
+  const d1 = str.charCodeAt(1) - 48;
+  if (d0 < 0 || d0 > 9 || d1 < 0 || d1 > 9) {
+    return null;
+  }
+  let month = -1;
+  let yearStart = 0;
+  for (let i = 0; i < months.length; i++) {
+    const name = months[i];
+    const end = 3 + name.length;
+    if (str.startsWith(name, 3) && str.charCodeAt(end) === 32 && end + 5 === str.length) {
+      month = i;
+      yearStart = end + 1;
+      break;
+    }
+  }
+  if (month < 0) {
+    return null;
+  }
+  const y0 = str.charCodeAt(yearStart) - 48;
+  const y1 = str.charCodeAt(yearStart + 1) - 48;
+  const y2 = str.charCodeAt(yearStart + 2) - 48;
+  const y3 = str.charCodeAt(yearStart + 3) - 48;
+  if (y0 < 0 || y0 > 9 || y1 < 0 || y1 > 9 || y2 < 0 || y2 > 9 || y3 < 0 || y3 > 9) {
+    return null;
+  }
+  const year = y0 * 1000 + y1 * 100 + y2 * 10 + y3;
+  const day = d0 * 10 + d1;
+  if (day < 1 || day > daysInMonth(year, month)) {
+    return null;
+  }
+  return { year, month, day, _hasDate: true, _hasTime: false };
+}
+
+function parseFixedYMD(str: string, separator: number): InternalParsedData | null {
+  if (str.length !== 10 || str.charCodeAt(4) !== separator || str.charCodeAt(7) !== separator) {
+    return null;
+  }
+  const digit = (idx: number): number => {
+    const value = str.charCodeAt(idx) - 48;
+    return value >= 0 && value <= 9 ? value : -1;
+  };
+  const y0 = digit(0);
+  const y1 = digit(1);
+  const y2 = digit(2);
+  const y3 = digit(3);
+  const m0 = digit(5);
+  const m1 = digit(6);
+  const d0 = digit(8);
+  const d1 = digit(9);
+  if (y0 < 0 || y1 < 0 || y2 < 0 || y3 < 0 || m0 < 0 || m1 < 0 || d0 < 0 || d1 < 0) {
+    return null;
+  }
+  const year = y0 * 1000 + y1 * 100 + y2 * 10 + y3;
+  const month = m0 * 10 + m1 - 1;
+  const day = d0 * 10 + d1;
+  if (month < 0 || month > 11 || day < 1 || day > daysInMonth(year, month)) {
+    return null;
+  }
+  return { year, month, day, _hasDate: true, _hasTime: false };
 }
 
 function parseWithFormat(
@@ -844,7 +955,7 @@ function parseWithFormat(
   // Call charCode-based handlers directly so that only true ISO-format
   // inputs match — not RFC 2822 strings that happen to be in the format array.
   if (!strict) {
-    const fast = tryIsoFormatFastPath(str, format);
+    const fast = tryIsoFormatFastPath(str, format, locale);
     if (fast) {
       return fast;
     }
@@ -1740,6 +1851,18 @@ function trySignPrefixedDateFallback(datePart: string): InternalParsedData | nul
 }
 
 function parseISOWithTable(str: string, locale?: ParseLocale): InternalParsedData | null {
+  const basicFast = parseBasicISODateTime(str);
+  if (basicFast) {
+    return basicFast;
+  }
+  const extendedFractionFast = parseExtendedISOVariableFraction(str);
+  if (extendedFractionFast) {
+    return extendedFractionFast;
+  }
+  if (isInvalidExtendedISODateTime(str)) {
+    return { _claimed: true };
+  }
+
   const match = EXTENDED_ISO_REGEX.exec(str) ?? BASIC_ISO_REGEX.exec(str);
   if (!match) {
     return null;
@@ -1832,6 +1955,252 @@ function parseISOWithTable(str: string, locale?: ParseLocale): InternalParsedDat
     return null;
   }
   return result as InternalParsedData;
+}
+
+/** Parses common basic ISO datetimes without regex capture or format reparsing. */
+function isInvalidExtendedISODateTime(str: string): boolean {
+  if (
+    str.length !== 19 ||
+    str.charCodeAt(4) !== 45 ||
+    str.charCodeAt(7) !== 45 ||
+    (str.charCodeAt(10) !== 84 && str.charCodeAt(10) !== 32) ||
+    str.charCodeAt(13) !== 58 ||
+    str.charCodeAt(16) !== 58
+  ) {
+    return false;
+  }
+  const two = (idx: number): number => {
+    const a = str.charCodeAt(idx) - 48;
+    const b = str.charCodeAt(idx + 1) - 48;
+    return a >= 0 && a <= 9 && b >= 0 && b <= 9 ? a * 10 + b : -1;
+  };
+  const yearA = two(0);
+  const yearB = two(2);
+  const month = two(5);
+  const day = two(8);
+  const hour = two(11);
+  const minute = two(14);
+  const second = two(17);
+  if (yearA < 0 || yearB < 0 || month < 0 || day < 0 || hour < 0 || minute < 0 || second < 0) {
+    return false;
+  }
+  const year = yearA * 100 + yearB;
+  const validEndOfDay = hour === 24 && minute === 0 && second === 0;
+  return (
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > daysInMonth(year, month - 1) ||
+    (hour > 23 && !validEndOfDay) ||
+    minute > 59 ||
+    second > 59
+  );
+}
+
+function parseBasicISODateTime(str: string): InternalParsedData | null {
+  const len = str.length;
+  if (len < 11 || (str.charCodeAt(8) !== 84 && str.charCodeAt(8) !== 32)) {
+    return null;
+  }
+
+  const two = (idx: number): number => {
+    const a = str.charCodeAt(idx) - 48;
+    const b = str.charCodeAt(idx + 1) - 48;
+    return a >= 0 && a <= 9 && b >= 0 && b <= 9 ? a * 10 + b : -1;
+  };
+
+  const yearA = two(0);
+  const yearB = two(2);
+  const month = two(4);
+  const day = two(6);
+  const hour = two(9);
+  if (yearA < 0 || yearB < 0 || month < 0 || day < 0 || hour < 0) {
+    return null;
+  }
+
+  let idx = 11;
+  let minute: number | undefined;
+  let second: number | undefined;
+  let millisecond: number | undefined;
+  if (idx < len && str.charCodeAt(idx) >= 48 && str.charCodeAt(idx) <= 57) {
+    minute = two(idx);
+    if (minute < 0) {
+      return null;
+    }
+    idx += 2;
+    if (idx < len && str.charCodeAt(idx) >= 48 && str.charCodeAt(idx) <= 57) {
+      second = two(idx);
+      if (second < 0) {
+        return null;
+      }
+      idx += 2;
+      const separator = str.charCodeAt(idx);
+      if (separator === 46 || separator === 44) {
+        const fractionStart = ++idx;
+        while (idx < len) {
+          const c = str.charCodeAt(idx);
+          if (c < 48 || c > 57) {
+            break;
+          }
+          idx++;
+        }
+        const fractionLength = idx - fractionStart;
+        if (fractionLength === 0 || fractionLength > 9) {
+          return null;
+        }
+        const d0 = str.charCodeAt(fractionStart) - 48;
+        const d1 = fractionLength > 1 ? str.charCodeAt(fractionStart + 1) - 48 : 0;
+        const d2 = fractionLength > 2 ? str.charCodeAt(fractionStart + 2) - 48 : 0;
+        millisecond = d0 * 100 + d1 * 10 + d2;
+      }
+    }
+  }
+
+  let offset: number | undefined;
+  if (idx < len) {
+    const zone = str.charCodeAt(idx);
+    if (zone === 90 && idx + 1 === len) {
+      offset = 0;
+      idx++;
+    } else if ((zone === 43 || zone === 45) && idx + 5 === len) {
+      const zoneHour = two(idx + 1);
+      const zoneMinute = two(idx + 3);
+      if (zoneHour < 0 || zoneMinute < 0) {
+        return null;
+      }
+      offset = (zone === 43 ? 1 : -1) * (zoneHour * 60 + zoneMinute);
+      idx += 5;
+    } else if ((zone === 43 || zone === 45) && idx + 6 === len && str.charCodeAt(idx + 3) === 58) {
+      const zoneHour = two(idx + 1);
+      const zoneMinute = two(idx + 4);
+      if (zoneHour < 0 || zoneMinute < 0) {
+        return null;
+      }
+      offset = (zone === 43 ? 1 : -1) * (zoneHour * 60 + zoneMinute);
+      idx += 6;
+    } else {
+      return null;
+    }
+  }
+
+  if (idx !== len) {
+    return null;
+  }
+  return {
+    year: yearA * 100 + yearB,
+    month: month - 1,
+    day,
+    hour,
+    minute,
+    second,
+    millisecond,
+    offset,
+    _hasDate: true,
+    _hasTime: true,
+  };
+}
+
+/** Parses extended ISO datetimes whose variable fraction misses the fixed-length fast path. */
+function parseExtendedISOVariableFraction(str: string): InternalParsedData | null {
+  const len = str.length;
+  if (
+    len < 21 ||
+    str.charCodeAt(4) !== 45 ||
+    str.charCodeAt(7) !== 45 ||
+    (str.charCodeAt(10) !== 84 && str.charCodeAt(10) !== 32) ||
+    str.charCodeAt(13) !== 58 ||
+    str.charCodeAt(16) !== 58
+  ) {
+    return null;
+  }
+
+  const two = (idx: number): number => {
+    const a = str.charCodeAt(idx) - 48;
+    const b = str.charCodeAt(idx + 1) - 48;
+    return a >= 0 && a <= 9 && b >= 0 && b <= 9 ? a * 10 + b : -1;
+  };
+
+  const yearA = two(0);
+  const yearB = two(2);
+  const month = two(5);
+  const day = two(8);
+  const hour = two(11);
+  const minute = two(14);
+  const second = two(17);
+  const fractionSeparator = str.charCodeAt(19);
+  if (
+    yearA < 0 ||
+    yearB < 0 ||
+    month < 0 ||
+    day < 0 ||
+    hour < 0 ||
+    minute < 0 ||
+    second < 0 ||
+    (fractionSeparator !== 46 && fractionSeparator !== 44)
+  ) {
+    return null;
+  }
+
+  let idx = 20;
+  const fractionStart = idx;
+  while (idx < len) {
+    const c = str.charCodeAt(idx);
+    if (c < 48 || c > 57) {
+      break;
+    }
+    idx++;
+  }
+  const fractionLength = idx - fractionStart;
+  if (fractionLength === 0 || fractionLength > 9) {
+    return null;
+  }
+  const millisecond =
+    (str.charCodeAt(fractionStart) - 48) * 100 +
+    (fractionLength > 1 ? str.charCodeAt(fractionStart + 1) - 48 : 0) * 10 +
+    (fractionLength > 2 ? str.charCodeAt(fractionStart + 2) - 48 : 0);
+
+  let offset: number | undefined;
+  if (idx < len) {
+    const zone = str.charCodeAt(idx);
+    if (zone === 90 && idx + 1 === len) {
+      offset = 0;
+      idx++;
+    } else if ((zone === 43 || zone === 45) && idx + 5 === len) {
+      const zoneHour = two(idx + 1);
+      const zoneMinute = two(idx + 3);
+      if (zoneHour < 0 || zoneMinute < 0) {
+        return null;
+      }
+      offset = (zone === 43 ? 1 : -1) * (zoneHour * 60 + zoneMinute);
+      idx += 5;
+    } else if ((zone === 43 || zone === 45) && idx + 6 === len && str.charCodeAt(idx + 3) === 58) {
+      const zoneHour = two(idx + 1);
+      const zoneMinute = two(idx + 4);
+      if (zoneHour < 0 || zoneMinute < 0) {
+        return null;
+      }
+      offset = (zone === 43 ? 1 : -1) * (zoneHour * 60 + zoneMinute);
+      idx += 6;
+    } else {
+      return null;
+    }
+  }
+
+  if (idx !== len) {
+    return null;
+  }
+  return {
+    year: yearA * 100 + yearB,
+    month: month - 1,
+    day,
+    hour,
+    minute,
+    second,
+    millisecond,
+    offset,
+    _hasDate: true,
+    _hasTime: true,
+  };
 }
 
 export function parseArray(arr: unknown[]): ParsedData | null {

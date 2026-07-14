@@ -110,6 +110,8 @@
     "bench:locale": "BENCH=locale bun bench/bench-suite.ts",
     "bench:diff": "BENCH=diff bun bench/bench-suite.ts",
     "bench:parse": "BENCH=parse bun bench/bench-suite.ts",
+    "bench:parse:shapes": "bun bench/bench-parse-shapes.ts",
+    "bench:format-parse": "bun --expose-gc bench/bench-format-parse.ts",
     "lint": "oxfmt src test packages/timezone/src packages/timezone/test && oxlint --type-aware --type-check src packages/timezone/src && oxlint src test packages/timezone/test",
     "fmt": "oxfmt src test",
     "knip": "knip",

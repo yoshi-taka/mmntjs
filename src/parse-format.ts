@@ -2,6 +2,7 @@ import { isArray, hasOwnProp } from "./utils";
 import type { ParseLocale } from "./parse-locale";
 import type { InternalParsedData } from "./types";
 import { localeIsPM, localeLongDateFormat, localePreparse } from "./locale-runtime";
+import { daysInMonth } from "./units";
 import type { ParsedData, ParseCtx } from "./parse-shared";
 import { compileFormatToOpcodes, expandedFormatCache, WEEKDAY_NAMES_MAP } from "./parse-shared";
 
@@ -752,6 +753,80 @@ function parseISOWithTable(str: string, locale?: ParseLocale): InternalParsedDat
 
 // -- Year tokens --
 
+function parseBasicDateTimeFormat(str: string): ParsedData | null {
+  if (str.length !== 15 || str.charCodeAt(8) !== 84) {
+    return null;
+  }
+  const digit = (idx: number): number => {
+    const value = str.charCodeAt(idx) - 48;
+    return value >= 0 && value <= 9 ? value : -1;
+  };
+  const y0 = digit(0);
+  const y1 = digit(1);
+  const y2 = digit(2);
+  const y3 = digit(3);
+  const mo0 = digit(4);
+  const mo1 = digit(5);
+  const d0 = digit(6);
+  const d1 = digit(7);
+  const h0 = digit(9);
+  const h1 = digit(10);
+  const mi0 = digit(11);
+  const mi1 = digit(12);
+  const s0 = digit(13);
+  const s1 = digit(14);
+  if (
+    y0 < 0 ||
+    y1 < 0 ||
+    y2 < 0 ||
+    y3 < 0 ||
+    mo0 < 0 ||
+    mo1 < 0 ||
+    d0 < 0 ||
+    d1 < 0 ||
+    h0 < 0 ||
+    h1 < 0 ||
+    mi0 < 0 ||
+    mi1 < 0 ||
+    s0 < 0 ||
+    s1 < 0
+  ) {
+    return null;
+  }
+  const year = y0 * 1000 + y1 * 100 + y2 * 10 + y3;
+  const month = mo0 * 10 + mo1 - 1;
+  const day = d0 * 10 + d1;
+  const hour = h0 * 10 + h1;
+  const minute = mi0 * 10 + mi1;
+  const second = s0 * 10 + s1;
+  if (
+    month < 0 ||
+    month > 11 ||
+    day < 1 ||
+    day > daysInMonth(year, month) ||
+    hour > 24 ||
+    (hour === 24 && (minute !== 0 || second !== 0)) ||
+    minute > 59 ||
+    second > 59
+  ) {
+    return null;
+  }
+  return {
+    year,
+    month,
+    day,
+    hour,
+    minute,
+    second,
+    _unusedTokens: [],
+    _unusedInput: [],
+    _charsLeftOver: 0,
+    _empty: false,
+    _invalidMonth: null,
+    _parsedDateParts: [year, month, day, hour, minute, second],
+  };
+}
+
 function parseWithFormat(
   str: string,
   format: string,
@@ -760,6 +835,12 @@ function parseWithFormat(
 ): ParsedData | null {
   if (!locale) {
     return null;
+  }
+  if (!strict && format === "YYYYMMDD[T]HHmmss") {
+    const fast = parseBasicDateTimeFormat(str);
+    if (fast) {
+      return fast;
+    }
   }
   const loc = locale;
   const expandedCacheKey = `${loc._abbr ?? "en"}:${format}`;
