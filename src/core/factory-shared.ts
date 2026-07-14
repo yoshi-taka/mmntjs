@@ -242,6 +242,71 @@ function parseFixedLocalDate(str: string): FastLocalISO | ParseFailed {
   return { kind: "local", y: year, M: monthIdx, D: day };
 }
 
+function parseBasicLocalDateTime(
+  str: string,
+):
+  | { kind: "local"; y: number; M: number; D: number; H: number; m: number; s: number }
+  | ParseFailed {
+  if (str.length !== 15 || str.charCodeAt(8) !== 84) {
+    return { kind: "fail" };
+  }
+  const digit = (index: number): number => {
+    const value = str.charCodeAt(index) - 48;
+    return value >= 0 && value <= 9 ? value : -1;
+  };
+  const y0 = digit(0);
+  const y1 = digit(1);
+  const y2 = digit(2);
+  const y3 = digit(3);
+  const mo0 = digit(4);
+  const mo1 = digit(5);
+  const d0 = digit(6);
+  const d1 = digit(7);
+  const h0 = digit(9);
+  const h1 = digit(10);
+  const mi0 = digit(11);
+  const mi1 = digit(12);
+  const s0 = digit(13);
+  const s1 = digit(14);
+  if (
+    y0 < 0 ||
+    y1 < 0 ||
+    y2 < 0 ||
+    y3 < 0 ||
+    mo0 < 0 ||
+    mo1 < 0 ||
+    d0 < 0 ||
+    d1 < 0 ||
+    h0 < 0 ||
+    h1 < 0 ||
+    mi0 < 0 ||
+    mi1 < 0 ||
+    s0 < 0 ||
+    s1 < 0
+  ) {
+    return { kind: "fail" };
+  }
+  const y = y0 * 1000 + y1 * 100 + y2 * 10 + y3;
+  const M = mo0 * 10 + mo1 - 1;
+  const D = d0 * 10 + d1;
+  const H = h0 * 10 + h1;
+  const m = mi0 * 10 + mi1;
+  const s = s0 * 10 + s1;
+  if (
+    M < 0 ||
+    M > 11 ||
+    D < 1 ||
+    D > daysInMonthFast(y, M) ||
+    H > 24 ||
+    (H === 24 && (m !== 0 || s !== 0)) ||
+    m > 59 ||
+    s > 59
+  ) {
+    return { kind: "fail" };
+  }
+  return { kind: "local", y, M, D, H, m, s };
+}
+
 export function createMomentFactory(deps: FactoryDeps) {
   function createMomentFromParsed(
     parsed: ParsedDataLike,
@@ -456,6 +521,20 @@ export function createMomentFactory(deps: FactoryDeps) {
           _i: str,
           _f: directFormat,
           _presetFields: { y: p.y, M: p.M, D: p.D, H: 0, m: 0, s: 0, ms: 0 },
+        });
+      }
+    }
+    if (directFormat === "YYYYMMDD[T]HHmmss" && deps.isCustomFormatParsingEnabled()) {
+      const p = parseBasicLocalDateTime(str);
+      if (p.kind === "local") {
+        const d = createDateSafe(p.y, p.M, p.D, p.H, p.m, p.s, 0, false);
+        return new Moment({
+          _d: d,
+          _dClone: false,
+          _i: str,
+          _f: directFormat,
+          _presetFields:
+            p.H === 24 ? undefined : { y: p.y, M: p.M, D: p.D, H: p.H, m: p.m, s: p.s, ms: 0 },
         });
       }
     }

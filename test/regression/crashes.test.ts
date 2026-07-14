@@ -80,14 +80,18 @@ test.each(EXTENDED_ISO_VARIABLE_FRACTION_DATETIMES)(
   },
 );
 
-test("basic ISO format fast path matches moment", () => {
-  const input = "20240615T123045";
-  const format = "YYYYMMDD[T]HHmmss";
-  const m2 = moment(input, format);
-  const mo = originalMoment(input, format);
-  expect(m2.isValid()).toBe(mo.isValid());
-  expect(m2.valueOf()).toBe(mo.valueOf());
-});
+test.each(["20240615T123045", "20240615T240000", "20240229T123045", "20240230T123045"])(
+  "basic ISO format fast path matches moment: %s",
+  (input) => {
+    const format = "YYYYMMDD[T]HHmmss";
+    const m2 = moment(input, format);
+    const mo = originalMoment(input, format);
+    expect(m2.isValid()).toBe(mo.isValid());
+    if (m2.isValid() && mo.isValid()) {
+      expect(m2.valueOf()).toBe(mo.valueOf());
+    }
+  },
+);
 
 test("slash date format array fast path matches moment", () => {
   const input = "2024/06/15";
