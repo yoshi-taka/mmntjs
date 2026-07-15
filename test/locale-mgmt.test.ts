@@ -242,9 +242,18 @@ describe("moment.localeData()", () => {
 
 describe("moment.locale() edge cases", () => {
   test("updateLocale on existing locale preserves original", () => {
-    moment.updateLocale("en", { months: "A B C D E F G H I J K L".split(" ") });
-    expect(moment.months(0)).toBe("A");
-    moment.updateLocale("en", null);
+    const config = { months: "A B C D E F G H I J K L".split(" ") };
+    moment.updateLocale("en", config);
+    originalMoment.updateLocale("en", config);
+    try {
+      expect(moment.months(0)).toBe("A");
+      expect(moment("15 June 2024", "DD MMMM YYYY", "en").isValid()).toBe(
+        originalMoment("15 June 2024", "DD MMMM YYYY", "en").isValid(),
+      );
+    } finally {
+      moment.updateLocale("en", null);
+      originalMoment.updateLocale("en", null);
+    }
     expect(moment.months(0)).toBe("January");
   });
 

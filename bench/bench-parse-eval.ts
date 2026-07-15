@@ -69,6 +69,11 @@ const slashFmtParse = sample("slash date + format parse + valueOf", () => {
   mmntjs("2024/06/15", "YYYY/MM/DD").valueOf();
 });
 
+// String + English month format → get valueOf
+const englishLongMonthFmtParse = sample("English month + format parse + valueOf", () => {
+  mmntjs("15 June 2024", "DD MMMM YYYY").valueOf();
+});
+
 // Timestamp (number) → format
 const tsParseFmt = sample("timestamp ms + format", () => {
   mmntjs(1718469045123).format("YYYY-MM-DD HH:mm:ss");
@@ -107,6 +112,7 @@ const results = [
   objParseFmt,
   strFmtParse,
   slashFmtParse,
+  englishLongMonthFmtParse,
   tsParseFmt,
   utcParseFmt,
   utcParseIso,
@@ -122,6 +128,7 @@ assertAtMost("array parse + format", arrParseFmt.nsPerOp, 12000);
 assertAtMost("object parse + format", objParseFmt.nsPerOp, 12000);
 assertAtMost("string+fmt parse + valueOf", strFmtParse.nsPerOp, 12000);
 assertAtMost("slash date+fmt parse + valueOf", slashFmtParse.nsPerOp, 12000);
+assertAtMost("English month+fmt parse + valueOf", englishLongMonthFmtParse.nsPerOp, 12000);
 assertAtMost("timestamp + format", tsParseFmt.nsPerOp, 4000);
 assertAtMost("moment.utc ISO + format", utcParseFmt.nsPerOp, 7000);
 assertAtMost("moment.utc ISO + toISOString", utcParseIso.nsPerOp, 7000);

@@ -115,14 +115,18 @@ test.each(["2024/06/15", "2024/02/29", "2024/02/30"])(
   },
 );
 
-test("English month format fast path matches moment", () => {
-  const input = "15 January 2024";
-  const format = "DD MMMM YYYY";
-  const m2 = moment(input, format);
-  const mo = originalMoment(input, format);
-  expect(m2.isValid()).toBe(mo.isValid());
-  expect(m2.valueOf()).toBe(mo.valueOf());
-});
+test.each(["15 January 2024", "29 February 2024", "29 February 2023", "15 june 2024"])(
+  "English month format fast path matches moment: %s",
+  (input) => {
+    const format = "DD MMMM YYYY";
+    const m2 = moment(input, format);
+    const mo = originalMoment(input, format);
+    expect(m2.isValid()).toBe(mo.isValid());
+    if (m2.isValid() && mo.isValid()) {
+      expect(m2.valueOf()).toBe(mo.valueOf());
+    }
+  },
+);
 
 test("invalid extended ISO datetime remains invalid", () => {
   const input = "2024-99-99T25:61:61";

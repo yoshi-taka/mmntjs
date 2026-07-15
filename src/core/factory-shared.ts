@@ -12,7 +12,13 @@ import {
   createUTCDate,
 } from "../utils";
 import { daysInMonthFast } from "../units";
-import { getLocale, getCurrentLocale, localeHasMissingParent } from "../locale-runtime";
+import {
+  getLocale,
+  getCurrentLocale,
+  localeConfigs,
+  localeHasMissingParent,
+} from "../locale-runtime";
+import { enLocale } from "../locale/en";
 import type { ParseLocale } from "../parse-locale";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -307,6 +313,66 @@ function parseBasicLocalDateTime(
   return { kind: "local", y, M, D, H, m, s };
 }
 
+function parseEnglishLongMonthDate(str: string): FastLocalISO | ParseFailed {
+  if (str.length < 11 || str.charCodeAt(2) !== 32 || str.charCodeAt(str.length - 5) !== 32) {
+    return { kind: "fail" };
+  }
+  const d0 = str.charCodeAt(0) - 48;
+  const d1 = str.charCodeAt(1) - 48;
+  const y0 = str.charCodeAt(str.length - 4) - 48;
+  const y1 = str.charCodeAt(str.length - 3) - 48;
+  const y2 = str.charCodeAt(str.length - 2) - 48;
+  const y3 = str.charCodeAt(str.length - 1) - 48;
+  if (
+    d0 < 0 ||
+    d0 > 9 ||
+    d1 < 0 ||
+    d1 > 9 ||
+    y0 < 0 ||
+    y0 > 9 ||
+    y1 < 0 ||
+    y1 > 9 ||
+    y2 < 0 ||
+    y2 > 9 ||
+    y3 < 0 ||
+    y3 > 9
+  ) {
+    return { kind: "fail" };
+  }
+  const M =
+    str.startsWith("January", 3) && str.length === 15
+      ? 0
+      : str.startsWith("February", 3) && str.length === 16
+        ? 1
+        : str.startsWith("March", 3) && str.length === 13
+          ? 2
+          : str.startsWith("April", 3) && str.length === 13
+            ? 3
+            : str.startsWith("May", 3) && str.length === 11
+              ? 4
+              : str.startsWith("June", 3) && str.length === 12
+                ? 5
+                : str.startsWith("July", 3) && str.length === 12
+                  ? 6
+                  : str.startsWith("August", 3) && str.length === 14
+                    ? 7
+                    : str.startsWith("September", 3) && str.length === 17
+                      ? 8
+                      : str.startsWith("October", 3) && str.length === 15
+                        ? 9
+                        : str.startsWith("November", 3) && str.length === 16
+                          ? 10
+                          : str.startsWith("December", 3) && str.length === 16
+                            ? 11
+                            : -1;
+  const y = y0 * 1000 + y1 * 100 + y2 * 10 + y3;
+  const D = d0 * 10 + d1;
+  if (M < 0 || D < 1 || D > daysInMonthFast(y, M)) {
+    return { kind: "fail" };
+  }
+  return { kind: "local", y, M, D };
+}
+
 export function createMomentFactory(deps: FactoryDeps) {
   function createMomentFromParsed(
     parsed: ParsedDataLike,
@@ -548,6 +614,23 @@ export function createMomentFactory(deps: FactoryDeps) {
           _f: directFormat,
           _presetFields:
             p.H === 24 ? undefined : { y: p.y, M: p.M, D: p.D, H: p.H, m: p.m, s: p.s, ms: 0 },
+        });
+      }
+    }
+    if (
+      directFormat === "DD MMMM YYYY" &&
+      deps.isCustomFormatParsingEnabled() &&
+      (typeof localeOrStrict === "string" ? localeOrStrict === "en" : getCurrentLocale() === "en")
+    ) {
+      const p = parseEnglishLongMonthDate(str);
+      if (p.kind === "local" && localeConfigs.en?.months === enLocale.months) {
+        const d = createDateSafe(p.y, p.M, p.D, 0, 0, 0, 0, false);
+        return new Moment({
+          _d: d,
+          _dClone: false,
+          _i: str,
+          _f: directFormat,
+          _presetFields: { y: p.y, M: p.M, D: p.D, H: 0, m: 0, s: 0, ms: 0 },
         });
       }
     }

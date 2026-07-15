@@ -9,6 +9,8 @@ const BASIC_INPUT = "20240615T123045";
 const BASIC_FORMAT = "YYYYMMDD[T]HHmmss";
 const SLASH_INPUT = "2024/06/15";
 const SLASH_FORMAT = "YYYY/MM/DD";
+const ENGLISH_LONG_MONTH_INPUT = "15 June 2024";
+const ENGLISH_LONG_MONTH_FORMAT = "DD MMMM YYYY";
 const DATE_INPUT = new Date("2024-01-15T10:30:45.123Z");
 const ITERATIONS = 50_000;
 const SAMPLES = 7;
@@ -72,6 +74,12 @@ if (process.env.RETAIN === "parsed") {
     () => mmntjs(SLASH_INPUT, SLASH_FORMAT),
   );
   console.log(`retained ${ITERATIONS} Moment values from slash formatted input for heap profiling`);
+} else if (process.env.RETAIN === "moment-english-long-month-format") {
+  (globalThis as { retained?: unknown[] }).retained = Array.from(
+    { length: ITERATIONS },
+    () => mmntjs(ENGLISH_LONG_MONTH_INPUT, ENGLISH_LONG_MONTH_FORMAT),
+  );
+  console.log(`retained ${ITERATIONS} Moment values from English long-month formatted input for heap profiling`);
 } else if (process.env.RETAIN === "moment-date") {
   (globalThis as { retained?: unknown[] }).retained = Array.from(
     { length: ITERATIONS },
