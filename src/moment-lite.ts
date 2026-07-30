@@ -2480,13 +2480,125 @@ export class MomentLite {
     return formatMomentBasic(this as unknown as FormattableMoment, formatStr);
   }
 
+  private _calcStartOfMs(unit: string): number {
+    const u = normalizeUnits(unit);
+    if (!u || u === "millisecond") {
+      return this._p.isUTC ? this._p.t - this._p.offset * 60000 : this._p.t;
+    }
+    this._ensureFields();
+    const p = this._p;
+    if (p.isUTC) {
+      const offsetMs = p.offset * 60000;
+      switch (u) {
+        case "year":
+          return Date.UTC(p.y, 0, 1) - offsetMs;
+        case "month":
+          return Date.UTC(p.y, p.M, 1) - offsetMs;
+        case "day":
+        case "date":
+          return Date.UTC(p.y, p.M, p.D) - offsetMs;
+        case "hour":
+          return Date.UTC(p.y, p.M, p.D, p.H) - offsetMs;
+        case "minute":
+          return Date.UTC(p.y, p.M, p.D, p.H, p.m) - offsetMs;
+        case "second":
+          return Date.UTC(p.y, p.M, p.D, p.H, p.m, p.s) - offsetMs;
+        case "quarter": {
+          const qM = Math.floor(p.M / 3) * 3;
+          return Date.UTC(p.y, qM, 1) - offsetMs;
+        }
+      }
+    } else {
+      switch (u) {
+        case "year":
+          return new Date(p.y, 0, 1).valueOf();
+        case "month":
+          return new Date(p.y, p.M, 1).valueOf();
+        case "day":
+        case "date":
+          return new Date(p.y, p.M, p.D).valueOf();
+        case "hour":
+          return new Date(p.y, p.M, p.D, p.H).valueOf();
+        case "minute":
+          return new Date(p.y, p.M, p.D, p.H, p.m).valueOf();
+        case "second":
+          return new Date(p.y, p.M, p.D, p.H, p.m, p.s).valueOf();
+        case "quarter": {
+          const qM = Math.floor(p.M / 3) * 3;
+          return new Date(p.y, qM, 1).valueOf();
+        }
+      }
+    }
+    return this.clone().startOf(u).valueOf();
+  }
+
+  private _calcEndOfMs(unit: string): number {
+    const u = normalizeUnits(unit);
+    if (!u || u === "millisecond") {
+      return this._p.isUTC ? this._p.t - this._p.offset * 60000 : this._p.t;
+    }
+    this._ensureFields();
+    const p = this._p;
+    if (p.isUTC) {
+      const offsetMs = p.offset * 60000;
+      switch (u) {
+        case "year":
+          return Date.UTC(p.y + 1, 0, 1) - offsetMs - 1;
+        case "month": {
+          const nextM = p.M === 11 ? 0 : p.M + 1;
+          const nextY = p.M === 11 ? p.y + 1 : p.y;
+          return Date.UTC(nextY, nextM, 1) - offsetMs - 1;
+        }
+        case "day":
+        case "date":
+          return Date.UTC(p.y, p.M, p.D + 1) - offsetMs - 1;
+        case "hour":
+          return Date.UTC(p.y, p.M, p.D, p.H + 1) - offsetMs - 1;
+        case "minute":
+          return Date.UTC(p.y, p.M, p.D, p.H, p.m + 1) - offsetMs - 1;
+        case "second":
+          return Date.UTC(p.y, p.M, p.D, p.H, p.m, p.s + 1) - offsetMs - 1;
+        case "quarter": {
+          const qM = Math.floor(p.M / 3) * 3 + 3;
+          const nextQY = qM >= 12 ? p.y + 1 : p.y;
+          return Date.UTC(nextQY, qM % 12, 1) - offsetMs - 1;
+        }
+      }
+    } else {
+      switch (u) {
+        case "year":
+          return new Date(p.y + 1, 0, 1).valueOf() - 1;
+        case "month": {
+          const nextM = p.M === 11 ? 0 : p.M + 1;
+          const nextY = p.M === 11 ? p.y + 1 : p.y;
+          return new Date(nextY, nextM, 1).valueOf() - 1;
+        }
+        case "day":
+        case "date":
+          return new Date(p.y, p.M, p.D + 1).valueOf() - 1;
+        case "hour":
+          return new Date(p.y, p.M, p.D, p.H + 1).valueOf() - 1;
+        case "minute":
+          return new Date(p.y, p.M, p.D, p.H, p.m + 1).valueOf() - 1;
+        case "second":
+          return new Date(p.y, p.M, p.D, p.H, p.m, p.s + 1).valueOf() - 1;
+        case "quarter": {
+          const qM = Math.floor(p.M / 3) * 3 + 3;
+          const nextQY = qM >= 12 ? p.y + 1 : p.y;
+          return new Date(nextQY, qM % 12, 1).valueOf() - 1;
+        }
+      }
+    }
+    return this.clone().endOf(u).valueOf();
+  }
+
   isBefore(input: MomentInput, unit?: string): boolean {
     const other = new MomentLite({ _t: valueOfInput(input), _dClone: false });
     if (!this._isValid || !other._isValid) {
       return false;
     }
     if (unit) {
-      return this._compareCalendarValues(other, unit) < 0;
+      return this._calcEndOfMs(unit) < other.valueOf();
     }
     return this.valueOf() < other.valueOf();
   }
@@ -2497,7 +2609,7 @@ export class MomentLite {
       return false;
     }
     if (unit) {
-      return this._compareCalendarValues(other, unit) > 0;
+      return other.valueOf() < this._calcStartOfMs(unit);
     }
     return this.valueOf() > other.valueOf();
   }
@@ -2508,7 +2620,8 @@ export class MomentLite {
       return false;
     }
     if (unit) {
-      return this._compareCalendarValues(other, unit) === 0;
+      const ms = other.valueOf();
+      return this._calcStartOfMs(unit) <= ms && ms <= this._calcEndOfMs(unit);
     }
     return this.valueOf() === other.valueOf();
   }
@@ -2518,7 +2631,10 @@ export class MomentLite {
     if (!this._isValid || !other._isValid) {
       return false;
     }
-    return this._compareCalendarValues(other, unit ?? "millisecond") <= 0;
+    if (unit) {
+      return this._calcStartOfMs(unit) <= other.valueOf();
+    }
+    return this._compareCalendarValues(other, "millisecond") <= 0;
   }
 
   isSameOrAfter(input: MomentInput, unit?: string): boolean {
@@ -2526,7 +2642,10 @@ export class MomentLite {
     if (!this._isValid || !other._isValid) {
       return false;
     }
-    return this._compareCalendarValues(other, unit ?? "millisecond") >= 0;
+    if (unit) {
+      return other.valueOf() <= this._calcEndOfMs(unit);
+    }
+    return this._compareCalendarValues(other, "millisecond") >= 0;
   }
 
   isBetween(from: MomentInput, to: MomentInput, unit?: string, inclusivity?: string): boolean {

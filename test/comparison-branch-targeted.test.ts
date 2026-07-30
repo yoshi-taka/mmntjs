@@ -482,10 +482,11 @@ describe("normalizeUnits edge case (falsy => NaN)", () => {
     const a = moment.utc("2024-01-15");
     const b = moment.utc("2024-06-15");
     expect(a.isAfter(b, "unknown" as never)).toBe(false);
-    expect(a.isBefore(b, "unknown" as never)).toBe(false);
+    // moment.js default: unknown unit → millisecond comparison
+    expect(a.isBefore(b, "unknown" as never)).toBe(true);
     expect(a.isSame(b, "unknown" as never)).toBe(false);
     expect(a.isSameOrAfter(b, "unknown" as never)).toBe(false);
-    expect(a.isSameOrBefore(b, "unknown" as never)).toBe(false);
+    expect(a.isSameOrBefore(b, "unknown" as never)).toBe(true);
     // isBetween passes unknown unit through
     expect(a.isBetween(b, moment.utc("2025-01-01"), "unknown" as never)).toBe(false);
   });
