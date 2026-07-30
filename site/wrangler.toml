@@ -1,0 +1,4 @@
+name = "mmntjs"
+
+[vars]
+SKIP_DEPENDENCY_INSTALL = "1"
