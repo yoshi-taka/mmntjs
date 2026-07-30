@@ -217,9 +217,12 @@ test("PBT: set('hour',24) normalizes to 0", () => {
   expect(m2.valueOf()).toBe(mo.valueOf());
 });
 
-
 test("PBT: PBT seed=1631974943", () => {
-  const vals = [{"text":"2003-01-01T00:00:00.000+00:00","offset":0}, {"text":"2003-01-01T00:00:00.000+00:15","offset":15}, "month"];
+  const vals = [
+    { text: "2003-01-01T00:00:00.000+00:00", offset: 0 },
+    { text: "2003-01-01T00:00:00.000+00:15", offset: 15 },
+    "month",
+  ];
   // TODO: adapt assertion to match the original property
   // seed=1631974943
 });

@@ -196,10 +196,13 @@ makeMutations([
     },
   },
   {
-    name: "isBefore: _compareCalendarValues sign flipped",
+    name: "isBefore: _calcEndOfMs < flipped to >",
     file: "src/moment-class.ts",
     patterns: [
-      [/_compareCalendarValues\(other, unit\) < 0/g, "_compareCalendarValues(other, unit) > 0"],
+      [
+        /this\._calcEndOfMs\(unit\) < other\.valueOf\(\)/g,
+        "this._calcEndOfMs(unit) > other.valueOf()",
+      ],
     ],
     inputs: fc.date({ noInvalidDate: true }),
     testFn: (input: unknown) => {
@@ -710,39 +713,42 @@ makeMutations([
     file: "src/moment-class.ts",
     patterns: [
       [
-        /this\._compareCalendarValues\(other, unit\) <= 0/g,
-        "this._compareCalendarValues(other, unit) < 0",
+        /this\._calcStartOfMs\(unit\) <= other\.valueOf\(\)/g,
+        "this._calcStartOfMs(unit) < other.valueOf()",
       ],
     ],
     inputs: fc.date({ noInvalidDate: true }),
     testFn: (input: unknown) => {
       const d = input as Date;
-      // Use "day" unit to exercise _compareCalendarValues path
+      const startOfDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
       return (
         mutatedMoment(d).isSameOrBefore(new Date(d.getTime() + 86400000), "day") ===
           originalMoment(d as Date).isSameOrBefore(new Date(d.getTime() + 86400000), "day") &&
-        mutatedMoment(d).isSameOrBefore(d, "day") ===
-          originalMoment(d as Date).isSameOrBefore(d as Date, "day")
+        mutatedMoment(startOfDay).isSameOrBefore(startOfDay, "day") ===
+          originalMoment(startOfDay).isSameOrBefore(startOfDay, "day")
       );
     },
   },
   {
-    name: "isSameOrAfter: >= flipped to >",
+    name: "isSameOrAfter: <= flipped to <",
     file: "src/moment-class.ts",
     patterns: [
       [
-        /this\._compareCalendarValues\(other, unit\) >= 0/g,
-        "this._compareCalendarValues(other, unit) > 0",
+        /other\.valueOf\(\) <= this\._calcEndOfMs\(unit\)/g,
+        "other.valueOf() < this._calcEndOfMs(unit)",
       ],
     ],
     inputs: fc.date({ noInvalidDate: true }),
     testFn: (input: unknown) => {
       const d = input as Date;
+      const endOfDay = new Date(
+        new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).valueOf() - 1,
+      );
       return (
         mutatedMoment(d).isSameOrAfter(new Date(d.getTime() - 86400000), "day") ===
           originalMoment(d as Date).isSameOrAfter(new Date(d.getTime() - 86400000), "day") &&
-        mutatedMoment(d).isSameOrAfter(d, "day") ===
-          originalMoment(d as Date).isSameOrAfter(d as Date, "day")
+        mutatedMoment(endOfDay).isSameOrAfter(endOfDay, "day") ===
+          originalMoment(endOfDay).isSameOrAfter(endOfDay, "day")
       );
     },
   },
@@ -751,38 +757,42 @@ makeMutations([
     file: "src/moment-lite.ts",
     patterns: [
       [
-        /this\._compareCalendarValues\(other, unit \?\? "millisecond"\) <= 0/g,
-        'this._compareCalendarValues(other, unit ?? "millisecond") < 0',
+        /this\._calcStartOfMs\(unit\) <= other\.valueOf\(\)/g,
+        "this._calcStartOfMs(unit) < other.valueOf()",
       ],
     ],
     inputs: fc.date({ noInvalidDate: true }),
     testFn: (input: unknown) => {
       const d = input as Date;
+      const startOfDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
       return (
         mutatedMoment(d).isSameOrBefore(new Date(d.getTime() + 86400000), "day") ===
           originalMoment(d as Date).isSameOrBefore(new Date(d.getTime() + 86400000), "day") &&
-        mutatedMoment(d).isSameOrBefore(d, "day") ===
-          originalMoment(d as Date).isSameOrBefore(d as Date, "day")
+        mutatedMoment(startOfDay).isSameOrBefore(startOfDay, "day") ===
+          originalMoment(startOfDay).isSameOrBefore(startOfDay, "day")
       );
     },
   },
   {
-    name: "isSameOrAfter: moment-lite >= flipped to >",
+    name: "isSameOrAfter: moment-lite <= flipped to <",
     file: "src/moment-lite.ts",
     patterns: [
       [
-        /this\._compareCalendarValues\(other, unit \?\? "millisecond"\) >= 0/g,
-        'this._compareCalendarValues(other, unit ?? "millisecond") > 0',
+        /other\.valueOf\(\) <= this\._calcEndOfMs\(unit\)/g,
+        "other.valueOf() < this._calcEndOfMs(unit)",
       ],
     ],
     inputs: fc.date({ noInvalidDate: true }),
     testFn: (input: unknown) => {
       const d = input as Date;
+      const endOfDay = new Date(
+        new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).valueOf() - 1,
+      );
       return (
         mutatedMoment(d).isSameOrAfter(new Date(d.getTime() - 86400000), "day") ===
           originalMoment(d as Date).isSameOrAfter(new Date(d.getTime() - 86400000), "day") &&
-        mutatedMoment(d).isSameOrAfter(d, "day") ===
-          originalMoment(d as Date).isSameOrAfter(d as Date, "day")
+        mutatedMoment(endOfDay).isSameOrAfter(endOfDay, "day") ===
+          originalMoment(endOfDay).isSameOrAfter(endOfDay, "day")
       );
     },
   },
