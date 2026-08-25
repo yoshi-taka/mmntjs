@@ -26,6 +26,19 @@ describe("moment() — local timezone", () => {
   test("array constructor", () => {
     compareMoments(moment([2024, 5, 15, 12, 30]), originalMoment([2024, 5, 15, 12, 30]));
   });
+
+  test("year arithmetic refreshes fields when DST normalizes a nonexistent time", () => {
+    const originalTz = process.env.TZ;
+    process.env.TZ = "America/New_York";
+    try {
+      const input = new Date("1951-04-28T08:00:05.999Z");
+      const mm = moment(input).add(-6, "seconds").subtract(-6, "years");
+      const om = originalMoment(input).add(-6, "seconds").subtract(-6, "years");
+      compareMoments(mm, om);
+    } finally {
+      process.env.TZ = originalTz;
+    }
+  });
 });
 
 describe("moment.utc()", () => {
@@ -59,6 +72,20 @@ describe("moment.utc()", () => {
 
   test("array", () => {
     compareMoments(moment.utc([2024, 5, 15, 12, 30]), originalMoment.utc([2024, 5, 15, 12, 30]));
+  });
+
+  test("formatted time-only input uses the current UTC date", () => {
+    const oldNow = moment.now;
+    const oldOriginalNow = originalMoment.now;
+    const fixedNow = Date.UTC(2024, 5, 15, 18, 45);
+    moment.now = () => fixedNow;
+    originalMoment.now = () => fixedNow;
+    try {
+      compareMoments(moment.utc("13:30", "HH:mm"), originalMoment.utc("13:30", "HH:mm"));
+    } finally {
+      moment.now = oldNow;
+      originalMoment.now = oldOriginalNow;
+    }
   });
 });
 
@@ -434,6 +461,25 @@ describe("parseZone()", () => {
       expect(mm.format("M D YYYY HH:mm:ss ZZ")).toBe(om.format("M D YYYY HH:mm:ss ZZ"));
       expect(mm.utcOffset()).toBe(om.utcOffset());
       expect(mm.valueOf()).toBe(om.valueOf());
+    }
+  });
+
+  test("formatted partial dates use the appropriate current date", () => {
+    const oldNow = moment.now;
+    const oldOriginalNow = originalMoment.now;
+    const fixedNow = Date.UTC(2024, 5, 15, 18, 45);
+    moment.now = () => fixedNow;
+    originalMoment.now = () => fixedNow;
+    try {
+      for (const [input, format] of [
+        ["13:30+02:00", "HH:mmZ"],
+        ["13:30", "HH:mm"],
+      ]) {
+        compareMoments(moment.parseZone(input, format), originalMoment.parseZone(input, format));
+      }
+    } finally {
+      moment.now = oldNow;
+      originalMoment.now = oldOriginalNow;
     }
   });
 });

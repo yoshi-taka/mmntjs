@@ -71,6 +71,28 @@ function parseFixedISODate(str: string): Date | null {
   );
 }
 
+function createUTCDateFromParsedParts(parts: (number | undefined)[], nowMs: number): Date {
+  const current = new Date(nowMs);
+  const year = parts[0] ?? current.getUTCFullYear();
+  let month = parts[1];
+  let day = parts[2];
+  if (parts[0] === undefined) {
+    if (month === undefined) {
+      month = current.getUTCMonth();
+      day ??= current.getUTCDate();
+    }
+  }
+  return createUTCDate(
+    year,
+    month ?? 0,
+    day ?? 1,
+    parts[3] ?? 0,
+    parts[4] ?? 0,
+    parts[5] ?? 0,
+    parts[6] ?? 0,
+  );
+}
+
 export function registerUtcApi<C extends MomentCtor>(
   target: UtcMomentTarget<C>,
   deps: UtcApiDeps<C>,
@@ -162,15 +184,7 @@ export function registerUtcApi<C extends MomentCtor>(
       } else if (m._cold !== undefined) {
         const parts = m._cold._parsedDateParts;
         if (parts && parts.length > 0) {
-          m._p.d = createUTCDate(
-            parts[0],
-            parts[1] ?? 0,
-            parts[2] ?? 1,
-            parts[3] ?? 0,
-            parts[4] ?? 0,
-            parts[5] ?? 0,
-            parts[6] ?? 0,
-          );
+          m._p.d = createUTCDateFromParsedParts(parts, nowFn());
         } else {
           const utcDate = new Date(`${input}Z`);
           m._p.d = !isNaN(utcDate.getTime()) ? utcDate : new Date(absTime);

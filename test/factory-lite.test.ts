@@ -1,5 +1,6 @@
 import { describe, test, expect, afterAll } from "bun:test";
 import moment from "../src/lite.ts";
+import originalMoment from "../moment/moment.js";
 import { disableCustomFormatParsing } from "../src/parse-lite.ts";
 import { disableFormattedInput } from "../src/core/factory-lite-impl.ts";
 
@@ -91,6 +92,21 @@ describe("factory-lite-impl", () => {
       const m = moment({ year: 2024, month: 0, day: 15 });
       expect(m.isValid()).toBe(false);
     });
+  });
+
+  test("year arithmetic refreshes fields when DST normalizes a nonexistent time", () => {
+    const originalTz = process.env.TZ;
+    process.env.TZ = "America/New_York";
+    try {
+      const input = new Date("1951-04-28T08:00:05.999Z");
+      const actual = moment(input).add(-6, "seconds").subtract(-6, "years");
+      const expected = originalMoment(input).add(-6, "seconds").subtract(-6, "years");
+      expect(actual.valueOf()).toBe(expected.valueOf());
+      expect(actual.hours()).toBe(expected.hours());
+      expect(actual.minutes()).toBe(expected.minutes());
+    } finally {
+      process.env.TZ = originalTz;
+    }
   });
 
   describe("core-lite static methods", () => {

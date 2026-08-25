@@ -233,6 +233,28 @@ function _dayOfWeek(y: number, m: number, d: number): number {
   );
 }
 
+function syncNormalizedLocalCalendarFields(p: _P, d: Date, offset: number): boolean {
+  if (
+    offset === p.offset ||
+    (d.getHours() === p.H &&
+      d.getMinutes() === p.m &&
+      d.getSeconds() === p.s &&
+      d.getMilliseconds() === p.ms)
+  ) {
+    return false;
+  }
+  p.y = d.getFullYear();
+  p.M = d.getMonth();
+  p.D = d.getDate();
+  p.W = d.getDay();
+  p.H = d.getHours();
+  p.m = d.getMinutes();
+  p.s = d.getSeconds();
+  p.ms = d.getMilliseconds();
+  p.offset = offset;
+  return true;
+}
+
 // Reusable probe Date for lightweight offset verification (no allocation)
 const _probeDate = new Date(0);
 const _probeCache = { t: NaN, offset: NaN };
@@ -1430,6 +1452,10 @@ export class MomentLite {
         p.d = dt;
       }
       p.t = dt.setFullYear(y, m, d_);
+      const offset = -dt.getTimezoneOffset();
+      if (syncNormalizedLocalCalendarFields(p, dt, offset)) {
+        return;
+      }
     }
     p.y = y;
     p.M = m;
@@ -1485,7 +1511,11 @@ export class MomentLite {
           const dt = this._p.d ?? (this._p.d = new Date(this._p.t));
           dt.setFullYear(y, m, d_);
           this._p.t = dt.getTime();
-          this._p.offset = -dt.getTimezoneOffset();
+          const offset = -dt.getTimezoneOffset();
+          if (syncNormalizedLocalCalendarFields(this._p, dt, offset)) {
+            break;
+          }
+          this._p.offset = offset;
         }
         this._p.y = y;
         this._p.M = m;

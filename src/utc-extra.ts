@@ -225,14 +225,15 @@ export function parseZoneMoment(
       next._getLocale() as unknown as ParseLocale,
     );
     if (parsed?.offset !== undefined) {
+      (next as unknown as { _ensureFields: () => void })._ensureFields();
       const d = createDateSafe(
-        parsed.year ?? 0,
-        parsed.month ?? 0,
-        parsed.day ?? 1,
-        parsed.hour ?? 0,
-        parsed.minute ?? 0,
-        parsed.second ?? 0,
-        parsed.millisecond ?? 0,
+        next._p.y,
+        next._p.M,
+        next._p.D,
+        next._p.H,
+        next._p.m,
+        next._p.s,
+        next._p.ms,
         true,
       );
       next._p.d = d;

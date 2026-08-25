@@ -296,6 +296,28 @@ function addMonthUTC(p: _P & CleanUTC, amount: number): void {
   p._tStale = false;
 }
 
+function syncNormalizedLocalCalendarFields(p: _P, d: Date, offset: number): boolean {
+  if (
+    offset === p.offset ||
+    (d.getHours() === p.H &&
+      d.getMinutes() === p.m &&
+      d.getSeconds() === p.s &&
+      d.getMilliseconds() === p.ms)
+  ) {
+    return false;
+  }
+  p.y = d.getFullYear();
+  p.M = d.getMonth();
+  p.D = d.getDate();
+  p.W = d.getDay();
+  p.H = d.getHours();
+  p.m = d.getMinutes();
+  p.s = d.getSeconds();
+  p.ms = d.getMilliseconds();
+  p.offset = offset;
+  return true;
+}
+
 /** add(1, "month") on CleanLocalFreshWithDate → Date.setFullYear (no clone). */
 function addMonth_CLFD(p: _P & CleanLocalFreshWithDate, amount: number): void {
   const totalMonths = Number.isInteger(amount)
@@ -314,11 +336,15 @@ function addMonth_CLFD(p: _P & CleanLocalFreshWithDate, amount: number): void {
     }
   }
   p.t = p.d.setFullYear(y, m, d_);
+  const offset = -p.d.getTimezoneOffset();
+  if (syncNormalizedLocalCalendarFields(p, p.d, offset)) {
+    return;
+  }
   p.y = y;
   p.M = m;
   p.D = d_;
   p.W = p.d.getDay();
-  p.offset = -p.d.getTimezoneOffset();
+  p.offset = offset;
 }
 
 /** add(1, "month") on CleanLocalFreshNoDate → allocate Date + setFullYear. */
@@ -341,11 +367,15 @@ function addMonth_CLFN(p: _P & CleanLocalFreshNoDate, amount: number): void {
   const d = new Date(p.t);
   p.t = d.setFullYear(y, m, d_);
   (p as { d: Date | undefined }).d = d;
+  const offset = -d.getTimezoneOffset();
+  if (syncNormalizedLocalCalendarFields(p, d, offset)) {
+    return;
+  }
   p.y = y;
   p.M = m;
   p.D = d_;
   p.W = d.getDay();
-  p.offset = -d.getTimezoneOffset();
+  p.offset = offset;
 }
 
 // ── startOf month morphisms ──
@@ -3033,6 +3063,10 @@ export class Moment {
         p.d = dt;
       }
       p.t = dt.setFullYear(y, m, d_);
+      const offset = -dt.getTimezoneOffset();
+      if (syncNormalizedLocalCalendarFields(p, dt, offset)) {
+        return;
+      }
     }
     p.y = y;
     p.M = m;
@@ -3083,6 +3117,10 @@ export class Moment {
           const dt = this._p.d ?? (this._p.d = new Date(this._p.t));
           dt.setFullYear(y, m, d_);
           this._p.t = dt.getTime();
+          const offset = -dt.getTimezoneOffset();
+          if (syncNormalizedLocalCalendarFields(this._p, dt, offset)) {
+            break;
+          }
         }
         this._p.y = y;
         this._p.M = m;

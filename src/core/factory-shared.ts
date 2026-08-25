@@ -492,10 +492,20 @@ export function createMomentFactory(deps: FactoryDeps) {
       mo = date.getUTCMonth();
       d = date.getUTCDate();
     } else {
+      const now = new Date(deps.nowFn());
+      const currentYear = parsed.offset !== undefined ? now.getUTCFullYear() : now.getFullYear();
+      const currentMonth = parsed.offset !== undefined ? now.getUTCMonth() : now.getMonth();
+      const currentDay = parsed.offset !== undefined ? now.getUTCDate() : now.getDate();
       if (y === undefined) {
-        y = new Date(deps.nowFn()).getFullYear();
+        y = currentYear;
+        if (mo === undefined) {
+          mo = currentMonth;
+          if (d === undefined) {
+            d = currentDay;
+          }
+        }
       }
-      if (mo === undefined && y !== undefined) {
+      if (mo === undefined) {
         mo = 0;
       }
       if (d === undefined) {

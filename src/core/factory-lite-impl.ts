@@ -34,6 +34,28 @@ export function nowFn(): number {
   return momentNowFn ? momentNowFn() : Date.now();
 }
 
+function createUTCDateFromParsedParts(parts: (number | undefined)[], nowMs: number): Date {
+  const current = new Date(nowMs);
+  const year = parts[0] ?? current.getUTCFullYear();
+  let month = parts[1];
+  let day = parts[2];
+  if (parts[0] === undefined) {
+    if (month === undefined) {
+      month = current.getUTCMonth();
+      day ??= current.getUTCDate();
+    }
+  }
+  return createUTCDate(
+    year,
+    month ?? 0,
+    day ?? 1,
+    parts[3] ?? 0,
+    parts[4] ?? 0,
+    parts[5] ?? 0,
+    parts[6] ?? 0,
+  );
+}
+
 export function enableFormattedInput(): void {
   formattedInputEnabled = true;
 }
@@ -109,10 +131,20 @@ function createMomentFromParsed(
     mo = date.getUTCMonth();
     d = date.getUTCDate();
   } else {
+    const now = new Date(nowFn());
+    const currentYear = parsed.offset !== undefined ? now.getUTCFullYear() : now.getFullYear();
+    const currentMonth = parsed.offset !== undefined ? now.getUTCMonth() : now.getMonth();
+    const currentDay = parsed.offset !== undefined ? now.getUTCDate() : now.getDate();
     if (y === undefined) {
-      y = new Date(nowFn()).getFullYear();
+      y = currentYear;
+      if (mo === undefined) {
+        mo = currentMonth;
+        if (d === undefined) {
+          d = currentDay;
+        }
+      }
     }
-    if (mo === undefined && y !== undefined) {
+    if (mo === undefined) {
       mo = 0;
     }
     if (d === undefined) {
@@ -607,11 +639,16 @@ export function momentUTC(
     return m;
   }
   if (!m._p.isUTC && isString(input)) {
-    const utcDate = new Date(`${input} UTC`);
-    if (!isNaN(utcDate.getTime())) {
-      m._p.d = utcDate;
+    const parts = m._cold?._parsedDateParts as (number | undefined)[] | undefined;
+    if (parts && parts.length > 0) {
+      m._p.d = createUTCDateFromParsedParts(parts, nowFn());
     } else {
-      m._p.d = new Date(absTime - (m._p.d ?? new Date(absTime)).getTimezoneOffset() * 60000);
+      const utcDate = new Date(`${input} UTC`);
+      if (!isNaN(utcDate.getTime())) {
+        m._p.d = utcDate;
+      } else {
+        m._p.d = new Date(absTime - (m._p.d ?? new Date(absTime)).getTimezoneOffset() * 60000);
+      }
     }
   } else {
     m._p.d = new Date(absTime);
@@ -619,5 +656,6 @@ export function momentUTC(
   m._p.t = m._p.d.getTime();
   m._p.isUTC = true;
   m._p.offset = 0;
+  (m as unknown as { _refreshFields: () => void })._refreshFields();
   return m;
 }

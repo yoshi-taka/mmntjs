@@ -1,5 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import moment from "../src/index.ts";
+import originalMoment from "../moment/moment.js";
 
 describe("createFromFormattedStringInput", () => {
   describe("single format", () => {
@@ -32,6 +33,30 @@ describe("createFromFormattedStringInput", () => {
     test("format with strict as second arg", () => {
       const m = moment("2024-01-15", true);
       expect(m.isValid()).toBe(true);
+    });
+
+    test("defaults missing date fields like moment.js", () => {
+      const oldNow = moment.now;
+      const oldOriginalNow = originalMoment.now;
+      const fixedNow = Date.UTC(2024, 5, 15, 18, 45);
+      moment.now = () => fixedNow;
+      originalMoment.now = () => fixedNow;
+      try {
+        for (const [input, format] of [
+          ["12:13:14", "HH:mm:ss"],
+          ["05", "DD"],
+          ["05", "MM"],
+          ["1996", "YYYY"],
+        ]) {
+          const actual = moment(input, format);
+          const expected = originalMoment(input, format);
+          expect(actual.format("YYYY-MM-DD HH:mm:ss")).toBe(expected.format("YYYY-MM-DD HH:mm:ss"));
+          expect(actual.valueOf()).toBe(expected.valueOf());
+        }
+      } finally {
+        moment.now = oldNow;
+        originalMoment.now = oldOriginalNow;
+      }
     });
   });
 
@@ -99,6 +124,23 @@ describe("createFromFormattedStringInput", () => {
     test("array with RFC_2822 full date", () => {
       const m = moment("15 Jan 2024 10:30:00 +0000", ["RFC_2822", "YYYY-MM-DD"]);
       expect(m.isValid()).toBe(false);
+    });
+
+    test("defaults missing date fields for the selected format", () => {
+      const oldNow = moment.now;
+      const oldOriginalNow = originalMoment.now;
+      const fixedNow = Date.UTC(2024, 5, 15, 18, 45);
+      moment.now = () => fixedNow;
+      originalMoment.now = () => fixedNow;
+      try {
+        const actual = moment("13:30", ["YYYY", "HH:mm"]);
+        const expected = originalMoment("13:30", ["YYYY", "HH:mm"]);
+        expect(actual.valueOf()).toBe(expected.valueOf());
+        expect(actual.format("YYYY-MM-DD HH:mm")).toBe(expected.format("YYYY-MM-DD HH:mm"));
+      } finally {
+        moment.now = oldNow;
+        originalMoment.now = oldOriginalNow;
+      }
     });
   });
 
