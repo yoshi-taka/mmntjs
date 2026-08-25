@@ -999,7 +999,7 @@ describe("property-based new functions vs mmntjs", () => {
   test("diffDays antisymmetry", () => {
     assertProp(
       fc.property(safeDates, safeDates, (a, b) => {
-        expect(diffDays(a, b)).toBe(-diffDays(b, a));
+        expect(diffDays(a, b) + diffDays(b, a)).toBe(0);
       }),
       { numRuns: 100 },
     );
