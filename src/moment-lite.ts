@@ -401,17 +401,19 @@ export class MomentLite {
         this._p.ms = this._p.d.getUTCMilliseconds();
       } else {
         const t = this._p.t;
-        const totalDays = Math.floor(t / 86400000);
-        const totalSec = Math.floor(t / 1000);
+        const totalDays = Math.floor(t / DAY_MS);
+        let timeOfDay = t - totalDays * DAY_MS;
         this._p.W = euclideanModulo(totalDays + 4, 7);
         const [y, M, D] = MomentLite._epochDaysToYMD(totalDays);
         this._p.y = y;
         this._p.M = M;
         this._p.D = D;
-        this._p.H = euclideanModulo(Math.floor(totalSec / 3600), 24);
-        this._p.m = euclideanModulo(Math.floor(totalSec / 60), 60);
-        this._p.s = euclideanModulo(totalSec, 60);
-        this._p.ms = euclideanModulo(t, 1000);
+        this._p.H = Math.floor(timeOfDay / HOUR_MS);
+        timeOfDay -= this._p.H * HOUR_MS;
+        this._p.m = Math.floor(timeOfDay / MINUTE_MS);
+        timeOfDay -= this._p.m * MINUTE_MS;
+        this._p.s = Math.floor(timeOfDay / SECOND_MS);
+        this._p.ms = timeOfDay - this._p.s * SECOND_MS;
       }
     } else {
       const d = this._getD();

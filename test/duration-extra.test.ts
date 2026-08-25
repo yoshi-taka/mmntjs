@@ -256,15 +256,8 @@ describe("property-based duration patterns", () => {
   const durAmounts = fc.integer({ min: -10000, max: 10000 });
   const roundUnits = fc.constantFrom("s", "m", "h", "d", "w", "M", "y", "ms");
   const roundModes = fc.constantFrom("halfExpand", "floor", "ceil", "trunc");
-  // Fixed-value units: month/year/quarter are calendar-based, not fixed ms
-  const fixedDurUnits = fc.constantFrom(
-    "milliseconds",
-    "seconds",
-    "minutes",
-    "hours",
-    "days",
-    "weeks",
-  );
+  // Day and larger units are calendar-based when applied to a moment.
+  const fixedDurUnits = fc.constantFrom("milliseconds", "seconds", "minutes", "hours");
 
   test("duration from object getters", () => {
     assertProp(

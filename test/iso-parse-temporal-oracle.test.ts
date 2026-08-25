@@ -1,5 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import moment from "../src/index.ts";
+import momentOracle from "./oracle.ts";
 
 /** Temporal oracle: parse with Temporal and return fields, or null if unavailable/unparseable */
 function temporalParse(s: string): Record<string, unknown> | null {
@@ -36,34 +37,29 @@ function temporalParse(s: string): Record<string, unknown> | null {
   }
 
   try {
-    if (s.includes("T") || s.includes("t")) {
-      try {
-        const z = T.ZonedDateTime.from(s);
-        return {
-          year: z.year,
-          month: z.month,
-          day: z.day,
-          hour: z.hour,
-          minute: z.minute,
-          second: z.second,
-          millisecond: z.millisecond,
-          offset: Math.round(Number(z.offsetNanoseconds) / 6e10),
-        };
-      } catch {
-        const d = T.PlainDateTime.from(s);
-        return {
-          year: d.year,
-          month: d.month,
-          day: d.day,
-          hour: d.hour,
-          minute: d.minute,
-          second: d.second,
-          millisecond: d.millisecond,
-        };
-      }
+    if (/^[+-]?\d{4,6}-?\d{2}-?\d{2}[Tt ]/.test(s)) {
+      const wallClock = s.replace(/(?:[zZ]|[+-]\d{2}:?\d{2})$/, "");
+      const d = T.PlainDateTime.from(wallClock);
+      return {
+        year: d.year,
+        month: d.month,
+        day: d.day,
+        hour: d.hour,
+        minute: d.minute,
+        second: d.second,
+        millisecond: d.millisecond,
+      };
     }
     const d = T.PlainDate.from(s);
-    return { year: d.year, month: d.month, day: d.day };
+    return {
+      year: d.year,
+      month: d.month,
+      day: d.day,
+      hour: 0,
+      minute: 0,
+      second: 0,
+      millisecond: 0,
+    };
   } catch {
     return null;
   }
@@ -101,7 +97,7 @@ function fieldsEqual(a: Record<string, unknown>, b: Record<string, unknown>): bo
   return true;
 }
 
-const CASES: { input: string; note?: string; expectInvalid?: boolean; skipMoment?: boolean }[] = [
+const CASES: { input: string; note?: string; expectInvalid?: boolean }[] = [
   // ---- Basic date ----
   { input: "2024-06-15", note: "standard date" },
   { input: "20240615", note: "compact date" },
@@ -125,26 +121,26 @@ const CASES: { input: string; note?: string; expectInvalid?: boolean; skipMoment
   // ---- Year variants ----
   { input: "0000-01-01", note: "year zero" },
   { input: "9999-12-31", note: "max year" },
-  { input: "-000001-01-01", note: "negative year (6-digit)", skipMoment: true },
-  { input: "+002024-06-15", note: "expanded year +", skipMoment: true },
-  { input: "-002024-06-15", note: "expanded year -", skipMoment: true },
+  { input: "-000001-01-01", note: "negative year (6-digit)" },
+  { input: "+002024-06-15", note: "expanded year +" },
+  { input: "-002024-06-15", note: "expanded year -" },
 
   // ---- Edge dates ----
   { input: "2024-01-01", note: "first day" },
   { input: "2024-12-31", note: "last day" },
   { input: "2024-01-31", note: "month end" },
 
-  // ---- Month+day only, year+month only ----
-  { input: "2024-06", note: "year-month (no day)", expectInvalid: true },
-
   // ---- With space separator ----
   { input: "2024-06-15 10:30:00", note: "space separator" },
 
-  // ---- Non-ISO (should fall through) ----
-  { input: "June 15, 2024", note: "named month (non-ISO)" },
-  { input: "06/15/2024", note: "US format (non-ISO)" },
   { input: "", note: "empty", expectInvalid: true },
   { input: "invalid", note: "garbage", expectInvalid: true },
+];
+
+const FALLBACK_CASES = [
+  { input: "2024-06", note: "year-month (no day)" },
+  { input: "June 15, 2024", note: "named month (non-ISO)" },
+  { input: "06/15/2024", note: "US format (non-ISO)" },
 ];
 
 // Only run when Temporal is available
@@ -173,6 +169,18 @@ if (hasTemporal) {
           console.log("  Temporal:", JSON.stringify(temporal));
         }
         expect(ok).toBe(true);
+      });
+    }
+  });
+
+  describe("non-Temporal parse fallback: mmntjs vs moment.js", () => {
+    for (const c of FALLBACK_CASES) {
+      test(c.note, () => {
+        const actual = moment(c.input);
+        const expected = momentOracle(c.input);
+        expect(actual.isValid()).toBe(expected.isValid());
+        expect(actual.valueOf()).toBe(expected.valueOf());
+        expect(actual.toArray()).toEqual(expected.toArray());
       });
     }
   });

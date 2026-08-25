@@ -13,6 +13,8 @@ import {
 } from "../../src/units.ts";
 import _moment from "../../src/index.ts";
 import type { MomentStatic } from "../../src/entry/types";
+import { Moment } from "../../src/moment-class.ts";
+import { MomentLite } from "../../src/moment-lite.ts";
 
 const moment = _moment as unknown as MomentStatic;
 
@@ -20,6 +22,75 @@ const DAY_MS = 86400000;
 const HOUR_MS = 3600000;
 const MINUTE_MS = 60000;
 const SECOND_MS = 1000;
+
+function expectUTCFields(timestamp: number): void {
+  const expected = new Date(timestamp);
+  const expectedFields = [
+    expected.getUTCFullYear(),
+    expected.getUTCMonth(),
+    expected.getUTCDate(),
+    expected.getUTCDay(),
+    expected.getUTCHours(),
+    expected.getUTCMinutes(),
+    expected.getUTCSeconds(),
+    expected.getUTCMilliseconds(),
+  ];
+
+  for (const value of [
+    new Moment({ _t: timestamp, _isUTC: true }),
+    new MomentLite({ _t: timestamp, _isUTC: true }),
+  ]) {
+    const p = value._p;
+    expect([p.y, p.M, p.D, p.W, p.H, p.m, p.s, p.ms]).toEqual(expectedFields);
+  }
+}
+
+describe("UTC timestamp mixed-radix decomposition", () => {
+  test("matches Date at unit boundaries and TimeClip limits", () => {
+    for (const timestamp of [
+      -8.64e15,
+      -DAY_MS - 1,
+      -DAY_MS,
+      -DAY_MS + 1,
+      -HOUR_MS - 1,
+      -HOUR_MS,
+      -HOUR_MS + 1,
+      -MINUTE_MS - 1,
+      -MINUTE_MS,
+      -MINUTE_MS + 1,
+      -SECOND_MS - 1,
+      -SECOND_MS,
+      -SECOND_MS + 1,
+      -1,
+      0,
+      1,
+      SECOND_MS - 1,
+      SECOND_MS,
+      SECOND_MS + 1,
+      MINUTE_MS - 1,
+      MINUTE_MS,
+      MINUTE_MS + 1,
+      HOUR_MS - 1,
+      HOUR_MS,
+      HOUR_MS + 1,
+      DAY_MS - 1,
+      DAY_MS,
+      DAY_MS + 1,
+      8.64e15,
+    ]) {
+      expectUTCFields(timestamp);
+    }
+  });
+
+  test("matches Date across the full valid timestamp range", () => {
+    assertProp(
+      fc.property(fc.integer({ min: -8.64e15, max: 8.64e15 }), (timestamp) => {
+        expectUTCFields(timestamp);
+      }),
+      { numRuns: 1000 },
+    );
+  });
+});
 
 describe("euclideanModulo", () => {
   test("result is always 0 <= r < mod for positive mod", () => {
