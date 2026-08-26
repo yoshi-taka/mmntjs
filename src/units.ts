@@ -271,7 +271,14 @@ export function narrowCommonUnit(unit: string): UnitCode {
 }
 
 export function euclideanModulo(value: number, mod: number): number {
-  return ((value % mod) + mod) % mod;
+  if (!Number.isInteger(value) || !Number.isInteger(mod)) {
+    return ((value % mod) + mod) % mod;
+  }
+  const remainder = value % mod;
+  if (remainder < 0) {
+    return remainder + mod;
+  }
+  return remainder === 0 ? 0 : remainder;
 }
 
 export function normalizeMonth(m: number): number {
@@ -292,7 +299,18 @@ export function endOfUnitEpoch(value: number, unitMs: number): number {
  *  including negative years. Replaces Date.UTC in UTC calendar paths
  *  with pure integer arithmetic — no Date allocation, no DST risk.
  */
+const EPOCH_DOY_TABLE = new Int32Array([306, 337, 0, 31, 61, 92, 122, 153, 184, 214, 245, 275]);
+
 export function ymdToEpochDays(y: number, m: number, d: number): number {
+  if (y >= 1 && y <= 9999 && m >= 0 && m <= 11 && d >= 1 && d <= 31) {
+    const ya = y - (m <= 1 ? 1 : 0);
+    const product = Math.imul(ya, 5243);
+    const era = product >>> 21;
+    const yoe = ya - era * 400;
+    const doe = yoe * 365 + (ya >>> 2) - (product >>> 19) - era * 96 + EPOCH_DOY_TABLE[m] + d - 1;
+    return era * 146097 + doe - 719468;
+  }
+
   const ya = y - (m <= 1 ? 1 : 0);
   const era = Math.floor(ya / 400);
   const yoe = ya - era * 400;
@@ -306,6 +324,50 @@ export const SECOND_MS = 1000;
 export const MINUTE_MS = 60000;
 export const HOUR_MS = 3600000;
 export const DAY_MS = 86400000;
+const MAX_TIME_MS = 8640000000000000;
+
+/** Pure-arithmetic equivalent of Date.UTC, including normalization and TimeClip. */
+// eslint-disable-next-line max-params
+export function utcTimestamp(
+  year: number,
+  month: number,
+  day = 1,
+  hour = 0,
+  minute = 0,
+  second = 0,
+  millisecond = 0,
+): number {
+  if (
+    !Number.isFinite(year) ||
+    !Number.isFinite(month) ||
+    !Number.isFinite(day) ||
+    !Number.isFinite(hour) ||
+    !Number.isFinite(minute) ||
+    !Number.isFinite(second) ||
+    !Number.isFinite(millisecond)
+  ) {
+    return NaN;
+  }
+
+  let y = Math.trunc(year);
+  let m = Math.trunc(month);
+  const d = Math.trunc(day);
+  const h = Math.trunc(hour);
+  const min = Math.trunc(minute);
+  const s = Math.trunc(second);
+  const ms = Math.trunc(millisecond);
+  if (y >= 0 && y <= 99) {
+    y += 1900;
+  }
+  if (m < 0 || m > 11) {
+    y += Math.floor(m / 12);
+    m = normalizeMonth(m);
+  }
+
+  const value =
+    ymdToEpochDays(y, m, d) * DAY_MS + h * HOUR_MS + min * MINUTE_MS + s * SECOND_MS + ms;
+  return Math.abs(value) <= MAX_TIME_MS ? Math.trunc(value) : NaN;
+}
 
 export function isLeapYear(y: number): boolean {
   if (!isFinite(y)) {

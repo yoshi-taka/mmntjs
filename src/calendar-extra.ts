@@ -1,6 +1,9 @@
 import type { Moment } from "./moment-class";
 import { weeksInYear, getISOWeekNumber, getISOWeekYear, isLeapYear } from "./units";
 
+const _nonLeapLadder = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+const _leapLadder = [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
+
 export type CalendarAwareMoment = Moment & {
   _p: { isUTC: boolean; t: number; y: number; M: number; D: number; W: number };
   _ensureFields: () => void;
@@ -69,9 +72,7 @@ export function dayOfYearMoment(m: CalendarAwareMoment, d?: number): number | Mo
     return m;
   }
   m._ensureFields();
-  const nonLeap = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
-  const leap = [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
-  return m._p.D + (isLeapYear(m._p.y) ? leap : nonLeap)[m._p.M];
+  return m._p.D + (isLeapYear(m._p.y) ? _leapLadder : _nonLeapLadder)[m._p.M];
 }
 
 export function isoWeekMoment(m: CalendarAwareMoment, w?: number): number | Moment {

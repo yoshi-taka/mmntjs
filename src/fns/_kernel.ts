@@ -14,6 +14,8 @@ import type {
 // ── Leap year / days-in-month helpers ───────────────────────────────────────
 
 const DAYS = new Int8Array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]);
+const _nonLeapLadder = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+const _leapLadder = [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
 
 function _isLeapYear(y: number): boolean {
   if (!isFinite(y)) {
@@ -250,11 +252,7 @@ export function _isLeapYearDate(d: Date): boolean {
 
 export function _dayOfYear(d: Date): number {
   const y = d.getFullYear();
-  const leap = _isLeapYear(y);
-  const ladder = leap
-    ? [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335]
-    : [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
-  return ladder[d.getMonth()] + d.getDate();
+  return (_isLeapYear(y) ? _leapLadder : _nonLeapLadder)[d.getMonth()] + d.getDate();
 }
 
 export function _quarter(d: Date): number {

@@ -16,6 +16,7 @@ import {
   daysInMonthFast,
   isLeapYear,
   SECOND_MS,
+  utcTimestamp,
   ymdToEpochDays,
   YEAR,
   MONTH,
@@ -2540,21 +2541,21 @@ export class MomentLite {
       const offsetMs = p.offset * 60000;
       switch (u) {
         case "year":
-          return Date.UTC(p.y, 0, 1) - offsetMs;
+          return utcTimestamp(p.y, 0, 1) - offsetMs;
         case "month":
-          return Date.UTC(p.y, p.M, 1) - offsetMs;
+          return utcTimestamp(p.y, p.M, 1) - offsetMs;
         case "day":
         case "date":
-          return Date.UTC(p.y, p.M, p.D) - offsetMs;
+          return utcTimestamp(p.y, p.M, p.D) - offsetMs;
         case "hour":
-          return Date.UTC(p.y, p.M, p.D, p.H) - offsetMs;
+          return utcTimestamp(p.y, p.M, p.D, p.H) - offsetMs;
         case "minute":
-          return Date.UTC(p.y, p.M, p.D, p.H, p.m) - offsetMs;
+          return utcTimestamp(p.y, p.M, p.D, p.H, p.m) - offsetMs;
         case "second":
-          return Date.UTC(p.y, p.M, p.D, p.H, p.m, p.s) - offsetMs;
+          return utcTimestamp(p.y, p.M, p.D, p.H, p.m, p.s) - offsetMs;
         case "quarter": {
           const qM = Math.floor(p.M / 3) * 3;
-          return Date.UTC(p.y, qM, 1) - offsetMs;
+          return utcTimestamp(p.y, qM, 1) - offsetMs;
         }
       }
     } else {
@@ -2592,25 +2593,25 @@ export class MomentLite {
       const offsetMs = p.offset * 60000;
       switch (u) {
         case "year":
-          return Date.UTC(p.y + 1, 0, 1) - offsetMs - 1;
+          return utcTimestamp(p.y + 1, 0, 1) - offsetMs - 1;
         case "month": {
           const nextM = p.M === 11 ? 0 : p.M + 1;
           const nextY = p.M === 11 ? p.y + 1 : p.y;
-          return Date.UTC(nextY, nextM, 1) - offsetMs - 1;
+          return utcTimestamp(nextY, nextM, 1) - offsetMs - 1;
         }
         case "day":
         case "date":
-          return Date.UTC(p.y, p.M, p.D + 1) - offsetMs - 1;
+          return utcTimestamp(p.y, p.M, p.D + 1) - offsetMs - 1;
         case "hour":
-          return Date.UTC(p.y, p.M, p.D, p.H + 1) - offsetMs - 1;
+          return utcTimestamp(p.y, p.M, p.D, p.H + 1) - offsetMs - 1;
         case "minute":
-          return Date.UTC(p.y, p.M, p.D, p.H, p.m + 1) - offsetMs - 1;
+          return utcTimestamp(p.y, p.M, p.D, p.H, p.m + 1) - offsetMs - 1;
         case "second":
-          return Date.UTC(p.y, p.M, p.D, p.H, p.m, p.s + 1) - offsetMs - 1;
+          return utcTimestamp(p.y, p.M, p.D, p.H, p.m, p.s + 1) - offsetMs - 1;
         case "quarter": {
           const qM = Math.floor(p.M / 3) * 3 + 3;
           const nextQY = qM >= 12 ? p.y + 1 : p.y;
-          return Date.UTC(nextQY, qM % 12, 1) - offsetMs - 1;
+          return utcTimestamp(nextQY, qM % 12, 1) - offsetMs - 1;
         }
       }
     } else {

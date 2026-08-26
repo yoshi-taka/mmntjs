@@ -9,6 +9,7 @@ import {
   daysInMonthFast,
   daysInMonth,
   ymdToEpochDays,
+  utcTimestamp,
   isLeapYear,
 } from "../../src/units.ts";
 import _moment from "../../src/index.ts";
@@ -121,6 +122,28 @@ describe("euclideanModulo", () => {
       ),
       { numRuns: 500 },
     );
+  });
+
+  test("matches the two-modulo form for finite non-integers", () => {
+    assertProp(
+      fc.property(
+        fc.double({ min: -1e9, max: 1e9, noNaN: true, noDefaultInfinity: true }),
+        fc.integer({ min: 1, max: 100_000_000 }),
+        (a, mod) => {
+          const expected = ((a % mod) + mod) % mod;
+          const result = euclideanModulo(a, mod);
+          expect(Object.is(result, expected) || (result === 0 && expected === 0)).toBe(true);
+        },
+      ),
+      { numRuns: 1000 },
+    );
+  });
+
+  test("normalizes signed zero and preserves NaN", () => {
+    expect(Object.is(euclideanModulo(-0, 7), 0)).toBe(true);
+    expect(Number.isNaN(euclideanModulo(NaN, 7))).toBe(true);
+    expect(euclideanModulo(Number.MIN_VALUE, 1)).toBe(0);
+    expect(euclideanModulo(-Number.MIN_VALUE, 1)).toBe(0);
   });
 
   test("mod 1 always returns 0", () => {
@@ -239,6 +262,16 @@ describe("floorUnitEpoch / endOfUnitEpoch", () => {
 });
 
 describe("ymdToEpochDays", () => {
+  function hinnantDays(y: number, m: number, d: number): number {
+    const ya = y - (m <= 1 ? 1 : 0);
+    const era = Math.floor(ya / 400);
+    const yoe = ya - era * 400;
+    const mp = m >= 2 ? m - 2 : m + 10;
+    const doy = Math.floor((153 * mp + 2) / 5) + d - 1;
+    const doe = yoe * 365 + Math.floor(yoe / 4) - Math.floor(yoe / 100) + doy;
+    return era * 146097 + doe - 719468;
+  }
+
   function utcDays(y: number, m: number, d: number): number {
     if (y >= 0 && y <= 99) {
       const tmp = new Date(0);
@@ -248,6 +281,20 @@ describe("ymdToEpochDays", () => {
     }
     return Math.round(Date.UTC(y, m, d) / 86400000);
   }
+
+  test("bounded fast path matches Hinnant across its full domain", () => {
+    for (let y = 1; y <= 9999; y++) {
+      for (let m = 0; m < 12; m++) {
+        for (let d = 1; d <= 31; d++) {
+          const actual = ymdToEpochDays(y, m, d);
+          const expected = hinnantDays(y, m, d);
+          if (actual !== expected) {
+            throw new Error(`${y}-${m}-${d}: ${actual} !== ${expected}`);
+          }
+        }
+      }
+    }
+  });
 
   test("known epoch dates match Date.UTC based computation", () => {
     const cases: [number, number, number][] = [
@@ -333,6 +380,48 @@ describe("ymdToEpochDays", () => {
         },
       ),
       { numRuns: 500 },
+    );
+  });
+});
+
+describe("utcTimestamp", () => {
+  test("matches Date.UTC at normalization and TimeClip boundaries", () => {
+    const cases: [number, number, number, number, number, number, number][] = [
+      [0, 0, 1, 0, 0, 0, 0],
+      [99, 11, 31, 23, 59, 59, 999],
+      [100, 0, 1, 0, 0, 0, 0],
+      [-1, 0, 1, 0, 0, 0, 0],
+      [2024, -25, -40, -50, -70, -80, -1500],
+      [2024.9, 1.9, 2.9, 3.9, 4.9, 5.9, 6.9],
+      [275760, 8, 13, 0, 0, 0, 0],
+      [275760, 8, 13, 0, 0, 0, 1],
+      [-271821, 3, 20, 0, 0, 0, 0],
+      [-271821, 3, 19, 23, 59, 59, 999],
+    ];
+    for (const args of cases) {
+      expect(utcTimestamp(...args)).toBe(Date.UTC(...args));
+    }
+    expect(Number.isNaN(utcTimestamp(NaN, 0, 1))).toBe(true);
+    expect(Number.isNaN(utcTimestamp(Infinity, 0, 1))).toBe(true);
+  });
+
+  test("matches Date.UTC across normalized and overflowing fields", () => {
+    assertProp(
+      fc.property(
+        fc.tuple(
+          fc.integer({ min: -300000, max: 300000 }),
+          fc.integer({ min: -36, max: 36 }),
+          fc.integer({ min: -100, max: 100 }),
+          fc.integer({ min: -72, max: 72 }),
+          fc.integer({ min: -180, max: 180 }),
+          fc.integer({ min: -180, max: 180 }),
+          fc.integer({ min: -3000, max: 3000 }),
+        ),
+        ([y, m, d, h, min, s, ms]) => {
+          expect(utcTimestamp(y, m, d, h, min, s, ms)).toBe(Date.UTC(y, m, d, h, min, s, ms));
+        },
+      ),
+      { numRuns: 5000 },
     );
   });
 });

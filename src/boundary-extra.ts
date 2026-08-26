@@ -2,7 +2,7 @@
 // COMPATIBILITY BOUNDARY — extra startOf/endOf unit handlers
 // -------------------------------------------------------------------------
 
-import { ISO_WEEK, QUARTER, WEEK, daysInMonth } from "./units";
+import { ISO_WEEK, QUARTER, WEEK, daysInMonth, utcTimestamp } from "./units";
 import type { UnitCode } from "./types";
 import type { Locale } from "./locale-runtime";
 import type { Moment } from "./moment-class";
@@ -131,7 +131,7 @@ export function endOfExtraMoment(m: BoundaryAwareMoment, code: UnitCode): void {
       const endMonth = Math.floor(m._p.M / 3) * 3 + 2;
       const endDay = daysInMonth(m._p.y, endMonth);
       if (utc) {
-        d.setTime(Date.UTC(m._p.y, endMonth, endDay, 23, 59, 59, 999));
+        d.setTime(utcTimestamp(m._p.y, endMonth, endDay, 23, 59, 59, 999));
       } else {
         d.setFullYear(m._p.y, endMonth, endDay);
         d.setHours(23, 59, 59, 999);
