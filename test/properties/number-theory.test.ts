@@ -403,6 +403,18 @@ describe("UTC startOf/endOf equivalence", () => {
   });
 });
 
+describe("weekday from full-range epoch days", () => {
+  test("matches Date across the signed JS Date range", () => {
+    for (const epochDays of [
+      -100_000_000, -99_000_000, -89_434_797, -1, 0, 89_522_176, 99_000_000, 100_000_000,
+    ]) {
+      const expected = new Date(epochDays * DAY_MS).getUTCDay();
+      const m = moment.utc(epochDays * DAY_MS);
+      expect(m.day()).toBe(expected);
+    }
+  });
+});
+
 describe("daysInMonthFast", () => {
   test("matches daysInMonth for already-normalized months", () => {
     assertProp(

@@ -401,6 +401,13 @@ export function _endOfYear(d: Date): Date {
 
 // ── Calendar helpers ──
 
+function _weekdayFromEpochDays(rd: number): number {
+  // Ben Joffe's full signed 32-bit RD weekday transform.
+  const a = (Math.imul(rd, 613566756) + 0x95000000) >>> 0;
+  const b = (rd >> 1) + (rd >> 4);
+  return (a + b) >>> 29;
+}
+
 function _firstWeekOffset(year: number, dow: number, doy: number): number {
   const fwd = 7 + dow - doy;
   const ya = year - 1;
@@ -409,7 +416,7 @@ function _firstWeekOffset(year: number, dow: number, doy: number): number {
   const dayOfYear = 306 + fwd - 1;
   const dayOfEra = yoe * 365 + Math.floor(yoe / 4) - Math.floor(yoe / 100) + dayOfYear;
   const epochDays = era * 146097 + dayOfEra - 719468;
-  const weekday = (((epochDays + 4) % 7) + 7) % 7;
+  const weekday = _weekdayFromEpochDays(epochDays);
   const fwdlw = (7 + weekday - dow) % 7;
   return -fwdlw + fwd - 1;
 }

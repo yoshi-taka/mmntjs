@@ -420,6 +420,15 @@ describe("MomentLite extended-year weeks", () => {
       }
     }
   });
+
+  test("derives weekdays across the signed JS Date range", () => {
+    for (const epochDays of [
+      -100_000_000, -99_000_000, -89_434_797, -1, 0, 89_522_176, 99_000_000, 100_000_000,
+    ]) {
+      const expected = new Date(epochDays * 86400000).getUTCDay();
+      expect(moment.utc(epochDays * 86400000).day()).toBe(expected);
+    }
+  });
 });
 
 describe("MomentLite edge cases: null/Infinity/NaN", () => {

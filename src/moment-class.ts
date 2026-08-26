@@ -117,30 +117,32 @@ function setDateUTC(p: _P & CleanUTC, val: number): void {
   p.t = ymdToEpochDays(p.y, p.M, val) * DAY_MS + _tod(p);
   const totalDays = Math.floor(p.t / DAY_MS);
   [p.y, p.M, p.D] = Moment._epochDaysToYMD(totalDays);
-  p.W = (((totalDays + 4) % 7) + 7) % 7;
+  p.W = _weekdayFromEpochDays(totalDays);
   p.d = undefined;
 }
 /** startOf('year') on CleanUTC → civil arithmetic. */
 function startOfYearUTC(p: _P & CleanUTC): void {
-  p.t = ymdToEpochDays(p.y, 0, 1) * DAY_MS;
+  const epochDays = ymdToEpochDays(p.y, 0, 1);
+  p.t = epochDays * DAY_MS;
   p.M = 0;
   p.D = 1;
   p.H = 0;
   p.m = 0;
   p.s = 0;
   p.ms = 0;
-  p.W = _dayOfWeek(p.y, 0, 1);
+  p.W = _weekdayFromEpochDays(epochDays);
   p.d = undefined;
 }
 /** startOf('month') on CleanUTC → civil arithmetic. */
 function startOfMonthUTC(p: _P & CleanUTC): void {
-  p.t = ymdToEpochDays(p.y, p.M, 1) * DAY_MS;
+  const epochDays = ymdToEpochDays(p.y, p.M, 1);
+  p.t = epochDays * DAY_MS;
   p.D = 1;
   p.H = 0;
   p.m = 0;
   p.s = 0;
   p.ms = 0;
-  p.W = _dayOfWeek(p.y, p.M, 1);
+  p.W = _weekdayFromEpochDays(epochDays);
   p.d = undefined;
 }
 /** hour [0,23] → epoch delta arithmetic with DST guard.
@@ -287,11 +289,12 @@ function addMonthUTC(p: _P & CleanUTC, amount: number): void {
       d_ = md;
     }
   }
-  p.t = ymdToEpochDays(y, m, d_) * DAY_MS + _tod(p);
+  const epochDays = ymdToEpochDays(y, m, d_);
+  p.t = epochDays * DAY_MS + _tod(p);
   p.y = y;
   p.M = m;
   p.D = d_;
-  p.W = _dayOfWeek(y, m, d_);
+  p.W = _weekdayFromEpochDays(epochDays);
   p.d = undefined;
   p._tStale = false;
 }
@@ -395,7 +398,8 @@ function startOfMonth_CLFD(p: _P & CleanLocalFreshWithDate): void {
 
 /** startOf('month') on CleanLocalFreshNoDate → arithmetic + offset probe. */
 function startOfMonth_CLFN(p: _P & CleanLocalFreshNoDate): void {
-  const utcMidnight = ymdToEpochDays(p.y, p.M, 1) * DAY_MS;
+  const epochDays = ymdToEpochDays(p.y, p.M, 1);
+  const utcMidnight = epochDays * DAY_MS;
   const offAtMidnight = _tzOffsetAt(utcMidnight);
   p.t = utcMidnight - offAtMidnight * MINUTE_MS;
   p.offset = offAtMidnight;
@@ -404,7 +408,7 @@ function startOfMonth_CLFN(p: _P & CleanLocalFreshNoDate): void {
   p.m = 0;
   p.s = 0;
   p.ms = 0;
-  p.W = _dayOfWeek(p.y, p.M, 1);
+  p.W = _weekdayFromEpochDays(epochDays);
   p.d = undefined;
 }
 
@@ -427,13 +431,14 @@ function startOfMonthStale(p: _P & CleanLocalStale): void {
 /** endOf('month') on CleanUTC → pure civil arithmetic. */
 function endOfMonthUTC(p: _P & CleanUTC): void {
   const eom = daysInMonthFast(p.y, p.M);
-  p.t = (ymdToEpochDays(p.y, p.M, eom) + 1) * DAY_MS - 1;
+  const epochDays = ymdToEpochDays(p.y, p.M, eom);
+  p.t = (epochDays + 1) * DAY_MS - 1;
   p.D = eom;
   p.H = 23;
   p.m = 59;
   p.s = 59;
   p.ms = 999;
-  p.W = _dayOfWeek(p.y, p.M, eom);
+  p.W = _weekdayFromEpochDays(epochDays);
   p.d = undefined;
 }
 /** endOf('month') on CleanLocalFreshWithDate → Date.setMonth + setHours. */
@@ -480,14 +485,15 @@ function endOfMonthStale(p: _P & CleanLocalStale): void {
 // ── endOf year morphisms ──
 /** endOf('year') on CleanUTC → pure civil arithmetic. */
 function endOfYearUTC(p: _P & CleanUTC): void {
-  p.t = (ymdToEpochDays(p.y, 11, 31) + 1) * DAY_MS - 1;
+  const epochDays = ymdToEpochDays(p.y, 11, 31);
+  p.t = (epochDays + 1) * DAY_MS - 1;
   p.M = 11;
   p.D = 31;
   p.H = 23;
   p.m = 59;
   p.s = 59;
   p.ms = 999;
-  p.W = _dayOfWeek(p.y, 11, 31);
+  p.W = _weekdayFromEpochDays(epochDays);
   p.d = undefined;
 }
 /** endOf('year') on CleanLocalFreshWithDate → Date.setFullYear + setHours. */
@@ -653,10 +659,11 @@ function setMonthDateFast(
   date: OrdinaryDate28,
 ): void {
   if (p.isUTC) {
-    p.t = ymdToEpochDays(p.y, month, date) * DAY_MS + _tod(p);
+    const epochDays = ymdToEpochDays(p.y, month, date);
+    p.t = epochDays * DAY_MS + _tod(p);
     p.M = month;
     p.D = date;
-    p.W = _dayOfWeek(p.y, month, date);
+    p.W = _weekdayFromEpochDays(epochDays);
     p.d = undefined;
     p._tStale = false;
   } else {
@@ -680,7 +687,7 @@ function startOfDayZonedFast(p: _P & CleanUTCWithOffset): void {
   // Re-derive y/M/D — t change may cross date boundary
   const totalDays = Math.floor((p.t + p.offset * MINUTE_MS) / DAY_MS);
   [p.y, p.M, p.D] = Moment._epochDaysToYMD(totalDays);
-  p.W = (((totalDays + 4) % 7) + 7) % 7;
+  p.W = _weekdayFromEpochDays(totalDays);
   p.H = 0;
   p.m = 0;
   p.s = 0;
@@ -992,6 +999,13 @@ function _dayOfWeek(y: number, m: number, d: number): number {
   );
 }
 
+function _weekdayFromEpochDays(rd: number): number {
+  // Ben Joffe's full signed 32-bit RD weekday transform.
+  const a = (Math.imul(rd, 613566756) + 0x95000000) >>> 0;
+  const b = (rd >> 1) + (rd >> 4);
+  return (a + b) >>> 29;
+}
+
 export interface MomentCold {
   _i?: unknown;
   _f?: string | string[];
@@ -1189,7 +1203,7 @@ export class Moment {
         const t = this._p.t;
         const totalDays = Math.floor(t / DAY_MS);
         let timeOfDay = t - totalDays * DAY_MS;
-        this._p.W = euclideanModulo(totalDays + 4, 7);
+        this._p.W = _weekdayFromEpochDays(totalDays);
         const [y, M, D] = Moment._epochDaysToYMD(totalDays);
         this._p.y = y;
         this._p.M = M;
@@ -1278,9 +1292,10 @@ export class Moment {
           return this._coldSetDateUTC(val);
         case _OP_YEAR:
           if (p.D <= 28) {
-            p.t = ymdToEpochDays(val, p.M, p.D) * DAY_MS + _tod(p);
+            const epochDays = ymdToEpochDays(val, p.M, p.D);
+            p.t = epochDays * DAY_MS + _tod(p);
             p.y = val;
-            p.W = _dayOfWeek(val, p.M, p.D);
+            p.W = _weekdayFromEpochDays(epochDays);
             p.d = undefined;
             p._tStale = false;
             return;
@@ -1290,10 +1305,11 @@ export class Moment {
           const y = p.y + Math.floor(val / 12);
           const m = normalizeMonth(val);
           if (p.D <= 28) {
-            p.t = ymdToEpochDays(y, m, p.D) * DAY_MS + _tod(p);
+            const epochDays = ymdToEpochDays(y, m, p.D);
+            p.t = epochDays * DAY_MS + _tod(p);
             p.y = y;
             p.M = m;
-            p.W = _dayOfWeek(y, m, p.D);
+            p.W = _weekdayFromEpochDays(epochDays);
             p.d = undefined;
             p._tStale = false;
             return;
@@ -1305,27 +1321,31 @@ export class Moment {
       return;
     }
     switch (op) {
-      case _OP_SY:
-        p.t = ymdToEpochDays(p.y, 0, 1) * DAY_MS;
+      case _OP_SY: {
+        const epochDays = ymdToEpochDays(p.y, 0, 1);
+        p.t = epochDays * DAY_MS;
         p.M = 0;
         p.D = 1;
         p.H = 0;
         p.m = 0;
         p.s = 0;
         p.ms = 0;
-        p.W = _dayOfWeek(p.y, 0, 1);
+        p.W = _weekdayFromEpochDays(epochDays);
         p.d = undefined;
         break;
-      case _OP_SM:
-        p.t = ymdToEpochDays(p.y, p.M, 1) * DAY_MS;
+      }
+      case _OP_SM: {
+        const epochDays = ymdToEpochDays(p.y, p.M, 1);
+        p.t = epochDays * DAY_MS;
         p.D = 1;
         p.H = 0;
         p.m = 0;
         p.s = 0;
         p.ms = 0;
-        p.W = _dayOfWeek(p.y, p.M, 1);
+        p.W = _weekdayFromEpochDays(epochDays);
         p.d = undefined;
         break;
+      }
       case _OP_SD:
         p.t = floorUnitEpoch(p.t, DAY_MS);
         p.H = 0;
@@ -1485,22 +1505,24 @@ export class Moment {
     // YEAR/MONTH: leave _tStale=true for self-correction (DST offset may differ)
     if (op === _OP_SY || op === _OP_SM) {
       if (op === _OP_SY) {
-        p.t = ymdToEpochDays(p.y, 0, 1) * DAY_MS - p.offset * MINUTE_MS;
+        const epochDays = ymdToEpochDays(p.y, 0, 1);
+        p.t = epochDays * DAY_MS - p.offset * MINUTE_MS;
         p.M = 0;
         p.D = 1;
         p.H = 0;
         p.m = 0;
         p.s = 0;
         p.ms = 0;
-        p.W = _dayOfWeek(p.y, 0, 1);
+        p.W = _weekdayFromEpochDays(epochDays);
       } else {
-        p.t = ymdToEpochDays(p.y, p.M, 1) * DAY_MS - p.offset * MINUTE_MS;
+        const epochDays = ymdToEpochDays(p.y, p.M, 1);
+        p.t = epochDays * DAY_MS - p.offset * MINUTE_MS;
         p.D = 1;
         p.H = 0;
         p.m = 0;
         p.s = 0;
         p.ms = 0;
-        p.W = _dayOfWeek(p.y, p.M, 1);
+        p.W = _weekdayFromEpochDays(epochDays);
       }
       p.d = undefined;
       p._tStale = true;
@@ -1615,29 +1637,32 @@ export class Moment {
     }
     const utc = p.isUTC;
     switch (op) {
-      case _OP_SY:
-        p.t = ymdToEpochDays(p.y, 0, 1) * DAY_MS - (utc ? 0 : p.offset * MINUTE_MS);
+      case _OP_SY: {
+        const epochDays = ymdToEpochDays(p.y, 0, 1);
+        p.t = epochDays * DAY_MS - (utc ? 0 : p.offset * MINUTE_MS);
         p.M = 0;
         p.D = 1;
         p.H = 0;
         p.m = 0;
         p.s = 0;
         p.ms = 0;
-        p.W = _dayOfWeek(p.y, 0, 1);
+        p.W = _weekdayFromEpochDays(epochDays);
         p.d = undefined;
         p.dirty = false;
         if (utc) {
           p._tStale = false;
         }
         return;
-      case _OP_SM:
-        p.t = ymdToEpochDays(p.y, p.M, 1) * DAY_MS - (utc ? 0 : p.offset * MINUTE_MS);
+      }
+      case _OP_SM: {
+        const epochDays = ymdToEpochDays(p.y, p.M, 1);
+        p.t = epochDays * DAY_MS - (utc ? 0 : p.offset * MINUTE_MS);
         p.D = 1;
         p.H = 0;
         p.m = 0;
         p.s = 0;
         p.ms = 0;
-        p.W = _dayOfWeek(p.y, p.M, 1);
+        p.W = _weekdayFromEpochDays(epochDays);
         p.d = undefined;
         p.dirty = false;
         if (utc) {
@@ -1646,6 +1671,7 @@ export class Moment {
           p._tStale = true;
         }
         return;
+      }
       case _OP_SD: {
         const utcMidnight = ymdToEpochDays(p.y, p.M, p.D) * DAY_MS;
         if (utc) {
@@ -1724,7 +1750,7 @@ export class Moment {
     p._tStale = false;
     const totalDays = Math.floor(p.t / DAY_MS);
     [p.y, p.M, p.D] = Moment._epochDaysToYMD(totalDays);
-    p.W = euclideanModulo(totalDays + 4, 7);
+    p.W = _weekdayFromEpochDays(totalDays);
   }
   private _coldSetDateLocal(val: number): void {
     this._p.D = val;
@@ -1734,12 +1760,13 @@ export class Moment {
   private _coldSetYearUTC(val: number): void {
     const p = this._p;
     const d_ = Math.min(p.D, daysInMonthFast(val, p.M));
-    p.t = ymdToEpochDays(val, p.M, d_) * DAY_MS + _tod(p);
+    const epochDays = ymdToEpochDays(val, p.M, d_);
+    p.t = epochDays * DAY_MS + _tod(p);
     p.d = undefined;
     p._tStale = false;
     p.y = val;
     p.D = d_;
-    p.W = _dayOfWeek(val, p.M, d_);
+    p.W = _weekdayFromEpochDays(epochDays);
   }
   private _coldSetYearLocal(val: number): void {
     const p = this._p;
@@ -1754,13 +1781,14 @@ export class Moment {
     const y = p.y + Math.floor(val / 12);
     const m = normalizeMonth(val);
     const d_ = Math.min(p.D, daysInMonthFast(y, m));
-    p.t = ymdToEpochDays(y, m, d_) * DAY_MS + _tod(p);
+    const epochDays = ymdToEpochDays(y, m, d_);
+    p.t = epochDays * DAY_MS + _tod(p);
     p.d = undefined;
     p._tStale = false;
     p.y = y;
     p.M = m;
     p.D = d_;
-    p.W = _dayOfWeek(y, m, d_);
+    p.W = _weekdayFromEpochDays(epochDays);
   }
   private _coldSetMonthLocal(val: number): void {
     const p = this._p;
@@ -2182,15 +2210,17 @@ export class Moment {
           return this;
         }
         if (p.isUTC) {
-          p.t = ymdToEpochDays(y, targetM, p.D) * DAY_MS + _tod(p);
+          const epochDays = ymdToEpochDays(y, targetM, p.D);
+          p.t = epochDays * DAY_MS + _tod(p);
+          p.W = _weekdayFromEpochDays(epochDays);
           p.d = undefined;
         } else {
           p.d = undefined;
           p._tStale = true;
+          p.W = _dayOfWeek(y, targetM, p.D);
         }
         p.y = y;
         p.M = targetM;
-        p.W = _dayOfWeek(y, targetM, p.D);
         return this;
       }
       if (p.dirty) {
@@ -3051,7 +3081,9 @@ export class Moment {
       }
     }
     if (p.isUTC) {
-      p.t = ymdToEpochDays(y, m, d_) * DAY_MS + _tod(p);
+      const epochDays = ymdToEpochDays(y, m, d_);
+      p.t = epochDays * DAY_MS + _tod(p);
+      p.W = _weekdayFromEpochDays(epochDays);
       p.d = undefined;
       p._tStale = false;
 
@@ -3067,11 +3099,11 @@ export class Moment {
       if (syncNormalizedLocalCalendarFields(p, dt, offset)) {
         return;
       }
+      p.W = dt.getDay();
     }
     p.y = y;
     p.M = m;
     p.D = d_;
-    p.W = p.isUTC ? _dayOfWeek(y, m, d_) : p.d!.getDay();
     if (!p.isUTC) {
       p.offset = -p.d!.getTimezoneOffset();
     }
@@ -3108,7 +3140,9 @@ export class Moment {
           }
         }
         if (utc) {
-          this._p.t = ymdToEpochDays(y, m, d_) * DAY_MS + _tod(this._p);
+          const epochDays = ymdToEpochDays(y, m, d_);
+          this._p.t = epochDays * DAY_MS + _tod(this._p);
+          this._p.W = _weekdayFromEpochDays(epochDays);
           this._p.d = undefined;
           this._p._tStale = false;
 
@@ -3121,11 +3155,11 @@ export class Moment {
           if (syncNormalizedLocalCalendarFields(this._p, dt, offset)) {
             break;
           }
+          this._p.W = dt.getDay();
         }
         this._p.y = y;
         this._p.M = m;
         this._p.D = d_;
-        this._p.W = utc ? _dayOfWeek(y, m, d_) : this._p.d!.getDay();
         if (!utc) {
           this._p.offset = -this._p.d!.getTimezoneOffset();
         }
@@ -4018,8 +4052,9 @@ export class Moment {
 
   _endOfUTC(code: UnitCode): void {
     switch (code) {
-      case YEAR:
-        this._p.t = (ymdToEpochDays(this._p.y, 11, 31) + 1) * DAY_MS - 1;
+      case YEAR: {
+        const epochDays = ymdToEpochDays(this._p.y, 11, 31);
+        this._p.t = (epochDays + 1) * DAY_MS - 1;
         this._p.d = undefined;
         this._p.M = 11;
         this._p.D = 31;
@@ -4027,18 +4062,20 @@ export class Moment {
         this._p.m = 59;
         this._p.s = 59;
         this._p.ms = 999;
-        this._p.W = _dayOfWeek(this._p.y, 11, 31);
+        this._p.W = _weekdayFromEpochDays(epochDays);
         break;
+      }
       case MONTH: {
         const _eomMaxDay = daysInMonthFast(this._p.y, this._p.M);
-        this._p.t = (ymdToEpochDays(this._p.y, this._p.M, _eomMaxDay) + 1) * DAY_MS - 1;
+        const epochDays = ymdToEpochDays(this._p.y, this._p.M, _eomMaxDay);
+        this._p.t = (epochDays + 1) * DAY_MS - 1;
         this._p.d = undefined;
         this._p.D = _eomMaxDay;
         this._p.H = 23;
         this._p.m = 59;
         this._p.s = 59;
         this._p.ms = 999;
-        this._p.W = _dayOfWeek(this._p.y, this._p.M, _eomMaxDay);
+        this._p.W = _weekdayFromEpochDays(epochDays);
         break;
       }
       case QUARTER:
@@ -4166,14 +4203,15 @@ export class Moment {
     const p = this._p;
     if (p.isUTC) {
       const endDay = daysInMonthFast(p.y, p.M);
-      p.t = (ymdToEpochDays(p.y, p.M, endDay) + 1) * DAY_MS - 1;
+      const epochDays = ymdToEpochDays(p.y, p.M, endDay);
+      p.t = (epochDays + 1) * DAY_MS - 1;
       p.d = undefined;
       p.D = endDay;
       p.H = 23;
       p.m = 59;
       p.s = 59;
       p.ms = 999;
-      p.W = _dayOfWeek(p.y, p.M, endDay);
+      p.W = _weekdayFromEpochDays(epochDays);
     } else if (p.d != null && !p._tStale) {
       p.d.setFullYear(p.y, p.M + 1, 0);
       p.d.setHours(23, 59, 59, 999);

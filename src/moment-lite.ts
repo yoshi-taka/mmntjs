@@ -145,21 +145,11 @@ function addMsFastLite(
 /** setMonthDateFast (lite) — simultaneously set month [0,11] + date [1,28]
  *  on CleanUTC. No month-boundary risk because date ≤ 28 is safe for all months. */
 function setMonthDateFastLite(p: _P & CleanUTC, month: OrdinaryMonth, date: OrdinaryDate28): void {
-  p.t =
-    ymdToEpochDays(p.y, month, date) * DAY_MS +
-    (p.H * HOUR_MS + p.m * MINUTE_MS + p.s * 1000 + p.ms);
+  const epochDays = ymdToEpochDays(p.y, month, date);
+  p.t = epochDays * DAY_MS + (p.H * HOUR_MS + p.m * MINUTE_MS + p.s * 1000 + p.ms);
   p.M = month;
   p.D = date;
-  p.W = (() => {
-    const y = p.y - (month < 2 ? 1 : 0);
-    const era = Math.floor(y / 400);
-    const yoe = y - era * 400;
-    const mp = month >= 2 ? month - 2 : month + 10;
-    const doy = Math.floor((153 * mp + 2) / 5) + date - 1;
-    const doe = yoe * 365 + Math.floor(yoe / 4) - Math.floor(yoe / 100) + doy;
-    const totalDays = era * 146097 + doe - 719468;
-    return (((totalDays + 4) % 7) + 7) % 7;
-  })();
+  p.W = _weekdayFromEpochDays(epochDays);
   p.d = undefined;
 }
 
@@ -174,7 +164,7 @@ function startOfDayZonedFastLite(p: _P & CleanUTCWithOffset): void {
   p.t = utcMidnight - p.offset * MINUTE_MS;
   const totalDays = Math.floor((p.t + p.offset * MINUTE_MS) / DAY_MS);
   [p.y, p.M, p.D] = epochDaysToYMD(totalDays);
-  p.W = (((totalDays + 4) % 7) + 7) % 7;
+  p.W = _weekdayFromEpochDays(totalDays);
   p.H = 0;
   p.m = 0;
   p.s = 0;
@@ -231,6 +221,13 @@ function _dayOfWeek(y: number, m: number, d: number): number {
     (y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) + _DOW_OFFSET[m] + d) | 0,
     7,
   );
+}
+
+function _weekdayFromEpochDays(rd: number): number {
+  // Ben Joffe's full signed 32-bit RD weekday transform.
+  const a = (Math.imul(rd, 613566756) + 0x95000000) >>> 0;
+  const b = (rd >> 1) + (rd >> 4);
+  return (a + b) >>> 29;
 }
 
 function syncNormalizedLocalCalendarFields(p: _P, d: Date, offset: number): boolean {
@@ -425,7 +422,7 @@ export class MomentLite {
         const t = this._p.t;
         const totalDays = Math.floor(t / DAY_MS);
         let timeOfDay = t - totalDays * DAY_MS;
-        this._p.W = euclideanModulo(totalDays + 4, 7);
+        this._p.W = _weekdayFromEpochDays(totalDays);
         const [y, M, D] = MomentLite._epochDaysToYMD(totalDays);
         this._p.y = y;
         this._p.M = M;
@@ -1442,7 +1439,9 @@ export class MomentLite {
       }
     }
     if (p.isUTC) {
-      p.t = Date.UTC(y, m, d_, p.H, p.m, p.s, p.ms);
+      const epochDays = ymdToEpochDays(y, m, d_);
+      p.t = epochDays * DAY_MS + p.H * HOUR_MS + p.m * MINUTE_MS + p.s * 1000 + p.ms;
+      p.W = _weekdayFromEpochDays(epochDays);
       p.d = undefined;
       p.dirty = true;
     } else {
@@ -1456,11 +1455,11 @@ export class MomentLite {
       if (syncNormalizedLocalCalendarFields(p, dt, offset)) {
         return;
       }
+      p.W = dt.getDay();
     }
     p.y = y;
     p.M = m;
     p.D = d_;
-    p.W = p.isUTC ? _dayOfWeek(y, m, d_) : p.d!.getDay();
     if (!p.isUTC) {
       p.offset = -p.d!.getTimezoneOffset();
     }
@@ -1499,12 +1498,14 @@ export class MomentLite {
           }
         }
         if (this._p.isUTC) {
+          const epochDays = ymdToEpochDays(y, m, d_);
           this._p.t =
-            ymdToEpochDays(y, m, d_) * 86400000 +
+            epochDays * 86400000 +
             this._p.H * 3600000 +
             this._p.m * 60000 +
             this._p.s * 1000 +
             this._p.ms;
+          this._p.W = _weekdayFromEpochDays(epochDays);
           this._p.d = undefined;
           this._p.dirty = true;
         } else {
@@ -1516,11 +1517,11 @@ export class MomentLite {
             break;
           }
           this._p.offset = offset;
+          this._p.W = dt.getDay();
         }
         this._p.y = y;
         this._p.M = m;
         this._p.D = d_;
-        this._p.W = this._p.isUTC ? _dayOfWeek(y, m, d_) : this._p.d!.getDay();
         break;
       }
       case WEEK:
@@ -2055,17 +2056,21 @@ export class MomentLite {
       return this;
     }
     if (p.isUTC) {
-      p.t = ymdToEpochDays(p.y, 0, 1) * DAY_MS;
+      const epochDays = ymdToEpochDays(p.y, 0, 1);
+      p.t = epochDays * DAY_MS;
+      p.W = _weekdayFromEpochDays(epochDays);
       p.d = undefined;
     } else if (p.d != null) {
       p.d.setMonth(0, 1);
       p.d.setHours(0, 0, 0, 0);
       p.t = p.d.getTime();
       p.offset = -p.d.getTimezoneOffset();
+      p.W = p.d.getDay();
     } else {
       p.d = new Date(p.y, 0, 1);
       p.t = p.d.getTime();
       p.offset = -p.d.getTimezoneOffset();
+      p.W = p.d.getDay();
     }
     p.M = 0;
     p.D = 1;
@@ -2073,7 +2078,6 @@ export class MomentLite {
     p.m = 0;
     p.s = 0;
     p.ms = 0;
-    p.W = _dayOfWeek(p.y, 0, 1);
     return this;
   }
 
@@ -2105,7 +2109,9 @@ export class MomentLite {
   private _startOfYear(): void {
     const p = this._p;
     if (p.isUTC) {
-      p.t = ymdToEpochDays(p.y, 0, 1) * DAY_MS;
+      const epochDays = ymdToEpochDays(p.y, 0, 1);
+      p.t = epochDays * DAY_MS;
+      p.W = _weekdayFromEpochDays(epochDays);
       p.d = undefined;
     } else {
       let d: Date;
@@ -2118,6 +2124,7 @@ export class MomentLite {
       }
       p.t = d.getTime();
       p.offset = -d.getTimezoneOffset();
+      p.W = d.getDay();
     }
     p.M = 0;
     p.D = 1;
@@ -2125,13 +2132,14 @@ export class MomentLite {
     p.m = 0;
     p.s = 0;
     p.ms = 0;
-    p.W = _dayOfWeek(p.y, 0, 1);
   }
 
   private _startOfMonth(): void {
     const p = this._p;
     if (p.isUTC) {
-      p.t = ymdToEpochDays(p.y, p.M, 1) * DAY_MS;
+      const epochDays = ymdToEpochDays(p.y, p.M, 1);
+      p.t = epochDays * DAY_MS;
+      p.W = _weekdayFromEpochDays(epochDays);
       p.d = undefined;
     } else {
       let d: Date;
@@ -2144,13 +2152,13 @@ export class MomentLite {
       }
       p.t = d.getTime();
       p.offset = -d.getTimezoneOffset();
+      p.W = d.getDay();
     }
     p.D = 1;
     p.H = 0;
     p.m = 0;
     p.s = 0;
     p.ms = 0;
-    p.W = _dayOfWeek(p.y, p.M, 1);
   }
 
   private _startOfDay(): void {
@@ -2339,7 +2347,9 @@ export class MomentLite {
       return this;
     }
     if (p.isUTC) {
-      p.t = (ymdToEpochDays(p.y, 11, 31) + 1) * DAY_MS - 1;
+      const epochDays = ymdToEpochDays(p.y, 11, 31);
+      p.t = (epochDays + 1) * DAY_MS - 1;
+      p.W = _weekdayFromEpochDays(epochDays);
       p.d = undefined;
     } else {
       const d = p.d ?? new Date(p.t);
@@ -2348,6 +2358,7 @@ export class MomentLite {
       d.setHours(23, 59, 59, 999);
       p.t = d.getTime();
       p.offset = -d.getTimezoneOffset();
+      p.W = d.getDay();
     }
     p.M = 11;
     p.D = 31;
@@ -2355,7 +2366,6 @@ export class MomentLite {
     p.m = 59;
     p.s = 59;
     p.ms = 999;
-    p.W = _dayOfWeek(p.y, 11, 31);
     return this;
   }
 
@@ -2364,7 +2374,9 @@ export class MomentLite {
     const p = this._p;
     if (p.isUTC) {
       const endDay = daysInMonthFast(p.y, p.M);
-      p.t = (ymdToEpochDays(p.y, p.M, endDay) + 1) * DAY_MS - 1;
+      const epochDays = ymdToEpochDays(p.y, p.M, endDay);
+      p.t = (epochDays + 1) * DAY_MS - 1;
+      p.W = _weekdayFromEpochDays(epochDays);
       p.d = undefined;
       p.D = endDay;
     } else if (p.d != null) {
@@ -2373,24 +2385,27 @@ export class MomentLite {
       p.t = p.d.getTime();
       p.offset = -p.d.getTimezoneOffset();
       p.D = p.d.getDate();
+      p.W = p.d.getDay();
     } else {
       const d = new Date(p.y, p.M + 1, 0, 23, 59, 59, 999);
       p.t = d.getTime();
       p.d = d;
       p.offset = -d.getTimezoneOffset();
       p.D = d.getDate();
+      p.W = d.getDay();
     }
     p.H = 23;
     p.m = 59;
     p.s = 59;
     p.ms = 999;
-    p.W = _dayOfWeek(p.y, p.M, p.D);
   }
 
   private _endOfYear(): void {
     const p = this._p;
     if (p.isUTC) {
-      p.t = (ymdToEpochDays(p.y, 11, 31) + 1) * DAY_MS - 1;
+      const epochDays = ymdToEpochDays(p.y, 11, 31);
+      p.t = (epochDays + 1) * DAY_MS - 1;
+      p.W = _weekdayFromEpochDays(epochDays);
       p.d = undefined;
     } else {
       const d = this._getDNoEnsure();
@@ -2398,6 +2413,7 @@ export class MomentLite {
       d.setHours(23, 59, 59, 999);
       p.t = d.getTime();
       p.offset = -d.getTimezoneOffset();
+      p.W = d.getDay();
     }
     p.M = 11;
     p.D = 31;
@@ -2405,14 +2421,15 @@ export class MomentLite {
     p.m = 59;
     p.s = 59;
     p.ms = 999;
-    p.W = _dayOfWeek(p.y, 11, 31);
   }
 
   private _endOfMonth(): void {
     const p = this._p;
     if (p.isUTC) {
       const _eomMaxDay = daysInMonthFast(p.y, p.M);
-      p.t = (ymdToEpochDays(p.y, p.M, _eomMaxDay) + 1) * DAY_MS - 1;
+      const epochDays = ymdToEpochDays(p.y, p.M, _eomMaxDay);
+      p.t = (epochDays + 1) * DAY_MS - 1;
+      p.W = _weekdayFromEpochDays(epochDays);
       p.d = undefined;
       p.D = _eomMaxDay;
     } else {
@@ -2422,12 +2439,12 @@ export class MomentLite {
       p.t = d.getTime();
       p.offset = -d.getTimezoneOffset();
       p.D = d.getDate();
+      p.W = d.getDay();
     }
     p.H = 23;
     p.m = 59;
     p.s = 59;
     p.ms = 999;
-    p.W = _dayOfWeek(p.y, p.M, p.D);
   }
 
   private _endOfDay(): void {
