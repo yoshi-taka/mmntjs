@@ -409,6 +409,19 @@ describe("MomentLite isoWeekYear", () => {
   });
 });
 
+describe("MomentLite extended-year weeks", () => {
+  test("matches moment.js in local and UTC modes", () => {
+    for (const year of [-400, -1, 0, 1, 4, 99, 100, 400]) {
+      for (const utc of [false, true]) {
+        const m = utc ? moment.utc([year, 0, 1]) : moment([year, 0, 1]);
+        const o = utc ? originalMoment.utc([year, 0, 1]) : originalMoment([year, 0, 1]);
+        expect(m.week()).toBe(o.week());
+        expect(m.isoWeek()).toBe(o.isoWeek());
+      }
+    }
+  });
+});
+
 describe("MomentLite edge cases: null/Infinity/NaN", () => {
   test("momentLite(Infinity) is invalid", () => {
     const m = moment(Infinity);

@@ -344,10 +344,9 @@ function daysInYear(year: number): number {
   return isLeapYear(year) ? 366 : 365;
 }
 
-function firstWeekOffset(year: number, dow: number, doy: number, utc: boolean): number {
+function firstWeekOffset(year: number, dow: number, doy: number, _utc: boolean): number {
   const fwd = 7 + dow - doy;
-  const janFwd = utc ? new Date(Date.UTC(year, 0, fwd)) : new Date(year, 0, fwd);
-  const janFwdDay = utc ? janFwd.getUTCDay() : janFwd.getDay();
+  const janFwdDay = euclideanModulo(ymdToEpochDays(year, 0, fwd) + 4, 7);
   const fwdlw = (7 + janFwdDay - dow) % 7;
   return -fwdlw + fwd - 1;
 }

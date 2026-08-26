@@ -76,6 +76,19 @@ describe("locale-extra week methods", () => {
       const m = moment("2024-01-15");
       expect(typeof m.isoWeeksInYear()).toBe("number");
     });
+
+    test("matches moment.js for extended years", () => {
+      for (const year of [-400, -1, 0, 1, 4, 99, 100, 400]) {
+        for (const utc of [false, true]) {
+          const m = utc ? moment.utc([year, 0, 1]) : moment([year, 0, 1]);
+          const o = utc ? originalMoment.utc([year, 0, 1]) : originalMoment([year, 0, 1]);
+          expect(m.week()).toBe(o.week());
+          expect(m.isoWeek()).toBe(o.isoWeek());
+          expect(m.weeksInYear()).toBe(o.weeksInYear());
+          expect(m.isoWeeksInYear()).toBe(o.isoWeeksInYear());
+        }
+      }
+    });
   });
 
   describe("localeData", () => {

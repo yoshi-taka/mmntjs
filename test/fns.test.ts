@@ -918,6 +918,15 @@ describe("calendar helpers vs mmntjs", () => {
     expect(week(d3)).toBe(moment(d3).week());
   });
 
+  test("week matches moment.js for extended years", () => {
+    for (const extendedYear of [-400, -1, 0, 1, 4, 99, 100, 400]) {
+      const d = new Date(0);
+      d.setFullYear(extendedYear, 0, 1);
+      d.setHours(12, 0, 0, 0);
+      expect(week(d)).toBe(originalMoment(d).week());
+    }
+  });
+
   test("isoWeek matches mmntjs", () => {
     const d1 = local(2024, 0, 1);
     expect(isoWeek(d1)).toBe(moment(d1).isoWeek());

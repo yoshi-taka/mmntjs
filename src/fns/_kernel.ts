@@ -403,7 +403,14 @@ export function _endOfYear(d: Date): Date {
 
 function _firstWeekOffset(year: number, dow: number, doy: number): number {
   const fwd = 7 + dow - doy;
-  const fwdlw = (7 + new Date(Date.UTC(year, 0, fwd)).getUTCDay() - dow) % 7;
+  const ya = year - 1;
+  const era = Math.floor(ya / 400);
+  const yoe = ya - era * 400;
+  const dayOfYear = 306 + fwd - 1;
+  const dayOfEra = yoe * 365 + Math.floor(yoe / 4) - Math.floor(yoe / 100) + dayOfYear;
+  const epochDays = era * 146097 + dayOfEra - 719468;
+  const weekday = (((epochDays + 4) % 7) + 7) % 7;
+  const fwdlw = (7 + weekday - dow) % 7;
   return -fwdlw + fwd - 1;
 }
 

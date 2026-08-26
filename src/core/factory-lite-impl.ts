@@ -626,6 +626,49 @@ export function momentUTC(
       _isValid: true,
     });
   }
+  if (Array.isArray(input)) {
+    if (input.length === 0) {
+      return new MomentLite({ _t: nowFn(), _isUTC: true, _offset: 0, _i: input });
+    }
+    for (const value of input) {
+      if (value === null || value === undefined || isNaN(Number(value))) {
+        return new MomentLite({
+          _dClone: false,
+          _d: new Date(NaN),
+          _isValid: false,
+          _isUTC: true,
+          _offset: 0,
+          _i: input,
+        });
+      }
+    }
+    const y = Number(input[0]);
+    const M = input[1] !== undefined ? Number(input[1]) : 0;
+    const D = input[2] !== undefined ? Number(input[2]) : 1;
+    const H = input[3] !== undefined ? Number(input[3]) : 0;
+    const min = input[4] !== undefined ? Number(input[4]) : 0;
+    const s = input[5] !== undefined ? Number(input[5]) : 0;
+    const ms = input[6] !== undefined ? Number(input[6]) : 0;
+    const d = createDateSafe(y, M, D, H, min, s, ms, true);
+    if (isNaN(d.getTime())) {
+      return new MomentLite({
+        _dClone: false,
+        _d: d,
+        _isValid: false,
+        _isUTC: true,
+        _offset: 0,
+        _i: input,
+      });
+    }
+    return new MomentLite({
+      _d: d,
+      _dClone: false,
+      _i: input,
+      _isUTC: true,
+      _offset: 0,
+      _presetFields: H === 24 ? undefined : { y, M, D, H, m: min, s, ms },
+    });
+  }
   const m = moment(input, format, localeOrStrict, fourthArg);
   if (!m._isValid) {
     m._p.isUTC = true;
