@@ -82,15 +82,15 @@ describe("temporal bridge", () => {
       expect(t.hour).toBe(10);
     });
 
-    test("moment with explicit offset returns ZonedDateTime with offset timezone", () => {
+    test("moment with explicit offset returns ZonedDateTime in local mode", () => {
       const m = moment("2024-06-15T10:30:00+05:00");
       const t = toTemporal(m) as Record<string, unknown>;
       expect(t).toBeInstanceOf(Temporal.ZonedDateTime);
-      expect(t.year).toBe(2024);
-      expect(t.month).toBe(6);
-      expect(t.day).toBe(15);
-      expect(t.hour).toBe(10);
-      expect(t.minute).toBe(30);
+      expect(t.year).toBe(m.year());
+      expect(t.month).toBe(m.month() + 1);
+      expect(t.day).toBe(m.date());
+      expect(t.hour).toBe(m.hour());
+      expect(t.minute).toBe(m.minute());
     });
 
     test("UTC moment returns ZonedDateTime with UTC timezone", () => {
@@ -115,15 +115,15 @@ describe("temporal bridge", () => {
       expect(t.hour).toBe(10);
     });
 
-    test("moment with explicit offset returns ZonedDateTime with offset timezone", () => {
+    test("moment with explicit offset returns ZonedDateTime in local mode", () => {
       const m = moment("2024-06-15T10:30:00+05:00");
       const t = toTemporal(m) as Record<string, unknown>;
       expect(t).toBeInstanceOf(Temporal.ZonedDateTime);
-      expect(t.year).toBe(2024);
-      expect(t.month).toBe(6);
-      expect(t.day).toBe(15);
-      expect(t.hour).toBe(10);
-      expect(t.minute).toBe(30);
+      expect(t.year).toBe(m.year());
+      expect(t.month).toBe(m.month() + 1);
+      expect(t.day).toBe(m.date());
+      expect(t.hour).toBe(m.hour());
+      expect(t.minute).toBe(m.minute());
     });
 
     test("throws for invalid moment", () => {

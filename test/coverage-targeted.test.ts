@@ -1,5 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import moment from "../src/index.ts";
+import originalMoment from "../moment/moment.js";
 
 describe("core-base uncovered paths", () => {
   test("updateOffset getter/setter", () => {
@@ -632,12 +633,14 @@ describe("ISO week with year 0-99", () => {
     }
   });
 
-  test("ISO week with time and offset - setUTCHours branch", () => {
+  test("ISO week with time and offset converts to local mode", () => {
     const m = moment("2024-W01-1T10:30:00+05:30", "GGGG-[W]WW-E[T]HH:mm:ssZ");
+    const original = originalMoment("2024-W01-1T10:30:00+05:30", "GGGG-[W]WW-E[T]HH:mm:ssZ");
     if (m.isValid()) {
-      expect(m.isUtcOffset()).toBe(true);
-      expect(m.utcOffset()).toBe(330);
-      expect(m.hour()).toBe(10);
+      expect(m.valueOf()).toBe(original.valueOf());
+      expect(m.isUtcOffset()).toBe(original.isUtcOffset());
+      expect(m.utcOffset()).toBe(original.utcOffset());
+      expect(m.toArray()).toEqual(original.toArray());
     }
   });
 });

@@ -30,6 +30,19 @@ function temporalParse(s: string): Record<string, unknown> | null {
             offsetNanoseconds: bigint;
           };
         };
+        Instant: {
+          from(s: string): {
+            toZonedDateTimeISO(timeZone: string): {
+              year: number;
+              month: number;
+              day: number;
+              hour: number;
+              minute: number;
+              second: number;
+              millisecond: number;
+            };
+          };
+        };
       }
     | undefined;
   if (!T) {
@@ -38,6 +51,20 @@ function temporalParse(s: string): Record<string, unknown> | null {
 
   try {
     if (/^[+-]?\d{4,6}-?\d{2}-?\d{2}[Tt ]/.test(s)) {
+      if (/(?:[zZ]|[+-]\d{2}:?\d{2})$/.test(s)) {
+        const d = T.Instant.from(s).toZonedDateTimeISO(
+          Intl.DateTimeFormat().resolvedOptions().timeZone,
+        );
+        return {
+          year: d.year,
+          month: d.month,
+          day: d.day,
+          hour: d.hour,
+          minute: d.minute,
+          second: d.second,
+          millisecond: d.millisecond,
+        };
+      }
       const wallClock = s.replace(/(?:[zZ]|[+-]\d{2}:?\d{2})$/, "");
       const d = T.PlainDateTime.from(wallClock);
       return {

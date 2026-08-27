@@ -170,11 +170,12 @@ test('KNOWN_DIFF: mixed format parse ("93280531 09-3911")', () => {
   const m2 = moment("93280531 09-3911");
   expect(m2.isValid()).toBe(true);
   expect(m2.valueOf()).toBe(232209245460000);
-  expect(m2.year()).toBe(9328);
-  expect(m2.month()).toBe(4); // May = 4 (0-indexed)
-  expect(m2.date()).toBe(31);
-  expect(m2.hour()).toBe(9);
-  expect(m2.minute()).toBe(0);
+  const local = new Date(m2.valueOf());
+  expect(m2.year()).toBe(local.getFullYear());
+  expect(m2.month()).toBe(local.getMonth());
+  expect(m2.date()).toBe(local.getDate());
+  expect(m2.hour()).toBe(local.getHours());
+  expect(m2.minute()).toBe(local.getMinutes());
 });
 
 // ── Group 3: NO_THROW — binary inputs that should not throw ──

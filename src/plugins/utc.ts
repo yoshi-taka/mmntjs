@@ -15,6 +15,7 @@ type UtcMomentTarget<C extends MomentCtor> = ((
   format?: unknown,
   localeOrStrict?: unknown,
   fourthArg?: unknown,
+  isUTC?: boolean,
 ) => InstanceType<C>) &
   Record<string, unknown>;
 
@@ -170,14 +171,17 @@ export function registerUtcApi<C extends MomentCtor>(
         _presetFields: H === 24 ? undefined : { y, M, D, H, m: min, s, ms },
       }) as InstanceType<C>;
     }
-    const m = target(input, format, localeOrStrict, fourthArg);
+    const m = target(input, format, localeOrStrict, fourthArg, true);
     const absTime = m.valueOf();
     if (isNaN(absTime)) {
       m._p.isUTC = true;
       m._p.offset = 0;
       return m;
     }
-    if (!m._p.isUTC && isString(input)) {
+    const hasExplicitOffset =
+      m._cold?._parsedOffset !== undefined ||
+      (isString(input) && /(?:[zZ]|[+-]\d\d:?\d\d)\s*$/.test(input));
+    if (!m._p.isUTC && isString(input) && !hasExplicitOffset) {
       if (!m._isValid) {
         const utcDate = new Date(`${input}Z`);
         m._p.d = !isNaN(utcDate.getTime()) ? utcDate : new Date(NaN);

@@ -127,6 +127,9 @@ function parsingFlagsDebugMoment(m: DebugMoment): Record<string, unknown> {
   const known = new Set(Object.keys(result));
   const cold = m._cold ?? {};
   for (const [key, value] of Object.entries(cold)) {
+    if (key === "_parsedOffset") {
+      continue;
+    }
     const publicKey = key.startsWith("_") ? key.slice(1) : key;
     if (!known.has(publicKey) && value !== undefined) {
       result[publicKey] = value;

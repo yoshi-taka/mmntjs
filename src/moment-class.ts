@@ -246,11 +246,15 @@ function addDay_CLFD_safe(p: _P & CleanLocalFreshWithDate, amount: number): void
 function addDay_CLFD_overflow(p: _P & CleanLocalFreshWithDate, amount: number): void {
   p.d.setDate(p.d.getDate() + amount);
   p.t = p.d.getTime();
+  const offset = -p.d.getTimezoneOffset();
+  if (syncNormalizedLocalCalendarFields(p, p.d, offset)) {
+    return;
+  }
   p.y = p.d.getFullYear();
   p.M = p.d.getMonth();
   p.D = p.d.getDate();
   p.W = p.d.getDay();
-  p.offset = -p.d.getTimezoneOffset();
+  p.offset = offset;
 }
 /** add(1, "day") on CleanLocalFreshNoDate, D+amount safe in [1,28] → arithmetic. */
 function addDay_CLFN_safe(p: _P & CleanLocalFreshNoDate, amount: number): void {
@@ -264,11 +268,15 @@ function addDay_CLFN_overflow(p: _P & CleanLocalFreshNoDate, amount: number): vo
   d.setDate(d.getDate() + amount);
   (p as { d: Date | undefined }).d = d;
   p.t = d.getTime();
+  const offset = -d.getTimezoneOffset();
+  if (syncNormalizedLocalCalendarFields(p, d, offset)) {
+    return;
+  }
   p.y = d.getFullYear();
   p.M = d.getMonth();
   p.D = d.getDate();
   p.W = d.getDay();
-  p.offset = -d.getTimezoneOffset();
+  p.offset = offset;
 }
 
 // ── addMonth morphisms (branded-state → civil arithmetic, allocation-free) ──
@@ -908,6 +916,7 @@ export interface MomentConstructionConfig {
   _strict?: boolean;
   _overflow?: number;
   _parsedDateParts?: number[];
+  _parsedOffset?: number;
   _unusedTokens?: string[];
   _unusedInput?: string[];
   _charsLeftOver?: number;
@@ -991,6 +1000,7 @@ function hasExtraColdConfig(c: MomentConstructionConfig): boolean {
 }
 
 const _DOW_OFFSET = new Uint8Array([0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4]);
+const _MARCH_DOY = new Int16Array([0, 31, 61, 92, 122, 153, 184, 214, 245, 275, 306, 337]);
 
 function _dayOfWeek(y: number, m: number, d: number): number {
   y -= m < 3 ? 1 : 0;
@@ -1013,6 +1023,7 @@ export interface MomentCold {
   _strict?: boolean;
   _overflow?: number;
   _parsedDateParts?: number[];
+  _parsedOffset?: number;
   _unusedTokens?: string[];
   _unusedInput?: string[];
   _charsLeftOver?: number;
@@ -1103,6 +1114,21 @@ export class Moment {
   declare _tooBusyWith: string | undefined;
 
   static _epochDaysToYMD(z: number): [number, number, number] {
+    // Years 1..9999 keep every quotient nonnegative and within int32, making |0 exact truncation.
+    if (z >= -719162 && z <= 2932896) {
+      const shifted = z + 719468;
+      const era = (shifted / 146097) | 0;
+      const doe = shifted - era * 146097;
+      const yoe =
+        ((doe - ((doe / 1460) | 0) + ((doe / 36524) | 0) - ((doe / 146096) | 0)) / 365) | 0;
+      const y = yoe + era * 400;
+      const doy = doe - (365 * yoe + (yoe >>> 2) - ((yoe / 100) | 0));
+      const mp = ((5 * doy + 2) / 153) | 0;
+      const d = doy - _MARCH_DOY[mp] + 1;
+      const m = mp < 10 ? mp + 2 : mp - 10;
+      return [y + (m <= 1 ? 1 : 0), m, d];
+    }
+
     z += 719468;
     const era = Math.floor(z / 146097);
     const doe = z - era * 146097;
@@ -5280,6 +5306,7 @@ function initMomentMeta(
     _i?: unknown;
     _f?: string | string[];
     _strict?: boolean;
+    _parsedOffset?: number;
   },
 ): void {
   if (config._i !== undefined) {
@@ -5291,6 +5318,9 @@ function initMomentMeta(
   if (config._strict !== undefined) {
     m._strict = config._strict;
   }
+  if (config._parsedOffset !== undefined) {
+    m._cold = { _parsedOffset: config._parsedOffset };
+  }
 }
 
 export function createMomentFromDate(config: {
@@ -5301,6 +5331,7 @@ export function createMomentFromDate(config: {
   _isUTC?: boolean;
   _offset?: number;
   _strict?: boolean;
+  _parsedOffset?: number;
   _isValid?: boolean;
   _dClone?: boolean;
 }): Moment {

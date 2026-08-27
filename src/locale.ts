@@ -198,7 +198,7 @@ export function getWeekdays(format?: string | number | boolean, index?: number):
   const loc = getLocale();
   const weekCfg = (loc._config as LocaleSpec & Record<string, unknown>).week ?? { dow: 0 };
   const dow = weekCfg.dow;
-  const todayIndex = new Date().getDay();
+  const todayIndex = new Date().getUTCDay();
   if (typeof format === "number") {
     return loc._weekdays[format];
   }

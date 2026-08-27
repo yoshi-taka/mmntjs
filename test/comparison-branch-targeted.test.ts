@@ -129,11 +129,12 @@ describe("isAfter family: UTC/local ternary branches", () => {
 // ---------------------------------------------------------------------------
 describe("isAfter family: string input", () => {
   const ref = moment.utc("2024-06-15T12:00:00");
+  const originalRef = originalMoment.utc("2024-06-15T12:00:00");
 
   test("isAfter with plain ISO string (no offset)", () => {
-    expect(ref.isAfter("2024-06-15T11:00:00")).toBe(true);
-    expect(ref.isAfter("2024-06-15T12:00:00")).toBe(false);
-    expect(ref.isAfter("2024-06-15T13:00:00")).toBe(false);
+    for (const input of ["2024-06-15T11:00:00", "2024-06-15T12:00:00", "2024-06-15T13:00:00"]) {
+      expect(ref.isAfter(input)).toBe(originalRef.isAfter(input));
+    }
   });
 
   test("isAfter with ISO string + Z offset", () => {
@@ -156,9 +157,9 @@ describe("isAfter family: string input", () => {
   });
 
   test("isBefore with plain ISO string (no offset)", () => {
-    expect(ref.isBefore("2024-06-15T13:00:00")).toBe(true);
-    expect(ref.isBefore("2024-06-15T12:00:00")).toBe(false);
-    expect(ref.isBefore("2024-06-15T11:00:00")).toBe(false);
+    for (const input of ["2024-06-15T13:00:00", "2024-06-15T12:00:00", "2024-06-15T11:00:00"]) {
+      expect(ref.isBefore(input)).toBe(originalRef.isBefore(input));
+    }
   });
 
   test("isBefore with ISO string + Z offset", () => {

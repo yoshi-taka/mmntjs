@@ -8,7 +8,7 @@ import {
   createDateSafe,
   createUTCDate,
 } from "../utils";
-import { DAY_MS, daysInMonthFast, weekDateToDayOfYear, ymdToEpochDays } from "../units";
+import { daysInMonthFast, weeksInYear, weekDateToDayOfYear } from "../units";
 import { getLiteLocale, getLiteCurrentLocale } from "../locale-lite";
 import type { ParseLocale } from "../parse-locale";
 import { parseString, isCustomFormatParsingEnabled } from "../parse-lite";
@@ -90,15 +90,41 @@ function createMomentFromParsed(
   locale?: string,
   strict?: boolean,
 ): MomentLite {
-  if (
-    parsed.isoWeekYear !== undefined &&
-    parsed.isoWeek !== undefined &&
-    parsed.year === undefined
-  ) {
+  const isoWeekYear = parsed.isoWeekYear ?? parsed._weekYear;
+  const isoWeek = parsed.isoWeek ?? parsed._week;
+  if (isoWeekYear !== undefined && isoWeek !== undefined && parsed.year === undefined) {
+    if (isoWeek < 1 || isoWeek > weeksInYear(isoWeekYear, 1, 4)) {
+      return new MomentLite({
+        _d: new Date(NaN),
+        _dClone: false,
+        _i: str,
+        _f: format,
+        _l: locale,
+        _strict: strict,
+        _isValid: false,
+        _overflow: 7,
+        _parsedDateParts: parsed._parsedDateParts,
+        _parsedOffset: parsed.offset,
+        _unusedTokens: parsed._unusedTokens,
+        _unusedInput: parsed._unusedInput,
+        _charsLeftOver: parsed._charsLeftOver,
+      });
+    }
     const weekday = parsed._weekdayNum ?? 1;
-    const dayOfYear = weekDateToDayOfYear(parsed.isoWeekYear, parsed.isoWeek, weekday - 1, 1, 4);
+    const dayOfYear = weekDateToDayOfYear(isoWeekYear, isoWeek, weekday - 1, 1, 4);
+    const hour = parsed.hour ?? 0;
+    const minute = parsed.minute ?? 0;
+    const second = parsed.second ?? 0;
+    const millisecond = parsed.millisecond ?? 0;
+    const date =
+      parsed.offset === undefined
+        ? createDateSafe(isoWeekYear, 0, dayOfYear, hour, minute, second, millisecond, false)
+        : new Date(
+            createUTCDate(isoWeekYear, 0, dayOfYear, hour, minute, second, millisecond).getTime() -
+              parsed.offset * 60000,
+          );
     return new MomentLite({
-      _t: ymdToEpochDays(parsed.isoWeekYear, 0, dayOfYear) * DAY_MS,
+      _d: date,
       _i: str,
       _f: format,
       _l: locale,
@@ -109,6 +135,7 @@ function createMomentFromParsed(
       _empty: parsed._empty,
       _invalidMonth: parsed._invalidMonth,
       _parsedDateParts: parsed._parsedDateParts,
+      _parsedOffset: parsed.offset,
       _meridiem: parsed._meridiem,
     });
   }
@@ -153,7 +180,7 @@ function createMomentFromParsed(
   const ms = parsed.millisecond ?? 0;
   const date =
     parsed.offset !== undefined
-      ? createUTCDate(y, mo, d, h, min, sec, ms)
+      ? new Date(createUTCDate(y, mo, d, h, min, sec, ms).getTime() - parsed.offset * 60000)
       : createDateSafe(y, mo, d, h, min, sec, ms, false);
   return new MomentLite({
     _d: date,
@@ -161,14 +188,13 @@ function createMomentFromParsed(
     _f: format,
     _l: locale,
     _strict: strict,
-    _offset: parsed.offset,
-    _isUTC: parsed.offset !== undefined,
     _unusedTokens: parsed._unusedTokens,
     _unusedInput: parsed._unusedInput,
     _charsLeftOver: parsed._charsLeftOver,
     _empty: parsed._empty,
     _invalidMonth: parsed._invalidMonth,
     _parsedDateParts: parsed._parsedDateParts,
+    _parsedOffset: parsed.offset,
     _meridiem: parsed._meridiem,
   });
 }
@@ -429,23 +455,16 @@ function createFromString(
   if (!fmt) {
     const zoned = tryParseZonedISO(str);
     if (zoned.kind === "zoned") {
-      const d = createUTCDate(zoned.y, zoned.M, zoned.D, zoned.H, zoned.m, zoned.s, zoned.ms);
+      const d = new Date(
+        createUTCDate(zoned.y, zoned.M, zoned.D, zoned.H, zoned.m, zoned.s, zoned.ms).getTime() -
+          zoned.offset * 60000,
+      );
       if (!isNaN(d.getTime())) {
         return new MomentLite({
           _d: d,
           _dClone: false,
+          _parsedOffset: zoned.offset,
           _i: str,
-          _offset: zoned.offset,
-          _isUTC: true,
-          _presetFields: {
-            y: zoned.y,
-            M: zoned.M,
-            D: zoned.D,
-            H: zoned.H,
-            m: zoned.m,
-            s: zoned.s,
-            ms: zoned.ms,
-          },
         });
       }
     }
@@ -458,20 +477,23 @@ function createFromString(
   );
   if (parsed && !parsed._claimed) {
     if (parsed._hasDate !== undefined) {
+      const hasOffset = parsed.offset !== undefined;
+      const parsedDate = createDateSafe(
+        parsed.year!,
+        parsed.month!,
+        parsed.day!,
+        parsed.hour ?? 0,
+        parsed.minute ?? 0,
+        parsed.second ?? 0,
+        parsed.millisecond ?? 0,
+        hasOffset,
+      );
       return new MomentLite({
-        _d: createDateSafe(
-          parsed.year!,
-          parsed.month!,
-          parsed.day!,
-          parsed.hour ?? 0,
-          parsed.minute ?? 0,
-          parsed.second ?? 0,
-          parsed.millisecond ?? 0,
-          parsed.offset !== undefined,
-        ),
-        _offset: parsed.offset,
-        _isUTC: parsed.offset !== undefined,
+        _d: hasOffset
+          ? new Date(parsedDate.getTime() - (parsed.offset as number) * 60000)
+          : parsedDate,
         _i: str,
+        _parsedOffset: parsed.offset,
       });
     }
     return createMomentFromParsed(parsed, str);
@@ -676,7 +698,10 @@ export function momentUTC(
     m._p.offset = 0;
     return m;
   }
-  if (!m._p.isUTC && isString(input)) {
+  const hasExplicitOffset =
+    m._cold?._parsedOffset !== undefined ||
+    (isString(input) && /(?:[zZ]|[+-]\d\d:?\d\d)\s*$/.test(input));
+  if (!m._p.isUTC && isString(input) && !hasExplicitOffset) {
     const parts = m._cold?._parsedDateParts as (number | undefined)[] | undefined;
     if (parts && parts.length > 0) {
       m._p.d = createUTCDateFromParsedParts(parts, nowFn());

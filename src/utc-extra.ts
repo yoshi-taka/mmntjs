@@ -369,11 +369,10 @@ export function isDSTMoment(m: UtcMoment): boolean {
   if (m._p.isUTC) {
     return false;
   }
-  const dt = m._getD();
-  const jan = new Date(dt.getFullYear(), 0, 1);
-  const jul = new Date(dt.getFullYear(), 6, 1);
-  const janOff = Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset());
-  return dt.getTimezoneOffset() < janOff;
+  const currentOffset = m.utcOffset();
+  return (
+    currentOffset > m.clone().month(0).utcOffset() || currentOffset > m.clone().month(5).utcOffset()
+  );
 }
 
 export function hasAlignedHourOffsetMoment(m: UtcMoment, other?: Moment): boolean {

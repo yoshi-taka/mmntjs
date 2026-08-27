@@ -1,6 +1,7 @@
 import { test, expect, describe } from "bun:test";
 import { mkdtempSync, writeFileSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { gzipSync } from "node:zlib";
 import pkg from "../package.json";
 
@@ -101,13 +102,33 @@ describe("tree-shaking", () => {
     });
 
     test("format-parse plugin enables custom format parsing for lite entry", async () => {
-      const litePath = `${join(projectRoot, "src/lite.ts")}?lite-format-plugin`;
-      const pluginPath = `${join(projectRoot, "src/plugin/format-parse.ts")}?lite-format-plugin`;
-      const lite = await import(litePath);
-      await import(pluginPath);
-      const moment = lite.default;
-
-      expect(moment("2024-01-02", "YYYY-MM-DD", true).isValid()).toBe(true);
+      const liteUrl = pathToFileURL(join(projectRoot, "src/lite.ts")).href;
+      const pluginUrl = pathToFileURL(join(projectRoot, "src/plugin/format-parse.ts")).href;
+      const script = `
+        import moment from ${JSON.stringify(liteUrl)};
+        await import(${JSON.stringify(pluginUrl)});
+        console.log(JSON.stringify([
+          moment("2024-01-02", "YYYY-MM-DD", true).isValid(),
+          moment.utc("2024-06-15T10:30:00+05:30 foo", "YYYY-MM-DDTHH:mm:ssZ [foo]").valueOf(),
+          moment("2024-W01-1T10:30:00+05:30", "GGGG-[W]WW-E[T]HH:mm:ssZ").valueOf(),
+          moment.utc("2024-W01-1T10:30:00+05:30", "GGGG-[W]WW-E[T]HH:mm:ssZ").valueOf(),
+          moment("2024-W54-1", "GGGG-[W]WW-E", true).isValid(),
+        ]));
+      `;
+      const result = Bun.spawnSync([process.execPath, "-e", script], {
+        cwd: projectRoot,
+        env: { ...process.env, TZ: "UTC" },
+      });
+      if (result.exitCode !== 0) {
+        throw new Error(new TextDecoder().decode(result.stderr));
+      }
+      expect(JSON.parse(new TextDecoder().decode(result.stdout))).toEqual([
+        true,
+        1718427600000,
+        1704085200000,
+        1704085200000,
+        false,
+      ]);
     });
 
     test("lite moment does not contain locale registry registration", async () => {

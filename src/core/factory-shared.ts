@@ -56,6 +56,7 @@ type ObjectInputHandler = (
   obj: Record<string, unknown>,
   parseObject: (obj: Record<string, unknown>) => InternalParsedData,
   nowFn: () => number,
+  isUTC?: boolean,
 ) => Moment;
 
 export type FactoryDeps = {
@@ -374,6 +375,18 @@ function parseEnglishLongMonthDate(str: string): FastLocalISO | ParseFailed {
 }
 
 export function createMomentFactory(deps: FactoryDeps) {
+  function createDateFromParsed(parsed: ParsedDataLike, y: number, M: number, D: number): Date {
+    const H = parsed.hour ?? 0;
+    const m = parsed.minute ?? 0;
+    const s = parsed.second ?? 0;
+    const ms = parsed.millisecond ?? 0;
+    if (parsed.offset === undefined) {
+      return createDateSafe(y, M, D, H, m, s, ms, false);
+    }
+    const utc = createUTCDate(y, M, D, H, m, s, ms);
+    return new Date(utc.getTime() - parsed.offset * 60000);
+  }
+
   function createMomentFromParsed(
     parsed: ParsedDataLike,
     str?: string,
@@ -400,7 +413,9 @@ export function createMomentFactory(deps: FactoryDeps) {
           _l: locale,
           _strict: strict,
           _isValid: false,
+          _overflow: 7,
           _parsedDateParts: parsed._parsedDateParts,
+          _parsedOffset: parsed.offset,
           _unusedTokens: parsed._unusedTokens,
           _unusedInput: parsed._unusedInput,
           _charsLeftOver: parsed._charsLeftOver,
@@ -409,29 +424,35 @@ export function createMomentFactory(deps: FactoryDeps) {
       }
       const weekday = parsed._weekdayNum ?? 1;
       const dayOfYear = weekDateToDayOfYear(isoWeekYear, isoWeek, weekday - 1, 1, 4);
-      const d = useUtc
+      const parsedDate = useUtc
         ? createUTCDate(isoWeekYear, 0, dayOfYear)
         : createDateSafe(isoWeekYear, 0, dayOfYear, 0, 0, 0, 0);
       if (parsed.hour !== undefined) {
         if (useUtc) {
-          d.setUTCHours(
+          parsedDate.setUTCHours(
             parsed.hour,
             parsed.minute ?? 0,
             parsed.second ?? 0,
             parsed.millisecond ?? 0,
           );
         } else {
-          d.setHours(parsed.hour, parsed.minute ?? 0, parsed.second ?? 0, parsed.millisecond ?? 0);
+          parsedDate.setHours(
+            parsed.hour,
+            parsed.minute ?? 0,
+            parsed.second ?? 0,
+            parsed.millisecond ?? 0,
+          );
         }
       }
+      const d = useUtc
+        ? new Date(parsedDate.getTime() - (parsed.offset as number) * 60000)
+        : parsedDate;
       return new Moment({
         _d: d,
         _i: str,
         _f: format,
         _l: locale,
         _strict: strict,
-        _offset: parsed.offset,
-        _isUTC: parsed.offset !== undefined,
         _unusedTokens: parsed._unusedTokens,
         _unusedInput: parsed._unusedInput,
         _charsLeftOver: parsed._charsLeftOver,
@@ -439,6 +460,7 @@ export function createMomentFactory(deps: FactoryDeps) {
         _invalidMonth: parsed._invalidMonth,
         _weekdayMismatch: parsed._weekdayMismatch,
         _parsedDateParts: parsed._parsedDateParts,
+        _parsedOffset: parsed.offset,
         _meridiem: parsed._meridiem,
         _iso: parsed._iso,
         _rfc2822: parsed._rfc2822,
@@ -501,35 +523,13 @@ export function createMomentFactory(deps: FactoryDeps) {
       second: parsed.second,
       millisecond: parsed.millisecond,
     });
-    const date =
-      parsed.offset !== undefined
-        ? createUTCDate(
-            y,
-            mo,
-            d,
-            parsed.hour ?? 0,
-            parsed.minute ?? 0,
-            parsed.second ?? 0,
-            parsed.millisecond ?? 0,
-          )
-        : createDateSafe(
-            y,
-            mo,
-            d,
-            parsed.hour ?? 0,
-            parsed.minute ?? 0,
-            parsed.second ?? 0,
-            parsed.millisecond ?? 0,
-            false,
-          );
+    const date = createDateFromParsed(parsed, y, mo, d);
     return new Moment({
       _d: date,
       _i: str,
       _f: format,
       _l: locale,
       _strict: strict,
-      _offset: parsed.offset,
-      _isUTC: parsed.offset !== undefined,
       _overflow: overflow >= 0 ? overflow : undefined,
       _isValid: overflow < 0 && isFinite(date.getTime()),
       _unusedTokens: parsed._unusedTokens,
@@ -539,6 +539,7 @@ export function createMomentFactory(deps: FactoryDeps) {
       _invalidMonth: parsed._invalidMonth,
       _weekdayMismatch: parsed._weekdayMismatch,
       _parsedDateParts: parsed._parsedDateParts,
+      _parsedOffset: parsed.offset,
       _meridiem: parsed._meridiem,
       _iso: parsed._iso,
       _rfc2822: parsed._rfc2822,
@@ -559,11 +560,9 @@ export function createMomentFactory(deps: FactoryDeps) {
         return new Moment({
           _d: d,
           _dClone: false,
-          _isUTC: true,
-          _offset: 0,
+          _parsedOffset: z.offset,
           _i: str,
           _f: directFormat,
-          _presetFields: { y: z.y, M: z.M, D: z.D, H: z.H, m: z.m, s: z.s, ms: z.ms },
         });
       }
     }
@@ -630,10 +629,8 @@ export function createMomentFactory(deps: FactoryDeps) {
       return new Moment({
         _d: d,
         _dClone: false,
-        _isUTC: true,
-        _offset: 0,
+        _parsedOffset: z.offset,
         _i: str,
-        _presetFields: { y: z.y, M: z.M, D: z.D, H: z.H, m: z.m, s: z.s, ms: z.ms },
       });
     }
     const p = format === undefined ? parseFixedLocalDate(str) : { kind: "fail" as const };
@@ -703,18 +700,8 @@ export function createMomentFactory(deps: FactoryDeps) {
     if (parsed && !parsed._claimed) {
       if (parsed._hasDate !== undefined) {
         return createMomentFromDate({
-          _d: createDateSafe(
-            parsed.year,
-            parsed.month,
-            parsed.day,
-            parsed.hour ?? 0,
-            parsed.minute ?? 0,
-            parsed.second ?? 0,
-            parsed.millisecond ?? 0,
-            parsed.offset !== undefined,
-          ),
-          _offset: parsed.offset,
-          _isUTC: parsed.offset !== undefined,
+          _d: createDateFromParsed(parsed, parsed.year, parsed.month, parsed.day),
+          _parsedOffset: parsed.offset,
           _i: str,
           _dClone: false,
         });
@@ -731,11 +718,11 @@ export function createMomentFactory(deps: FactoryDeps) {
     return deps.createFromArrayInput(arr, deps.parseArray, deps.nowFn, isUTC);
   }
 
-  function createFromObject(obj: Record<string, unknown>): Moment {
+  function createFromObject(obj: Record<string, unknown>, isUTC?: boolean): Moment {
     if (!deps.parseObject || !deps.createFromObjectInput) {
       return new Moment({ _dClone: false, _d: new Date(NaN), _i: obj, _isValid: false });
     }
-    return deps.createFromObjectInput(obj, deps.parseObject, deps.nowFn);
+    return deps.createFromObjectInput(obj, deps.parseObject, deps.nowFn, isUTC);
   }
 
   return function moment(
@@ -743,6 +730,7 @@ export function createMomentFactory(deps: FactoryDeps) {
     format?: unknown,
     localeOrStrict?: unknown,
     fourthArg?: unknown,
+    isUTC?: boolean,
   ): Moment {
     if (input === null) {
       return new Moment({
@@ -868,7 +856,7 @@ export function createMomentFactory(deps: FactoryDeps) {
       return createFromArray(arr);
     }
     if (isObject(input)) {
-      return createFromObject(input);
+      return createFromObject(input, isUTC);
     }
     return new Moment({ _dClone: false, _d: new Date(NaN), _isValid: false, _i: input });
   };

@@ -3,6 +3,7 @@
 import { describe, it, expect } from "bun:test";
 
 import moment from "moment";
+import originalMoment from "../../moment/moment.js";
 import _mtz from "moment-timezone";
 const mtz = _mtz as any;
 
@@ -180,10 +181,10 @@ describe("kibana format patterns", () => {
   });
 
   it("moment(value).locale(locale).format(pattern) [field formatter pattern]", () => {
-    const formatted = moment("2014-01-01T06:06:06.666Z")
-      .locale("en")
-      .format("MMMM Do YYYY, h:mm:ss a");
-    expect(formatted).toBe("January 1st 2014, 6:06:06 am");
+    const input = "2014-01-01T06:06:06.666Z";
+    const pattern = "MMMM Do YYYY, h:mm:ss a";
+    const formatted = moment(input).locale("en").format(pattern);
+    expect(formatted).toBe(originalMoment(input).locale("en").format(pattern));
   });
 
   it("moment.utc(value).tz(timezone).format(pattern) [server formatter]", () => {
@@ -721,17 +722,17 @@ describe("kibana datemath patterns", () => {
 
   it("parseDateMath: now-2d-6h (chained subtract)", () => {
     const result = moment(unix).subtract(2, "d").subtract(6, "h");
-    expect(result.format("YYYY-MM-DD HH:mm")).toBe("2013-12-30 00:06");
+    expect(result.valueOf()).toBe(unix - (2 * 24 + 6) * 60 * 60 * 1000);
   });
 
   it("parseDateMath: now+1h+30m (chained add)", () => {
     const result = moment(unix).add(1, "h").add(30, "m");
-    expect(result.format("YYYY-MM-DD HH:mm")).toBe("2014-01-01 07:36");
+    expect(result.valueOf()).toBe(unix + 90 * 60 * 1000);
   });
 
   it("parseDateMath: now-30m (minutes)", () => {
     const result = moment(unix).subtract(30, "m");
-    expect(result.format("YYYY-MM-DD HH:mm")).toBe("2014-01-01 05:36");
+    expect(result.valueOf()).toBe(unix - 30 * 60 * 1000);
   });
 
   it("parseDateMath: now/d (start of day rounding)", () => {

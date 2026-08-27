@@ -150,24 +150,49 @@ export function createFromObjectInput(
   obj: Record<string, unknown>,
   parseObject: (obj: Record<string, unknown>) => InternalParsedData,
   nowFn: () => number,
+  isUTC?: boolean,
 ): Moment {
   const parsed = parseObject(obj);
   if (isObjectEmpty(parsed)) {
-    return new Moment({ _dClone: false, _t: nowFn(), _i: obj });
+    return new Moment({
+      _dClone: false,
+      _t: nowFn(),
+      _i: obj,
+      _isUTC: !!isUTC,
+      _offset: isUTC ? 0 : undefined,
+    });
   }
   const now = new Date(nowFn());
-  const year = parsed.year ?? now.getFullYear();
-  const month = parsed.month ?? (parsed.year !== undefined ? 0 : now.getMonth());
+  const year = parsed.year ?? (isUTC ? now.getUTCFullYear() : now.getFullYear());
+  const currentMonth = isUTC ? now.getUTCMonth() : now.getMonth();
+  const currentDay = isUTC ? now.getUTCDate() : now.getDate();
+  const month = parsed.month ?? (parsed.year !== undefined ? 0 : currentMonth);
   const day =
-    parsed.day ?? (parsed.year !== undefined || parsed.month !== undefined ? 1 : now.getDate());
+    parsed.day ?? (parsed.year !== undefined || parsed.month !== undefined ? 1 : currentDay);
   const hour = parsed.hour ?? 0;
   const minute = parsed.minute ?? 0;
   const second = parsed.second ?? 0;
   const ms = parsed.millisecond ?? 0;
   const overflow = checkOverflow({ year, month, day, hour, minute, second, millisecond: ms });
-  const d = createDate(year, month, day, hour, minute, second, ms);
+  const d = isUTC
+    ? createUTCDate(year, month, day, hour, minute, second, ms)
+    : createDate(year, month, day, hour, minute, second, ms);
   if (overflow >= 0) {
-    return new Moment({ _dClone: false, _d: d, _i: obj, _isValid: false, _overflow: overflow });
+    return new Moment({
+      _dClone: false,
+      _d: d,
+      _i: obj,
+      _isValid: false,
+      _overflow: overflow,
+      _isUTC: !!isUTC,
+      _offset: isUTC ? 0 : undefined,
+    });
   }
-  return new Moment({ _dClone: false, _d: d, _i: obj });
+  return new Moment({
+    _dClone: false,
+    _d: d,
+    _i: obj,
+    _isUTC: !!isUTC,
+    _offset: isUTC ? 0 : undefined,
+  });
 }

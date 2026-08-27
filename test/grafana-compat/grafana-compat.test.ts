@@ -3,6 +3,7 @@
 import { describe, it, expect } from "bun:test";
 
 import moment from "moment";
+import originalMoment from "../../moment/moment.js";
 import _mtz, { tz as tzFn } from "moment-timezone";
 const mtz = _mtz as any;
 
@@ -130,10 +131,12 @@ describe("grafana moment_wrapper patterns", () => {
 
   // DateTime interface methods
   it("moment.fn.format()", () => {
-    const m = moment("2014-01-01T06:06:06.666Z");
+    const input = "2014-01-01T06:06:06.666Z";
+    const m = moment(input);
+    const original = originalMoment(input);
     expect(m.format()).toBeDefined();
-    expect(m.format("YYYY-MM-DD")).toBe("2014-01-01");
-    expect(m.format("YYYY-MM-DD HH:mm:ss")).toBe("2014-01-01 06:06:06");
+    expect(m.format("YYYY-MM-DD")).toBe(original.format("YYYY-MM-DD"));
+    expect(m.format("YYYY-MM-DD HH:mm:ss")).toBe(original.format("YYYY-MM-DD HH:mm:ss"));
   });
 
   it("moment.fn.valueOf()", () => {

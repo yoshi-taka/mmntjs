@@ -2,19 +2,28 @@
 // Runs the actual @kbn/datemath tests against mmntjs
 // This imports the kbn-datemath source directly from the Kibana checkout
 
-import { describe, it, expect, jest, beforeEach, afterEach } from "bun:test";
+import { describe, it, expect, jest, beforeEach, afterEach, mock } from "bun:test";
+import { join } from "node:path";
 import moment from "moment";
 
 type DateMath = ReturnType<typeof require>;
 
-const KBN_DATEMATH_PATH =
-  "/path/to/kibana/src/platform/packages/shared/kbn-datemath/index.ts";
+const kibanaRoot = process.env.KIBANA_ROOT;
+const kbnDatemathPath = kibanaRoot
+  ? join(kibanaRoot, "src/platform/packages/shared/kbn-datemath/index.ts")
+  : undefined;
+const kbnMomentPath = kibanaRoot
+  ? join(kibanaRoot, "src/platform/packages/shared/kbn-datemath/node_modules/moment/moment.js")
+  : undefined;
 let dateMath: DateMath | null = null;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  dateMath = require(KBN_DATEMATH_PATH) as DateMath;
-} catch {
-  // Kibana checkout not available — tests skip via guard below
+if (kbnDatemathPath && kbnMomentPath) {
+  try {
+    mock.module("moment", () => ({ default: moment }));
+    mock.module(kbnMomentPath, () => ({ default: moment }));
+    dateMath = (await import(kbnDatemathPath)) as DateMath;
+  } catch {
+    // Kibana checkout not available — tests skip via guard below
+  }
 }
 
 const spans = ["s", "m", "h", "d", "w", "M", "y", "ms"] as const;
@@ -86,6 +95,16 @@ if (!dateMath) {
 
       afterEach(() => {
         jest.useRealTimers();
+      });
+
+      it("uses mmntjs as the default moment dependency", () => {
+        const originalNow = moment.now;
+        moment.now = () => 123456789;
+        try {
+          expect((dateMath as any).parse("now").valueOf()).toBe(123456789);
+        } finally {
+          moment.now = originalNow;
+        }
       });
 
       it("should return the same moment if passed a moment", () => {

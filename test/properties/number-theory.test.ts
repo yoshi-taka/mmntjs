@@ -97,6 +97,24 @@ describe("UTC timestamp mixed-radix decomposition", () => {
       { numRuns: 1000 },
     );
   });
+
+  test("inverts every epoch day for years 1 through 9999", () => {
+    const converters = [
+      Reflect.get(Moment, "_epochDaysToYMD"),
+      Reflect.get(MomentLite, "_epochDaysToYMD"),
+    ];
+    for (let epochDay = -719162; epochDay <= 2932896; epochDay++) {
+      for (const convert of converters) {
+        const fields = Reflect.apply(convert, undefined, [epochDay]);
+        if (
+          !Array.isArray(fields) ||
+          ymdToEpochDays(fields[0], fields[1], fields[2]) !== epochDay
+        ) {
+          throw new Error(`civil-from-days mismatch at epoch day ${epochDay}`);
+        }
+      }
+    }
+  });
 });
 
 describe("dateless week arithmetic", () => {

@@ -18,6 +18,30 @@ function getTZ(): string {
 }
 
 describe(`DST tests under TZ=${getTZ()}`, () => {
+  test("historical spring gap refreshes fields after week subtraction", () => {
+    if (getTZ() !== "Asia/Tokyo") {
+      return;
+    }
+    const input = new Date("1949-12-10T15:59:59.999Z");
+    const mm = moment(input).add(-36, "weeks");
+    const om = originalMoment(input).add(-36, "weeks");
+    expect(mm.valueOf()).toBe(om.valueOf());
+    expect(mm.toArray()).toEqual(om.toArray());
+    expect(mm.hours()).toBe(mm.toDate().getHours());
+  });
+
+  test("historical fall-back reports DST on both sides of the boundary", () => {
+    if (getTZ() !== "Asia/Tokyo") {
+      return;
+    }
+    for (const input of ["1950-09-09T14:59:59.999Z", "1950-09-09T15:00:00.000Z"]) {
+      const mm = moment(input);
+      const om = originalMoment(input);
+      expect(mm.utcOffset()).toBe(om.utcOffset());
+      expect(mm.isDST()).toBe(om.isDST());
+    }
+  });
+
   // ==============================
   // SPRING FORWARD (nonexistent local times)
   // ==============================

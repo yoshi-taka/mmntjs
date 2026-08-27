@@ -109,16 +109,17 @@ describe("mmntjs specific", () => {
     expect(local.valueOf()).toBe(ref.valueOf());
   });
 
-  test("ISO string with timezone uses UTC internally", () => {
-    const utc = moment("2024-03-09T12:00:00Z");
-    expect(utc._p.isUTC).toBe(true);
-    // mmntjs keeps _isUTC=true for Z strings, so hour() is UTC hour
-    expect(utc.hour()).toBe(12);
-
-    const withOffset = moment("2024-03-09T12:00:00+05:00");
-    expect(withOffset._p.isUTC).toBe(true);
-    expect(withOffset._p.offset).toBe(300);
-    expect(withOffset.valueOf()).toBe(new Date("2024-03-09T07:00:00Z").getTime());
+  test("ISO string with timezone converts to local mode", () => {
+    for (const input of ["2024-03-09T12:00:00Z", "2024-03-09T12:00:00+05:00"]) {
+      const actual = moment(input);
+      const expected = originalMoment(input);
+      expect(actual.valueOf()).toBe(expected.valueOf());
+      expect(actual.format("YYYY-MM-DDTHH:mm:ss.SSSZ")).toBe(
+        expected.format("YYYY-MM-DDTHH:mm:ss.SSSZ"),
+      );
+      expect(actual.isUTC()).toBe(expected.isUTC());
+      expect(actual.utcOffset()).toBe(expected.utcOffset());
+    }
   });
 
   test("moment.utc() treats ISO string without timezone as UTC", () => {

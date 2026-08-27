@@ -208,6 +208,7 @@ export interface MomentConstructionConfig {
   _meridiem?: string;
   _empty?: boolean;
   _parsedDateParts?: number[];
+  _parsedOffset?: number;
   _unusedTokens?: string[];
   _unusedInput?: string[];
   _charsLeftOver?: number;
@@ -258,7 +259,22 @@ function syncNormalizedLocalCalendarFields(p: _P, d: Date, offset: number): bool
 // Reusable probe Date for lightweight offset verification (no allocation)
 const _probeDate = new Date(0);
 const _probeCache = { t: NaN, offset: NaN };
+const _MARCH_DOY = new Int16Array([0, 31, 61, 92, 122, 153, 184, 214, 245, 275, 306, 337]);
 function epochDaysToYMD(z: number): [number, number, number] {
+  // Years 1..9999 keep every quotient nonnegative and within int32, making |0 exact truncation.
+  if (z >= -719162 && z <= 2932896) {
+    const shifted = z + 719468;
+    const era = (shifted / 146097) | 0;
+    const doe = shifted - era * 146097;
+    const yoe = ((doe - ((doe / 1460) | 0) + ((doe / 36524) | 0) - ((doe / 146096) | 0)) / 365) | 0;
+    const y = yoe + era * 400;
+    const doy = doe - (365 * yoe + (yoe >>> 2) - ((yoe / 100) | 0));
+    const mp = ((5 * doy + 2) / 153) | 0;
+    const d = doy - _MARCH_DOY[mp] + 1;
+    const m = mp < 10 ? mp + 2 : mp - 10;
+    return [y + (m <= 1 ? 1 : 0), m, d];
+  }
+
   z += 719468;
   const era = Math.floor(z / 146097);
   const doe = z - era * 146097;
@@ -368,6 +384,21 @@ export class MomentLite {
   _strict?: boolean;
 
   private static _epochDaysToYMD(z: number): [number, number, number] {
+    // Years 1..9999 keep every quotient nonnegative and within int32, making |0 exact truncation.
+    if (z >= -719162 && z <= 2932896) {
+      const shifted = z + 719468;
+      const era = (shifted / 146097) | 0;
+      const doe = shifted - era * 146097;
+      const yoe =
+        ((doe - ((doe / 1460) | 0) + ((doe / 36524) | 0) - ((doe / 146096) | 0)) / 365) | 0;
+      const y = yoe + era * 400;
+      const doy = doe - (365 * yoe + (yoe >>> 2) - ((yoe / 100) | 0));
+      const mp = ((5 * doy + 2) / 153) | 0;
+      const d = doy - _MARCH_DOY[mp] + 1;
+      const m = mp < 10 ? mp + 2 : mp - 10;
+      return [y + (m <= 1 ? 1 : 0), m, d];
+    }
+
     z += 719468;
     const era = Math.floor(z / 146097);
     const doe = z - era * 146097;
