@@ -45,7 +45,7 @@ function mergeConfig(base: LocaleSpec, override: Partial<LocaleSpec>): LocaleSpe
       }
     }
   }
-  return result as LocaleSpec;
+  return result;
 }
 
 export function mergeLocaleConfigs(base: LocaleSpec, override: Partial<LocaleSpec>): LocaleSpec {
@@ -126,11 +126,7 @@ export class Locale {
     if (isFunction(ms)) {
       const result: string[] = [];
       for (let i = 0; i < this._months.length; i++) {
-        const r = (ms as Function).call(
-          this._config,
-          { month: () => i } as { month: () => number },
-          "MMM",
-        );
+        const r = (ms as Function).call(this._config, { month: () => i }, "MMM");
         result.push(r);
       }
       return result;
@@ -180,7 +176,7 @@ export class Locale {
     if (isFunction(ws)) {
       const result: string[] = [];
       for (let i = 0; i < 7; i++) {
-        const r = (ws as Function)({ day: () => i } as { day: () => number }, "ddd");
+        const r = (ws as Function)({ day: () => i }, "ddd");
         result.push(r);
       }
       return result;
@@ -196,7 +192,7 @@ export class Locale {
     if (isFunction(wm)) {
       const result: string[] = [];
       for (let i = 0; i < 7; i++) {
-        const r = (wm as Function)({ day: () => i } as { day: () => number }, "dd");
+        const r = (wm as Function)({ day: () => i }, "dd");
         result.push(r);
       }
       return result;

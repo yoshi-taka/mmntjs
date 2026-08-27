@@ -1121,7 +1121,7 @@ export class MomentLite {
     }
     const u = normalizeUnits(unit as string);
     if (!u) {
-      return this as unknown as number;
+      return this;
     }
     switch (u) {
       case "year":

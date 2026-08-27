@@ -87,9 +87,9 @@ export function parseString(
   if (format) {
     const preparsed = localePreparse(locObj as never, str);
     if (isArray(format)) {
-      return parseWithFormats(preparsed, format, locale, strict) as unknown as ParsedData;
+      return parseWithFormats(preparsed, format, locale, strict);
     }
-    return parseWithFormat(preparsed, format, locale, strict) as unknown as ParsedData;
+    return parseWithFormat(preparsed, format, locale, strict);
   }
 
   str = localePreparse(locObj as never, str);
@@ -118,7 +118,7 @@ export function parseString(
       _empty: false,
       _invalidMonth: null,
       _parsedDateParts: [],
-    } as unknown as ParsedData;
+    };
   }
 
   const fastResult = parseCommonISOExtended(trimmed);
@@ -748,7 +748,7 @@ function parseISOWithTable(str: string, locale?: ParseLocale): InternalParsedDat
   if (dateFormat.includes("DDD") && result.year !== undefined && result.dayOfYear === undefined) {
     return { _claimed: true };
   }
-  return result as unknown as Record<string, unknown>;
+  return result;
 }
 
 // -- Year tokens --

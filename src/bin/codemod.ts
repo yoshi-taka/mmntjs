@@ -167,7 +167,7 @@ function detectApis(
 }
 
 export function runCheck(dir = ".", showFns = false) {
-  const results = scanFiles(dir) as unknown as ApiUsage;
+  const results = scanFiles(dir);
   console.log(`\nFound ${results.total} moment import(s) in ${results.files} file(s):`);
   for (const [file, count] of Object.entries(results.fileCounts)) {
     console.log(`  ${file}: ${count} import(s)`);
@@ -279,7 +279,7 @@ const IMPORT_TARGETS: Record<string, string> = {
 };
 
 export function runApply(dir = ".", target = "auto", dry = false) {
-  const results = scanFiles(dir) as unknown as ApiUsage;
+  const results = scanFiles(dir);
   const hasFullOnly = Object.keys(results.fullOnly).length > 0;
   let modified = 0;
   for (const file of results.modifiedFiles) {

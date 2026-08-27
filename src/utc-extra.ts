@@ -169,12 +169,12 @@ export function parseZoneMoment(
   createMoment?: MomentFactory,
 ): Moment {
   if (!m._isValid) {
-    const clone = m.clone() as unknown as UtcMoment;
+    const clone = m.clone();
     clone._isParseZone = true;
     return clone;
   }
   if (input === undefined) {
-    const clone = m.clone() as unknown as UtcMoment;
+    const clone = m.clone();
     clone._isParseZone = true;
     if (isString(m._i)) {
       const fmt = m._f;

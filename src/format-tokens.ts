@@ -47,13 +47,13 @@ function getEraInfo(m: Moment, loc: Locale): { era: unknown; eraYear: number } |
   }
   const current = (yv + 100000) * 10000 + month1 * 100 + dv;
   for (const era of eras) {
-    const sinceStr = era.since != null ? String(era.since as string | number) : null;
+    const sinceStr = era.since != null ? String(era.since) : null;
     let untilVal = Infinity;
     if (era.until != null) {
       if (typeof era.until === "number") {
         untilVal = era.until;
       } else {
-        const uStr = String(era.until as string);
+        const uStr = String(era.until);
         const uMatch = uStr.match(/^(-?\d+)-(\d{2})-(\d{2})$/);
         if (uMatch) {
           const uy = parseInt(uMatch[1], 10);

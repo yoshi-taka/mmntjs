@@ -726,7 +726,7 @@ export class Duration {
     } else if (typeof duration === "string") {
       other = new Duration(duration);
     } else if (isObject(duration)) {
-      other = new Duration(duration as DurationInput);
+      other = new Duration(duration);
     } else {
       return this;
     }
@@ -749,7 +749,7 @@ export class Duration {
     } else if (typeof duration === "string") {
       other = new Duration(duration);
     } else if (isObject(duration)) {
-      other = new Duration(duration as DurationInput);
+      other = new Duration(duration);
     } else {
       return this;
     }

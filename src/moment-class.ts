@@ -2127,7 +2127,7 @@ export class Moment {
     m._f = this._f;
     m._strict = this._strict;
     if (this._cold) {
-      m._cold = { ...this._cold } as MomentCold;
+      m._cold = { ...this._cold };
     }
     return m;
   }
@@ -2438,7 +2438,7 @@ export class Moment {
     if (!this._isValid) {
       return d != null ? this : NaN;
     }
-    return localeWeekday(this, d as never) as number | this;
+    return localeWeekday(this, d) as number | this;
   }
 
   isoWeekday(): number;
@@ -2708,7 +2708,7 @@ export class Moment {
     }
     const u = normalizeUnits(unit as string);
     if (!u) {
-      return this as unknown as number;
+      return this;
     }
     switch (u) {
       case "year":
@@ -4282,12 +4282,12 @@ export class Moment {
       const prevL = this._l;
       this._l = locale;
       this._p.locale = undefined;
-      const r = formatMomentCallback!(this as unknown as FormattableMoment, format);
+      const r = formatMomentCallback!(this, format);
       this._l = prevL;
       this._p.locale = undefined;
       return r;
     }
-    return formatMomentCallback!(this as unknown as FormattableMoment, format);
+    return formatMomentCallback!(this, format);
   }
 
   fromNow(pref?: boolean): string {

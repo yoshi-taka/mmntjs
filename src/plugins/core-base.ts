@@ -1,4 +1,3 @@
-import type { MomentConstructionConfig } from "../moment-class";
 import {
   Moment,
   setAddCallback,
@@ -209,6 +208,6 @@ export function registerBaseCoreApi(target: CoreMomentTarget, deps: CoreApiDeps)
     } else {
       config._i = input;
     }
-    return new Moment(config as MomentConstructionConfig);
+    return new Moment(config);
   };
 }

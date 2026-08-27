@@ -66,7 +66,7 @@ const liteLocale = {
   weekdaysArray: () => WEEKDAYS.slice(),
   weekdaysShortArray: () => WEEKDAYS_SHORT.slice(),
   weekdaysMinArray: () => WEEKDAYS_MIN.slice(),
-} as LiteLocale;
+};
 
 export function getLiteCurrentLocale(): string {
   return "en";

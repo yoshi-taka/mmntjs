@@ -75,7 +75,7 @@ export function toObjectMoment(m: Moment): Record<string, number> {
 
 function inspectDebugMoment(m: DebugMoment): string {
   if (!m._isValid) {
-    const inputStr = m._i !== undefined ? String(m._i as string | number) : "";
+    const inputStr = m._i !== undefined ? String(m._i) : "";
     return `moment.invalid(/* ${inputStr} */)`;
   }
   if (!m.isLocal()) {

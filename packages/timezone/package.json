@@ -41,7 +41,7 @@
   "files": ["dist", "!dist/**/*.map"],
   "scripts": {
     "prepublishOnly": "bun run build && TZ=UTC bun test ./test/runtime-smoke.test.ts",
-    "build": "bun ../../scripts/generate-timezone-data.ts && tsup && bun ../../scripts/copy-dts.ts && node scripts/fix-cjs-exports.mjs",
+    "build": "bun ../../scripts/generate-timezone-data.ts && NODE_OPTIONS=--import=../../tsup-typescript-api.mjs tsup && bun ../../scripts/copy-dts.ts && node scripts/fix-cjs-exports.mjs",
     "test": "bun test"
   },
   "peerDependencies": {
@@ -51,7 +51,7 @@
     "fast-check": "^4.0.0",
     "moment-timezone": "^0.5.46",
     "tsup": "^8.3.0",
-    "typescript": "^5.4.0"
+    "typescript": "^7.0.2"
   },
   "repository": {
     "type": "git",

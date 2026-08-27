@@ -1,7 +1,17 @@
 {
   "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
-  "entry": ["site/astro.config.mjs", "site/src/pages/**/*.astro", "site/src/layouts/**/*.astro", "site/src/components/**/*.astro", "src/index.ts", "src/bin/cli.ts", "src/temporal-entry.ts",
-    "test/mutation.test.ts", "test/properties/basic.test.ts",
+  "entry": [
+    "site/astro.config.mjs",
+    "site/src/pages/**/*.astro",
+    "site/src/layouts/**/*.astro",
+    "site/src/components/**/*.astro",
+    "src/index.ts",
+    "src/bin/cli.ts",
+    "src/temporal-entry.ts",
+    "scripts/link-typescript-bin.ts",
+    "tsup-typescript-api.mjs",
+    "test/mutation.test.ts",
+    "test/properties/basic.test.ts",
     "test/properties/boundary.test.ts",
     "test/iso-parse-temporal-oracle.test.ts",
     "test/regression/crashes.test.ts",
@@ -33,7 +43,8 @@
     "packages/timezone/src/index.ts",
     "packages/timezone/test/basic.test.ts",
     "packages/timezone/test/compat.test.ts",
-    "packages/timezone/test/properties.test.ts"],
+    "packages/timezone/test/properties.test.ts"
+  ],
   "ignorePatterns": [
     "moment/**",
     "lib/**",
@@ -45,9 +56,9 @@
     "test/locale/**",
     "src/locale/**",
     "test/properties/**",
+    "scripts/**",
     "bench/bench-datefns.ts",
     "test/locale-helper.ts",
-    "scripts/**",
     "bench/bench*",
     "test/bench*.ts",
     "test/bench*.mjs",
@@ -56,9 +67,22 @@
     "packages/timezone/test/**",
     "test/grafana-compat/**",
     "test/kibana-compat/**",
-     "docs/**"
-   ],
-  "ignoreDependencies": ["acorn", "benchmark", "date-fns", "dayjs", "fast-check", "luxon", "moment-timezone", "@date-fns/tz", "@date-fns/utc", "date-fns-tz", "mmntjs", "shiki"],
+    "docs/**"
+  ],
+  "ignoreDependencies": [
+    "acorn",
+    "benchmark",
+    "date-fns",
+    "dayjs",
+    "fast-check",
+    "luxon",
+    "moment-timezone",
+    "@date-fns/tz",
+    "@date-fns/utc",
+    "date-fns-tz",
+    "mmntjs",
+    "shiki"
+  ],
   "duplicates": {
     "mode": "mild",
     "minLines": 5,

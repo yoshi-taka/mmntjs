@@ -1044,10 +1044,7 @@ function hYo(ctx: ParseCtx): void {
   }
   const eraParseFn = ctx.loc._config.eraYearOrdinalParse;
   if (eraParseFn) {
-    ctx.result._eraYear = (eraParseFn as (input: string, match: RegExpExecArray) => number)(
-      remaining,
-      yoMatch as unknown as RegExpExecArray,
-    );
+    ctx.result._eraYear = eraParseFn(remaining, yoMatch as unknown as RegExpExecArray);
   } else {
     ctx.result._eraYear = parseInt(yoMatch[1] || yoMatch[0], 10);
   }
@@ -1743,7 +1740,7 @@ function getLocaleWeekdaysFull(loc: ParseLocale): string[] {
   } else if (typeof cfg.weekdays === "function") {
     for (let i = 0; i < 7; i++) {
       try {
-        const r = cfg.weekdays({ day: () => i } as { day: () => number }, "dddd");
+        const r = cfg.weekdays({ day: () => i }, "dddd");
         if (typeof r === "string") {
           names.push(r);
         }

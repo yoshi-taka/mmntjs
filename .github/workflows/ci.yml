@@ -22,6 +22,8 @@ jobs:
         with:
           submodules: true
       - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
 
       - run: bun install --frozen-lockfile
       - run: mkdir -p packages/timezone/node_modules && ln -sfn "$PWD" packages/timezone/node_modules/mmntjs

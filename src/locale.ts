@@ -131,7 +131,7 @@ export function updateLocale(locale: string, config: Partial<LocaleSpec> | null)
   }
 
   if (!currentConfig) {
-    localeConfigs[locale] = mergeLocaleConfigs({ ...enLocale }, config as LocaleSpec);
+    localeConfigs[locale] = mergeLocaleConfigs({ ...enLocale }, config);
     clearLocaleRuntimeCache();
     setLocale(locale);
     return getLocale(locale);
@@ -142,9 +142,9 @@ export function updateLocale(locale: string, config: Partial<LocaleSpec> | null)
   if (configParentLocale) {
     localeConfigs[locale] = {
       ...(config as Partial<LocaleSpec> & Record<string, unknown>),
-    } as LocaleSpec;
+    };
   } else {
-    localeConfigs[locale] = mergeLocaleConfigs(currentConfig, config as LocaleSpec);
+    localeConfigs[locale] = mergeLocaleConfigs(currentConfig, config);
   }
   clearLocaleRuntimeCache();
   setCurrentLocaleName(locale);
@@ -164,11 +164,7 @@ export function getMonths(format?: string | number, index?: number): string | st
   if (format !== undefined) {
     const monthForIndex = (monthIndex: number): string => {
       if (isFunction(months)) {
-        return (months as Function).call(
-          loc._config,
-          { month: () => monthIndex } as { month: () => number },
-          format,
-        );
+        return (months as Function).call(loc._config, { month: () => monthIndex }, format);
       }
       if (Array.isArray(months)) {
         return months[monthIndex] ?? "";

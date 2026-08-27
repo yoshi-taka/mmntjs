@@ -99,7 +99,7 @@ export function fromTemporal(t: unknown): Moment {
   }
 
   if (isTemporalInstance(t, "ZonedDateTime")) {
-    const m = moment(t.epochMilliseconds as number);
+    const m = moment(t.epochMilliseconds);
     if (t.offsetNanoseconds) {
       m.utcOffset(Math.round(Number(t.offsetNanoseconds) / 6e10));
     }

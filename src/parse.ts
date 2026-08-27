@@ -2,7 +2,7 @@ import { isArray, hasOwnProp } from "./utils";
 import type { ParseLocale } from "./parse-locale";
 import type { InternalParsedData } from "./types";
 import { localeIsPM, localeLongDateFormat } from "./locale-runtime";
-import type { ParsedData, ParseCtx, Op } from "./parse-shared";
+import type { ParsedData, ParseCtx } from "./parse-shared";
 import { daysInMonth } from "./units";
 import { compileFormatToOpcodes, expandedFormatCache, WEEKDAY_NAMES_MAP } from "./parse-shared";
 
@@ -113,17 +113,17 @@ function _parseWithFormat(
     const fast = tryIsoFormatFastPath(str, format, locale);
     if (fast) {
       _pc("parseString:format-fast-hit");
-      return fast as unknown as ParsedData;
+      return fast;
     }
   }
 
   const preparsed = preparseFn ? preparseFn(str) : str;
   if (isArray(format)) {
     _pc("parseString:format-array");
-    return parseWithFormats(preparsed, format, locale, strict) as unknown as ParsedData;
+    return parseWithFormats(preparsed, format, locale, strict);
   }
   _pc("parseString:format-single");
-  return parseWithFormat(preparsed, format, locale, strict) as unknown as ParsedData;
+  return parseWithFormat(preparsed, format, locale, strict);
 }
 
 function _parseFreeform(str: string, locale: ParseLocale): ParsedData | null {
@@ -180,7 +180,7 @@ function _parseFreeform(str: string, locale: ParseLocale): ParsedData | null {
         _empty: false,
         _invalidMonth: null,
         _parsedDateParts: [],
-      } as unknown as ParsedData;
+      };
     }
   }
 
@@ -800,7 +800,7 @@ function wrapFastParseResult(data: InternalParsedData): ParsedData {
     _empty: false,
     _invalidMonth: null,
     _parsedDateParts: EMPTY_NUMBER_ARRAY,
-  } as unknown as ParsedData;
+  };
 }
 
 function tryIsoFormatFastPath(
@@ -1271,7 +1271,7 @@ function parseWithFormat(
 
     // Dispatch to token handler
     ctx.strIdx = strIdx;
-    (op as Op & { kind: "token" }).handler(ctx);
+    op.handler(ctx);
     strIdx = ctx.strIdx;
     failed = ctx.failed;
 
@@ -1954,7 +1954,7 @@ function parseISOWithTable(str: string, locale?: ParseLocale): InternalParsedDat
   ) {
     return null;
   }
-  return result as InternalParsedData;
+  return result;
 }
 
 /** Parses common basic ISO datetimes without regex capture or format reparsing. */

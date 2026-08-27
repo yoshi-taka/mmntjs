@@ -96,7 +96,7 @@ export function localeWeekdays(
     return wd;
   }
   if (isFunction(wd)) {
-    return wd(m, format) as string;
+    return wd(m, format);
   }
   if (Array.isArray(wd)) {
     return wd[m.day()] || "";
@@ -134,7 +134,7 @@ export function localeWeekdaysShort(
   let ws = loc._config.weekdaysShort;
   ws ??= enLocale.weekdaysShort;
   if (!ws) {
-    return localeWeekdays(loc, m) as string[];
+    return localeWeekdays(loc, m);
   }
   if (isFunction(ws)) {
     return ws(m, format);
@@ -172,7 +172,7 @@ export function localeWeekdaysMin(
   let wm = loc._config.weekdaysMin;
   wm ??= enLocale.weekdaysMin;
   if (!wm) {
-    return localeWeekdaysShort(loc, m) as string[];
+    return localeWeekdaysShort(loc, m);
   }
   if (isFunction(wm)) {
     return wm(m, format);

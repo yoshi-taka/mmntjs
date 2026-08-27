@@ -7,7 +7,6 @@ import {
   getFormatMomentCallback,
   type MomentInput,
 } from "../moment-class";
-import type { FormattableMoment } from "./types";
 import { isArray, isObject, hasOwnProp } from "../utils";
 
 const calendarKeys = ["sameDay", "nextDay", "nextWeek", "lastDay", "lastWeek", "sameElse"];
@@ -94,7 +93,7 @@ export function formatCalendar(m: Moment, ref?: MomentInput, opts?: object): str
   }
 
   const locale = m._getLocale();
-  const cal = locale._config.calendar ?? ({} as Record<string, unknown>);
+  const cal = locale._config.calendar ?? {};
 
   let key: string;
   const calendarFormat = Moment.calendarFormat;
@@ -148,8 +147,5 @@ export function formatCalendar(m: Moment, ref?: MomentInput, opts?: object): str
   if (!formatter) {
     throw new Error("mmntjs formatter is not initialized");
   }
-  return formatter(
-    m as unknown as FormattableMoment,
-    typeof formatString === "string" ? formatString : "L",
-  );
+  return formatter(m, typeof formatString === "string" ? formatString : "L");
 }

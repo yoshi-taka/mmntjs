@@ -71,7 +71,7 @@ function attachLiteCoreApi(target: LiteMomentTarget, deps: LiteCoreApiDeps): Lit
     } else {
       config._i = input;
     }
-    return new MomentLite(config as never);
+    return new MomentLite(config);
   };
   momentRecord.utc = utc;
   (utc as unknown as Record<string, unknown>).parseTwoDigitYear = deps.parseTwoDigitYearInternal;

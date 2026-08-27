@@ -7,7 +7,6 @@ import { enableCustomFormatParsing } from "../parse";
 import { initializeLocaleEntry } from "./locale-init";
 import { registerUtcApi } from "../plugins/utc";
 import { setDurationMomentResolver } from "../duration";
-import type { DurationMomentLike } from "../duration-between";
 import { Moment } from "../moment-class";
 
 type CoreInitMoment = typeof moment;
@@ -21,9 +20,9 @@ export function initializeCoreEntry(target: CoreInitMoment = moment, deps?: Core
   registerUtcApi(target as never, { nowFn, ctor: Moment });
   setDurationMomentResolver((input: unknown) => {
     if (input instanceof Moment) {
-      return input as unknown as DurationMomentLike;
+      return input;
     }
-    return target(input) as unknown as DurationMomentLike;
+    return target(input);
   });
 }
 

@@ -226,7 +226,7 @@ function parseISOWithTable(str: string): InternalParsedData | null {
   }
   if (match[3]) {
     if (!allowTime) {
-      return { _claimed: true } as { _claimed: true };
+      return { _claimed: true };
     }
     let timeFormat: string | undefined;
     for (const [fmt, regex] of isoTimes) {
@@ -236,7 +236,7 @@ function parseISOWithTable(str: string): InternalParsedData | null {
       }
     }
     if (!timeFormat) {
-      return { _claimed: true } as { _claimed: true };
+      return { _claimed: true };
     }
     if (timeFormat.includes("SSSS")) {
       const fracPos = match[3].search(/[.,]/);
@@ -247,15 +247,15 @@ function parseISOWithTable(str: string): InternalParsedData | null {
     dateFormat += `${match[2] || " "}${timeFormat}`;
   }
   if (match[4] && !match[3]) {
-    return { _claimed: true } as { _claimed: true };
+    return { _claimed: true };
   }
   if (match[4] && !TZ_REGEX.exec(match[4])) {
-    return { _claimed: true } as { _claimed: true };
+    return { _claimed: true };
   }
   if (match[4]) {
     dateFormat += "Z";
   }
-  return parseIsoTokenFormat(str, dateFormat) ?? ({ _claimed: true } as { _claimed: true });
+  return parseIsoTokenFormat(str, dateFormat) ?? { _claimed: true };
 }
 
 function parseIsoTokenFormat(str: string, format: string): ParsedData | null {

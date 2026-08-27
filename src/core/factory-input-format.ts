@@ -220,7 +220,7 @@ export function createFromFormattedStringInput(args: FormatArgs): Moment {
         ) {
           return createInvalidParsedMoment(str, bestFormat, locale, strict, bestParsed);
         }
-        const m = createMomentFromParsed(bestParsed, str, bestFormat as string, locale, strict);
+        const m = createMomentFromParsed(bestParsed, str, bestFormat, locale, strict);
         m._f = bestFormat;
         return m;
       }
