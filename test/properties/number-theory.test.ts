@@ -11,8 +11,14 @@ import {
   ymdToEpochDays,
   utcTimestamp,
   isLeapYear,
+  getDayOfYear,
+  getISOWeekNumber,
+  getISOWeekYear,
+  getLocaleWeek,
+  getLocaleWeekYear,
 } from "../../src/units.ts";
 import _moment from "../../src/index.ts";
+import originalMoment from "../../moment/moment.js";
 import type { MomentStatic } from "../../src/entry/types";
 import { Moment } from "../../src/moment-class.ts";
 import { MomentLite } from "../../src/moment-lite.ts";
@@ -89,6 +95,27 @@ describe("UTC timestamp mixed-radix decomposition", () => {
         expectUTCFields(timestamp);
       }),
       { numRuns: 1000 },
+    );
+  });
+});
+
+describe("dateless week arithmetic", () => {
+  test("matches moment.js across the full valid Date range", () => {
+    assertProp(
+      fc.property(fc.integer({ min: -8.64e15, max: 8.64e15 }), (timestamp) => {
+        const date = new Date(timestamp);
+        const year = date.getUTCFullYear();
+        const month = date.getUTCMonth();
+        const day = date.getUTCDate();
+        const oracle = originalMoment.utc(timestamp);
+
+        expect(getDayOfYear(year, month, day)).toBe(oracle.dayOfYear());
+        expect(getISOWeekNumber(year, month, day)).toBe(oracle.isoWeek());
+        expect(getISOWeekYear(year, month, day)).toBe(oracle.isoWeekYear());
+        expect(getLocaleWeek(year, month, day, 0, 6)).toBe(oracle.week());
+        expect(getLocaleWeekYear(year, month, day, 0, 6)).toBe(oracle.weekYear());
+      }),
+      { numRuns: 2000 },
     );
   });
 });

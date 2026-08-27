@@ -114,8 +114,11 @@ export function utcOffsetMoment(
   keepLocalTime?: boolean,
 ): number | Moment {
   if (offset === undefined) {
+    if (!m._isValid) {
+      return NaN;
+    }
     (m as unknown as { _ensureFields: () => void })._ensureFields();
-    return m._p.offset;
+    return Number.isNaN(m._p.offset) ? 0 : m._p.offset;
   }
   let numOffset: number;
   if (typeof offset === "string") {
@@ -143,10 +146,17 @@ export function utcOffsetMoment(
   } else {
     // moment.js compat: _d += (new_offset - old_offset) * 60000
     const oldOffset = m._p.isUTC ? m._p.offset || 0 : 0;
-    m._p.t = m._p.t + (numOffset - oldOffset) * MINUTE_MS;
+    if (!Number.isNaN(numOffset)) {
+      m._p.t = m._p.t + (numOffset - oldOffset) * MINUTE_MS;
+    }
     m._p.d = undefined;
     m._p.offset = numOffset;
     m._p.isUTC = true;
+  }
+  if (!Number.isFinite(m._p.t) || Math.abs(m._p.t) > 8.64e15) {
+    m._p.t = NaN;
+    m._p.d = new Date(NaN);
+    m._isValid = false;
   }
   m._refreshFields();
   return m;

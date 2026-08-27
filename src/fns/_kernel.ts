@@ -419,43 +419,33 @@ function _firstWeekOffset(year: number, dow: number, doy: number): number {
   return -fwdlw + fwd - 1;
 }
 
-function _weeksInYear(year: number): number {
+function _weeksInYear(year: number, dow: number, doy: number): number {
   return (
     ((_isLeapYear(year) ? 366 : 365) -
-      _firstWeekOffset(year, 0, 6) +
-      _firstWeekOffset(year + 1, 0, 6)) /
+      _firstWeekOffset(year, dow, doy) +
+      _firstWeekOffset(year + 1, dow, doy)) /
     7
   );
 }
 
-export function _week(d: Date): number {
-  const doy = _dayOfYear(d);
-  const weekOffset = _firstWeekOffset(d.getFullYear(), 0, 6);
-  let week = Math.floor((doy - weekOffset - 1) / 7) + 1;
+function _weekNumber(year: number, month: number, day: number, dow: number, doy: number): number {
+  const dayOfYear = day + (_isLeapYear(year) ? _leapLadder : _nonLeapLadder)[month];
+  const weekOffset = _firstWeekOffset(year, dow, doy);
+  let week = Math.floor((dayOfYear - weekOffset - 1) / 7) + 1;
   if (week < 1) {
-    week += _weeksInYear(d.getFullYear() - 1);
-  } else if (week > _weeksInYear(d.getFullYear())) {
-    week -= _weeksInYear(d.getFullYear());
+    week += _weeksInYear(year - 1, dow, doy);
+  } else if (week > _weeksInYear(year, dow, doy)) {
+    week = 1;
   }
   return week;
 }
 
+export function _week(d: Date): number {
+  return _weekNumber(d.getFullYear(), d.getMonth(), d.getDate(), 0, 6);
+}
+
 export function _isoWeek(d: Date): number {
-  const dow = d.getDay() || 7;
-  const doy = _dayOfYear(d);
-  const w = Math.floor((doy - dow + 10) / 7);
-  if (w < 1) {
-    const prev = new Date(d.getFullYear() - 1, 11, 31);
-    return _isoWeek(prev);
-  }
-  if (w >= 53) {
-    const nextJan1 = new Date(d.getFullYear() + 1, 0, 1);
-    const nd = nextJan1.getDay() || 7;
-    if (nd <= 3 && doy >= 359) {
-      return 1;
-    }
-  }
-  return Math.min(w, 53);
+  return _weekNumber(d.getFullYear(), d.getMonth(), d.getDate(), 1, 4);
 }
 
 export function _weekday(d: Date): number {

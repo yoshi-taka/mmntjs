@@ -21,11 +21,12 @@ describe("isoWeekdayMoment (calendar-extra.ts) branch coverage", () => {
     expect(m.valueOf()).toBe(o.valueOf());
   });
 
-  test("isoWeekday with unknown string returns self unchanged", () => {
+  test("isoWeekday with unknown string matches moment.js", () => {
     const m = moment("2024-06-15");
-    const d = new Date(m.valueOf());
+    const o = originalMoment("2024-06-15");
     m.isoWeekday("foobar" as unknown as number);
-    expect(m.valueOf()).toBe(d.getTime());
+    o.isoWeekday("foobar" as unknown as number);
+    expect(m.valueOf()).toBe(o.valueOf());
   });
 
   test("isoWeekday with UTC moment matches moment.js", () => {

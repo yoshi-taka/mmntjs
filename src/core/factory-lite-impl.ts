@@ -8,7 +8,7 @@ import {
   createDateSafe,
   createUTCDate,
 } from "../utils";
-import { daysInMonthFast } from "../units";
+import { DAY_MS, daysInMonthFast, weekDateToDayOfYear, ymdToEpochDays } from "../units";
 import { getLiteLocale, getLiteCurrentLocale } from "../locale-lite";
 import type { ParseLocale } from "../parse-locale";
 import { parseString, isCustomFormatParsingEnabled } from "../parse-lite";
@@ -95,15 +95,10 @@ function createMomentFromParsed(
     parsed.isoWeek !== undefined &&
     parsed.year === undefined
   ) {
-    const jan4 = new Date(Date.UTC(parsed.isoWeekYear, 0, 4));
-    const dayOfJan4 = jan4.getUTCDay() || 7;
-    const week1Start = new Date(Date.UTC(parsed.isoWeekYear, 0, 4 - (dayOfJan4 - 1)));
     const weekday = parsed._weekdayNum ?? 1;
-    const d = new Date(
-      week1Start.getTime() + ((parsed.isoWeek - 1) * 7 + (weekday - 1)) * 86400000,
-    );
+    const dayOfYear = weekDateToDayOfYear(parsed.isoWeekYear, parsed.isoWeek, weekday - 1, 1, 4);
     return new MomentLite({
-      _d: d,
+      _t: ymdToEpochDays(parsed.isoWeekYear, 0, dayOfYear) * DAY_MS,
       _i: str,
       _f: format,
       _l: locale,

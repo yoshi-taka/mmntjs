@@ -136,6 +136,28 @@ describe("utcOffset() getter", () => {
 });
 
 describe("utcOffset() setter — number", () => {
+  test("numeric NaN matches moment.js", () => {
+    for (const keepLocalTime of [false, true]) {
+      const mm = moment.utc(0).utcOffset(NaN, keepLocalTime);
+      const om = originalMoment.utc(0).utcOffset(NaN, keepLocalTime);
+      expect(mm.valueOf()).toBe(om.valueOf());
+      expect(mm.utcOffset()).toBe(om.utcOffset());
+      expect(mm.isValid()).toBe(om.isValid());
+    }
+  });
+
+  test("matches moment.js at TimeClip boundaries", () => {
+    for (const timestamp of [-8.64e15, 8.64e15]) {
+      for (const offset of [-60, 60]) {
+        const mm = moment.utc(timestamp).utcOffset(offset);
+        const om = originalMoment.utc(timestamp).utcOffset(offset);
+        expect(mm.valueOf()).toBe(om.valueOf());
+        expect(mm.utcOffset()).toBe(om.utcOffset());
+        expect(mm.isValid()).toBe(om.isValid());
+      }
+    }
+  });
+
   const testOffsets = [
     [0, 0],
     [1, 60],

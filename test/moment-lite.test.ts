@@ -407,6 +407,46 @@ describe("MomentLite isoWeekYear", () => {
     expect(m.isoWeekYear()).toBe(o.isoWeekYear());
     expect(m.format("YYYY-MM-DD")).toBe(o.format("YYYY-MM-DD"));
   });
+
+  test("week setters match moment.js coercion and TimeClip behavior", () => {
+    for (const method of ["week", "isoWeek", "weekday"] as const) {
+      for (const value of [1.5, NaN, Infinity]) {
+        const m = moment.utc("2024-06-15T12:34:56Z");
+        const o = originalMoment.utc("2024-06-15T12:34:56Z");
+        m[method](value);
+        o[method](value);
+        expect(m.valueOf()).toBe(o.valueOf());
+        expect(m.isValid()).toBe(o.isValid());
+      }
+    }
+
+    for (const value of [2024.5, NaN, Infinity, -271821, 275761]) {
+      const m = moment.utc("2024-06-15T12:34:56Z");
+      const o = originalMoment.utc("2024-06-15T12:34:56Z");
+      m.isoWeekYear(value);
+      o.isoWeekYear(value);
+      expect(m.valueOf()).toBe(o.valueOf());
+      expect(m.isValid()).toBe(o.isValid());
+    }
+
+    const m = moment.utc("2024-06-15T12:34:56Z");
+    const o = originalMoment.utc("2024-06-15T12:34:56Z");
+    expect(m.isoWeek(null as never)).toBe(o.isoWeek());
+    m.isoWeekYear("2024" as never);
+    o.isoWeekYear("2024" as never);
+    expect(m.valueOf()).toBe(o.valueOf());
+  });
+
+  test("week setters apply TimeClip for huge finite values", () => {
+    for (const method of ["week", "isoWeek", "weekday"] as const) {
+      const m = moment.utc("2024-01-01T00:00:00Z");
+      const o = originalMoment.utc("2024-01-01T00:00:00Z");
+      m[method](1e9);
+      o[method](1e9);
+      expect(m.valueOf()).toBe(o.valueOf());
+      expect(m.isValid()).toBe(o.isValid());
+    }
+  });
 });
 
 describe("MomentLite extended-year weeks", () => {
@@ -450,6 +490,14 @@ describe("MomentLite edge cases: null/Infinity/NaN", () => {
   test("momentLite(null) is invalid", () => {
     const m = moment(null);
     expect(m.isValid()).toBe(false);
+  });
+
+  test("invalid week getters and null calls return NaN", () => {
+    const m = moment(null);
+    for (const method of ["dayOfYear", "week", "isoWeek", "isoWeekYear", "weekday"] as const) {
+      expect(m[method]()).toBeNaN();
+      expect(m[method](null as never)).toBeNaN();
+    }
   });
 
   test("diff returns NaN for invalid input", () => {
@@ -839,6 +887,28 @@ describe("MomentLite weekday / utc / local / utcOffset", () => {
     const prev = m.utcOffset();
     m.utcOffset("invalid" as never);
     expect(m.utcOffset()).toBe(prev);
+  });
+
+  test("utcOffset matches moment.js at TimeClip boundaries", () => {
+    for (const timestamp of [-8.64e15, 8.64e15]) {
+      for (const offset of [-60, 60]) {
+        const m = moment.utc(timestamp).utcOffset(offset);
+        const o = originalMoment.utc(timestamp).utcOffset(offset);
+        expect(m.valueOf()).toBe(o.valueOf());
+        expect(m.utcOffset()).toBe(o.utcOffset());
+        expect(m.isValid()).toBe(o.isValid());
+      }
+    }
+  });
+
+  test("utcOffset with numeric NaN matches moment.js", () => {
+    for (const keepLocalTime of [false, true]) {
+      const m = moment.utc(0).utcOffset(NaN, keepLocalTime);
+      const o = originalMoment.utc(0).utcOffset(NaN, keepLocalTime);
+      expect(m.valueOf()).toBe(o.valueOf());
+      expect(m.utcOffset()).toBe(o.utcOffset());
+      expect(m.isValid()).toBe(o.isValid());
+    }
   });
 });
 

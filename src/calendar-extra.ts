@@ -1,62 +1,81 @@
 import type { Moment } from "./moment-class";
-import { weeksInYear, getISOWeekNumber, getISOWeekYear, isLeapYear } from "./units";
-
-const _nonLeapLadder = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
-const _leapLadder = [0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335];
+import {
+  weeksInYear,
+  weekDateToYearMonthDay,
+  getISOWeekNumber,
+  getISOWeekYear,
+  getDayOfYear,
+  isLeapYear,
+  daysInMonthFast,
+  roundMomentDays,
+} from "./units";
 
 export type CalendarAwareMoment = Moment & {
-  _p: { isUTC: boolean; t: number; y: number; M: number; D: number; W: number };
+  _p: {
+    isUTC: boolean;
+    t: number;
+    d?: Date;
+    y: number;
+    M: number;
+    D: number;
+    W: number;
+    H: number;
+    m: number;
+    s: number;
+    ms: number;
+  };
   _ensureFields: () => void;
   _refreshFields: () => void;
   _updateOffset: (keepTime?: boolean) => void;
   _getD: () => Date;
 };
 
+function addCalendarDays(m: CalendarAwareMoment, days: number): Moment {
+  if (!days) {
+    return m;
+  }
+  const dt = m._getD();
+  if (m._p.isUTC) {
+    dt.setUTCDate(dt.getUTCDate() + days);
+  } else {
+    dt.setDate(dt.getDate() + days);
+  }
+  m._p.t = dt.getTime();
+  m._p.d = dt;
+  if (isNaN(m._p.t)) {
+    m._isValid = false;
+  }
+  m._refreshFields();
+  m._updateOffset(true);
+  return m;
+}
+
 export function isoWeekdayMoment(m: CalendarAwareMoment, d?: unknown): number | Moment {
   m._ensureFields();
-  if (d !== undefined) {
+  if (d != null) {
     let target = d;
     if (typeof target === "string") {
-      const map: Record<string, number> = {
-        monday: 1,
-        tuesday: 2,
-        wednesday: 3,
-        thursday: 4,
-        friday: 5,
-        saturday: 6,
-        sunday: 7,
-        mon: 1,
-        tue: 2,
-        wed: 3,
-        thu: 4,
-        fri: 5,
-        sat: 6,
-        sun: 7,
-      };
-      const lower = target.toLowerCase();
-      if (!(lower in map)) {
-        return m;
-      }
-      target = map[lower];
+      const parsed = m.localeData().weekdaysParse(target);
+      target = parsed < 0 ? 7 : parsed % 7 || 7;
     }
     const currentIso = m._p.W === 0 ? 7 : m._p.W;
-    const diff = Number(target) - currentIso;
-    const dt = m._getD();
-    if (m._p.isUTC) {
-      dt.setUTCDate(dt.getUTCDate() + diff);
-    } else {
-      dt.setDate(dt.getDate() + diff);
+    const days = roundMomentDays(Number(target) - currentIso);
+    if (!Number.isFinite(days)) {
+      if (isNaN(days)) {
+        return m._p.W === 0 ? addCalendarDays(m, -7) : m;
+      }
+      m._p.t = NaN;
+      m._p.d = new Date(NaN);
+      m._isValid = false;
+      return m;
     }
-    m._p.t = dt.getTime();
-    m._refreshFields();
-    m._updateOffset(true);
-    return m;
+    return addCalendarDays(m, days);
   }
   return m._p.W === 0 ? 7 : m._p.W;
 }
 
 export function dayOfYearMoment(m: CalendarAwareMoment, d?: number): number | Moment {
-  if (d !== undefined) {
+  if (d != null) {
     m._ensureFields();
     const year = m._p.y;
     const day = Number(d);
@@ -72,61 +91,106 @@ export function dayOfYearMoment(m: CalendarAwareMoment, d?: number): number | Mo
     return m;
   }
   m._ensureFields();
-  return m._p.D + (isLeapYear(m._p.y) ? _leapLadder : _nonLeapLadder)[m._p.M];
+  return getDayOfYear(m._p.y, m._p.M, m._p.D);
 }
 
 export function isoWeekMoment(m: CalendarAwareMoment, w?: number): number | Moment {
-  if (w !== undefined) {
-    const current = getISOWeekNumber(m._getD(), m._p.isUTC);
-    const diff = w - current;
-    const dt = m._getD();
-    if (m._p.isUTC) {
-      dt.setUTCDate(dt.getUTCDate() + diff * 7);
-    } else {
-      dt.setDate(dt.getDate() + diff * 7);
+  m._ensureFields();
+  if (w != null) {
+    const current = getISOWeekNumber(m._p.y, m._p.M, m._p.D);
+    const days = roundMomentDays((w - current) * 7);
+    if (!Number.isFinite(days)) {
+      if (isNaN(days)) {
+        return m;
+      }
+      m._p.t = NaN;
+      m._p.d = new Date(NaN);
+      m._isValid = false;
+      return m;
     }
-    m._p.t = dt.getTime();
-    m._refreshFields();
-    return m;
+    return addCalendarDays(m, days);
   }
-  return getISOWeekNumber(m._getD(), m._p.isUTC);
+  return getISOWeekNumber(m._p.y, m._p.M, m._p.D);
 }
 
 export function isoWeekYearMoment(m: CalendarAwareMoment, y?: number): number | Moment {
-  if (y !== undefined) {
-    let currentWeek = getISOWeekNumber(m._getD(), m._p.isUTC);
+  m._ensureFields();
+  if (y != null) {
+    if (!m.isValid()) {
+      return m;
+    }
+    y = Number(y);
+    if (!Number.isFinite(y)) {
+      m._p.t = NaN;
+      m._p.d = new Date(NaN);
+      m._isValid = false;
+      return m;
+    }
+    y = Math.trunc(y);
+    let currentWeek = getISOWeekNumber(m._p.y, m._p.M, m._p.D);
     const currentDay = isoWeekdayMoment(m) as number;
-    const maxWeek = weeksInYear(y, 1, 4, m._p.isUTC);
+    const maxWeek = weeksInYear(y, 1, 4);
     if (currentWeek > maxWeek) {
       currentWeek = maxWeek;
     }
-    const jan4 = m._p.isUTC ? new Date(Date.UTC(y, 0, 4)) : new Date(y, 0, 4);
-    const jan4Day = m._p.isUTC ? jan4.getUTCDay() || 7 : jan4.getDay() || 7;
-    const mondayOfWeek1 = m._p.isUTC
-      ? new Date(Date.UTC(y, 0, 4 - (jan4Day - 1)))
-      : new Date(y, 0, 4 - (jan4Day - 1));
-    const origDt = m._getD();
-    const origMs = origDt.getTime();
-    const targetMs =
-      mondayOfWeek1.getTime() + ((currentWeek - 1) * 7 + (currentDay - 1)) * 86400000;
-    const timeOfDay = m._p.isUTC
-      ? origMs % 86400000
-      : origMs - new Date(origMs).setHours(0, 0, 0, 0);
-    m._p.t = targetMs + timeOfDay;
-    m._p.d = undefined;
+    const [targetYear, targetMonth, targetDate] = weekDateToYearMonthDay(
+      y,
+      currentWeek,
+      currentDay - 1,
+      1,
+      4,
+    );
+    const dt = m._getD();
+    if (m._p.isUTC) {
+      const month = dt.getUTCMonth();
+      const date = dt.getUTCDate();
+      dt.setUTCFullYear(
+        targetYear,
+        month,
+        date === 29 && month === 1 && !isLeapYear(targetYear) ? 28 : date,
+      );
+      if (!isNaN(dt.getTime())) {
+        dt.setUTCMonth(
+          targetMonth,
+          date < 29 ? date : Math.min(dt.getUTCDate(), daysInMonthFast(targetYear, targetMonth)),
+        );
+        dt.setUTCDate(targetDate);
+      }
+    } else {
+      const month = dt.getMonth();
+      const date = dt.getDate();
+      dt.setFullYear(
+        targetYear,
+        month,
+        date === 29 && month === 1 && !isLeapYear(targetYear) ? 28 : date,
+      );
+      if (!isNaN(dt.getTime())) {
+        dt.setMonth(
+          targetMonth,
+          date < 29 ? date : Math.min(dt.getDate(), daysInMonthFast(targetYear, targetMonth)),
+        );
+        dt.setDate(targetDate);
+      }
+    }
+    m._p.t = dt.getTime();
+    m._p.d = dt;
+    if (isNaN(m._p.t)) {
+      m._isValid = false;
+    }
     m._refreshFields();
     return m;
   }
-  return getISOWeekYear(m._getD(), m._p.isUTC);
+  return getISOWeekYear(m._p.y, m._p.M, m._p.D);
 }
 
 export function isoWeeksInYearMoment(m: CalendarAwareMoment): number {
   m._ensureFields();
-  return weeksInYear(m._p.y, 1, 4, m._p.isUTC);
+  return weeksInYear(m._p.y, 1, 4);
 }
 
 export function isoWeeksInISOWeekYearMoment(m: CalendarAwareMoment): number {
-  return weeksInYear(getISOWeekYear(m._getD(), m._p.isUTC), 1, 4, m._p.isUTC);
+  m._ensureFields();
+  return weeksInYear(getISOWeekYear(m._p.y, m._p.M, m._p.D), 1, 4);
 }
 
 export function calendarCompareMoment(

@@ -398,23 +398,48 @@ export class Locale {
     if (typeof weekdayName !== "string") {
       return -1;
     }
-    const kind = format === "dd" ? "min" : format === "ddd" ? "short" : "format";
-    let names: string[];
-    if (kind === "format") {
-      names = this._weekdays;
-    } else if (kind === "short") {
-      names = this.weekdaysShortArray();
-    } else {
-      names = this.weekdaysMinArray();
+    const lower = weekdayName.toLowerCase();
+    const full = this._weekdays;
+    const short = this.weekdaysShortArray();
+    const min = this.weekdaysMinArray();
+    if (this._config.weekdaysParseExact) {
+      const groups = strict
+        ? [format === "dddd" ? full : format === "ddd" ? short : min]
+        : format === "dddd"
+          ? [full, short, min]
+          : format === "ddd"
+            ? [short, full, min]
+            : [min, full, short];
+      for (const names of groups) {
+        const index = names.findIndex((name: string) => name.toLowerCase() === lower);
+        if (index >= 0) {
+          return index;
+        }
+      }
+      return -1;
     }
 
-    const idx = names.findIndex((n: string) => n.toLowerCase() === weekdayName.toLowerCase());
-    if (idx >= 0) {
-      return idx;
-    }
-    const lower = weekdayName.toLowerCase();
-    for (let i = 0; i < names.length; i++) {
-      if (names[i].toLowerCase().startsWith(lower)) {
+    const configured = strict
+      ? format === "dddd"
+        ? this._config.fullWeekdaysParse
+        : format === "ddd"
+          ? this._config.shortWeekdaysParse
+          : this._config.minWeekdaysParse
+      : this._config.weekdaysParse;
+    for (let i = 0; i < 7; i++) {
+      if (Array.isArray(configured) && configured[i] instanceof RegExp) {
+        configured[i].lastIndex = 0;
+        if (configured[i].test(weekdayName)) {
+          return i;
+        }
+      } else if (strict) {
+        const name = (format === "dd" ? min : format === "ddd" ? short : full)[i];
+        if (new RegExp(`^${name.replace(".", "\\.?")}$`, "i").test(weekdayName)) {
+          return i;
+        }
+      } else if (
+        new RegExp(`^${full[i]}|^${short[i]}|^${min[i]}`.replace(".", ""), "i").test(weekdayName)
+      ) {
         return i;
       }
     }

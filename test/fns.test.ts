@@ -77,6 +77,25 @@ const safeMax = new Date("2100-01-01");
 const safeDates = fc.date({ min: safeMin, max: safeMax, noInvalidDate: true });
 const smallInt = fc.integer({ min: -50, max: 50 });
 
+describe("dateless week arithmetic", () => {
+  test("week and isoWeek repeat across the full Gregorian 400-year cycle", () => {
+    assertProp(
+      fc.property(fc.integer({ min: -8.63e15, max: 8.63e15 }), (timestamp) => {
+        const d = new Date(timestamp);
+        const y = d.getFullYear();
+        const equivalentYear = 2000 + ((((y - 2000) % 400) + 400) % 400);
+        const equivalent = new Date(d);
+        equivalent.setFullYear(equivalentYear);
+        const oracle = originalMoment(equivalent);
+
+        expect(week(d)).toBe(oracle.week());
+        expect(isoWeek(d)).toBe(oracle.isoWeek());
+      }),
+      { numRuns: 2000 },
+    );
+  });
+});
+
 function local(y: number, m: number, d: number, ...t: [number?, number?, number?, number?]): Date {
   return new Date(y, m, d, t[0] ?? 0, t[1] ?? 0, t[2] ?? 0, t[3] ?? 0);
 }

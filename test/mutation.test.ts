@@ -131,8 +131,8 @@ makeMutations([
     file: "src/moment-class.ts",
     patterns: [
       [
-        /p\.isUTC \? p\.t - p\.offset \* 60000 : p\.t;/g,
-        "p.isUTC ? p.t - p.offset * 60000 : p.t + 1;",
+        /p\.isUTC \? p\.t - \(p\.offset \|\| 0\) \* 60000 : p\.t;/g,
+        "p.isUTC ? p.t - (p.offset || 0) * 60000 : p.t + 1;",
       ],
     ],
     inputs: fc.date({ noInvalidDate: true }),

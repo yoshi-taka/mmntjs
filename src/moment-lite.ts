@@ -30,6 +30,8 @@ import {
   QUARTER,
   narrowCommonUnit,
   weeksInYear,
+  weekDateToYearMonthDay,
+  roundMomentDays,
   getDayOfYear,
   getISOWeekNumber,
   getISOWeekYear,
@@ -408,6 +410,25 @@ export class MomentLite {
     return this._p.d;
   }
 
+  private _setWeekdayOffset(days: number): this {
+    if (!days) {
+      return this;
+    }
+    const dt = this._getD();
+    if (this._p.isUTC) {
+      dt.setUTCDate(dt.getUTCDate() + days);
+    } else {
+      dt.setDate(dt.getDate() + days);
+    }
+    this._p.t = dt.getTime();
+    this._p.d = dt;
+    if (isNaN(this._p.t)) {
+      this._isValid = false;
+    }
+    this._refreshFields();
+    return this;
+  }
+
   private _refreshFields(): void {
     if (this._p.isUTC) {
       if (this._p.d) {
@@ -663,7 +684,7 @@ export class MomentLite {
       return NaN;
     }
     if (this._p.isUTC) {
-      return this._p.t - this._p.offset * 60000;
+      return this._p.t - (this._p.offset || 0) * 60000;
     }
     return this._p.t;
   }
@@ -2875,7 +2896,10 @@ export class MomentLite {
   dayOfYear(): number;
   dayOfYear(d: number): this;
   dayOfYear(d?: number): number | this {
-    if (d !== undefined) {
+    if (!this._isValid) {
+      return d != null ? this : NaN;
+    }
+    if (d != null) {
       this._ensureFields();
       const dt = this._getD();
       const year = this._p.y;
@@ -2900,113 +2924,152 @@ export class MomentLite {
         dt.setMonth(date.getMonth(), date.getDate());
         this._p.t = dt.getTime();
       }
+      this._refreshFields();
       return this;
     }
     this._ensureFields();
-    return this._p.isUTC ? getDayOfYear(this._getD(), true) : getDayOfYear(this._getD(), false);
+    return getDayOfYear(this._p.y, this._p.M, this._p.D);
   }
 
   week(): number;
   week(w: number): this;
   week(w?: number): number | this {
-    if (w !== undefined) {
+    if (!this._isValid) {
+      return w != null ? this : NaN;
+    }
+    if (w != null) {
       this._ensureFields();
       const dow = 0;
       const doy = 6;
-      const current = getLocaleWeek(this._getD(), this._p.isUTC, dow, doy);
-      const diff = w - current;
-      const dt = this._getD();
-      if (this._p.isUTC) {
-        dt.setUTCDate(dt.getUTCDate() + diff * 7);
-      } else {
-        dt.setDate(dt.getDate() + diff * 7);
+      const current = getLocaleWeek(this._p.y, this._p.M, this._p.D, dow, doy);
+      const days = roundMomentDays((w - current) * 7);
+      if (!Number.isFinite(days)) {
+        if (isNaN(days)) {
+          return this;
+        }
+        this._p.t = NaN;
+        this._p.d = new Date(NaN);
+        this._isValid = false;
+        return this;
       }
-      this._p.d = dt;
-      this._p.t = dt.getTime();
-      this._refreshFields();
-      return this;
+      return this._setWeekdayOffset(days);
     }
     this._ensureFields();
-    return getLocaleWeek(this._getD(), this._p.isUTC, 0, 6);
+    return getLocaleWeek(this._p.y, this._p.M, this._p.D, 0, 6);
   }
 
   isoWeek(): number;
   isoWeek(w: number): this;
   isoWeek(w?: number): number | this {
-    if (w !== undefined) {
+    if (!this._isValid) {
+      return w != null ? this : NaN;
+    }
+    if (w != null) {
       this._ensureFields();
-      const current = getISOWeekNumber(this._getD(), this._p.isUTC);
-      const diff = w - current;
-      const dt = this._getD();
-      if (this._p.isUTC) {
-        dt.setUTCDate(dt.getUTCDate() + diff * 7);
-      } else {
-        dt.setDate(dt.getDate() + diff * 7);
+      const current = getISOWeekNumber(this._p.y, this._p.M, this._p.D);
+      const days = roundMomentDays((w - current) * 7);
+      if (!Number.isFinite(days)) {
+        if (isNaN(days)) {
+          return this;
+        }
+        this._p.t = NaN;
+        this._p.d = new Date(NaN);
+        this._isValid = false;
+        return this;
       }
-      this._p.d = dt;
-      this._p.t = dt.getTime();
-      this._refreshFields();
-      return this;
+      return this._setWeekdayOffset(days);
     }
     this._ensureFields();
-    return getISOWeekNumber(this._getD(), this._p.isUTC);
+    return getISOWeekNumber(this._p.y, this._p.M, this._p.D);
   }
 
   isoWeekYear(): number;
   isoWeekYear(y: number): this;
   isoWeekYear(y?: number): number | this {
-    if (y !== undefined) {
+    if (!this._isValid) {
+      return y != null ? this : NaN;
+    }
+    if (y != null) {
       this._ensureFields();
-      let currentWeek = getISOWeekNumber(this._getD(), this._p.isUTC);
+      y = Number(y);
+      if (!Number.isFinite(y)) {
+        this._p.t = NaN;
+        this._p.d = new Date(NaN);
+        this._isValid = false;
+        return this;
+      }
+      y = Math.trunc(y);
+      let currentWeek = getISOWeekNumber(this._p.y, this._p.M, this._p.D);
       const currentDay = ((this._p.W + 6) % 7) + 1;
-      const maxWeek = weeksInYear(y, 1, 4, this._p.isUTC);
+      const maxWeek = weeksInYear(y, 1, 4);
       if (currentWeek > maxWeek) {
         currentWeek = maxWeek;
       }
-      const jan4 = this._p.isUTC ? new Date(Date.UTC(y, 0, 4)) : new Date(y, 0, 4);
-      const dayOfJan4 = this._p.isUTC ? jan4.getUTCDay() || 7 : jan4.getDay() || 7;
-      const week1Start = this._p.isUTC
-        ? new Date(Date.UTC(y, 0, 4 - (dayOfJan4 - 1)))
-        : new Date(y, 0, 4 - (dayOfJan4 - 1));
-      const target = new Date(
-        week1Start.getTime() + ((currentWeek - 1) * 7 + (currentDay - 1)) * 86400000,
+      const [targetYear, targetMonth, targetDate] = weekDateToYearMonthDay(
+        y,
+        currentWeek,
+        currentDay - 1,
+        1,
+        4,
       );
+      const dt = this._getD();
       if (this._p.isUTC) {
-        this._p.d = new Date(
-          Date.UTC(
-            target.getFullYear(),
-            target.getMonth(),
-            target.getDate(),
-            this._p.H,
-            this._p.m,
-            this._p.s,
-            this._p.ms,
-          ),
+        const month = dt.getUTCMonth();
+        const date = dt.getUTCDate();
+        dt.setUTCFullYear(
+          targetYear,
+          month,
+          date === 29 && month === 1 && !isLeapYear(targetYear) ? 28 : date,
         );
+        if (!isNaN(dt.getTime())) {
+          const currentDate = dt.getUTCDate();
+          dt.setUTCMonth(
+            targetMonth,
+            currentDate < 29
+              ? currentDate
+              : Math.min(currentDate, daysInMonthFast(targetYear, targetMonth)),
+          );
+          dt.setUTCDate(targetDate);
+        }
       } else {
-        this._p.d = new Date(
-          target.getFullYear(),
-          target.getMonth(),
-          target.getDate(),
-          this._p.H,
-          this._p.m,
-          this._p.s,
-          this._p.ms,
+        const month = dt.getMonth();
+        const date = dt.getDate();
+        dt.setFullYear(
+          targetYear,
+          month,
+          date === 29 && month === 1 && !isLeapYear(targetYear) ? 28 : date,
         );
+        if (!isNaN(dt.getTime())) {
+          const currentDate = dt.getDate();
+          dt.setMonth(
+            targetMonth,
+            currentDate < 29
+              ? currentDate
+              : Math.min(currentDate, daysInMonthFast(targetYear, targetMonth)),
+          );
+          dt.setDate(targetDate);
+        }
       }
-      this._p.t = this._p.d.getTime();
+      this._p.t = dt.getTime();
+      this._p.d = dt;
+      if (isNaN(this._p.t)) {
+        this._isValid = false;
+      }
       this._refreshFields();
       return this;
     }
     this._ensureFields();
-    return getISOWeekYear(this._getD(), this._p.isUTC);
+    return getISOWeekYear(this._p.y, this._p.M, this._p.D);
   }
 
   weekday(): number;
   weekday(d: number | string): this;
   weekday(d?: number | string): number | this {
+    if (!this._isValid) {
+      return d != null ? this : NaN;
+    }
     this._ensureFields();
-    if (d !== undefined) {
+    if (d != null) {
       let dayNum = Number(d);
       if (typeof d === "string") {
         const lower = d.toLowerCase();
@@ -3022,18 +3085,14 @@ export class MomentLite {
         return this;
       }
       const currentDay = this._p.W;
-      const diff = dayNum - currentDay;
-      const dt = this._getD();
-      if (this._p.isUTC) {
-        dt.setUTCDate(dt.getUTCDate() + diff);
-      } else {
-        dt.setDate(dt.getDate() + diff);
+      const days = roundMomentDays(dayNum - currentDay);
+      if (!Number.isFinite(days)) {
+        this._p.t = NaN;
+        this._p.d = new Date(NaN);
+        this._isValid = false;
+        return this;
       }
-      this._p.D = this._p.isUTC ? dt.getUTCDate() : dt.getDate();
-      this._p.M = this._p.isUTC ? dt.getUTCMonth() : dt.getMonth();
-      this._p.W = _dayOfWeek(this._p.y, this._p.M, this._p.D);
-      this._p.t = dt.getTime();
-      return this;
+      return this._setWeekdayOffset(days);
     }
     return this._p.W;
   }
@@ -3072,7 +3131,10 @@ export class MomentLite {
   utcOffset(offset: number | string, keepLocalTime?: boolean): this;
   utcOffset(offset?: number | string, keepLocalTime?: boolean): number | this {
     if (offset === undefined) {
-      return this._p.offset;
+      if (!this._isValid) {
+        return NaN;
+      }
+      return Number.isNaN(this._p.offset) ? 0 : this._p.offset;
     }
     let numOffset: number;
     if (typeof offset === "string") {
@@ -3082,15 +3144,32 @@ export class MomentLite {
       }
       numOffset = (m[1] === "+" ? 1 : -1) * (parseInt(m[2], 10) * 60 + parseInt(m[3], 10));
     } else {
-      numOffset = offset;
+      numOffset = Math.abs(offset) < 16 ? offset * 60 : offset;
     }
-    const prevOffset = this._p.offset;
-    this._p.offset = numOffset;
-    this._p.isUTC = true;
-    if (!keepLocalTime) {
-      this._p.t -= (numOffset - prevOffset) * 60000;
+    if (keepLocalTime) {
+      if (!this._p.isUTC) {
+        const localAdjust = this._p.offset;
+        this._p.offset = numOffset;
+        this._p.isUTC = true;
+        this._p.t += localAdjust * 60000;
+        this._p.d = undefined;
+      } else {
+        this._p.offset = numOffset;
+      }
+    } else {
+      const oldOffset = this._p.isUTC ? this._p.offset || 0 : 0;
+      if (!Number.isNaN(numOffset)) {
+        this._p.t += (numOffset - oldOffset) * 60000;
+      }
+      this._p.d = undefined;
+      this._p.offset = numOffset;
+      this._p.isUTC = true;
     }
-    this._p.d = undefined;
+    if (!Number.isFinite(this._p.t) || Math.abs(this._p.t) > 8.64e15) {
+      this._p.t = NaN;
+      this._p.d = new Date(NaN);
+      this._isValid = false;
+    }
     this._p.dirty = true;
     return this;
   }
@@ -3152,7 +3231,7 @@ export function checkOverflow(parsed: Record<string, unknown> | ParsedData): num
     return 6;
   }
   if (parsed.isoWeek != null && parsed.isoWeekYear != null) {
-    const maxWeek = weeksInYear(parsed.isoWeekYear as number, 1, 4, true);
+    const maxWeek = weeksInYear(parsed.isoWeekYear as number, 1, 4);
     if ((parsed.isoWeek as number) < 1 || (parsed.isoWeek as number) > maxWeek) {
       return 7;
     }

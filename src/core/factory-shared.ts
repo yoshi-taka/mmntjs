@@ -11,7 +11,7 @@ import {
   createDateSafe,
   createUTCDate,
 } from "../utils";
-import { daysInMonthFast } from "../units";
+import { daysInMonthFast, weeksInYear, weekDateToDayOfYear } from "../units";
 import {
   getLocale,
   getCurrentLocale,
@@ -389,24 +389,8 @@ export function createMomentFactory(deps: FactoryDeps) {
       const isoWeekYear = parsed.isoWeekYear ?? parsed._weekYear;
       const isoWeek = parsed.isoWeek ?? parsed._week;
       const useUtc = parsed.offset !== undefined;
-      const makeDate = useUtc
-        ? createUTCDate
-        : (y: number, m: number, d = 1) => {
-            if (y >= 0 && y <= 99) {
-              const date = new Date(0);
-              date.setFullYear(y, m, d);
-              date.setHours(0, 0, 0, 0);
-              return date;
-            }
-            return new Date(y, m, d);
-          };
-      const jan4 = makeDate(isoWeekYear, 0, 4);
-      const dayOfJan4 = useUtc ? jan4.getUTCDay() || 7 : jan4.getDay() || 7;
       // ISO week overflow check (moment.js compat)
-      const jan1 = makeDate(isoWeekYear, 0, 1);
-      const dayOfJan1 = useUtc ? jan1.getUTCDay() || 7 : jan1.getDay() || 7;
-      const isLeap = (isoWeekYear % 4 === 0 && isoWeekYear % 100 !== 0) || isoWeekYear % 400 === 0;
-      const maxWeeks = dayOfJan1 === 4 || (dayOfJan1 === 3 && isLeap) ? 53 : 52;
+      const maxWeeks = weeksInYear(isoWeekYear, 1, 4);
       if (isoWeek < 1 || isoWeek > maxWeeks) {
         return new Moment({
           _d: new Date(NaN),
@@ -423,15 +407,11 @@ export function createMomentFactory(deps: FactoryDeps) {
           _nullInput: false,
         });
       }
-      const week1Start = makeDate(isoWeekYear, 0, 4 - (dayOfJan4 - 1));
       const weekday = parsed._weekdayNum ?? 1;
-      const d = new Date(week1Start.getTime() + ((isoWeek - 1) * 7 + (weekday - 1)) * 86400000);
-      if (!useUtc) {
-        const offsetShift = d.getTimezoneOffset() - week1Start.getTimezoneOffset();
-        if (offsetShift !== 0) {
-          d.setTime(d.getTime() + offsetShift * 60000);
-        }
-      }
+      const dayOfYear = weekDateToDayOfYear(isoWeekYear, isoWeek, weekday - 1, 1, 4);
+      const d = useUtc
+        ? createUTCDate(isoWeekYear, 0, dayOfYear)
+        : createDateSafe(isoWeekYear, 0, dayOfYear, 0, 0, 0, 0);
       if (parsed.hour !== undefined) {
         if (useUtc) {
           d.setUTCHours(

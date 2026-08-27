@@ -29,6 +29,34 @@ describe("locale-extra week methods", () => {
       const r = m.weekday(0);
       expect(r).toBe(m);
     });
+
+    test("setter matches moment.js numeric coercion", () => {
+      for (const value of [1.5, NaN, Infinity]) {
+        const m = moment.utc("2024-06-15T12:34:56Z");
+        const o = originalMoment.utc("2024-06-15T12:34:56Z");
+        m.weekday(value);
+        o.weekday(value);
+        expect(m.valueOf()).toBe(o.valueOf());
+        expect(m.isValid()).toBe(o.isValid());
+      }
+    });
+
+    test("setter observes TimeClip in UTC and fixed-offset modes", () => {
+      const cases = [
+        [moment.utc(-8.64e15), originalMoment.utc(-8.64e15), 1],
+        [
+          moment.parseZone("2024-01-01T00:00:00+14:00"),
+          originalMoment.parseZone("2024-01-01T00:00:00+14:00"),
+          1e9,
+        ],
+      ] as const;
+      for (const [m, o, value] of cases) {
+        m.weekday(value);
+        o.weekday(value);
+        expect(m.valueOf()).toBe(o.valueOf());
+        expect(m.isValid()).toBe(o.isValid());
+      }
+    });
   });
 
   describe("week", () => {
@@ -45,6 +73,28 @@ describe("locale-extra week methods", () => {
       expect(m.format("YYYY-MM-DD")).toBe(o.format("YYYY-MM-DD"));
       expect(m.week()).toBe(o.week());
     });
+
+    test("setter matches moment.js numeric coercion", () => {
+      for (const value of [1.5, NaN, Infinity]) {
+        const m = moment.utc("2024-06-15T12:34:56Z");
+        const o = originalMoment.utc("2024-06-15T12:34:56Z");
+        m.week(value);
+        o.week(value);
+        expect(m.valueOf()).toBe(o.valueOf());
+        expect(m.isValid()).toBe(o.isValid());
+      }
+    });
+
+    test("huge finite setter invalidates like moment.js", () => {
+      for (const method of ["week", "isoWeek"] as const) {
+        const m = moment.parseZone("2024-01-01T00:00:00-12:00");
+        const o = originalMoment.parseZone("2024-01-01T00:00:00-12:00");
+        m[method](1e9);
+        o[method](1e9);
+        expect(m.valueOf()).toBe(o.valueOf());
+        expect(m.isValid()).toBe(o.isValid());
+      }
+    });
   });
 
   describe("weekYear", () => {
@@ -60,6 +110,26 @@ describe("locale-extra week methods", () => {
       o.weekYear(2025);
       expect(m.format("YYYY-MM-DD")).toBe(o.format("YYYY-MM-DD"));
       expect(m.weekYear()).toBe(o.weekYear());
+    });
+
+    test("null getters and numeric-string week years match moment.js", () => {
+      const m = moment.utc("2024-06-15T12:34:56Z");
+      const o = originalMoment.utc("2024-06-15T12:34:56Z");
+      expect(m.week(null as never)).toBe(o.week());
+      m.weekYear("2020" as never);
+      o.weekYear("2020" as never);
+      expect(m.valueOf()).toBe(o.valueOf());
+    });
+
+    test("setter preserves moment.js sequential DST normalization", () => {
+      for (const method of ["weekYear", "isoWeekYear"] as const) {
+        const m = moment("2024-03-08T02:30:00");
+        const o = originalMoment("2024-03-08T02:30:00");
+        m[method](2020);
+        o[method](2020);
+        expect(m.valueOf()).toBe(o.valueOf());
+        expect(m.format()).toBe(o.format());
+      }
     });
   });
 
@@ -228,6 +298,28 @@ describe("property-based locale extra patterns", () => {
         expect(m.valueOf()).toBe(o.valueOf());
       }),
       { numRuns: 100 },
+    );
+  });
+
+  test("isoWeekYear setter matches moment.js in local, UTC, and fixed-offset modes", () => {
+    assertProp(
+      fc.property(safeDates, weekYears, fc.integer({ min: -720, max: 840 }), (d, wy, offset) => {
+        const pairs = [
+          [moment(d), originalMoment(d)],
+          [moment.utc(d), originalMoment.utc(d)],
+          [moment.utc(d).utcOffset(offset), originalMoment.utc(d).utcOffset(offset)],
+        ] as const;
+
+        for (const [m, o] of pairs) {
+          m.isoWeekYear(wy);
+          o.isoWeekYear(wy);
+          expect(m.valueOf()).toBe(o.valueOf());
+          expect(m.isoWeekYear()).toBe(o.isoWeekYear());
+          expect(m.isoWeek()).toBe(o.isoWeek());
+          expect(m.isoWeekday()).toBe(o.isoWeekday());
+        }
+      }),
+      { numRuns: 200 },
     );
   });
 

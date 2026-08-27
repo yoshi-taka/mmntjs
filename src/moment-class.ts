@@ -2436,7 +2436,7 @@ export class Moment {
   weekday(d: number): this;
   weekday(d?: number): number | this {
     if (!this._isValid) {
-      return NaN;
+      return d != null ? this : NaN;
     }
     return localeWeekday(this, d as never) as number | this;
   }
@@ -2445,7 +2445,7 @@ export class Moment {
   isoWeekday(d: unknown): this;
   isoWeekday(d?: unknown): number | this {
     if (!this._isValid) {
-      return d !== undefined ? this : NaN;
+      return d != null ? this : NaN;
     }
     if (this._p.dirty) {
       this._p.dirty = false;
@@ -2459,7 +2459,7 @@ export class Moment {
   dayOfYear(d: number): this;
   dayOfYear(d?: number): number | this {
     if (!this._isValid) {
-      return d !== undefined ? this : NaN;
+      return d != null ? this : NaN;
     }
     if (this._p.dirty) {
       this._p.dirty = false;
@@ -4578,7 +4578,7 @@ export class Moment {
     if (!this._isValid) {
       return NaN;
     }
-    return p.isUTC ? p.t - p.offset * 60000 : p.t;
+    return p.isUTC ? p.t - (p.offset || 0) * 60000 : p.t;
   }
 
   unix(): number {
@@ -5035,7 +5035,7 @@ export class Moment {
   week(w: number): this;
   week(w?: number): number | this {
     if (!this._isValid) {
-      return w !== undefined ? this : NaN;
+      return w != null ? this : NaN;
     }
     this._ensureFields();
     return localeWeek(_cast<LocaleAwareMoment>(this), w) as number | this;
@@ -5085,7 +5085,7 @@ export class Moment {
   weekYear(y: number): this;
   weekYear(y?: number): number | this {
     if (!this._isValid) {
-      return y !== undefined ? this : NaN;
+      return y != null ? this : NaN;
     }
     this._ensureFields();
     return localeWeekYear(_cast<LocaleAwareMoment>(this), y) as number | this;
@@ -5095,7 +5095,7 @@ export class Moment {
   isoWeek(w: number): this;
   isoWeek(w?: number): number | this {
     if (!this._isValid) {
-      return w !== undefined ? this : NaN;
+      return w != null ? this : NaN;
     }
     this._ensureFields();
     return isoWeekMoment(_cast<CalendarAwareMoment>(this), w) as number | this;
@@ -5111,7 +5111,7 @@ export class Moment {
   isoWeekYear(y: number): this;
   isoWeekYear(y?: number): number | this {
     if (!this._isValid) {
-      return y !== undefined ? this : NaN;
+      return y != null ? this : NaN;
     }
     this._ensureFields();
     return isoWeekYearMoment(_cast<CalendarAwareMoment>(this), y) as number | this;
@@ -5444,7 +5444,7 @@ export function checkOverflow(parsed: Record<string, unknown> | ParsedData): num
     return 6;
   }
   if (parsed.isoWeek != null && parsed.isoWeekYear != null) {
-    const maxWeek = weeksInYear(parsed.isoWeekYear as number, 1, 4, true);
+    const maxWeek = weeksInYear(parsed.isoWeekYear as number, 1, 4);
     if ((parsed.isoWeek as number) < 1 || (parsed.isoWeek as number) > maxWeek) {
       return 7;
     }

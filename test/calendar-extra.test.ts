@@ -1,6 +1,7 @@
 import { describe, test, expect } from "bun:test";
 import moment from "../src/index.ts";
 import originalMoment from "../moment/moment.js";
+import { brLocale } from "../src/locale/br.ts";
 
 describe("calendar-extra week methods", () => {
   describe("isoWeek", () => {
@@ -15,6 +16,17 @@ describe("calendar-extra week methods", () => {
       o.isoWeek(20);
       expect(m.isoWeek()).toBe(o.isoWeek());
       expect(m.format("YYYY-MM-DD")).toBe(o.format("YYYY-MM-DD"));
+    });
+
+    test("setter matches moment.js coercion and invalidation", () => {
+      for (const value of [1.5, NaN, Infinity]) {
+        const m = moment.utc("2024-06-15T12:34:56Z");
+        const o = originalMoment.utc("2024-06-15T12:34:56Z");
+        m.isoWeek(value);
+        o.isoWeek(value);
+        expect(m.valueOf()).toBe(o.valueOf());
+        expect(m.isValid()).toBe(o.isValid());
+      }
     });
   });
 
@@ -32,6 +44,74 @@ describe("calendar-extra week methods", () => {
       expect(m.isoWeekday()).toBe(o.isoWeekday());
       expect(m.format("YYYY-MM-DD")).toBe(o.format("YYYY-MM-DD"));
     });
+
+    test("isoWeekday handles null and NaN like moment.js", () => {
+      const getter = moment.utc("2024-03-10T07:30:00Z");
+      expect(getter.isoWeekday(null as never)).toBe(
+        originalMoment.utc("2024-03-10T07:30:00Z").isoWeekday(),
+      );
+
+      const m = moment.utc("2024-03-10T07:30:00Z");
+      const o = originalMoment.utc("2024-03-10T07:30:00Z");
+      m.isoWeekday(NaN);
+      o.isoWeekday(NaN);
+      expect(m.valueOf()).toBe(o.valueOf());
+    });
+
+    test("isoWeekday parses locale names and prefixes like moment.js", () => {
+      for (const value of ["Mo", "mondayx", "foobar"]) {
+        const m = moment("2024-06-12");
+        const o = originalMoment("2024-06-12");
+        m.isoWeekday(value);
+        o.isoWeekday(value);
+        expect(m.valueOf()).toBe(o.valueOf());
+      }
+    });
+
+    test("isoWeekday honors locale weekday parse tables", () => {
+      moment.defineLocale("x-br-weekday", brLocale);
+      originalMoment.defineLocale("x-br-weekday", brLocale);
+      for (const value of ["Me", "Mer", "Mercʼher"]) {
+        const m = moment("2024-06-12").locale("x-br-weekday");
+        const o = originalMoment("2024-06-12").locale("x-br-weekday");
+        m.isoWeekday(value);
+        o.isoWeekday(value);
+        expect(m.valueOf()).toBe(o.valueOf());
+      }
+      moment.locale("en");
+      originalMoment.locale("en");
+    });
+
+    test("isoWeekday matches generated locale regex punctuation semantics", () => {
+      const config = {
+        weekdays: ["Sa.na", "Day1", "Day2", "Day3", "Day4", "Day5", "Day6"],
+        weekdaysShort: ["Sh0", "Sh1", "Sh2", "Sh3", "Sh4", "Sh5", "Sh6"],
+        weekdaysMin: ["M0", "M1", "M2", "M3", "M4", "M5", "M6"],
+      };
+      moment.defineLocale("x-regex-weekday", config);
+      originalMoment.defineLocale("x-regex-weekday", config);
+      const m = moment("2024-06-12").locale("x-regex-weekday").isoWeekday("Sana");
+      const o = originalMoment("2024-06-12").locale("x-regex-weekday").isoWeekday("Sana");
+      expect(m.valueOf()).toBe(o.valueOf());
+      moment.locale("en");
+      originalMoment.locale("en");
+    });
+
+    test("strict exact parsing without a format uses minimum names", () => {
+      const config = {
+        weekdays: ["Sunx", "Monx", "Tuex", "Wedx", "Thux", "Frix", "Satx"],
+        weekdaysShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+        weekdaysMin: ["Sx", "Mx", "Tx", "Wx", "Hx", "Fx", "Ax"],
+        weekdaysParseExact: true,
+      };
+      const mmLocale = moment.defineLocale("x-exact-weekday", config);
+      const omLocale = originalMoment.defineLocale("x-exact-weekday", config);
+      expect(mmLocale?.weekdaysParse("Sx", undefined, true)).toBe(
+        omLocale?.weekdaysParse("Sx", undefined, true),
+      );
+      moment.locale("en");
+      originalMoment.locale("en");
+    });
   });
 
   describe("isoWeekYear", () => {
@@ -46,6 +126,23 @@ describe("calendar-extra week methods", () => {
       o.isoWeekYear(2025);
       expect(m.isoWeekYear()).toBe(o.isoWeekYear());
       expect(m.format("YYYY-MM-DD")).toBe(o.format("YYYY-MM-DD"));
+    });
+
+    test("setter matches fractional, non-finite, and TimeClip behavior", () => {
+      for (const value of [2024.5, NaN, Infinity, -271821, 275761]) {
+        const m = moment.utc("2024-06-15T12:34:56Z");
+        const o = originalMoment.utc("2024-06-15T12:34:56Z");
+        m.isoWeekYear(value);
+        o.isoWeekYear(value);
+        expect(m.valueOf()).toBe(o.valueOf());
+        expect(m.isValid()).toBe(o.isValid());
+      }
+
+      const m = moment.utc("2024-06-15T12:34:56Z");
+      const o = originalMoment.utc("2024-06-15T12:34:56Z");
+      m.isoWeekYear("2024" as never);
+      o.isoWeekYear("2024" as never);
+      expect(m.valueOf()).toBe(o.valueOf());
     });
   });
 
@@ -67,6 +164,26 @@ describe("calendar-extra week methods", () => {
       m.dayOfYear(366);
       expect(m.format("MM-DD")).toBe("12-31");
     });
+
+    test("null and the negative TimeClip year match moment.js", () => {
+      const m = moment.utc(-8_639_977_881_600_001);
+      const o = originalMoment.utc(-8_639_977_881_600_001);
+      expect(m.dayOfYear(null as never)).toBe(o.dayOfYear());
+    });
+  });
+
+  test("invalid null week getters match moment.js", () => {
+    const m = moment.invalid();
+    for (const method of [
+      "weekday",
+      "isoWeekday",
+      "week",
+      "isoWeek",
+      "weekYear",
+      "isoWeekYear",
+    ] as const) {
+      expect(m[method](null as never)).toBeNaN();
+    }
   });
 
   describe("weekday with locale", () => {
