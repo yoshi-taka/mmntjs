@@ -205,7 +205,6 @@ Representative techniques: `PAD2`, `padYear`, `formatCommonEn`, token render cac
 
 **mmntjs's usage**:
 - `formatCommonEn` datePart construction
-- `_epochDaysToYMD` return tuple (effectively a template)
 - Format string generation
 
 Combined with the `PAD2` table (pre-computed zero-padded strings), this outperforms `padStart`:
@@ -565,15 +564,14 @@ Why it helps:
 Computes year/month/day from epoch days (`t / 86400000`) using pure arithmetic. For the bounded year range `1..9999` (epoch days `-719162..2932896`) it uses **Ben Joffe's Julian map + a 732-byte packed month/day table**; out-of-range inputs fall back to the general Howard Hinnant algorithm.
 
 ```typescript
-static _epochDaysToYMD(z: number): [number, number, number] {
+static _epochDaysToYMD(z: number): number {
   if (z >= -719162 && z <= 2932896) {
     const q = 4 * (z + 719468) + 3;
-    const century = Math.floor(q * INV_146097); // (1/146097)(1+ε): upward-rounded reciprocal
-    const julian = q - (century & ~3) + century * 4;
-    const y = Math.floor(julian * INV_1461);    // (1/1461)(1+ε)
-    const dym = (julian - y * 1461) >>> 2;      // March-based day of year 0..365
-    const packed = _MONTH_DAY[dym];             // (month << 5) | day
-    return [y + (dym >= 306 ? 1 : 0), packed >>> 5, packed & 31];
+    const century = (q * INV_146097) | 0;
+    const julian = q + century * 3 + (century & 3);
+    const y = (julian * INV_1461) | 0;
+    const dym = (julian - y * 1461) >>> 2;
+    return (y + _PACKED_YEAR_OFFSET) * 512 + _MONTH_DAY[dym];
   }
   // out of range: general Hinnant (Math.floor variant)
 }
@@ -581,7 +579,8 @@ static _epochDaysToYMD(z: number): [number, number, number] {
 
 **Why it's fast**:
 - Julian map restores the year with only 2 divisions (as reciprocal multiplies), instead of Hinnant's 6
-- Month/day come from one `Uint16Array` lookup instead of the `(5*doy+2)/153` arithmetic chain
+- Year bump/month/day come from one `Uint16Array` lookup instead of the `(5*doy+2)/153` arithmetic chain
+- One packed integer avoids tuple allocation and unpacks with three bit operations
 - The reciprocals `(1/d)(1+ε)` are provably exact over the whole bounded range (verified exhaustively for all 3,652,059 epoch days)
 - The table is 732 bytes — fits in L1 cache
 

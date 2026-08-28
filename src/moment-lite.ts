@@ -166,7 +166,10 @@ function startOfDayZonedFastLite(p: _P & CleanUTCWithOffset): void {
   const utcMidnight = ymdToEpochDays(p.y, p.M, p.D) * DAY_MS;
   p.t = utcMidnight - p.offset * MINUTE_MS;
   const totalDays = Math.floor((p.t + p.offset * MINUTE_MS) / DAY_MS);
-  [p.y, p.M, p.D] = epochDaysToYMD(totalDays);
+  const packed = epochDaysToYMD(totalDays);
+  p.y = (packed >>> 9) - _PACKED_YEAR_OFFSET;
+  p.M = (packed >>> 5) & 15;
+  p.D = packed & 31;
   p.W = _weekdayFromEpochDays(totalDays);
   p.H = 0;
   p.m = 0;
@@ -260,32 +263,35 @@ function syncNormalizedLocalCalendarFields(p: _P, d: Date, offset: number): bool
 const _probeDate = new Date(0);
 const _probeCache = { t: NaN, offset: NaN };
 // Ben Joffe month/day packed table: March-based day-of-year 0..365 →
-// ((0-indexed month) << 5) | day. 732 bytes.
+// (year bump << 9) | ((0-indexed month) << 5) | day. 732 bytes.
 const _MONTH_DAY = new Uint16Array(366);
 for (let r = 0; r <= 365; r++) {
   const n = 2141 * r + 197913;
   const marchMonth = n >>> 16;
   const day = ((n & 65535) / 2141) | 0;
-  const month0 = (r >= 306 ? marchMonth - 12 : marchMonth) - 1;
-  _MONTH_DAY[r] = (month0 << 5) | (day + 1);
+  const yearBump = Number(r >= 306);
+  const month0 = (yearBump ? marchMonth - 12 : marchMonth) - 1;
+  _MONTH_DAY[r] = (yearBump << 9) | (month0 << 5) | (day + 1);
 }
+
+// Keeps every Date-supported year packed in a nonnegative int32.
+const _PACKED_YEAR_OFFSET = 300000;
 
 // Upward-rounded binary64 reciprocals, exact over the bounded epoch-day range
 // (verified exhaustively for -719162 <= z <= 2932896).
 const INV_146097 = (1 / 146097) * (1 + Number.EPSILON);
 const INV_1461 = (1 / 1461) * (1 + Number.EPSILON);
 
-function epochDaysToYMD(z: number): [number, number, number] {
+function epochDaysToYMD(z: number): number {
   // Years 1..9999 keep every quotient nonnegative and within int32.
   // Ben Joffe Julian map for the year + packed month/day table lookup.
   if (z >= -719162 && z <= 2932896) {
     const q = 4 * (z + 719468) + 3;
-    const century = Math.floor(q * INV_146097);
-    const julian = q - (century & ~3) + century * 4;
-    const y = Math.floor(julian * INV_1461);
+    const century = (q * INV_146097) | 0;
+    const julian = q + century * 3 + (century & 3);
+    const y = (julian * INV_1461) | 0;
     const dym = (julian - y * 1461) >>> 2;
-    const packed = _MONTH_DAY[dym];
-    return [y + (dym >= 306 ? 1 : 0), packed >>> 5, packed & 31];
+    return (y + _PACKED_YEAR_OFFSET) * 512 + _MONTH_DAY[dym];
   }
 
   z += 719468;
@@ -300,7 +306,7 @@ function epochDaysToYMD(z: number): [number, number, number] {
   const d = doy - Math.floor((153 * mp + 2) / 5) + 1;
   const m = mp + (mp < 10 ? 3 : -9);
   const year = y + (m <= 2 ? 1 : 0);
-  return [year, m - 1, d];
+  return (year + _PACKED_YEAR_OFFSET) * 512 + (m - 1) * 32 + d;
 }
 
 function _tzOffsetAt(t: number): number {
@@ -396,17 +402,16 @@ export class MomentLite {
   _f: string | string[] | undefined;
   _strict?: boolean;
 
-  private static _epochDaysToYMD(z: number): [number, number, number] {
+  private static _epochDaysToYMD(z: number): number {
     // Years 1..9999 keep every quotient nonnegative and within int32.
     // Ben Joffe Julian map for the year + packed month/day table lookup.
     if (z >= -719162 && z <= 2932896) {
       const q = 4 * (z + 719468) + 3;
-      const century = Math.floor(q * INV_146097);
-      const julian = q - (century & ~3) + century * 4;
-      const y = Math.floor(julian * INV_1461);
+      const century = (q * INV_146097) | 0;
+      const julian = q + century * 3 + (century & 3);
+      const y = (julian * INV_1461) | 0;
       const dym = (julian - y * 1461) >>> 2;
-      const packed = _MONTH_DAY[dym];
-      return [y + (dym >= 306 ? 1 : 0), packed >>> 5, packed & 31];
+      return (y + _PACKED_YEAR_OFFSET) * 512 + _MONTH_DAY[dym];
     }
 
     z += 719468;
@@ -421,7 +426,7 @@ export class MomentLite {
     const d = doy - Math.floor((153 * mp + 2) / 5) + 1;
     const m = mp + (mp < 10 ? 3 : -9);
     const year = y + (m <= 2 ? 1 : 0);
-    return [year, m - 1, d];
+    return (year + _PACKED_YEAR_OFFSET) * 512 + (m - 1) * 32 + d;
   }
 
   private _ensureFields(): void {
@@ -486,10 +491,10 @@ export class MomentLite {
         const totalDays = Math.floor(t / DAY_MS);
         let timeOfDay = t - totalDays * DAY_MS;
         this._p.W = _weekdayFromEpochDays(totalDays);
-        const [y, M, D] = MomentLite._epochDaysToYMD(totalDays);
-        this._p.y = y;
-        this._p.M = M;
-        this._p.D = D;
+        const packed = MomentLite._epochDaysToYMD(totalDays);
+        this._p.y = (packed >>> 9) - _PACKED_YEAR_OFFSET;
+        this._p.M = (packed >>> 5) & 15;
+        this._p.D = packed & 31;
         this._p.H = Math.floor(timeOfDay / HOUR_MS);
         timeOfDay -= this._p.H * HOUR_MS;
         this._p.m = Math.floor(timeOfDay / MINUTE_MS);

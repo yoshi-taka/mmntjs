@@ -221,18 +221,17 @@ Hot path: UTC field refresh
 
 **Problem**: UTC-mode `_refreshFields()` needs year/month/day from epoch ms. Creating a `new Date(t)` allocates memory.
 
-**Solution**: Calculate year/month/day directly from `(t / 86400000)` using pure arithmetic. For years `1..9999` (epoch days `-719162..2932896`), restore the year via Ben Joffe's Julian map and fetch month/day in one lookup from a 732-byte packed table (`(month << 5) | day`) indexed by March-based day-of-year `0..365`. The two constant divisions become multiplies by upward-rounded binary64 reciprocals (exhaustively verified over the whole bounded range). Out-of-range inputs fall back to the general Howard Hinnant implementation. Tomohiko Sakamoto's day-of-week is likewise allocation-free.
+**Solution**: Calculate year/month/day directly from `(t / 86400000)` using pure arithmetic. For years `1..9999` (epoch days `-719162..2932896`), restore the year via Ben Joffe's Julian map and fetch the year bump/month/day in one lookup from a 732-byte packed table. The two constant divisions become multiplies by upward-rounded binary64 reciprocals (exhaustively verified over the whole bounded range), and `|0` performs exact truncation because every quotient is a nonnegative int32. The function returns one packed integer instead of allocating a tuple. Out-of-range inputs fall back to the general Howard Hinnant implementation and use the same packed return contract.
 
 ```typescript
-static _epochDaysToYMD(z: number): [number, number, number] {
+static _epochDaysToYMD(z: number): number {
   if (z >= -719162 && z <= 2932896) {
     const q = 4 * (z + 719468) + 3;
-    const century = Math.floor(q * INV_146097); // (1/146097)(1+ε)
-    const julian = q - (century & ~3) + century * 4;
-    const y = Math.floor(julian * INV_1461);    // (1/1461)(1+ε)
-    const dym = (julian - y * 1461) >>> 2;      // March-based day of year 0..365
-    const packed = _MONTH_DAY[dym];             // (month << 5) | day
-    return [y + (dym >= 306 ? 1 : 0), packed >>> 5, packed & 31];
+    const century = (q * INV_146097) | 0;
+    const julian = q + century * 3 + (century & 3);
+    const y = (julian * INV_1461) | 0;
+    const dym = (julian - y * 1461) >>> 2;
+    return (y + _PACKED_YEAR_OFFSET) * 512 + _MONTH_DAY[dym];
   }
   // out of range: general Hinnant (Math.floor variant)
 }

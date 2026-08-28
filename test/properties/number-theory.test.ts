@@ -105,11 +105,11 @@ describe("UTC timestamp mixed-radix decomposition", () => {
     ];
     for (let epochDay = -719162; epochDay <= 2932896; epochDay++) {
       for (const convert of converters) {
-        const fields = Reflect.apply(convert, undefined, [epochDay]);
-        if (
-          !Array.isArray(fields) ||
-          ymdToEpochDays(fields[0], fields[1], fields[2]) !== epochDay
-        ) {
+        const packed = Reflect.apply(convert, undefined, [epochDay]);
+        const year = (packed >>> 9) - 300000;
+        const month = (packed >>> 5) & 15;
+        const day = packed & 31;
+        if (typeof packed !== "number" || ymdToEpochDays(year, month, day) !== epochDay) {
           throw new Error(`civil-from-days mismatch at epoch day ${epochDay}`);
         }
       }

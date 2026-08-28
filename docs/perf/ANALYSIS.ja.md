@@ -209,7 +209,6 @@ if (parsed._hasDate !== undefined) { /* 直接 Moment 生成 */ }
 
 **mmntjs の活用**:
 - `formatCommonEn` の datePart 構築
-- `_epochDaysToYMD` の戻り値タプル（実質テンプレート）
 - フォーマット結果の文字列生成
 
 `PAD2` テーブル（2桁のゼロ埋め済み文字列を事前計算）との組み合わせで、`padStart` よりも高速な文字列生成を実現。
@@ -576,15 +575,14 @@ switch (cc) {
 エポック日数（`t / 86400000`）から年月日を算術計算する。年 `1..9999` の範囲（epoch day `-719162..2932896`）では **Ben Joffe の Julian map + 732-byte packed month/day table** を使い、範囲外は汎用 Howard Hinnant アルゴリズムにフォールバックする。
 
 ```typescript
-static _epochDaysToYMD(z: number): [number, number, number] {
+static _epochDaysToYMD(z: number): number {
   if (z >= -719162 && z <= 2932896) {
     const q = 4 * (z + 719468) + 3;
-    const century = Math.floor(q * INV_146097); // (1/146097)(1+ε): 上方丸め逆数
-    const julian = q - (century & ~3) + century * 4;
-    const y = Math.floor(julian * INV_1461);    // (1/1461)(1+ε)
-    const dym = (julian - y * 1461) >>> 2;      // March-based 年内日 0..365
-    const packed = _MONTH_DAY[dym];             // (month << 5) | day
-    return [y + (dym >= 306 ? 1 : 0), packed >>> 5, packed & 31];
+    const century = (q * INV_146097) | 0;
+    const julian = q + century * 3 + (century & 3);
+    const y = (julian * INV_1461) | 0;
+    const dym = (julian - y * 1461) >>> 2;
+    return (y + _PACKED_YEAR_OFFSET) * 512 + _MONTH_DAY[dym];
   }
   // 範囲外: 汎用 Hinnant（Math.floor 版）
 }
@@ -592,7 +590,8 @@ static _epochDaysToYMD(z: number): [number, number, number] {
 
 **なぜ速いか**:
 - Julian map により年復元の除算が Hinnant の6回から2回（逆数乗算）に減る
-- 月日は `(5*doy+2)/153` の算術チェーンの代わりに `Uint16Array` 1回のルックアップで済む
+- year bump・月・日は `(5*doy+2)/153` の算術チェーンの代わりに `Uint16Array` 1回のルックアップで済む
+- tuple を生成せず packed 整数を返し、3つの bit 演算で展開できる
 - 逆数 `(1/d)(1+ε)` は範囲内で正確であることが証明可能（全 3,652,059 epoch day で全数検証済み）
 - テーブルは 732 bytes で L1 キャッシュに収まる
 
