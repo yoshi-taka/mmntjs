@@ -27,22 +27,22 @@ Use this unless there is a concrete reason to ship only one package.
 
 ### Tag
 
-- `release-v1.0.0`
+- `release-v1.1.0`
 
 ### Local steps before tagging
 
 ```bash
-# 1. バージョン更新（両方のpackage.json）
-sed -i '' 's/"version": "0.0.3"/"version": "1.0.0"/' package.json packages/timezone/package.json
-git add package.json packages/timezone/package.json
-git commit -m "chore: bump version to 1.0.0"
+# 1. 両方のpackage.jsonを同じversionへ更新し、lockfileを同期
+bun install
+git add package.json packages/timezone/package.json bun.lock
+git commit -m "chore: bump version to 1.1.0"
 
 # 2. コミットだけpush（タグはまだ）
 bash scripts/git-push.sh enable && git push origin main && bash scripts/git-push.sh disable
 
 # 3. リリースタグだけ個別にpush（--tags 禁止）
-git tag release-v1.0.0
-bash scripts/git-push.sh enable && git push origin release-v1.0.0 && bash scripts/git-push.sh disable
+git tag -a release-v1.1.0 -m "release v1.1.0"
+bash scripts/git-push.sh enable && git push origin release-v1.1.0 && bash scripts/git-push.sh disable
 ```
 
 > **注意**: `git push --tags` は絶対に使わない。過去のreleaseタグが再送されワークフローが多重起動する。
@@ -110,8 +110,8 @@ bash scripts/git-push.sh enable && git push origin release-v1.0.0 && bash script
 Current version pair:
 
 ```text
-mmntjs           0.0.1
-mmntjs-timezone  0.0.1
+mmntjs           1.1.0
+mmntjs-timezone  1.1.0
 ```
 
 ## Partial failure recovery (release-v*)
