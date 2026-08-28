@@ -56,6 +56,19 @@ function createUTCDateFromParsedParts(parts: (number | undefined)[], nowMs: numb
   );
 }
 
+function parseFixedUTCISODateOnly(str: string): Date | null {
+  if (str.length !== 10 || str.charCodeAt(4) !== 45 || str.charCodeAt(7) !== 45) {
+    return null;
+  }
+  const year = Number(str.slice(0, 4));
+  const month = Number(str.slice(5, 7)) - 1;
+  const day = Number(str.slice(8, 10));
+  const date = createUTCDate(year, month, day);
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month && date.getUTCDate() === day
+    ? date
+    : null;
+}
+
 export function enableFormattedInput(): void {
   formattedInputEnabled = true;
 }
@@ -685,6 +698,18 @@ export function momentUTC(
       _offset: 0,
       _presetFields: H === 24 ? undefined : { y, M, D, H, m: min, s, ms },
     });
+  }
+  if (isString(input) && format === undefined) {
+    const fixedIsoDateOnly = parseFixedUTCISODateOnly(input);
+    if (fixedIsoDateOnly) {
+      return new MomentLite({
+        _d: fixedIsoDateOnly,
+        _dClone: false,
+        _i: input,
+        _isUTC: true,
+        _offset: 0,
+      });
+    }
   }
   const m = moment(input, format, localeOrStrict, fourthArg);
   if (!m._isValid) {

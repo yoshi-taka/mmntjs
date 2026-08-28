@@ -50,6 +50,19 @@ function parseFixedISOZ(str: string): Date | null {
   );
 }
 
+function parseFixedISODateOnly(str: string): Date | null {
+  if (str.length !== 10 || str.charCodeAt(4) !== 45 || str.charCodeAt(7) !== 45) {
+    return null;
+  }
+  const year = Number(str.slice(0, 4));
+  const month = Number(str.slice(5, 7)) - 1;
+  const day = Number(str.slice(8, 10));
+  const date = createUTCDate(year, month, day);
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month && date.getUTCDate() === day
+    ? date
+    : null;
+}
+
 function parseFixedISODate(str: string): Date | null {
   const len = str.length;
   if (len !== 19 && len !== 16) {
@@ -120,7 +133,17 @@ export function registerUtcApi<C extends MomentCtor>(
     if (input === undefined) {
       return new C({ _t: nowFn(), _isUTC: true, _offset: 0, _i: input }) as InstanceType<C>;
     }
-    if (isString(input)) {
+    if (isString(input) && format === undefined) {
+      const fixedIsoDateOnly = parseFixedISODateOnly(input);
+      if (fixedIsoDateOnly) {
+        return new C({
+          _d: fixedIsoDateOnly,
+          _isUTC: true,
+          _offset: 0,
+          _i: input,
+          _dClone: false,
+        }) as InstanceType<C>;
+      }
       const fixedIsoZ = parseFixedISOZ(input);
       if (fixedIsoZ) {
         return new C({

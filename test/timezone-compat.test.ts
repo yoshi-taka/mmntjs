@@ -115,6 +115,7 @@ describe("moment.utc() — historical dates with non-integer timezone offsets", 
   testHistorical("ISO date with time", "1111-01-01T12:00:00");
   testHistorical("ISO date+time with no offset", "0001-01-01T00:00:00");
   testHistorical("ISO date only", "1111-01-01");
+  testHistorical("ISO date only with year 0001", "0001-01-01");
   testHistorical("ISO year-month only", "1111-01");
   testHistorical("pre-Tokyo-standardized date", "1887-12-31");
 });

@@ -573,33 +573,30 @@ switch (cc) {
 
 ## 18. `_epochDaysToYMD` — 算術による Date 生成回避
 
-エポック日数（`t / 86400000`）から年月日を算術計算するアルゴリズム。**浮動小数点除算 + テーブル探索なし**で済む。
+エポック日数（`t / 86400000`）から年月日を算術計算する。年 `1..9999` の範囲（epoch day `-719162..2932896`）では **Ben Joffe の Julian map + 732-byte packed month/day table** を使い、範囲外は汎用 Howard Hinnant アルゴリズムにフォールバックする。
 
 ```typescript
-private static _epochDaysToYMD(z: number): [number, number, number] {
-  z += 719468;                              // 基準日を 0000-03-01 にずらす
-  const era = Math.floor(z / 146097);        // 400年周期 (146097日)
-  const doe = z - era * 146097;              // 周期内の日数
-  const yoe = Math.floor((doe - Math.floor(doe / 1460)
-        + Math.floor(doe / 36524)
-        - Math.floor(doe / 146096)) / 365);  // 年内の経過年
-  const y = yoe + era * 400;
-  const doy = doe - (365 * yoe + Math.floor(yoe / 4)
-             - Math.floor(yoe / 100));        // 年内の通算日
-  const mp = Math.floor((5 * doy + 2) / 153); // 月フェーズ
-  const d = doy - Math.floor((153 * mp + 2) / 5) + 1;
-  const m = mp + (mp < 10 ? 3 : -9);          // 月に変換
-  return [y + (m <= 2 ? 1 : 0), m - 1, d];
+static _epochDaysToYMD(z: number): [number, number, number] {
+  if (z >= -719162 && z <= 2932896) {
+    const q = 4 * (z + 719468) + 3;
+    const century = Math.floor(q * INV_146097); // (1/146097)(1+ε): 上方丸め逆数
+    const julian = q - (century & ~3) + century * 4;
+    const y = Math.floor(julian * INV_1461);    // (1/1461)(1+ε)
+    const dym = (julian - y * 1461) >>> 2;      // March-based 年内日 0..365
+    const packed = _MONTH_DAY[dym];             // (month << 5) | day
+    return [y + (dym >= 306 ? 1 : 0), packed >>> 5, packed & 31];
+  }
+  // 範囲外: 汎用 Hinnant（Math.floor 版）
 }
 ```
 
 **なぜ速いか**:
-- ループなし、分岐最小（`mp < 10 ? 3 : -9` と `m <= 2 ? 1 : 0` のみ）
-- すべて整数演算（`Math.floor` は V8 が整数除算に最適化可能）
-- 6回の除算は避けられないが、400年周期のテーブルよりキャッシュフレンドリー（テーブルはキャッシュラインを消費する）
-- `new Date(t)` のアロケーション + プロパティ読み取り（`getUTCFullYear()` 等の C++ 呼び出し）より速い
+- Julian map により年復元の除算が Hinnant の6回から2回（逆数乗算）に減る
+- 月日は `(5*doy+2)/153` の算術チェーンの代わりに `Uint16Array` 1回のルックアップで済む
+- 逆数 `(1/d)(1+ε)` は範囲内で正確であることが証明可能（全 3,652,059 epoch day で全数検証済み）
+- テーブルは 732 bytes で L1 キャッシュに収まる
 
-**トレードオフ**: 可読性は低いが、UTC 専用パスでの Date 生成回避には効果的。非 UTC ではタイムゾーンオフセットが必要なため使えない。
+**トレードオフ**: 可読性は低く、fast path は年 1..9999 でのみ正確（範囲外は Hinnant にフォールバック）だが、UTC 専用パスでの Date 生成回避には効果的。非 UTC ではタイムゾーンオフセットが必要なため使えない。
 
 ## 19. Strength Reduction の実例
 

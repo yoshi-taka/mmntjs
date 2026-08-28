@@ -201,20 +201,20 @@ this._t =
 
 **問題**: UTC モードで `_refreshFields()` するとき、`new Date(t)` を作らずにフィールドを計算したい（メモリアロケーション回避）。
 
-**解決**: `(t / 86400000)` から年月日を直接計算するアルゴリズムを使用。加算・減算・剰余のみ。Tomohiko Sakamoto の曜日計算も同様。
+**解決**: `(t / 86400000)` から年月日を直接計算する。年 `1..9999` の範囲（epoch day `-719162..2932896`）では Ben Joffe の Julian map で年を復元し、March-based 年内日 `0..365` を 732-byte の packed month/day table（`(month << 5) | day`）から一発で取得する。定数除算は上方丸め binary64 逆数との乗算に置き換え（範囲内で全数検証済み）。範囲外は従来の Howard Hinnant 実装にフォールバック。Tomohiko Sakamoto の曜日計算も同様。
 
 ```typescript
-private static _epochDaysToYMD(z: number): [number, number, number] {
-  z += 719468;
-  const era = Math.floor(z / 146097);
-  const doe = z - era * 146097;
-  const yoe = Math.floor((doe - Math.floor(doe / 1460) + ...) / 365);
-  const y = yoe + era * 400;
-  const doy = doe - (365 * yoe + Math.floor(yoe / 4) - Math.floor(yoe / 100));
-  const mp = Math.floor((5 * doy + 2) / 153);
-  const d = doy - Math.floor((153 * mp + 2) / 5) + 1;
-  const m = mp + (mp < 10 ? 3 : -9);
-  return [y + (m <= 2 ? 1 : 0), m - 1, d];
+static _epochDaysToYMD(z: number): [number, number, number] {
+  if (z >= -719162 && z <= 2932896) {
+    const q = 4 * (z + 719468) + 3;
+    const century = Math.floor(q * INV_146097); // (1/146097)(1+ε)
+    const julian = q - (century & ~3) + century * 4;
+    const y = Math.floor(julian * INV_1461);    // (1/1461)(1+ε)
+    const dym = (julian - y * 1461) >>> 2;      // March-based day of year 0..365
+    const packed = _MONTH_DAY[dym];             // (month << 5) | day
+    return [y + (dym >= 306 ? 1 : 0), packed >>> 5, packed & 31];
+  }
+  // 範囲外: 汎用 Hinnant（Math.floor 版）
 }
 ```
 

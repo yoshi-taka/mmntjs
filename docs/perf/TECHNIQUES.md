@@ -221,20 +221,20 @@ Hot path: UTC field refresh
 
 **Problem**: UTC-mode `_refreshFields()` needs year/month/day from epoch ms. Creating a `new Date(t)` allocates memory.
 
-**Solution**: Calculate year/month/day directly from `(t / 86400000)` using pure arithmetic. No loops, minimal branches. Also used for Tomohiko Sakamoto's day-of-week.
+**Solution**: Calculate year/month/day directly from `(t / 86400000)` using pure arithmetic. For years `1..9999` (epoch days `-719162..2932896`), restore the year via Ben Joffe's Julian map and fetch month/day in one lookup from a 732-byte packed table (`(month << 5) | day`) indexed by March-based day-of-year `0..365`. The two constant divisions become multiplies by upward-rounded binary64 reciprocals (exhaustively verified over the whole bounded range). Out-of-range inputs fall back to the general Howard Hinnant implementation. Tomohiko Sakamoto's day-of-week is likewise allocation-free.
 
 ```typescript
-private static _epochDaysToYMD(z: number): [number, number, number] {
-  z += 719468;
-  const era = Math.floor(z / 146097);
-  const doe = z - era * 146097;
-  const yoe = Math.floor((doe - Math.floor(doe / 1460) + ...) / 365);
-  const y = yoe + era * 400;
-  const doy = doe - (365 * yoe + Math.floor(yoe / 4) - Math.floor(yoe / 100));
-  const mp = Math.floor((5 * doy + 2) / 153);
-  const d = doy - Math.floor((153 * mp + 2) / 5) + 1;
-  const m = mp + (mp < 10 ? 3 : -9);
-  return [y + (m <= 2 ? 1 : 0), m - 1, d];
+static _epochDaysToYMD(z: number): [number, number, number] {
+  if (z >= -719162 && z <= 2932896) {
+    const q = 4 * (z + 719468) + 3;
+    const century = Math.floor(q * INV_146097); // (1/146097)(1+ε)
+    const julian = q - (century & ~3) + century * 4;
+    const y = Math.floor(julian * INV_1461);    // (1/1461)(1+ε)
+    const dym = (julian - y * 1461) >>> 2;      // March-based day of year 0..365
+    const packed = _MONTH_DAY[dym];             // (month << 5) | day
+    return [y + (dym >= 306 ? 1 : 0), packed >>> 5, packed & 31];
+  }
+  // out of range: general Hinnant (Math.floor variant)
 }
 ```
 

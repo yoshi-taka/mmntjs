@@ -44,6 +44,15 @@ describe("factory-lite-impl", () => {
       const m = moment.utc("2024-01-15");
       expect(m.isValid()).toBe(true);
     });
+
+    test("utc preserves leading-zero four-digit years", () => {
+      for (const input of ["0001-01-01", "0050-06-15", "0099-12-31"]) {
+        const actual = moment.utc(input);
+        const expected = originalMoment.utc(input);
+        expect(actual.valueOf()).toBe(expected.valueOf());
+        expect(actual.format("YYYY-MM-DD")).toBe(expected.format("YYYY-MM-DD"));
+      }
+    });
   });
 
   describe("moment() with number and format", () => {

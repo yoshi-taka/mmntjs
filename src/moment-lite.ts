@@ -259,20 +259,33 @@ function syncNormalizedLocalCalendarFields(p: _P, d: Date, offset: number): bool
 // Reusable probe Date for lightweight offset verification (no allocation)
 const _probeDate = new Date(0);
 const _probeCache = { t: NaN, offset: NaN };
-const _MARCH_DOY = new Int16Array([0, 31, 61, 92, 122, 153, 184, 214, 245, 275, 306, 337]);
+// Ben Joffe month/day packed table: March-based day-of-year 0..365 →
+// ((0-indexed month) << 5) | day. 732 bytes.
+const _MONTH_DAY = new Uint16Array(366);
+for (let r = 0; r <= 365; r++) {
+  const n = 2141 * r + 197913;
+  const marchMonth = n >>> 16;
+  const day = ((n & 65535) / 2141) | 0;
+  const month0 = (r >= 306 ? marchMonth - 12 : marchMonth) - 1;
+  _MONTH_DAY[r] = (month0 << 5) | (day + 1);
+}
+
+// Upward-rounded binary64 reciprocals, exact over the bounded epoch-day range
+// (verified exhaustively for -719162 <= z <= 2932896).
+const INV_146097 = (1 / 146097) * (1 + Number.EPSILON);
+const INV_1461 = (1 / 1461) * (1 + Number.EPSILON);
+
 function epochDaysToYMD(z: number): [number, number, number] {
-  // Years 1..9999 keep every quotient nonnegative and within int32, making |0 exact truncation.
+  // Years 1..9999 keep every quotient nonnegative and within int32.
+  // Ben Joffe Julian map for the year + packed month/day table lookup.
   if (z >= -719162 && z <= 2932896) {
-    const shifted = z + 719468;
-    const era = (shifted / 146097) | 0;
-    const doe = shifted - era * 146097;
-    const yoe = ((doe - ((doe / 1460) | 0) + ((doe / 36524) | 0) - ((doe / 146096) | 0)) / 365) | 0;
-    const y = yoe + era * 400;
-    const doy = doe - (365 * yoe + (yoe >>> 2) - ((yoe / 100) | 0));
-    const mp = ((5 * doy + 2) / 153) | 0;
-    const d = doy - _MARCH_DOY[mp] + 1;
-    const m = mp < 10 ? mp + 2 : mp - 10;
-    return [y + (m <= 1 ? 1 : 0), m, d];
+    const q = 4 * (z + 719468) + 3;
+    const century = Math.floor(q * INV_146097);
+    const julian = q - (century & ~3) + century * 4;
+    const y = Math.floor(julian * INV_1461);
+    const dym = (julian - y * 1461) >>> 2;
+    const packed = _MONTH_DAY[dym];
+    return [y + (dym >= 306 ? 1 : 0), packed >>> 5, packed & 31];
   }
 
   z += 719468;
@@ -384,19 +397,16 @@ export class MomentLite {
   _strict?: boolean;
 
   private static _epochDaysToYMD(z: number): [number, number, number] {
-    // Years 1..9999 keep every quotient nonnegative and within int32, making |0 exact truncation.
+    // Years 1..9999 keep every quotient nonnegative and within int32.
+    // Ben Joffe Julian map for the year + packed month/day table lookup.
     if (z >= -719162 && z <= 2932896) {
-      const shifted = z + 719468;
-      const era = (shifted / 146097) | 0;
-      const doe = shifted - era * 146097;
-      const yoe =
-        ((doe - ((doe / 1460) | 0) + ((doe / 36524) | 0) - ((doe / 146096) | 0)) / 365) | 0;
-      const y = yoe + era * 400;
-      const doy = doe - (365 * yoe + (yoe >>> 2) - ((yoe / 100) | 0));
-      const mp = ((5 * doy + 2) / 153) | 0;
-      const d = doy - _MARCH_DOY[mp] + 1;
-      const m = mp < 10 ? mp + 2 : mp - 10;
-      return [y + (m <= 1 ? 1 : 0), m, d];
+      const q = 4 * (z + 719468) + 3;
+      const century = Math.floor(q * INV_146097);
+      const julian = q - (century & ~3) + century * 4;
+      const y = Math.floor(julian * INV_1461);
+      const dym = (julian - y * 1461) >>> 2;
+      const packed = _MONTH_DAY[dym];
+      return [y + (dym >= 306 ? 1 : 0), packed >>> 5, packed & 31];
     }
 
     z += 719468;
