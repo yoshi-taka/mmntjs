@@ -41,7 +41,7 @@ git commit -m "chore: bump version to 1.1.0"
 bash scripts/git-push.sh enable && git push origin main && bash scripts/git-push.sh disable
 
 # 3. リリースタグだけ個別にpush（--tags 禁止）
-git tag -a release-v1.1.0 -m "release v1.1.0"
+git tag -a --no-sign release-v1.1.0 -m "release v1.1.0"
 bash scripts/git-push.sh enable && git push origin release-v1.1.0 && bash scripts/git-push.sh disable
 ```
 
